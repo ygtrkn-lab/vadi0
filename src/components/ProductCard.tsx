@@ -109,10 +109,17 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           {/* Wishlist Button */}
           <button
             onClick={handleWishlist}
-            className={`absolute top-2 sm:top-3 right-2 sm:right-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/60 bg-white/90 shadow-soft backdrop-blur-sm transition-all duration-200 active:scale-95 z-20
-              ${isWishlisted ? 'bg-primary-500 text-white shadow-glow' : 'text-gray-700'}`}
+            className={`absolute top-2 sm:top-3 right-2 sm:right-3 flex h-9 w-9 items-center justify-center rounded-full border transition-all duration-300 active:scale-95 z-20 transform hover:scale-110
+              ${isWishlisted 
+                ? 'bg-red-500 text-white border-red-500 shadow-glow scale-110 animate-pulse' 
+                : 'bg-white/90 text-gray-700 border-white/60 backdrop-blur-sm hover:bg-red-50 hover:text-red-500 hover:border-red-200'
+              }`}
           >
-            <Heart size={16} className="sm:w-[18px] sm:h-[18px] transition-colors" fill={isWishlisted ? 'currentColor' : 'none'} />
+            <Heart 
+              size={16} 
+              className="sm:w-[18px] sm:h-[18px] transition-all duration-300" 
+              fill={isWishlisted ? 'currentColor' : 'none'} 
+            />
           </button>
 
           {/* Desktop Quick Actions - Hover only */}

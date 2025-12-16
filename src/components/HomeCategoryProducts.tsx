@@ -100,13 +100,17 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
           {/* Wishlist Button */}
           <button
             onClick={handleWishlist}
-            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-lg transition-all z-10
+            className={`absolute bottom-2 right-2 p-2 rounded-full shadow-lg transition-all duration-300 z-10 transform hover:scale-110
               ${isWishlisted 
-                ? 'bg-red-500 text-white scale-110' 
-                : 'bg-white/95 text-gray-500 hover:text-red-500 hover:scale-110'
+                ? 'bg-red-500 text-white scale-110 animate-pulse' 
+                : 'bg-white/95 text-gray-600 hover:text-red-500 hover:bg-red-50'
               }`}
           >
-            <Heart size={16} fill={isWishlisted ? 'currentColor' : 'none'} />
+            <Heart 
+              size={16} 
+              fill={isWishlisted ? 'currentColor' : 'none'}
+              className="transition-all duration-300"
+            />
           </button>
 
           {/* Overlay on hover */}
