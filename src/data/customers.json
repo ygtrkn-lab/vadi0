@@ -1,0 +1,351 @@
+[
+  {
+    "id": "cust_demo1",
+    "email": "ahmet@email.com",
+    "name": "Ahmet Yılmaz",
+    "phone": "+90 850 307 4876",
+    "password": "123456",
+    "createdAt": "2024-10-15T10:30:00Z",
+    "updatedAt": "2024-12-01T14:20:00Z",
+    "addresses": [
+      {
+        "id": "addr_1",
+        "title": "Evim",
+        "type": "home",
+        "recipientName": "Ahmet Yılmaz",
+        "recipientPhone": "+90 850 307 4876",
+        "province": "İstanbul",
+        "provinceId": 34,
+        "district": "Kadıköy",
+        "districtId": 446,
+        "neighborhood": "Caferağa",
+        "fullAddress": "Moda Cad. No:15 D:3",
+        "isDefault": true
+      }
+    ],
+    "orders": [
+      "ord_1001"
+    ],
+    "favorites": [
+      "1",
+      "5",
+      "12"
+    ],
+    "totalSpent": 1250,
+    "orderCount": 1,
+    "lastOrderDate": "2024-12-01T10:00:00Z",
+    "isActive": true,
+    "notes": "VIP müşteri",
+    "tags": [
+      "VIP",
+      "Sık Alıcı"
+    ],
+    "accountCredit": 0
+  },
+  {
+    "id": "cust_demo2",
+    "email": "ayse@email.com",
+    "name": "Ayşe Demir",
+    "phone": "+90 850 307 4876",
+    "password": "123456",
+    "createdAt": "2024-11-01T08:15:00Z",
+    "updatedAt": "2024-12-01T11:30:00Z",
+    "addresses": [
+      {
+        "id": "addr_2",
+        "title": "İşyerim",
+        "type": "work",
+        "recipientName": "Ayşe Demir",
+        "recipientPhone": "+90 850 307 4876",
+        "province": "İstanbul",
+        "provinceId": 34,
+        "district": "Beşiktaş",
+        "districtId": 409,
+        "neighborhood": "Levent",
+        "fullAddress": "Büyükdere Cad. Plaza No:42 Kat:5",
+        "isDefault": true
+      }
+    ],
+    "orders": [
+      "ord_1002"
+    ],
+    "favorites": [
+      "3",
+      "8"
+    ],
+    "totalSpent": 890,
+    "orderCount": 1,
+    "lastOrderDate": "2024-12-01T09:30:00Z",
+    "isActive": true,
+    "notes": "",
+    "tags": [
+      "Yeni"
+    ],
+    "accountCredit": 0
+  },
+  {
+    "id": "cust_demo3",
+    "email": "mehmet@email.com",
+    "name": "Mehmet Kaya",
+    "phone": "+90 850 307 4876",
+    "password": "123456",
+    "createdAt": "2024-09-20T14:45:00Z",
+    "updatedAt": "2024-11-30T16:00:00Z",
+    "addresses": [
+      {
+        "id": "addr_3",
+        "title": "Evim",
+        "type": "home",
+        "recipientName": "Mehmet Kaya",
+        "recipientPhone": "+90 850 307 4876",
+        "province": "İstanbul",
+        "provinceId": 34,
+        "district": "Ataşehir",
+        "districtId": 403,
+        "neighborhood": "Küçükbakkalköy",
+        "fullAddress": "Brandium AVM Karşısı Sitesi B Blok D:12",
+        "isDefault": true
+      }
+    ],
+    "orders": [
+      "ord_1003"
+    ],
+    "favorites": [
+      "2",
+      "7",
+      "15"
+    ],
+    "totalSpent": 2100,
+    "orderCount": 1,
+    "lastOrderDate": "2024-11-30T15:00:00Z",
+    "isActive": true,
+    "notes": "Kurumsal alıcı",
+    "tags": [
+      "Kurumsal"
+    ],
+    "accountCredit": 0
+  },
+  {
+    "id": "cust_demo4",
+    "email": "fatma@email.com",
+    "name": "Fatma Şahin",
+    "phone": "+90 850 307 4876",
+    "password": "123456",
+    "createdAt": "2024-08-10T11:20:00Z",
+    "updatedAt": "2024-11-29T13:40:00Z",
+    "addresses": [
+      {
+        "id": "addr_4",
+        "title": "Evim",
+        "type": "home",
+        "recipientName": "Fatma Şahin",
+        "recipientPhone": "+90 850 307 4876",
+        "province": "İstanbul",
+        "provinceId": 34,
+        "district": "Üsküdar",
+        "districtId": 470,
+        "neighborhood": "Kuzguncuk",
+        "fullAddress": "Sahil Yolu Sok. No:8",
+        "isDefault": true
+      }
+    ],
+    "orders": [
+      "ord_1004"
+    ],
+    "favorites": [],
+    "totalSpent": 650,
+    "orderCount": 1,
+    "lastOrderDate": "2024-11-29T12:00:00Z",
+    "isActive": true,
+    "notes": "",
+    "tags": [],
+    "accountCredit": 0
+  },
+  {
+    "id": "cust_demo5",
+    "email": "ali@email.com",
+    "name": "Ali Öztürk",
+    "phone": "+90 850 307 4876",
+    "password": "123456",
+    "createdAt": "2024-07-05T09:00:00Z",
+    "updatedAt": "2024-11-28T10:15:00Z",
+    "addresses": [
+      {
+        "id": "addr_5",
+        "title": "Evim",
+        "type": "home",
+        "recipientName": "Ali Öztürk",
+        "recipientPhone": "+90 850 307 4876",
+        "province": "İstanbul",
+        "provinceId": 34,
+        "district": "Bakırköy",
+        "districtId": 406,
+        "neighborhood": "Yeşilköy",
+        "fullAddress": "Atatürk Cad. No:25 D:7",
+        "isDefault": true
+      }
+    ],
+    "orders": [
+      "ord_1005"
+    ],
+    "favorites": [
+      "4",
+      "9"
+    ],
+    "totalSpent": 1800,
+    "orderCount": 1,
+    "lastOrderDate": "2024-11-28T09:00:00Z",
+    "isActive": true,
+    "notes": "Siparişi iptal edildi",
+    "tags": [
+      "İptal Geçmişi"
+    ],
+    "accountCredit": 0
+  },
+  {
+    "id": "cust_yigitcan1",
+    "email": "yigitraiken@gmail.com",
+    "name": "YİĞİTCAN ELMAS",
+    "phone": "05438494655",
+    "password": "Asdas!23",
+    "createdAt": "2024-12-05T10:00:00Z",
+    "updatedAt": "2025-12-05T00:42:52.662Z",
+    "addresses": [
+      {
+        "title": "dfv",
+        "type": "home",
+        "recipientName": "YİĞİTCAN ELMAS",
+        "recipientPhone": "05438494655",
+        "province": "İstanbul",
+        "provinceId": 34,
+        "district": "Arnavutköy",
+        "districtId": 1,
+        "neighborhood": "dadsfafvddass",
+        "fullAddress": "qesfdgbgfdsawsdfsvgbvvvfdsewfd",
+        "postalCode": "",
+        "isDefault": true,
+        "id": "addr_mis1yxyt"
+      }
+    ],
+    "orders": [
+      "ord_2"
+    ],
+    "favorites": [
+      "18",
+      "714",
+      "709"
+    ],
+    "totalSpent": 3498,
+    "orderCount": 1,
+    "lastOrderDate": "2025-12-04T23:01:07.054Z",
+    "isActive": true,
+    "notes": "",
+    "tags": [
+      "Yeni",
+      "VIP"
+    ],
+    "accountCredit": 0
+  },
+  {
+    "id": "cust_test1",
+    "email": "test@gmail.com",
+    "name": "Test",
+    "phone": "5438494655",
+    "password": "Asdas!23",
+    "createdAt": "2024-12-05T10:00:00Z",
+    "updatedAt": "2024-12-05T10:00:00Z",
+    "addresses": [],
+    "orders": [],
+    "favorites": [],
+    "totalSpent": 0,
+    "orderCount": 0,
+    "lastOrderDate": null,
+    "isActive": true,
+    "notes": "",
+    "tags": [
+      "Yeni"
+    ],
+    "accountCredit": 0
+  },
+  {
+    "email": "uniqueuser@example.com",
+    "name": "Unique",
+    "phone": "05551231234",
+    "password": "abc123",
+    "id": "cust_misl4fjs0t508mh4ec8",
+    "createdAt": "2025-12-05T08:10:23.8Z",
+    "updatedAt": "2025-12-05T08:10:23.8Z",
+    "addresses": [],
+    "orders": [],
+    "favorites": [],
+    "totalSpent": 0,
+    "orderCount": 0,
+    "lastOrderDate": null,
+    "isActive": true,
+    "notes": "",
+    "tags": [],
+    "accountCredit": 0
+  },
+  {
+    "email": "ahmetcakmak@strdent.com",
+    "name": "AHMET ÇAKMAK",
+    "phone": "5539990859",
+    "password": "Asdas!23",
+    "id": "cust_miu6s8wj0rf2cs0c3dqf",
+    "createdAt": "2025-12-06T11:04:33.043Z",
+    "updatedAt": "2025-12-06T11:55:44.867Z",
+    "addresses": [
+      {
+        "title": "EVA",
+        "type": "home",
+        "recipientName": "AHMET ÇAKMAK",
+        "recipientPhone": "5539990859",
+        "province": "İstanbul",
+        "provinceId": 34,
+        "district": "Arnavutköy",
+        "districtId": 1,
+        "neighborhood": "MAHALLEsafsdfs",
+        "fullAddress": "dlkmlgmsldkmglsdkmglksdmflksdf",
+        "postalCode": "",
+        "isDefault": true,
+        "id": "addr_miu6te4i"
+      }
+    ],
+    "orders": [
+      "ord_100002",
+      "ord_100003",
+      "ord_100004"
+    ],
+    "favorites": [
+      "152",
+      "34",
+      "36"
+    ],
+    "totalSpent": 8045,
+    "orderCount": 3,
+    "lastOrderDate": "2025-12-06T11:55:44.856Z",
+    "isActive": true,
+    "notes": "",
+    "tags": [],
+    "accountCredit": 0
+  },
+  {
+    "email": "tst@tsss.com",
+    "name": "test test",
+    "phone": "5329429041",
+    "password": "Asdas!23",
+    "id": "cust_miufw2271l27eh05ppt",
+    "createdAt": "2025-12-06T15:19:27.343Z",
+    "updatedAt": "2025-12-06T15:19:27.343Z",
+    "addresses": [],
+    "orders": [],
+    "favorites": [],
+    "totalSpent": 0,
+    "orderCount": 0,
+    "lastOrderDate": null,
+    "accountCredit": 0,
+    "isActive": true,
+    "notes": "",
+    "tags": []
+  }
+]
