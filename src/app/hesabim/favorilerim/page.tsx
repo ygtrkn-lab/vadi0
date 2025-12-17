@@ -118,16 +118,51 @@ export default function FavorilerimPage() {
   };
 
   const handleShare = async (product: any) => {
+    const productUrl = `${window.location.origin}/${product.slug}`;
+    
+    // iPhone ve modern tarayıcılar için Web Share API
     if (navigator.share) {
       try {
         await navigator.share({
           title: product.name,
-          text: `${product.name} - Vadiler Çiçek'te ₺${product.price}`,
-          url: `${window.location.origin}/${product.slug}`,
+          text: `${product.name} - ₺${product.price.toLocaleString('tr-TR')}`,
+          url: productUrl,
         });
-      } catch {
-        // User cancelled
+        setToastMessage('Paylaşıldı!');
+      } catch (error: any) {
+        // Kullanıcı iptal etti
+        if (error.name === 'AbortError') {
+          // Sessizce geç
+        } else {
+          // Gerçek hata - clipboard'a kopyala
+          copyToClipboardFallback(productUrl);
+        }
       }
+    } else {
+      // Web Share API yok - direkt clipboard
+      copyToClipboardFallback(productUrl);
+    }
+  };
+
+  const copyToClipboardFallback = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setToastMessage('Link kopyalandı!');
+    } catch (err) {
+      // Eski yöntem
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      textArea.style.position = 'absolute';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setToastMessage('Link kopyalandı!');
+      } catch (e) {
+        setToastMessage('Paylaşılamadı');
+      }
+      document.body.removeChild(textArea);
     }
   };
 
