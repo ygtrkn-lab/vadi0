@@ -134,7 +134,18 @@ export default function SepetClient() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
+  const getMaxDeliveryDate = (): string => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 7); // 7 gün sonrası
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   const MIN_DELIVERY_DATE = getTomorrowLocalISODate();
+  const MAX_DELIVERY_DATE = getMaxDeliveryDate();
 
   const DELIVERY_TIME_SLOT_IDS = ['11:00-17:00', '17:00-22:00'] as const;
   type DeliveryTimeSlotId = (typeof DELIVERY_TIME_SLOT_IDS)[number];
@@ -1449,13 +1460,24 @@ export default function SepetClient() {
                             setDeliveryDate('');
                             return;
                           }
-                          setDeliveryDate(next < MIN_DELIVERY_DATE ? MIN_DELIVERY_DATE : next);
+                          // Min ve max kontrol
+                          if (next < MIN_DELIVERY_DATE) {
+                            setDeliveryDate(MIN_DELIVERY_DATE);
+                            return;
+                          }
+                          if (next > MAX_DELIVERY_DATE) {
+                            setDeliveryDate(MAX_DELIVERY_DATE);
+                            return;
+                          }
+                          setDeliveryDate(next);
                         }}
                         onBlur={() => {
                           if (!deliveryDate) return;
                           if (deliveryDate < MIN_DELIVERY_DATE) setDeliveryDate(MIN_DELIVERY_DATE);
+                          if (deliveryDate > MAX_DELIVERY_DATE) setDeliveryDate(MAX_DELIVERY_DATE);
                         }}
                         min={MIN_DELIVERY_DATE}
+                        max={MAX_DELIVERY_DATE}
                         className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
                       />
                     </div>

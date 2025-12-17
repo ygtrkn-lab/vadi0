@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { MapPin, X, ChevronRight, Search, Check, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { MapPin, Calendar, X, ChevronRight, Search, Check, AlertCircle } from 'lucide-react';
 
 // İstanbul bölgeleri
 const ISTANBUL_REGIONS = [
@@ -64,21 +64,21 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   const [searchTerm, setSearchTerm] = useState('');
   const [showOtherCityWarning, setShowOtherCityWarning] = useState(false);
   const [step, setStep] = useState<'region' | 'district'>('region');
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const selectorRef = useRef<HTMLDivElement | null>(null);
 
   // Generate next 7 days starting from tomorrow (no same-day delivery)
-  const generateDates = () => {
-    const dates = [];
+  const dates = useMemo(() => {
+    const result = [];
     const today = new Date();
     for (let i = 1; i <= 7; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      dates.push(date);
+      result.push(date);
     }
-    return dates;
-  };
-
-  const dates = generateDates();
+    return result;
+  }, []);
 
   const timeSlots = [
     { id: '11-17', label: '11:00-17:00' },
@@ -121,9 +121,6 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   
   useEffect(() => {
     if (selectedLocation && selectedDate && selectedTimeSlot) {
-      // Her değişiklikte yeniden bildirim gönder
-      hasNotified.current = false;
-      
       if (!hasNotified.current) {
         hasNotified.current = true;
         onDeliveryComplete({
@@ -177,6 +174,7 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
     const handleClickOutside = (event: MouseEvent) => {
       if (selectorRef.current && !selectorRef.current.contains(event.target as Node)) {
         setIsLocationOpen(false);
+        setIsCalendarOpen(false);
         setShowOtherCityWarning(false);
         if (typeof onOpenChange === 'function') onOpenChange(false);
       }
@@ -184,8 +182,9 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
 
     document.addEventListener('mousedown', handleClickOutside);
     const handleCloseAll = () => {
-      if (isLocationOpen || showOtherCityWarning) {
+      if (isLocationOpen || isCalendarOpen || showOtherCityWarning) {
         setIsLocationOpen(false);
+        setIsCalendarOpen(false);
         setShowOtherCityWarning(false);
         if (typeof onOpenChange === 'function' && isLocationOpen) onOpenChange(false);
       }
@@ -352,16 +351,17 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
       {/* Date & Time Selector - Only show when location is selected */}
       {selectedLocation && (
         <div className="space-y-3">
-          {/* Date Selector - Scrollable - Tüm 7 gün */}
+          {/* Date Selector - Scrollable */}
           <div className="overflow-x-auto -mx-4 px-4 pb-1">
             <div className="flex items-center gap-2 min-w-max">
-              {dates.map((date, index) => {
+              {dates.slice(0, 3).map((date, index) => {
                 const isSelected = selectedDate?.toDateString() === date.toDateString();
                 return (
                   <button
                     key={index}
                     onClick={() => {
                       setSelectedDate(date);
+                      setIsCalendarOpen(false);
                     }}
                     className={`flex flex-col items-center px-3 py-2 rounded-xl border-2 transition-all min-w-[70px] ${
                       isSelected
@@ -378,8 +378,136 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
                   </button>
                 );
               })}
+              
+              {/* Calendar Button */}
+              <button 
+                onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                className={`flex flex-col items-center px-3 py-2 rounded-xl border-2 transition-all min-w-[70px] ${
+                  isCalendarOpen ? 'border-[#e05a4c] bg-[#e05a4c]/5' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Calendar size={14} className={isCalendarOpen ? 'text-[#e05a4c] mb-0.5' : 'text-gray-400 mb-0.5'} />
+                <span className={`text-xs font-medium ${isCalendarOpen ? 'text-[#e05a4c]' : 'text-gray-700'}`}>Takvim</span>
+              </button>
             </div>
           </div>
+
+          {/* Calendar Popup */}
+          {isCalendarOpen && (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-lg p-3">
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => {
+                    const newMonth = new Date(calendarMonth);
+                    newMonth.setMonth(newMonth.getMonth() - 1);
+                    setCalendarMonth(newMonth);
+                  }}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ChevronRight size={16} className="text-gray-500 rotate-180" />
+                </button>
+                <span className="text-sm font-semibold text-gray-900">
+                  {calendarMonth.toLocaleDateString('tr-TR', { month: 'long', year: 'numeric' })}
+                </span>
+                <button
+                  onClick={() => {
+                    const newMonth = new Date(calendarMonth);
+                    newMonth.setMonth(newMonth.getMonth() + 1);
+                    setCalendarMonth(newMonth);
+                  }}
+                  className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ChevronRight size={16} className="text-gray-500" />
+                </button>
+              </div>
+
+              {/* Calendar Days Header */}
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((day) => (
+                  <div key={day} className="text-center text-[10px] text-gray-400 font-medium py-1">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Days */}
+              <div className="grid grid-cols-7 gap-1">
+                {(() => {
+                  const year = calendarMonth.getFullYear();
+                  const month = calendarMonth.getMonth();
+                  const firstDay = new Date(year, month, 1);
+                  const lastDay = new Date(year, month + 1, 0);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  
+                  // Maksimum seçilebilir tarih: bugünden 7 gün sonra
+                  const maxDate = new Date(today);
+                  maxDate.setDate(today.getDate() + 7);
+                  maxDate.setHours(0, 0, 0, 0);
+
+                  // Get the day of week (0 = Sunday, we need Monday as 0)
+                  let startDay = firstDay.getDay() - 1;
+                  if (startDay < 0) startDay = 6;
+
+                  const days = [];
+
+                  // Empty cells for days before month starts
+                  for (let i = 0; i < startDay; i++) {
+                    days.push(<div key={`empty-${i}`} className="p-2" />);
+                  }
+
+                  // Days of the month
+                  for (let day = 1; day <= lastDay.getDate(); day++) {
+                    const date = new Date(year, month, day);
+                    date.setHours(0, 0, 0, 0);
+                    
+                    // Bugün ve daha önceki günler seçilemez
+                    const isPastOrToday = date <= today;
+                    // 7 günden sonrası seçilemez
+                    const isBeyondMaxDate = date > maxDate;
+                    // Genel olarak disabled mi
+                    const isDisabled = isPastOrToday || isBeyondMaxDate;
+                    const isSelected = selectedDate?.toDateString() === date.toDateString();
+
+                    days.push(
+                      <button
+                        key={day}
+                        onClick={() => {
+                          if (!isDisabled) {
+                            setSelectedDate(date);
+                            setIsCalendarOpen(false);
+                          }
+                        }}
+                        disabled={isDisabled}
+                        className={`p-2 text-xs rounded-lg transition-all ${
+                          isSelected
+                            ? 'bg-[#549658] text-white font-semibold'
+                            : isDisabled
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : 'text-gray-700 hover:bg-[#e05a4c]/10'
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    );
+                  }
+
+                  return days;
+                })()}
+              </div>
+
+              {/* Selected Date Display */}
+              {selectedDate && (
+                <div className="mt-3 pt-3 border-t border-gray-100 text-center">
+                  <span className="text-xs text-gray-500">Seçilen tarih: </span>
+                  <span className="text-xs font-semibold text-[#549658]">
+                    {selectedDate.toLocaleDateString('tr-TR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Time Slots - Scrollable */}
           {selectedDate && (
@@ -394,6 +522,7 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
                         setSelectedTimeSlot(slot.id);
                         // Close all overlays immediately
                         setIsLocationOpen(false);
+                        setIsCalendarOpen(false);
                         setShowOtherCityWarning(false);
                         if (typeof onOpenChange === 'function') onOpenChange(false);
                         // Remove focus from possible active elements to avoid stuck focus
