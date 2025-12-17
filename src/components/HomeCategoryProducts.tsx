@@ -393,25 +393,58 @@ export function StoryBannerCarousel() {
                 href={`/${category.slug}`}
                 className="flex flex-col items-center gap-2 min-w-[85px] md:min-w-[100px] group"
               >
-                {/* Story Ring */}
-                <div className="relative p-[3px] rounded-full bg-gradient-to-br from-primary-400 via-pink-500 to-secondary-400 group-hover:from-primary-500 group-hover:via-pink-600 group-hover:to-secondary-500 transition-all duration-300 group-hover:scale-105 shadow-lg">
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden bg-white p-[2px]">
-                    <div className="w-full h-full rounded-full overflow-hidden relative bg-gray-100">
-                      {category.image ? (
-                        <Image
-                          src={category.image}
-                          alt={category.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xl">
-                          🌸
-                        </div>
-                      )}
+                {/* Story Ring - Animated like Instagram Stories */}
+                <motion.div
+                  className="relative w-16 h-16 md:w-20 md:h-20 flex items-center justify-center"
+                  whileHover={{ scale: 1.06, transition: { duration: 0.25 } }}
+                >
+                  <motion.div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                      // Start state: pink + white
+                      background: 'conic-gradient(from 0deg, #f9a8d4, #ec4899, #ffffff, #f9a8d4)',
+                    }}
+                    animate={{
+                      background: [
+                        // 1) Pink + white
+                        'conic-gradient(from 0deg, #f9a8d4, #ec4899, #ffffff, #f9a8d4)',
+                        // 2) Soft black + white
+                        'conic-gradient(from 0deg, #1f2937, #111827, #f5f5f5, #1f2937)',
+                        // 3) Red + white
+                        'conic-gradient(from 0deg, #fca5a5, #ef4444, #ffffff, #fca5a5)',
+                        // 4) Soft black + white
+                        'conic-gradient(from 0deg, #1f2937, #111827, #f5f5f5, #1f2937)',
+                        // 5) Orange + white
+                        'conic-gradient(from 0deg, #fdba74, #f97316, #ffffff, #fdba74)',
+                        // 6) Soft black + white
+                        'conic-gradient(from 0deg, #1f2937, #111827, #f5f5f5, #1f2937)',
+                        // 7) Loop seamlessly back to pink + white to avoid snapping
+                        'conic-gradient(from 0deg, #f9a8d4, #ec4899, #ffffff, #f9a8d4)',
+                      ],
+                      rotate: 360,
+                      opacity: [0.9, 1, 0.9],
+                    }}
+                    transition={{ duration: 4.2, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <div className="absolute inset-[3px] rounded-full bg-white flex items-center justify-center shadow-lg">
+                    <div className="w-full h-full p-[2px] rounded-full bg-white">
+                      <div className="w-full h-full rounded-full overflow-hidden relative bg-gray-100">
+                        {category.image ? (
+                          <Image
+                            src={category.image}
+                            alt={category.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 text-xl">
+                            🌸
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
                 
                 {/* Category Name */}
                 <span className="text-xs md:text-sm text-center text-gray-700 group-hover:text-primary-600 transition-colors font-medium line-clamp-2 max-w-[85px] md:max-w-[100px]">
