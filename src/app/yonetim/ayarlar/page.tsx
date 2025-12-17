@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpotlightCard, FadeContent } from '@/components/admin';
+import BulkPriceAdjustment from '@/components/admin/BulkPriceAdjustment';
 import { useTheme } from '../ThemeContext';
+import categoriesData from '@/data/categories.json';
 import { 
   HiOutlineCog, 
   HiOutlineTruck, 
@@ -19,7 +21,8 @@ import {
   HiOutlineShieldCheck,
   HiOutlineBell,
   HiOutlineColorSwatch,
-  HiOutlineRefresh
+  HiOutlineRefresh,
+  HiOutlineTag
 } from 'react-icons/hi';
 
 type SettingsData = Record<string, Record<string, any>>;
@@ -240,6 +243,7 @@ export default function AyarlarPage() {
     { id: 'social', label: 'Sosyal Medya', icon: <HiOutlineGlobe className="w-5 h-5" /> },
     { id: 'notifications', label: 'Bildirimler', icon: <HiOutlineBell className="w-5 h-5" /> },
     { id: 'security', label: 'Güvenlik', icon: <HiOutlineLockClosed className="w-5 h-5" /> },
+    { id: 'pricing', label: 'Fiyatlandırma', icon: <HiOutlineTag className="w-5 h-5" /> },
   ];
 
   if (loading) {
@@ -957,6 +961,23 @@ export default function AyarlarPage() {
                     </p>
                   </motion.div>
                 )}
+              </SpotlightCard>
+            </FadeContent>
+          </motion.div>
+        )}
+
+        {/* Pricing Settings */}
+        {activeTab === 'pricing' && (
+          <motion.div
+            key="pricing"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="space-y-4"
+          >
+            <FadeContent direction="up" delay={0.15}>
+              <SpotlightCard className="p-5 sm:p-6">
+                <BulkPriceAdjustment categories={categoriesData} />
               </SpotlightCard>
             </FadeContent>
           </motion.div>
