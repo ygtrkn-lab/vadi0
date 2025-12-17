@@ -20,7 +20,7 @@ import {
   Sun,
   X,
   Truck,
-  // Copy and CheckCircle removed (share UI removed)
+  Share2,
 } from 'lucide-react';
 import type { Product } from '@/data/products';
 import { Header, Footer, MobileNavBar } from '@/components';
@@ -47,7 +47,7 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
     timeSlot: string | null;
   } | null>(null);
   const [showDeliveryWarning, setShowDeliveryWarning] = useState(false);
-  // Share UI removed: showShareToast and showShareMenu state removed
+  const [showShareToast, setShowShareToast] = useState(false);
   const [isDeliverySelectorOpen, setIsDeliverySelectorOpen] = useState(false);
   
   const deliverySectionRef = useRef<HTMLDivElement>(null);
@@ -70,7 +70,55 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
     }
   };
 
-  // share functionality removed (handleShare/getShareLinks/copyToClipboard removed)
+  // Share functionality
+  const copyToClipboardFallback = async (text: string) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      textArea.remove();
+      return true;
+    } catch (err) {
+      textArea.remove();
+      return false;
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    const shareText = `${product.name} - Vadiler Çiçek`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareText,
+          text: `${product.name} ürününe göz atın!`,
+          url: shareUrl,
+        });
+      } catch (err) {
+        // User cancelled or error occurred, try clipboard fallback
+        if ((err as Error).name !== 'AbortError') {
+          const success = await copyToClipboardFallback(shareUrl);
+          if (success) {
+            setShowShareToast(true);
+            setTimeout(() => setShowShareToast(false), 3000);
+          }
+        }
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      const success = await copyToClipboardFallback(shareUrl);
+      if (success) {
+        setShowShareToast(true);
+        setTimeout(() => setShowShareToast(false), 3000);
+      }
+    }
+  };
 
   // Filter out invalid images (placeholder, undefined, empty)
   const getValidImages = () => {
@@ -470,9 +518,30 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                     <Heart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
                     <span className="text-sm font-medium">{isWishlisted ? 'Favorilerimde' : 'Favorilere Ekle'}</span>
                   </button>
+
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-2 px-5 py-3 rounded-full border border-gray-200 hover:border-gray-300 transition-all"
+                  >
+                    <Share2 size={18} />
+                    <span className="text-sm font-medium">Paylaş</span>
+                  </button>
                 </div>
 
-                {/* Share Toast removed */}
+                {/* Share Toast */}
+                <AnimatePresence>
+                  {showShareToast && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 50 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 50 }}
+                      className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 bg-gray-900 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2"
+                    >
+                      <Check size={18} className="text-green-400" />
+                      <span className="font-medium">Link kopyalandı!</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Features */}
                 {product.features && product.features.length > 0 && (
