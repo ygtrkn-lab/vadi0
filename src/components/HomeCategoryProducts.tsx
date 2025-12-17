@@ -554,69 +554,136 @@ export function FeaturedBannerGrid() {
   }
 
   return (
-    <section className="py-8 md:py-12 bg-white">
+    <section className="py-12 md:py-16 bg-white">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header - Minimal */}
-        <div className="mb-6 md:mb-8">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-            Kategoriler
-          </h2>
+        {/* Section Header - Animated Apple Style */}
+        <div className="mb-8 md:mb-12 text-center overflow-hidden">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 leading-tight"
+          >
+            <span className="inline-block bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent pb-1">
+              Kategoriler
+            </span>
+          </motion.h2>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+            className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed"
+          >
+            Her anınıza özel çiçekler.{' '}
+            <span className="inline-block font-semibold text-gray-900">
+              Bugün keşfedin.
+            </span>
+          </motion.p>
         </div>
 
-        {/* Clean Category Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+        {/* Apple-style Category Cards Grid with Glassmorphism */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+        >
           {featuredCategories.map((category, index) => (
-            <Link 
+            <motion.div
               key={category.slug}
-              href={`/${category.slug}`}
-              className="group block relative rounded-2xl overflow-hidden bg-white border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ 
+                duration: 0.5, 
+                delay: index * 0.1,
+                ease: "easeOut"
+              }}
             >
-              {/* Image Container - Product Focused */}
-              <div className="relative aspect-[3/4] overflow-hidden bg-gray-50">
+              <Link 
+                href={`/${category.slug}`}
+                className="group block relative rounded-3xl overflow-hidden bg-gradient-to-br from-white to-gray-50 
+                  backdrop-blur-xl border border-gray-200/60 hover:border-gray-300 
+                  shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1"
+              >
+              {/* Image Container with Modern Overlay */}
+              <div className="relative aspect-[3/4] overflow-hidden">
                 {category.image ? (
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+                  <>
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    {/* Lighter gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t 
+                      from-gray-900/60 via-gray-900/20 to-transparent 
+                      group-hover:from-gray-900/70 transition-all duration-500" />
+                  </>
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-300 text-6xl">
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br 
+                    from-gray-100 to-gray-200 text-gray-400 text-6xl">
                     🌸
                   </div>
                 )}
-                
-                {/* Minimal White Gradient - Bottom for text readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent" />
 
-                {/* Category Info - Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <h3 className="text-gray-900 font-bold text-lg sm:text-xl leading-tight mb-3 drop-shadow-md">
+                {/* Glassmorphic Info Card - Bottom */}
+                <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
+                  {/* Category Name */}
+                  <h3 className="text-white font-bold text-lg md:text-xl mb-3 leading-tight
+                    group-hover:scale-105 transition-transform duration-300 origin-left">
                     {category.name}
                   </h3>
                   
-                  {/* Simple CTA */}
-                  <div className="flex items-center gap-1.5 text-gray-800 text-sm font-semibold opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                  {/* Glassmorphic CTA - Apple Style */}
+                  <div className="inline-flex items-center gap-2 px-4 py-2.5 
+                    bg-white/95 backdrop-blur-md text-gray-900 text-sm font-semibold rounded-full
+                    opacity-0 group-hover:opacity-100 transform translate-y-3 group-hover:translate-y-0 
+                    transition-all duration-500 shadow-xl border border-white/20">
                     <span>Keşfet</span>
-                    <ChevronRight size={16} />
+                    <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
-        </div>
 
-        {/* Simple View All Button */}
-        <div className="text-center mt-8">
+                {/* Product Count Pill - Top Right */}
+                {category.productCount && (
+                  <div className="absolute top-4 right-4 px-3 py-1.5 
+                    bg-white/95 backdrop-blur-md text-gray-900 text-xs font-bold rounded-full 
+                    shadow-lg border border-white/20 z-10">
+                    {category.productCount}+
+                  </div>
+                )}
+              </div>
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Apple-style View All Button - High Contrast */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="text-center mt-12 md:mt-16"
+        >
           <Link 
             href="/kategoriler"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold rounded-xl transition-all duration-300"
+            className="inline-flex items-center gap-2.5 px-8 py-4 
+              bg-gray-900 hover:bg-gray-800 text-white text-base font-semibold rounded-full
+              transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 group
+              border border-gray-800"
           >
-            Tüm Kategoriler
-            <ChevronRight size={18} />
+            <span>Tüm Kategoriler</span>
+            <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
           </Link>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
