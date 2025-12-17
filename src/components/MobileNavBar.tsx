@@ -9,7 +9,7 @@ import SearchBar from './SearchBar';
 import CategoryAvatar from './ui/CategoryAvatar';
 
 export default function MobileNavBar() {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCategoriesExpanded, setIsCategoriesExpanded] = useState(false);
@@ -45,7 +45,7 @@ export default function MobileNavBar() {
       
       // Show only after some scroll on the page
       if (currentScrollY <= 50) {
-        setIsVisible(false);
+        setIsVisible(true);
       } else {
         // Scrolling down - hide navbar after threshold
         if (currentScrollY > lastScrollY.current) {
@@ -111,6 +111,9 @@ export default function MobileNavBar() {
     { icon: Heart, label: 'Favoriler', href: '/hesabim/favorilerim', action: null },
   ];
 
+  // Limit category render count for faster mobile menu
+  const displayedCategories = categories.slice(0, 18);
+
   return (
     <>
       {/* Mobile Bottom Nav Bar */}
@@ -128,6 +131,7 @@ export default function MobileNavBar() {
             WebkitBackdropFilter: 'blur(20px)',
             boxShadow: '0 -4px 30px rgba(0, 0, 0, 0.1), 0 4px 20px rgba(0, 0, 0, 0.08)',
             border: '1px solid rgba(255, 255, 255, 0.5)',
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)',
           }}
         >
           <div className="flex items-center justify-around py-2 px-2">
@@ -225,10 +229,11 @@ export default function MobileNavBar() {
               style={{
                 background: 'linear-gradient(135deg, #ffffff 0%, #faf9f7 100%)',
                 boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.15)',
+                paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
               }}
             >
               {/* Sidebar Header */}
-              <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <div className="flex items-center justify-between p-4 border-b border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: 'rgba(224, 90, 76, 0.1)' }}>
@@ -248,13 +253,13 @@ export default function MobileNavBar() {
               </div>
 
               {/* Sidebar Content */}
-              <div className="overflow-y-auto h-[calc(100%-80px)] pb-20">
+              <div className="overflow-y-auto h-[calc(100%-80px)] pb-16 overscroll-contain">
                 {/* Quick Actions */}
-                <div className="p-5 grid grid-cols-2 gap-3">
+                <div className="p-4 grid grid-cols-2 gap-2.5">
                   <Link 
                     href="/sepet" 
                     onClick={() => setIsSidebarOpen(false)}
-                    className="flex items-center gap-3 p-4 rounded-2xl transition-all active:scale-95"
+                    className="flex items-center gap-3 p-3.5 rounded-2xl transition-all active:scale-95"
                     style={{ backgroundColor: 'rgba(224, 90, 76, 0.08)' }}
                   >
                     <ShoppingCart size={20} style={{ color: '#e05a4c' }} />
@@ -263,7 +268,7 @@ export default function MobileNavBar() {
                   <Link 
                     href="/hesabim" 
                     onClick={() => setIsSidebarOpen(false)}
-                    className="flex items-center gap-3 p-4 rounded-2xl bg-gray-50 transition-all active:scale-95"
+                    className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 transition-all active:scale-95"
                   >
                     <User size={20} className="text-gray-600" />
                     <span className="text-sm font-medium text-gray-800">Hesabım</span>
@@ -271,7 +276,7 @@ export default function MobileNavBar() {
                 </div>
 
                 {/* Quick Links */}
-                <div className="px-5">
+                <div className="px-4">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                     Hızlı Erişim
                   </p>
@@ -283,26 +288,10 @@ export default function MobileNavBar() {
                       <Link
                         href="/"
                         onClick={() => setIsSidebarOpen(false)}
-                        className="flex items-center justify-between p-3 rounded-xl 
+                        className="flex items-center justify-between p-2.5 rounded-xl 
                           hover:bg-gray-50 transition-all group"
                       >
                         <span className="text-gray-700 font-medium">Ana Sayfa</span>
-                        <ChevronRight size={18} className="text-gray-400 group-hover:text-primary-500 
-                          group-hover:translate-x-1 transition-all" />
-                      </Link>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.05 }}
-                    >
-                      <Link
-                        href="/kategoriler"
-                        onClick={() => setIsSidebarOpen(false)}
-                        className="flex items-center justify-between p-3 rounded-xl 
-                          hover:bg-gray-50 transition-all group"
-                      >
-                        <span className="text-gray-700 font-medium">Tüm Kategoriler</span>
                         <ChevronRight size={18} className="text-gray-400 group-hover:text-primary-500 
                           group-hover:translate-x-1 transition-all" />
                       </Link>
@@ -315,7 +304,7 @@ export default function MobileNavBar() {
                       <Link
                         href="/siparis-takip"
                         onClick={() => setIsSidebarOpen(false)}
-                        className="flex items-center justify-between p-3 rounded-xl 
+                        className="flex items-center justify-between p-2.5 rounded-xl 
                           hover:bg-gray-50 transition-all group"
                       >
                         <span className="text-gray-700 font-medium">Sipariş Takip</span>
@@ -331,7 +320,7 @@ export default function MobileNavBar() {
                       <Link
                         href="/iletisim"
                         onClick={() => setIsSidebarOpen(false)}
-                        className="flex items-center justify-between p-3 rounded-xl 
+                        className="flex items-center justify-between p-2.5 rounded-xl 
                           hover:bg-gray-50 transition-all group"
                       >
                         <span className="text-gray-700 font-medium">İletişim</span>
@@ -343,10 +332,10 @@ export default function MobileNavBar() {
                 </div>
 
                 {/* Categories Accordion */}
-                <div className="px-5 mt-6">
+                <div className="px-4 mt-5">
                   <button
                     onClick={() => setIsCategoriesExpanded(!isCategoriesExpanded)}
-                    className="w-full flex items-center justify-between p-3 rounded-xl 
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl 
                       hover:bg-gray-50 transition-all group"
                   >
                     <div className="flex items-center gap-2">
@@ -373,8 +362,8 @@ export default function MobileNavBar() {
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
-                        <div className="space-y-1 mt-2 pl-3">
-                          {categories.map((category, index) => (
+                        <div className="space-y-1 mt-1.5 pl-2.5">
+                          {displayedCategories.map((category, index) => (
                             <motion.div
                               key={category.id}
                               initial={{ opacity: 0, x: -10 }}
@@ -387,7 +376,7 @@ export default function MobileNavBar() {
                                   setIsSidebarOpen(false);
                                   setIsCategoriesExpanded(false);
                                 }}
-                                className="flex items-center justify-between p-2.5 rounded-lg 
+                                className="flex items-center justify-between p-2 rounded-lg 
                                   hover:bg-gray-50 transition-all group"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -409,19 +398,19 @@ export default function MobileNavBar() {
                 </div>
 
                 {/* Contact Info */}
-                <div className="px-5 mt-6 pb-6">
+                <div className="px-4 mt-5 pb-5">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
                     İletişim
                   </p>
                   <div className="space-y-2">
                     <a 
                       href={`tel:${phoneHref}`}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all"
+                      className="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all"
                     >
                       <Phone size={18} className="text-gray-500" />
                       <span className="text-sm text-gray-700">{phone}</span>
                     </a>
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50">
+                    <div className="flex items-start gap-3 p-2.5 rounded-xl bg-gray-50">
                       <svg className="w-[18px] h-[18px] text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
