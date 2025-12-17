@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { supabaseServer as supabase } from '@/lib/supabase/server-client';
 import { hashOtpCode, isOtpCode, normalizeEmail, OTP_MAX_ATTEMPTS } from '@/lib/auth/otp';
 
@@ -10,15 +9,10 @@ export async function POST(request: NextRequest) {
     const otpId = String(body?.otpId || '').trim();
     const email = normalizeEmail(body?.email);
     const code = String(body?.code || '').trim();
-    const newPassword = String(body?.newPassword || '');
 
     // Validate inputs
     if (!otpId || !email || !isOtpCode(code)) {
       return NextResponse.json({ error: 'Geçersiz doğrulama bilgisi.' }, { status: 400 });
-    }
-
-    if (!newPassword || newPassword.length < 6) {
-      return NextResponse.json({ error: 'Yeni şifre en az 6 karakter olmalıdır.' }, { status: 400 });
     }
 
     // Get OTP record
@@ -65,46 +59,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Doğrulama kodu hatalı.' }, { status: 401 });
     }
 
-    // Mark OTP as consumed
-    await sb
-      .from('customer_email_otps')
-      .update({ consumed_at: new Date().toISOString() })
-      .eq('id', otpId);
-
-    // Get customer
-    const { data: customer, error: customerError } = await supabase
-      .from('customers')
-      .select('id, email')
-      .eq('email', email)
-      .single();
-
-    if (customerError || !customer) {
-      return NextResponse.json({ error: 'Müşteri bulunamadı.' }, { status: 404 });
-    }
-
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update password in database
-    const { error: updateError } = await supabase
-      .from('customers')
-      .update({ 
-        password: hashedPassword,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', (customer as any).id);
-
-    if (updateError) {
-      console.error('Error updating password:', updateError);
-      return NextResponse.json({ error: 'Şifre güncellenemedi.' }, { status: 500 });
-    }
-
+    // OTP is valid - don't consume it yet, just confirm it's correct
     return NextResponse.json({ 
       success: true,
-      message: 'Şifreniz başarıyla güncellendi. Şimdi yeni şifrenizle giriş yapabilirsiniz.' 
+      message: 'Kod doğrulandı.' 
     });
   } catch (error) {
-    console.error('Error verifying password reset OTP:', error);
-    return NextResponse.json({ error: 'Şifre sıfırlama doğrulaması yapılamadı.' }, { status: 500 });
+    console.error('Error validating password reset OTP:', error);
+    return NextResponse.json({ error: 'Doğrulama yapılamadı.' }, { status: 500 });
   }
 }

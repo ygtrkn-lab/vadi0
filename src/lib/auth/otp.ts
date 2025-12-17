@@ -5,7 +5,7 @@ export const OTP_TTL_MINUTES = 10;
 export const OTP_MAX_ATTEMPTS = 5;
 export const OTP_RESEND_COOLDOWN_SECONDS = 30;
 
-export type OtpPurpose = 'login' | 'register';
+export type OtpPurpose = 'login' | 'register' | 'password-reset';
 
 export function normalizeEmail(email: string): string {
   return String(email || '').trim().toLowerCase();

@@ -226,6 +226,9 @@ interface CustomerContextType {
   // Profile update
   updateProfile: (customerId: string, data: { name?: string; phone?: string; email?: string }) => Promise<{ success: boolean; error?: string }>;
   changePassword: (customerId: string, currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  // Password reset
+  forgotPassword: (email: string) => Promise<{ success: boolean; error?: string; otpId?: string; email?: string }>;
+  verifyPasswordResetOtp: (args: { otpId: string; email: string; code: string; newPassword: string }) => Promise<{ success: boolean; error?: string }>;
 }
 
 interface RegisterData {
@@ -1153,6 +1156,66 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const forgotPassword = async (email: string): Promise<{ success: boolean; error?: string; otpId?: string; email?: string }> => {
+    if (!email || !email.includes('@')) {
+      return { success: false, error: 'Geçerli bir e-posta adresi giriniz.' };
+    }
+
+    try {
+      const response = await fetch('/api/customers/password-reset/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: result.error || 'Şifre sıfırlama işlemi başlatılamadı.' };
+      }
+
+      return {
+        success: true,
+        otpId: result.otpId,
+        email: result.email,
+      };
+    } catch (error) {
+      console.error('Error starting password reset:', error);
+      return { success: false, error: 'Şifre sıfırlama işlemi başlatılırken hata oluştu.' };
+    }
+  };
+
+  const verifyPasswordResetOtp = async (args: { otpId: string; email: string; code: string; newPassword: string }): Promise<{ success: boolean; error?: string }> => {
+    const { otpId, email, code, newPassword } = args;
+
+    if (!otpId || !email || !code || !newPassword) {
+      return { success: false, error: 'Tüm alanları doldurunuz.' };
+    }
+
+    if (newPassword.length < 6) {
+      return { success: false, error: 'Yeni şifre en az 6 karakter olmalıdır.' };
+    }
+
+    try {
+      const response = await fetch('/api/customers/password-reset/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ otpId, email, code, newPassword }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: result.error || 'Doğrulama başarısız.' };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error verifying password reset:', error);
+      return { success: false, error: 'Doğrulama işlemi sırasında hata oluştu.' };
+    }
+  };
+
   return (
     <CustomerContext.Provider
       value={{
@@ -1180,6 +1243,8 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         isFavorite,
         updateProfile,
         changePassword,
+        forgotPassword,
+        verifyPasswordResetOtp,
       }}
     >
       {children}

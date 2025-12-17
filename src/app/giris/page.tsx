@@ -54,13 +54,21 @@ function GirisContent() {
   const [rememberMe, setRememberMe] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [otpStep, setOtpStep] = useState(false);
-  const [otpPurpose, setOtpPurpose] = useState<'login' | 'register'>('login');
+  const [otpPurpose, setOtpPurpose] = useState<'login' | 'register' | 'password-reset'>('login');
   const [otpId, setOtpId] = useState('');
   const [otpEmail, setOtpEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
+  // Password reset states
+  const [showPasswordResetModal, setShowPasswordResetModal] = useState(false);
+  const [passwordResetStep, setPasswordResetStep] = useState<1 | 2>(1);
+  const [resetEmail, setResetEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [otpVerified, setOtpVerified] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, loginWithGoogle, register, verifyLoginOtp, verifyRegisterOtp, state: customerState } = useCustomer();
+  const { login, loginWithGoogle, register, verifyLoginOtp, verifyRegisterOtp, forgotPassword, verifyPasswordResetOtp, state: customerState } = useCustomer();
 
   const didAutoRedirectRef = useRef(false);
 
@@ -75,6 +83,21 @@ function GirisContent() {
     setOtpId('');
     setOtpEmail('');
     setOtpCode('');
+  };
+
+  const resetPasswordResetFlow = () => {
+    setShowPasswordResetModal(false);
+    setPasswordResetStep(1);
+    setResetEmail('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setPasswordStrength(0);
+    setOtpId('');
+    setOtpEmail('');
+    setOtpCode('');
+    setOtpVerified(false);
+    setError('');
+    setSuccess('');
   };
 
   // Telefon numarası formatlama fonksiyonu
@@ -98,6 +121,133 @@ function GirisContent() {
     // Türkiye cep telefonu: 5 ile başlamalı ve 10 haneli olmalı
     const phoneRegex = /^5[0-9]{9}$/;
     return phoneRegex.test(phone);
+  };
+
+  const calculatePasswordStrength = (password: string): number => {
+    let strength = 0;
+    if (password.length >= 6) strength += 25;
+    if (password.length >= 8) strength += 25;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength += 25;
+    if (/[0-9]/.test(password)) strength += 15;
+    if (/[^a-zA-Z0-9]/.test(password)) strength += 10;
+    return Math.min(strength, 100);
+  };
+
+  const handleNewPasswordChange = (value: string) => {
+    setNewPassword(value);
+    setPasswordStrength(calculatePasswordStrength(value));
+  };
+
+  const handleForgotPassword = () => {
+    setShowPasswordResetModal(true);
+    setPasswordResetStep(1);
+    setError('');
+    setSuccess('');
+  };
+
+  const handlePasswordResetEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setIsLoading(true);
+
+    try {
+      const result = await forgotPassword(resetEmail);
+      
+      if (result.success && result.otpId) {
+        setOtpId(result.otpId);
+        setOtpEmail(result.email || resetEmail);
+        setPasswordResetStep(2);
+        setSuccess('Şifre sıfırlama kodu e-posta adresinize gönderildi.');
+      } else {
+        setError(result.error || 'Şifre sıfırlama işlemi başlatılamadı.');
+      }
+    } catch (err) {
+      setError('Şifre sıfırlama işlemi sırasında bir hata oluştu.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasswordResetVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    // Eğer OTP henüz doğrulanmadıysa, önce OTP'yi gerçekten doğrula
+    if (!otpVerified) {
+      if (otpCode.length !== 6) {
+        setError('Lütfen 6 haneli kodu eksiksiz girin.');
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        // Sadece OTP doğrulaması için özel endpoint kullan
+        const response = await fetch('/api/customers/password-reset/validate-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            otpId,
+            email: otpEmail,
+            code: otpCode,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // OTP doğru
+          setOtpVerified(true);
+          setSuccess('Kod doğrulandı! Şimdi yeni şifrenizi belirleyin.');
+        } else {
+          // OTP hatalı
+          setError(result.error || 'Doğrulama kodu hatalı.');
+        }
+      } catch (err) {
+        setError('Doğrulama işlemi sırasında bir hata oluştu.');
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // OTP doğrulandıysa, şifre güncelleme
+    if (newPassword !== confirmNewPassword) {
+      setError('Şifreler eşleşmiyor.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Yeni şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const result = await verifyPasswordResetOtp({
+        otpId,
+        email: otpEmail,
+        code: otpCode,
+        newPassword,
+      });
+
+      if (result.success) {
+        setSuccess('Şifreniz başarıyla güncellendi. Giriş sayfasına yönlendiriliyorsunuz...');
+        setTimeout(() => {
+          resetPasswordResetFlow();
+          setActiveTab('login');
+        }, 2000);
+      } else {
+        setError(result.error || 'Şifre güncellenemedi.');
+      }
+    } catch (err) {
+      setError('Şifre güncelleme işlemi sırasında bir hata oluştu.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -638,7 +788,11 @@ function GirisContent() {
                     />
                     <span className="text-sm text-neutral-400">Beni hatırla</span>
                   </label>
-                  <button type="button" className="text-sm text-neutral-400 hover:text-white transition-colors">
+                  <button 
+                    type="button" 
+                    onClick={handleForgotPassword}
+                    className="text-sm text-neutral-400 hover:text-white transition-colors"
+                  >
                     Şifremi unuttum
                   </button>
                 </div>
@@ -905,6 +1059,231 @@ function GirisContent() {
           </p>
         </motion.div>
       </div>
+
+      {/* Password Reset Modal */}
+      <AnimatePresence>
+        {showPasswordResetModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={resetPasswordResetFlow}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-neutral-950 border border-neutral-800 rounded-2xl p-6 sm:p-8 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white">
+                  {passwordResetStep === 1 ? 'Şifremi Unuttum' : 'Yeni Şifre Belirle'}
+                </h2>
+                <button
+                  onClick={resetPasswordResetFlow}
+                  className="text-neutral-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              {success && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-4 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-sm"
+                >
+                  {success}
+                </motion.div>
+              )}
+
+              {passwordResetStep === 1 ? (
+                <form onSubmit={handlePasswordResetEmailSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">
+                      E-posta Adresiniz
+                    </label>
+                    <div className="relative">
+                      <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+                      <input
+                        type="email"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        placeholder="ornek@email.com"
+                        className="w-full pl-12 pr-4 py-3.5 bg-neutral-900 border border-neutral-800 rounded-xl 
+                          text-white placeholder:text-neutral-600
+                          focus:ring-2 focus:ring-white/20 focus:border-neutral-700 focus:bg-neutral-900
+                          transition-all duration-200"
+                        required
+                      />
+                    </div>
+                    <p className="mt-2 text-xs text-neutral-500">
+                      Kayıtlı e-posta adresinize şifre sıfırlama kodu göndereceğiz.
+                    </p>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3.5 bg-white text-black rounded-xl
+                      font-semibold hover:bg-neutral-200 transition-all duration-200
+                      disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Gönderiliyor...
+                      </span>
+                    ) : (
+                      'Kod Gönder'
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handlePasswordResetVerify} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">
+                      Doğrulama Kodu
+                    </label>
+                    <input
+                      type="text"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      placeholder="━━━━━━"
+                      maxLength={6}
+                      disabled={otpVerified}
+                      className="w-full px-4 py-3.5 bg-neutral-900 border border-neutral-800 rounded-xl 
+                        text-white text-center text-2xl tracking-[0.5em] placeholder:text-neutral-700
+                        focus:ring-2 focus:ring-white/20 focus:border-neutral-700 focus:bg-neutral-900
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        transition-all duration-200 font-mono"
+                      required
+                    />
+                    <p className="mt-2 text-xs text-neutral-500 text-center">
+                      E-posta adresinize gönderilen 6 haneli kodu girin
+                    </p>
+                  </div>
+
+                  {otpVerified && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-400 mb-2">
+                          Yeni Şifre
+                        </label>
+                        <div className="relative">
+                          <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+                          <input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => handleNewPasswordChange(e.target.value)}
+                            placeholder="En az 6 karakter"
+                            className="w-full pl-12 pr-4 py-3.5 bg-neutral-900 border border-neutral-800 rounded-xl 
+                              text-white placeholder:text-neutral-600
+                              focus:ring-2 focus:ring-white/20 focus:border-neutral-700 focus:bg-neutral-900
+                              transition-all duration-200"
+                            required
+                          />
+                        </div>
+                        {newPassword && (
+                          <div className="mt-2">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-neutral-500">Şifre Gücü</span>
+                              <span className="font-medium text-white">
+                                {passwordStrength >= 75 ? 'Güçlü' :
+                                 passwordStrength >= 50 ? 'Orta' :
+                                 'Zayıf'}
+                              </span>
+                            </div>
+                            <div className="w-full h-2 bg-neutral-800 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${passwordStrength}%` }}
+                                className="h-full bg-white"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-400 mb-2">
+                          Yeni Şifre (Tekrar)
+                        </label>
+                        <div className="relative">
+                          <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+                          <input
+                            type="password"
+                            value={confirmNewPassword}
+                            onChange={(e) => setConfirmNewPassword(e.target.value)}
+                            placeholder="Şifreyi tekrar girin"
+                            className="w-full pl-12 pr-4 py-3.5 bg-neutral-900 border border-neutral-800 rounded-xl 
+                              text-white placeholder:text-neutral-600
+                              focus:ring-2 focus:ring-white/20 focus:border-neutral-700 focus:bg-neutral-900
+                              transition-all duration-200"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3.5 bg-white text-black rounded-xl
+                      font-semibold hover:bg-neutral-200 transition-all duration-200
+                      disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        {otpVerified ? 'Şifre Güncelleniyor...' : 'Doğrulanıyor...'}
+                      </span>
+                    ) : (
+                      otpVerified ? 'Şifremi Güncelle' : 'Kodu Doğrula'
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasswordResetStep(1);
+                      setOtpCode('');
+                      setNewPassword('');
+                      setConfirmNewPassword('');
+                      setOtpVerified(false);
+                      setError('');
+                    }}
+                    className="w-full py-2 text-sm text-neutral-400 hover:text-white transition-colors"
+                  >
+                    ← Geri Dön
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
