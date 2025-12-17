@@ -124,7 +124,7 @@ export default function MobileNavBar() {
         className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
       >
         {/* Glassmorphism background */}
-        <div className="mx-4 mb-4 rounded-2xl overflow-hidden"
+        <div className="mx-4 mb-4 rounded-2xl overflow-hidden relative"
           style={{
             background: 'rgba(255, 255, 255, 0.85)',
             backdropFilter: 'blur(20px)',
@@ -134,6 +134,22 @@ export default function MobileNavBar() {
             paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)',
           }}
         >
+          {/* Animated gradient border */}
+          <motion.div 
+            className="absolute top-0 left-0 right-0 h-[1px]"
+            style={{
+              background: 'linear-gradient(90deg, transparent, #ec4899, #f472b6, #ec4899, transparent)',
+              backgroundSize: '200% 100%',
+            }}
+            animate={{
+              backgroundPosition: ['0% 0%', '200% 0%'],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          />
           <div className="flex items-center justify-around py-2 px-2">
             {navItems.map((item) => {
               if (item.action === 'search') {
