@@ -401,7 +401,7 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                   )}
                 </div>
 
-                {/* Delivery Selector - osevio style */}
+                {/* Delivery Selector - Mobile optimized */}
                 <div ref={deliverySectionRef} className="mb-6 pb-6 border-b border-gray-100 relative">
                   {/* Warning Tooltip */}
                   <AnimatePresence>

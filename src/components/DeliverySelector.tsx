@@ -352,63 +352,71 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
       {/* Date & Time Selector - Only show when location is selected */}
       {selectedLocation && (
         <div className="space-y-3">
-          {/* Date Selector - Scrollable - Tüm 7 gün */}
-          <div className="overflow-x-auto -mx-4 px-4 pb-1">
-            <div className="flex items-center gap-2 min-w-max">
-              {dates.map((date, index) => {
-                const isSelected = selectedDate?.toDateString() === date.toDateString();
-                return (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setSelectedDate(date);
-                    }}
-                    className={`flex flex-col items-center px-3 py-2 rounded-xl border-2 transition-all min-w-[70px] ${
-                      isSelected
-                        ? 'border-[#549658] bg-[#549658]/5'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <span className={`text-[10px] ${isSelected ? 'text-[#549658]' : 'text-gray-500'}`}>
-                      {formatDateShort(date)}
-                    </span>
-                    <span className={`text-xs font-semibold ${isSelected ? 'text-[#549658]' : 'text-gray-900'}`}>
-                      {getDayLabel(date)}
-                    </span>
-                  </button>
-                );
-              })}
+          {/* Date Selector - Scrollable - Mobile optimized with 4 visible items */}
+          <div>
+            <div className="relative overflow-hidden">
+              <div className="overflow-x-auto scrollbar-hide snap-scroll-container" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="flex items-center gap-1.5 sm:gap-2 px-0 pb-2 min-w-max">
+                  {dates.map((date, index) => {
+                    const isSelected = selectedDate?.toDateString() === date.toDateString();
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSelectedDate(date);
+                        }}
+                        className={`flex flex-col items-center px-2 sm:px-3 py-2 rounded-lg sm:rounded-xl border-2 transition-all min-w-[calc(25%-6px)] sm:min-w-[70px] flex-shrink-0 snap-scroll-item ${
+                          isSelected
+                            ? 'border-[#549658] bg-[#549658]/5'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className={`text-[9px] sm:text-[10px] ${isSelected ? 'text-[#549658]' : 'text-gray-500'}`}>
+                          {formatDateShort(date)}
+                        </span>
+                        <span className={`text-[11px] sm:text-xs font-semibold ${isSelected ? 'text-[#549658]' : 'text-gray-900'}`}>
+                          {getDayLabel(date)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
+            {/* Scroll hint for mobile */}
+            <div className="text-xs text-gray-400 text-center mt-1 sm:hidden">← Sağa kaydırın →</div>
           </div>
 
-          {/* Time Slots - Scrollable */}
+          {/* Time Slots - Scrollable - Mobile optimized */}
           {selectedDate && (
-            <div className="overflow-x-auto -mx-4 px-4 pb-1">
-              <div className="flex items-center gap-2 min-w-max">
-                {timeSlots.map((slot) => {
-                  const isSelected = selectedTimeSlot === slot.id;
-                  return (
-                    <button
-                      key={slot.id}
-                      onClick={() => {
-                        setSelectedTimeSlot(slot.id);
-                        // Close all overlays immediately
-                        setIsLocationOpen(false);
-                        setShowOtherCityWarning(false);
-                        if (typeof onOpenChange === 'function') onOpenChange(false);
-                        // Remove focus from possible active elements to avoid stuck focus
-                        try { (document.activeElement as HTMLElement | null)?.blur(); } catch {}
-                      }}
-                      className={`px-3 py-2 rounded-xl border-2 transition-all text-xs font-medium whitespace-nowrap ${
-                        isSelected
-                          ? 'border-[#549658] bg-[#549658] text-white'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }`}
-                    >
-                      {slot.label}
-                    </button>
-                  );
-                })}
+            <div>
+              <div className="relative overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <div className="flex items-center gap-1.5 sm:gap-2 px-0 pb-2 min-w-max">
+                  {timeSlots.map((slot) => {
+                    const isSelected = selectedTimeSlot === slot.id;
+                    return (
+                      <button
+                        key={slot.id}
+                        onClick={() => {
+                          setSelectedTimeSlot(slot.id);
+                          // Close all overlays immediately
+                          setIsLocationOpen(false);
+                          setShowOtherCityWarning(false);
+                          if (typeof onOpenChange === 'function') onOpenChange(false);
+                          // Remove focus from possible active elements to avoid stuck focus
+                          try { (document.activeElement as HTMLElement | null)?.blur(); } catch {}
+                        }}
+                        className={`px-2.5 sm:px-3 py-2 rounded-lg sm:rounded-xl border-2 transition-all text-[11px] sm:text-xs font-medium whitespace-nowrap flex-shrink-0 ${
+                          isSelected
+                            ? 'border-[#549658] bg-[#549658] text-white'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                        }`}
+                      >
+                        {slot.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
