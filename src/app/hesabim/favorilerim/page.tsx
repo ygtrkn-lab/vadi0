@@ -55,12 +55,13 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
 
 export default function FavorilerimPage() {
   const { state: customerState, removeFromFavorites } = useCustomer();
-  const { addToCart } = useCart();
+  const { addToCart, state: cartState } = useCart();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [removingId, setRemovingId] = useState<number | null>(null);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [addedToCart, setAddedToCart] = useState<Set<number>>(new Set());
 
   const customer = customerState.currentCustomer;
 
@@ -98,7 +99,22 @@ export default function FavorilerimPage() {
 
   const handleAddToCart = (product: any) => {
     addToCart(product);
+    setAddedToCart(prev => new Set(prev).add(product.id));
     setToastMessage(`${product.name} sepete eklendi!`);
+    
+    // 2 saniye sonra butonu eski haline döndür
+    setTimeout(() => {
+      setAddedToCart(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(product.id);
+        return newSet;
+      });
+    }, 2000);
+  };
+
+  // Check if product is in cart
+  const isInCart = (productId: number) => {
+    return cartState.items.some(item => item.id === productId) || addedToCart.has(productId);
   };
 
   const handleShare = async (product: any) => {
@@ -272,13 +288,25 @@ export default function FavorilerimPage() {
                             onClick={() => handleAddToCart(product)}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 
-                              bg-gradient-to-r from-[#e05a4c] to-[#d54a3c] text-white text-sm 
-                              font-medium rounded-xl shadow-lg shadow-[#e05a4c]/25 
-                              hover:shadow-xl hover:shadow-[#e05a4c]/30 transition-all"
+                            disabled={isInCart(product.id)}
+                            className={`w-full flex items-center justify-center gap-2 py-2.5 
+                              text-sm font-medium rounded-xl shadow-lg transition-all
+                              ${isInCart(product.id) 
+                                ? 'bg-green-500 text-white shadow-green-500/25' 
+                                : 'bg-gradient-to-r from-[#e05a4c] to-[#d54a3c] text-white shadow-[#e05a4c]/25 hover:shadow-xl hover:shadow-[#e05a4c]/30'
+                              }`}
                           >
-                            <HiOutlineShoppingCart className="w-4 h-4" />
-                            Sepete Ekle
+                            {isInCart(product.id) ? (
+                              <>
+                                <HiCheckCircle className="w-4 h-4" />
+                                Sepette
+                              </>
+                            ) : (
+                              <>
+                                <HiOutlineShoppingCart className="w-4 h-4" />
+                                Sepete Ekle
+                              </>
+                            )}
                           </motion.button>
                         </div>
                       </div>
@@ -353,11 +381,25 @@ export default function FavorilerimPage() {
                             <motion.button
                               onClick={() => handleAddToCart(product)}
                               whileTap={{ scale: 0.95 }}
-                              className="flex-1 flex items-center justify-center gap-1.5 py-2 
-                                bg-black text-white text-xs font-medium rounded-lg"
+                              disabled={isInCart(product.id)}
+                              className={`flex-1 flex items-center justify-center gap-1.5 py-2 
+                                text-xs font-medium rounded-lg transition-all
+                                ${isInCart(product.id) 
+                                  ? 'bg-green-500 text-white' 
+                                  : 'bg-black text-white'
+                                }`}
                             >
-                              <HiOutlineShoppingCart className="w-4 h-4" />
-                              Sepete Ekle
+                              {isInCart(product.id) ? (
+                                <>
+                                  <HiCheckCircle className="w-4 h-4" />
+                                  Sepette
+                                </>
+                              ) : (
+                                <>
+                                  <HiOutlineShoppingCart className="w-4 h-4" />
+                                  Sepete Ekle
+                                </>
+                              )}
                             </motion.button>
                             <button
                               onClick={() => handleRemoveFavorite(product.id)}
@@ -375,12 +417,25 @@ export default function FavorilerimPage() {
                             onClick={() => handleAddToCart(product)}
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r 
-                              from-[#e05a4c] to-[#d54a3c] text-white text-sm font-medium 
-                              rounded-xl shadow-lg shadow-[#e05a4c]/25"
+                            disabled={isInCart(product.id)}
+                            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium 
+                              rounded-xl shadow-lg transition-all
+                              ${isInCart(product.id)
+                                ? 'bg-green-500 text-white shadow-green-500/25'
+                                : 'bg-gradient-to-r from-[#e05a4c] to-[#d54a3c] text-white shadow-[#e05a4c]/25'
+                              }`}
                           >
-                            <HiOutlineShoppingCart className="w-5 h-5" />
-                            Sepete Ekle
+                            {isInCart(product.id) ? (
+                              <>
+                                <HiCheckCircle className="w-5 h-5" />
+                                Sepette
+                              </>
+                            ) : (
+                              <>
+                                <HiOutlineShoppingCart className="w-5 h-5" />
+                                Sepete Ekle
+                              </>
+                            )}
                           </motion.button>
                           <Link href={`/${product.slug}`}>
                             <motion.button
