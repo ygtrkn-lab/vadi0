@@ -437,6 +437,11 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
                   const lastDay = new Date(year, month + 1, 0);
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
+                  
+                  // Maksimum seçilebilir tarih: bugünden 7 gün sonra
+                  const maxDate = new Date(today);
+                  maxDate.setDate(today.getDate() + 7);
+                  maxDate.setHours(0, 0, 0, 0);
 
                   // Get the day of week (0 = Sunday, we need Monday as 0)
                   let startDay = firstDay.getDay() - 1;
@@ -453,23 +458,29 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
                   for (let day = 1; day <= lastDay.getDate(); day++) {
                     const date = new Date(year, month, day);
                     date.setHours(0, 0, 0, 0);
-                    const isPast = date <= today;
+                    
+                    // Bugün ve daha önceki günler seçilemez
+                    const isPastOrToday = date <= today;
+                    // 7 günden sonrası seçilemez
+                    const isBeyondMaxDate = date > maxDate;
+                    // Genel olarak disabled mi
+                    const isDisabled = isPastOrToday || isBeyondMaxDate;
                     const isSelected = selectedDate?.toDateString() === date.toDateString();
 
                     days.push(
                       <button
                         key={day}
                         onClick={() => {
-                          if (!isPast) {
+                          if (!isDisabled) {
                             setSelectedDate(date);
                             setIsCalendarOpen(false);
                           }
                         }}
-                        disabled={isPast}
+                        disabled={isDisabled}
                         className={`p-2 text-xs rounded-lg transition-all ${
                           isSelected
                             ? 'bg-[#549658] text-white font-semibold'
-                            : isPast
+                            : isDisabled
                               ? 'text-gray-300 cursor-not-allowed'
                               : 'text-gray-700 hover:bg-[#e05a4c]/10'
                         }`}
