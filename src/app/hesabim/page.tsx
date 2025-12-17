@@ -130,14 +130,15 @@ export default function HesabimPage() {
     <div className="space-y-6">
       {/* Welcome Banner - Mobile Only */}
       <FadeIn className="lg:hidden">
-        <div className="relative overflow-hidden rounded-2xl bg-black p-5">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-black/40 to-black/60 backdrop-blur-2xl p-6 border border-white/10 shadow-2xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDUiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
           <div className="relative z-10">
-            <div className="flex items-center gap-2 text-white/90 text-sm">
+            <div className="flex items-center gap-2 text-white/90 text-sm font-medium">
               <span>Hoş geldin</span>
               <HiOutlineSparkles className="w-4 h-4" />
             </div>
-            <h2 className="text-xl font-bold mt-1 text-white">{customer.name.split(' ')[0]}</h2>
+            <h2 className="text-2xl font-bold mt-2 text-white drop-shadow-lg">{customer.name.split(' ')[0]}</h2>
             <p className="text-white/80 text-sm mt-2">
               Bugün nasıl yardımcı olabiliriz?
             </p>
@@ -147,9 +148,10 @@ export default function HesabimPage() {
 
       {/* Desktop Welcome */}
       <FadeIn className="hidden lg:block">
-        <div className="relative overflow-hidden rounded-3xl bg-black p-8">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30" />
-          <Ripple mainCircleSize={200} color="rgba(255,255,255,0.1)" numCircles={5} />
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-black/40 to-black/60 backdrop-blur-3xl p-8 border border-white/10 shadow-2xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMDUiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
+          <Ripple mainCircleSize={200} color="rgba(255,255,255,0.08)" numCircles={5} />
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <div className="flex items-center gap-2 text-white/90 mb-1 text-sm">
@@ -188,44 +190,56 @@ export default function HesabimPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         {stats.map((stat, index) => (
           <FadeIn key={stat.label} delay={index * 0.1}>
+            <motion.div
+              whileHover={{ scale: 1.03, y: -4 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
             <SpotlightCard 
               spotlightColor={stat.spotlightColor}
-              className={`p-4 lg:p-5 bg-white border-2 ${stat.borderColor} hover:shadow-lg transition-all`}
+              className={`p-5 lg:p-6 bg-white/60 backdrop-blur-xl border border-white/20 hover:bg-white/80 hover:border-white/30 transition-all duration-300 shadow-lg hover:shadow-xl will-change-transform`}
             >
-              <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl ${stat.bgColor} 
-                flex items-center justify-center mb-3 shadow-sm`}
+              <motion.div 
+                className={`w-12 h-12 lg:w-14 lg:h-14 rounded-2xl bg-gradient-to-br from-black/5 to-black/10 backdrop-blur-sm 
+                flex items-center justify-center mb-3 shadow-sm border border-black/5`}
+                whileHover={{ rotate: [0, -10, 10, 0] }}
+                transition={{ duration: 0.5 }}
               >
                 <stat.icon className={`w-5 h-5 lg:w-6 lg:h-6 ${stat.textColor}`} />
-              </div>
+              </motion.div>
               <p className="text-xl lg:text-2xl font-bold text-gray-900">
                 {stat.prefix && <span>{stat.prefix}</span>}
                 <AnimatedCounter value={stat.value} />
               </p>
               <p className="text-xs lg:text-sm text-gray-500 mt-0.5">{stat.label}</p>
             </SpotlightCard>
+            </motion.div>
           </FadeIn>
         ))}
       </div>
 
       {/* Quick Actions */}
       <FadeIn delay={0.3}>
-        <SpotlightCard className="p-4 lg:p-6 bg-white border border-gray-200">
-          <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <SpotlightCard className="p-5 lg:p-7 bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg">
+          <h2 className="text-base lg:text-lg font-semibold text-gray-900 mb-5 flex items-center gap-2">
             <span className="text-xl">⚡</span> Hızlı Erişim
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {quickActions.map((action, index) => (
               <Link key={action.href} href={action.href}>
                 <motion.div
-                  whileHover={{ scale: 1.02, y: -2 }}
+                  whileHover={{ scale: 1.02, y: -4 }}
                   whileTap={{ scale: 0.98 }}
-                  className="flex flex-col items-center p-4 rounded-xl border-2 border-gray-200 bg-white hover:border-gray-900 hover:shadow-md
-                    transition-all cursor-pointer group text-center"
+                  className="flex flex-col items-center p-5 rounded-2xl bg-white/70 backdrop-blur-lg border border-white/30 hover:bg-white/90 hover:border-white/50 hover:shadow-xl
+                    transition-all duration-300 cursor-pointer group text-center"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gray-900
-                    flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                  <motion.div 
+                    className="w-12 h-12 rounded-xl bg-gray-900
+                    flex items-center justify-center mb-2 group-hover:scale-110 transition-transform"
+                    whileHover={{ rotate: [0, -5, 5, 0] }}
+                    transition={{ duration: 0.3 }}
+                  >
                     <action.icon className="w-6 h-6 text-white" />
-                  </div>
+                  </motion.div>
                   <span className="font-medium text-gray-900 text-sm lg:text-base">
                     {action.label}
                   </span>
@@ -241,8 +255,8 @@ export default function HesabimPage() {
 
       {/* Recent Orders */}
       <FadeIn delay={0.4}>
-        <SpotlightCard className="shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between p-4 lg:p-6 border-b border-gray-100">
+        <SpotlightCard className="bg-white/60 backdrop-blur-xl border border-white/20 shadow-lg overflow-hidden">
+          <div className="flex items-center justify-between p-5 lg:p-7 border-b border-white/30 bg-gradient-to-r from-white/40 to-transparent">
             <h2 className="text-base lg:text-lg font-semibold text-gray-800 flex items-center gap-2">
               <HiOutlineShoppingBag className="w-6 h-6 text-gray-600" />
               <span>Son Siparişlerim</span>
@@ -260,17 +274,22 @@ export default function HesabimPage() {
               {customerOrders.slice(0, 3).map((order, index) => (
                 <motion.div
                   key={order.id}
-                  initial={{ opacity: 0, x: -10 }}
+                  initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                  className="p-4 hover:bg-gray-50 transition-colors"
+                  transition={{ delay: 0.5 + index * 0.1, type: "spring", stiffness: 100 }}
+                  whileHover={{ x: 4, backgroundColor: "rgba(255,255,255,0.8)" }}
+                  className="p-4 hover:backdrop-blur-sm transition-all duration-300 will-change-transform"
                 >
                   <div className="flex items-center gap-4">
                     {/* Status Icon */}
-                    <div className="w-12 h-12 rounded-xl bg-gray-100
-                      flex items-center justify-center shrink-0">
+                    <motion.div 
+                      className="w-12 h-12 rounded-xl bg-gray-100
+                      flex items-center justify-center shrink-0"
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                    >
                       {React.createElement(getStatusIcon(order.status), { className: 'w-6 h-6 text-gray-900' })}
-                    </div>
+                    </motion.div>
                     
                     {/* Order Info */}
                     <div className="flex-1 min-w-0">
@@ -299,10 +318,14 @@ export default function HesabimPage() {
             </div>
           ) : (
             <div className="p-8 lg:p-12 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl 
-                flex items-center justify-center mx-auto mb-4 text-4xl">
+              <motion.div 
+                className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-50 rounded-3xl 
+                flex items-center justify-center mx-auto mb-4 text-4xl"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              >
                 🌷
-              </div>
+              </motion.div>
               <p className="text-gray-600 font-medium mb-1">Henüz siparişin yok</p>
               <p className="text-gray-400 text-sm mb-6">İlk siparişini ver, çiçeklerle tanış!</p>
               <Link href="/kategoriler">
@@ -324,9 +347,10 @@ export default function HesabimPage() {
 
       {/* Membership Info */}
       <FadeIn delay={0.5}>
-        <div className="relative overflow-hidden rounded-2xl bg-gray-900 p-5 lg:p-6">
-          <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute left-0 bottom-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gray-900/60 to-black/70 backdrop-blur-2xl p-6 lg:p-7 border border-white/10 shadow-2xl">
+          <div className="absolute right-0 top-0 w-40 h-40 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute left-0 bottom-0 w-32 h-32 bg-white/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent" />
           
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
@@ -367,7 +391,7 @@ export default function HesabimPage() {
       <FadeIn delay={0.6}>
         <SpotlightCard 
           spotlightColor="rgba(147, 51, 234, 0.1)"
-          className="p-4 lg:p-5 bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-200"
+          className="p-5 lg:p-6 bg-gradient-to-r from-violet-500/10 to-purple-500/10 backdrop-blur-xl border border-violet-300/30 shadow-lg"
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600
@@ -379,12 +403,18 @@ export default function HesabimPage() {
               <p className="text-sm text-gray-600">Arkadaşın ilk alışverişinde ikınıze de %15 indirim!</p>
             </div>
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, boxShadow: "0 10px 30px rgba(139, 92, 246, 0.3)" }}
               whileTap={{ scale: 0.95 }}
               className="px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-medium rounded-xl 
-                hover:shadow-lg transition-all shrink-0"
+                hover:shadow-lg transition-all shrink-0 relative overflow-hidden group"
             >
-              Davet Et
+              <span className="relative z-10">Davet Et</span>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                initial={{ x: "-100%" }}
+                whileHover={{ x: "100%" }}
+                transition={{ duration: 0.5 }}
+              />
             </motion.button>
           </div>
         </SpotlightCard>

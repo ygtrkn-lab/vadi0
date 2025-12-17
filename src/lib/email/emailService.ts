@@ -81,9 +81,11 @@ export class EmailService {
    */
   private static getTransporter(): Transporter {
     if (this.transporter) {
+      console.log('♻️ Using cached transporter');
       return this.transporter;
     }
 
+    console.log('🔧 Creating new email transporter');
     const port = parseInt(process.env.SMTP_PORT || '465');
     const secure = typeof process.env.SMTP_SECURE === 'string'
       ? process.env.SMTP_SECURE === 'true'
@@ -96,6 +98,16 @@ export class EmailService {
       user: process.env.SMTP_USER || '',
       password: process.env.SMTP_PASSWORD || '',
     };
+
+    console.log('📧 Transporter config:', {
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      hasUser: !!config.user,
+      hasPassword: !!config.password,
+      userLength: config.user.length,
+      passwordLength: config.password.length
+    });
 
     this.transporter = nodemailer.createTransport({
       host: config.host,
@@ -112,6 +124,7 @@ export class EmailService {
       logger: process.env.SMTP_DEBUG === 'true'
     });
 
+    console.log('✅ Transporter created');
     return this.transporter;
   }
 
@@ -123,7 +136,15 @@ export class EmailService {
       const transporter = this.getTransporter();
       const from = process.env.SMTP_USER || 'bilgi@vadiler.com';
 
-      await transporter.sendMail({
+      console.log('📧 Attempting to send email to:', options.to);
+      console.log('📧 SMTP Config:', {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: process.env.SMTP_USER,
+        secure: process.env.SMTP_SECURE
+      });
+
+      const result = await transporter.sendMail({
         from: `Vadiler Çiçekçilik <${from}>`,
         to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
         subject: options.subject,
@@ -131,9 +152,14 @@ export class EmailService {
         text: options.text,
       });
 
+      console.log('✅ Email sent successfully:', result.messageId);
       return true;
     } catch (error) {
-      console.error('Email sending error:', error);
+      console.error('❌ Email sending error:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
       return false;
     }
   }
