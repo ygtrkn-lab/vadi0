@@ -114,7 +114,7 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Mobile Header - App Style */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="flex items-center justify-between px-4 h-14">
@@ -151,7 +151,7 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
               >
                 <HiOutlineHeart className="w-6 h-6 text-gray-700" />
                 {customer.favorites && customer.favorites.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-[#e05a4c] rounded-full 
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-black rounded-full 
                     flex items-center justify-center text-white text-[10px] font-bold">
                     {customer.favorites.length}
                   </span>
@@ -163,8 +163,8 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
             <Link href="/hesabim">
               <motion.div
                 whileTap={{ scale: 0.95 }}
-                className="w-8 h-8 bg-gradient-to-br from-[#e05a4c] to-[#c94a3c] rounded-full 
-                  flex items-center justify-center text-white text-sm font-bold shadow-md"
+                className="w-8 h-8 bg-black rounded-full 
+                  flex items-center justify-center text-white text-sm font-bold"
               >
                 {customer.name.charAt(0).toUpperCase()}
               </motion.div>
@@ -181,9 +181,9 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
       >
         <div className="px-6 py-4 pb-8">
           {/* User Info */}
-          <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-[#e05a4c]/5 to-[#c94a3c]/5 rounded-2xl mb-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-[#e05a4c] to-[#c94a3c] rounded-2xl 
-              flex items-center justify-center text-white text-xl font-bold shadow-lg">
+          <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl mb-4 border-2 border-gray-200">
+            <div className="w-14 h-14 bg-black rounded-2xl 
+              flex items-center justify-center text-white text-xl font-bold">
               {customer.name.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -205,7 +205,7 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
                     transition={{ delay: index * 0.05 }}
                     className={`flex items-center gap-4 p-4 rounded-2xl transition-all
                       ${active 
-                        ? 'bg-gradient-to-r from-[#e05a4c] to-[#c94a3c] text-white shadow-lg' 
+                        ? 'bg-black text-white shadow-lg' 
                         : 'hover:bg-gray-50'
                       }`}
                   >
@@ -229,18 +229,18 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
           <motion.button
             whileTap={{ scale: 0.98 }}
             onClick={handleLogout}
-            className="w-full flex items-center gap-4 p-4 mt-4 rounded-2xl text-red-500 
-              hover:bg-red-50 transition-colors"
+            className="w-full flex items-center gap-4 p-4 mt-4 rounded-2xl text-black 
+              hover:bg-gray-100 transition-colors"
           >
             <HiOutlineLogout className="w-6 h-6" />
             <span className="font-medium">Çıkış Yap</span>
           </motion.button>
 
           {/* Help Card */}
-          <div className="mt-6 p-4 bg-gradient-to-br from-[#549658]/10 to-[#549658]/5 rounded-2xl">
-            <p className="text-sm text-gray-600 mb-2 flex items-center gap-2">
-              <HiOutlineSparkles className="w-4 h-4 text-[#549658]" />
-              <span>Yardım için: <a href="tel:08503074876" className="font-semibold text-[#549658] hover:underline">0850 307 4876</a></span>
+          <div className="mt-6 p-4 bg-gray-50 rounded-2xl border-2 border-gray-200">
+            <p className="text-sm text-gray-700 mb-2 flex items-center gap-2">
+              <HiOutlineSparkles className="w-4 h-4 text-gray-900" />
+              <span>Yardım için: <a href="tel:08503074876" className="font-semibold text-gray-900 hover:underline">0850 307 4876</a></span>
             </p>
           </div>
         </div>
@@ -249,20 +249,17 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
       {/* Desktop Layout */}
       <div className="hidden lg:flex min-h-screen">
         {/* Desktop Sidebar */}
-        <aside className="w-72 flex-shrink-0 p-6 border-r border-gray-100 bg-white/50">
+        <aside className="w-72 flex-shrink-0 p-6 border-r border-gray-200 bg-white">
           <FadeIn>
             {/* Logo & User */}
             <div className="mb-8">
               <Link href="/" className="block mb-6">
-                <span className="text-2xl font-bold bg-gradient-to-r from-[#e05a4c] to-[#c94a3c] 
-                  bg-clip-text text-transparent">
-                  Vadiler
-                </span>
+                <img src="/logo.png" alt="Vadiler" className="h-8 w-auto" />
               </Link>
               
-              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-[#e05a4c]/5 to-[#c94a3c]/5 rounded-2xl">
-                <div className="w-12 h-12 bg-gradient-to-br from-[#e05a4c] to-[#c94a3c] rounded-xl 
-                  flex items-center justify-center text-white text-lg font-bold shadow-lg shadow-[#e05a4c]/25">
+              <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border-2 border-gray-200">
+                <div className="w-12 h-12 bg-black rounded-xl 
+                  flex items-center justify-center text-white text-lg font-bold">
                   {customer.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -285,7 +282,7 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
                       whileTap={{ scale: 0.98 }}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
                         ${active 
-                          ? 'bg-gradient-to-r from-[#e05a4c] to-[#c94a3c] text-white shadow-lg shadow-[#e05a4c]/25' 
+                          ? 'bg-black text-white' 
                           : 'text-gray-600 hover:bg-gray-50'
                         }`}
                     >
@@ -309,18 +306,18 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
               whileTap={{ scale: 0.98 }}
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 mt-4 rounded-xl
-                text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all"
+                text-gray-600 hover:bg-gray-100 hover:text-black transition-all"
             >
               <HiOutlineLogout className="w-5 h-5" />
               <span className="font-medium">Çıkış Yap</span>
             </motion.button>
 
             {/* Help Card */}
-            <div className="mt-8 p-4 bg-gradient-to-br from-[#549658]/10 to-[#549658]/5 rounded-2xl border border-[#549658]/10">
-              <HiOutlineSparkles className="w-8 h-8 text-[#549658] mb-2" />
-              <p className="font-medium text-gray-800 mb-1">Yardım mı lazım?</p>
+            <div className="mt-8 p-4 bg-gray-50 rounded-2xl border-2 border-gray-200">
+              <HiOutlineSparkles className="w-8 h-8 text-gray-900 mb-2" />
+              <p className="font-medium text-gray-900 mb-1">Yardım mı lazım?</p>
               <p className="text-sm text-gray-600 mb-2">7/24 destek hattı</p>
-              <a href="tel:08503074876" className="text-sm font-semibold text-[#549658] hover:underline flex items-center gap-1">
+              <a href="tel:08503074876" className="text-sm font-semibold text-gray-900 hover:underline flex items-center gap-1">
                 <HiOutlinePhone className="w-4 h-4" />
                 <span>0850 307 4876</span>
               </a>
@@ -376,21 +373,21 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
                   className="flex flex-col items-center py-1"
                 >
                   <div className={`relative p-2 rounded-xl transition-all duration-200
-                    ${active ? 'bg-[#e05a4c]/10' : ''}`}
+                    ${active ? 'bg-black/10' : ''}`}
                   >
                     <Icon className={`w-6 h-6 transition-colors duration-200
-                      ${active ? 'text-[#e05a4c]' : 'text-gray-400'}`} 
+                      ${active ? 'text-black' : 'text-gray-400'}`} 
                     />
                     {active && (
                       <motion.div
                         layoutId="nav-indicator"
                         className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 
-                          bg-[#e05a4c] rounded-full"
+                          bg-black rounded-full"
                       />
                     )}
                   </div>
                   <span className={`text-[10px] font-medium mt-0.5 transition-colors duration-200
-                    ${active ? 'text-[#e05a4c]' : 'text-gray-400'}`}
+                    ${active ? 'text-black' : 'text-gray-400'}`}
                   >
                     {item.label.split(' ')[0]}
                   </span>

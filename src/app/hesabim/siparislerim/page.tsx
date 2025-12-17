@@ -194,14 +194,14 @@ export default function SiparislerimPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-amber-100 text-amber-700';
-      case 'pending_payment': return 'bg-amber-100 text-amber-700';
-      case 'confirmed': return 'bg-blue-100 text-blue-700';
-      case 'processing': return 'bg-indigo-100 text-indigo-700';
-      case 'shipped': return 'bg-purple-100 text-purple-700';
-      case 'delivered': return 'bg-emerald-100 text-emerald-700';
-      case 'cancelled': return 'bg-red-100 text-red-700';
-      case 'payment_failed': return 'bg-red-100 text-red-700';
+      case 'pending': return 'bg-gray-100 text-gray-700';
+      case 'pending_payment': return 'bg-gray-100 text-gray-700';
+      case 'confirmed': return 'bg-gray-200 text-gray-800';
+      case 'processing': return 'bg-gray-300 text-gray-900';
+      case 'shipped': return 'bg-gray-400 text-white';
+      case 'delivered': return 'bg-gray-800 text-white';
+      case 'cancelled': return 'bg-gray-500 text-white';
+      case 'payment_failed': return 'bg-gray-500 text-white';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -275,10 +275,10 @@ export default function SiparislerimPage() {
         <FadeIn direction="down">
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-4 scrollbar-hide">
             {[
-              { label: 'Toplam', value: orderCounts.all, icon: HiOutlineShoppingBag, color: 'from-slate-500 to-slate-600' },
-              { label: 'Hazırlanan', value: orderCounts.processing, icon: HiOutlineGift, color: 'from-indigo-500 to-indigo-600' },
-              { label: 'Kargoda', value: orderCounts.shipped, icon: HiOutlineTruck, color: 'from-purple-500 to-purple-600' },
-              { label: 'Tamamlanan', value: orderCounts.delivered, icon: HiOutlineCheckCircle, color: 'from-emerald-500 to-emerald-600' },
+              { label: 'Toplam', value: orderCounts.all, icon: HiOutlineShoppingBag, color: 'from-gray-800 to-gray-900' },
+              { label: 'Hazırlanan', value: orderCounts.processing, icon: HiOutlineGift, color: 'from-gray-700 to-gray-800' },
+              { label: 'Kargoda', value: orderCounts.shipped, icon: HiOutlineTruck, color: 'from-gray-600 to-gray-700' },
+              { label: 'Tamamlanan', value: orderCounts.delivered, icon: HiOutlineCheckCircle, color: 'from-gray-500 to-gray-600' },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -311,7 +311,7 @@ export default function SiparislerimPage() {
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium 
                   transition-all duration-300 ${
                   filter === option.value
-                    ? 'bg-[#e05a4c] text-white shadow-lg shadow-[#e05a4c]/25'
+                    ? 'bg-black text-white shadow-lg shadow-black/25'
                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                 }`}
               >
@@ -391,16 +391,16 @@ export default function SiparislerimPage() {
                                     <motion.div 
                                       className={`w-8 h-8 rounded-full flex items-center justify-center text-sm
                                         ${isCompleted 
-                                          ? 'bg-[#e05a4c] text-white' 
+                                          ? 'bg-black text-white' 
                                           : 'bg-gray-100 text-gray-400'
-                                        } ${isCurrent ? 'ring-2 ring-[#e05a4c]/30' : ''}`}
+                                        } ${isCurrent ? 'ring-2 ring-black/30' : ''}`}
                                       animate={isCurrent ? { scale: [1, 1.1, 1] } : {}}
                                       transition={{ repeat: Infinity, duration: 2 }}
                                     >
                                       <step.icon className="w-4 h-4" />
                                     </motion.div>
                                     {i < timelineSteps.length - 1 && (
-                                      <div className={`h-0.5 w-full mt-4 ${isCompleted ? 'bg-[#e05a4c]' : 'bg-gray-200'}`} />
+                                      <div className={`h-0.5 w-full mt-4 ${isCompleted ? 'bg-black' : 'bg-gray-200'}`} />
                                     )}
                                   </div>
                                 );
@@ -430,7 +430,7 @@ export default function SiparislerimPage() {
                                   </div>
                                 )}
                                 {product.quantity > 1 && (
-                                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#e05a4c] text-white 
+                                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-black text-white 
                                     text-[9px] rounded-full flex items-center justify-center font-bold">
                                     {product.quantity}
                                   </span>
@@ -469,8 +469,8 @@ export default function SiparislerimPage() {
 
                         {/* Mesaj Kartı */}
                         {order.message?.content && (
-                          <div className="p-2 bg-pink-50 rounded-xl mb-3">
-                            <p className="text-xs font-medium text-pink-600 flex items-center gap-1">
+                          <div className="p-2 bg-gray-100 rounded-xl mb-3">
+                            <p className="text-xs font-medium text-gray-800 flex items-center gap-1">
                               <HiOutlineMail className="w-3.5 h-3.5" />
                               <span>Mesaj Kartı</span>
                             </p>
@@ -482,7 +482,7 @@ export default function SiparislerimPage() {
                         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                           <span className="text-xs text-gray-400">{order.products.length} ürün</span>
                           <motion.div 
-                            className="flex items-center gap-1 text-[#e05a4c] text-sm font-medium"
+                            className="flex items-center gap-1 text-black text-sm font-medium"
                             whileHover={{ x: 5 }}
                           >
                             Detayları Gör
@@ -806,7 +806,7 @@ function OrderDetailContent({
                 {(product.slug || product.productId) ? (
                   <Link 
                     href={`/${product.category || 'cicek'}/${product.slug || product.productId}`}
-                    className="font-medium text-gray-800 truncate block hover:text-[#e05a4c] transition-colors"
+                    className="font-medium text-gray-800 truncate block hover:text-black transition-colors"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {product.name}
@@ -821,7 +821,7 @@ function OrderDetailContent({
                 {(product.slug || product.productId) && (
                   <Link 
                     href={`/${product.category || 'cicek'}/${product.slug || product.productId}`}
-                    className="text-xs text-[#e05a4c] hover:underline"
+                    className="text-xs text-black hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
                     Ürüne Git →
@@ -841,8 +841,8 @@ function OrderDetailContent({
         </h4>
         <div className="bg-gray-50 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 bg-[#e05a4c]/10 rounded-lg flex items-center justify-center">
-              <HiOutlineLocationMarker className="w-5 h-5 text-[#e05a4c]" />
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+              <HiOutlineLocationMarker className="w-5 h-5 text-black" />
             </div>
             <div className="flex-1">
               <p className="font-semibold text-gray-800">{order.delivery.recipientName}</p>
@@ -850,7 +850,7 @@ function OrderDetailContent({
               <p className="text-sm text-gray-600">{order.delivery.district}, {order.delivery.province}</p>
               <a 
                 href={`tel:${order.delivery.recipientPhone.replace(/\s/g, '')}`}
-                className="inline-flex items-center gap-2 mt-2 text-sm text-[#e05a4c] hover:underline"
+                className="inline-flex items-center gap-2 mt-2 text-sm text-black hover:underline"
               >
                 <HiOutlinePhone className="w-4 h-4" />
                 {order.delivery.recipientPhone}
@@ -894,11 +894,11 @@ function OrderDetailContent({
                 <span
                   className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
                     order.payment.status === 'paid'
-                      ? 'bg-emerald-100 text-emerald-700'
+                      ? 'bg-gray-800 text-white'
                       : order.payment.status === 'failed'
-                        ? 'bg-red-100 text-red-700'
+                        ? 'bg-gray-500 text-white'
                         : order.payment.status === 'refunded'
-                          ? 'bg-amber-100 text-amber-700'
+                          ? 'bg-gray-300 text-gray-900'
                           : 'bg-gray-100 text-gray-700'
                   }`}
                 >
@@ -914,13 +914,13 @@ function OrderDetailContent({
             </div>
 
             {(order.payment.status === 'failed' || order.status === 'payment_failed') && (order.payment.errorMessage || order.payment.errorCode || order.payment.errorGroup) && (
-              <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-100">
-                <p className="text-xs font-semibold text-red-700">Ödeme Hatası</p>
+              <div className="mt-3 p-3 rounded-lg bg-gray-100 border border-gray-200">
+                <p className="text-xs font-semibold text-gray-800">Ödeme Hatası</p>
                 {order.payment.errorMessage && (
-                  <p className="text-sm text-red-700 mt-1 break-words">{order.payment.errorMessage}</p>
+                  <p className="text-sm text-gray-700 mt-1 break-words">{order.payment.errorMessage}</p>
                 )}
                 {(order.payment.errorCode || order.payment.errorGroup) && (
-                  <p className="text-xs text-red-600 mt-1 break-words">
+                  <p className="text-xs text-gray-600 mt-1 break-words">
                     {order.payment.errorCode ? `Kod: ${String(order.payment.errorCode)}` : ''}
                     {order.payment.errorCode && order.payment.errorGroup ? ' • ' : ''}
                     {order.payment.errorGroup ? `Grup: ${String(order.payment.errorGroup)}` : ''}

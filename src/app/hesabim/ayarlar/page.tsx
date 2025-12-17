@@ -137,7 +137,7 @@ export default function AyarlarPage() {
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm
                   transition-all duration-200 ${
                   activeTab === tab.id 
-                    ? 'bg-white text-[#e05a4c] shadow-sm' 
+                    ? 'bg-white text-black shadow-sm' 
                     : 'text-gray-600'
                 }`}
               >
@@ -170,8 +170,8 @@ export default function AyarlarPage() {
                         exit={{ opacity: 0, height: 0 }}
                         className={`flex items-center gap-3 px-5 py-4 ${
                           profileMessage.type === 'success' 
-                            ? 'bg-emerald-50 text-emerald-700' 
-                            : 'bg-red-50 text-red-700'
+                            ? 'bg-gray-800 text-white' 
+                            : 'bg-gray-200 text-gray-800'
                         }`}
                       >
                         {profileMessage.type === 'success' 
@@ -286,8 +286,8 @@ export default function AyarlarPage() {
                         exit={{ opacity: 0, height: 0 }}
                         className={`flex items-center gap-3 px-5 py-4 ${
                           passwordMessage.type === 'success' 
-                            ? 'bg-emerald-50 text-emerald-700' 
-                            : 'bg-red-50 text-red-700'
+                            ? 'bg-gray-800 text-white' 
+                            : 'bg-gray-200 text-gray-800'
                         }`}
                       >
                         {passwordMessage.type === 'success' 
@@ -360,7 +360,7 @@ export default function AyarlarPage() {
                   {/* Confirm Password - Native Style */}
                   <div className={`px-5 py-4 transition-colors ${
                     passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword 
-                      ? 'bg-red-50/50' 
+                      ? 'bg-gray-100' 
                       : ''
                   }`}>
                     <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -428,7 +428,7 @@ export default function AyarlarPage() {
                 <motion.div 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="mx-5 mb-5 p-4 bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl border border-amber-200/50"
+                  className="mx-5 mb-5 p-4 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-xl border border-gray-200/50"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 bg-amber-500/10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -452,9 +452,9 @@ export default function AyarlarPage() {
       {/* Account Info - Native Card Style */}
       <FadeIn delay={0.2}>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-5 py-4 bg-gradient-to-br from-gray-50 to-white border-b border-gray-100">
+          <div className="px-5 py-4 bg-white border-b border-gray-100">
             <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-              <HiOutlineChartBar className="w-5 h-5 text-[#e05a4c]" />
+              <HiOutlineChartBar className="w-5 h-5 text-black" />
               Hesap Bilgileri
             </h3>
           </div>
@@ -487,15 +487,15 @@ export default function AyarlarPage() {
               </span>
             </div>
             {/* Account Status */}
-            <div className="px-5 py-4 flex items-center justify-between bg-emerald-50/30">
+            <div className="px-5 py-4 flex items-center justify-between bg-gray-100">
               <span className="text-sm text-gray-500">Hesap Durumu</span>
               <div className="flex items-center gap-2">
                 <motion.span 
-                  className="w-2 h-2 bg-emerald-500 rounded-full"
+                  className="w-2 h-2 bg-black rounded-full"
                   animate={{ scale: [1, 1.3, 1], opacity: [1, 0.6, 1] }}
                   transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
                 />
-                <span className="text-sm font-semibold text-emerald-600">Aktif</span>
+                <span className="text-sm font-semibold text-black">Aktif</span>
               </div>
             </div>
           </div>

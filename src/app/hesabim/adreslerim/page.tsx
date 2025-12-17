@@ -32,7 +32,7 @@ const typeConfig = {
     icon: HiOutlineOfficeBuilding, 
     label: 'İş', 
     defaultTitle: 'İşyerim', 
-    color: 'bg-purple-50 text-purple-600 border-purple-200' 
+    color: 'bg-gray-100 text-gray-700 border-gray-200' 
   },
   other: { 
     icon: HiOutlineLocationMarker, 
@@ -154,7 +154,7 @@ export default function AdreslerimPage() {
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-[#549658] text-white px-6 py-3.5 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-black text-white px-6 py-3.5 rounded-lg shadow-2xl flex items-center gap-3 min-w-[300px]"
           >
             <HiOutlineCheckCircle className="w-6 h-6 flex-shrink-0" />
             <span className="font-medium">{successMessage}</span>
@@ -224,7 +224,7 @@ export default function AdreslerimPage() {
               >
                 {/* Default Badge */}
                 {address.isDefault && (
-                  <div className="absolute -top-3 right-4 px-3 py-1 bg-[#e05a4c] text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
+                  <div className="absolute -top-3 right-4 px-3 py-1 bg-black text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
                     <HiStar className="w-3 h-3 fill-current" />
                     VARSAYILAN
                   </div>
@@ -254,7 +254,7 @@ export default function AdreslerimPage() {
                   </p>
                   <a 
                     href={`tel:${address.recipientPhone}`}
-                    className="text-[#e05a4c] hover:underline font-medium inline-flex items-center gap-1"
+                    className="text-black hover:underline font-medium inline-flex items-center gap-1"
                   >
                     <HiOutlinePhone className="w-4 h-4" />
                     {address.recipientPhone}
@@ -280,7 +280,7 @@ export default function AdreslerimPage() {
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(address.id)}
-                    className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-md transition-colors"
+                    className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"
                   >
                     <HiOutlineTrash className="w-5 h-5" />
                   </button>
@@ -342,8 +342,8 @@ export default function AdreslerimPage() {
               onClick={(e) => e.stopPropagation()}
               className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6"
             >
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <HiOutlineTrash className="w-6 h-6 text-red-600" />
+              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <HiOutlineTrash className="w-6 h-6 text-black" />
               </div>
               <h3 className="text-lg font-bold text-gray-900 text-center mb-2">
                 Adresi Sil
@@ -360,7 +360,7 @@ export default function AdreslerimPage() {
                 </button>
                 <button
                   onClick={() => handleDelete(deleteConfirm)}
-                  className="flex-1 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors"
+                  className="flex-1 py-2.5 bg-black text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
                 >
                   Sil
                 </button>
@@ -477,7 +477,7 @@ function AddressFormModal({ isOpen, onClose, formData, setFormData, onSubmit, is
                       }}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         formData.type === key
-                          ? 'border-[#e05a4c] bg-[#e05a4c]/5'
+                          ? 'border-black bg-black/5'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -543,7 +543,7 @@ function AddressFormModal({ isOpen, onClose, formData, setFormData, onSubmit, is
                   onClick={() => setIsLocationOpen(!isLocationOpen)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-all ${
                     formData.district 
-                      ? 'border-[#549658] bg-[#549658]/5' 
+                      ? 'border-black bg-black/5' 
                       : 'border-gray-300 hover:border-gray-400'
                   }`}
                 >
@@ -577,7 +577,7 @@ function AddressFormModal({ isOpen, onClose, formData, setFormData, onSubmit, is
                             setLocationStep('region');
                             setLocationSearch('');
                           }}
-                          className="text-xs text-[#e05a4c] mt-2 hover:underline"
+                          className="text-xs text-black mt-2 hover:underline"
                         >
                           ← Bölge seçimine dön
                         </button>

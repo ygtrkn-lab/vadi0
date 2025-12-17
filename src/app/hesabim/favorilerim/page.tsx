@@ -80,7 +80,7 @@ export default function FavorilerimPage() {
                 onClick={() => setViewMode('grid')}
                 className={`p-2.5 rounded-lg transition-all ${
                   viewMode === 'grid' 
-                    ? 'bg-white shadow-sm text-[#e05a4c]' 
+                    ? 'bg-white shadow-sm text-black' 
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -90,7 +90,7 @@ export default function FavorilerimPage() {
                 onClick={() => setViewMode('list')}
                 className={`p-2.5 rounded-lg transition-all ${
                   viewMode === 'list' 
-                    ? 'bg-white shadow-sm text-[#e05a4c]' 
+                    ? 'bg-white shadow-sm text-black' 
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -145,7 +145,7 @@ export default function FavorilerimPage() {
                             whileTap={{ scale: 0.8 }}
                             className="absolute top-2 right-2 w-9 h-9 bg-white/90 backdrop-blur-sm 
                               rounded-full flex items-center justify-center shadow-lg 
-                              hover:bg-red-50 transition-colors"
+                              hover:bg-gray-100 transition-colors"
                           >
                             <motion.div
                               animate={{ scale: [1, 1.2, 1] }}
@@ -168,7 +168,7 @@ export default function FavorilerimPage() {
                           {/* Discount Badge */}
                           {product.oldPrice && (
                             <div className="absolute bottom-2 left-2 px-2 py-1 bg-gradient-to-r 
-                              from-red-500 to-pink-500 text-white text-xs font-bold rounded-lg">
+                              from-gray-800 to-gray-900 text-white text-xs font-bold rounded-lg">
                               %{Math.round((1 - product.price / product.oldPrice) * 100)}
                             </div>
                           )}
@@ -178,14 +178,14 @@ export default function FavorilerimPage() {
                         <div className="p-3">
                           <Link href={`/${product.category}/${product.slug}`}>
                             <h3 className="font-medium text-gray-800 text-sm line-clamp-2 
-                              hover:text-[#e05a4c] transition-colors mb-2 min-h-[40px]">
+                              hover:text-black transition-colors mb-2 min-h-[40px]">
                               {product.name}
                             </h3>
                           </Link>
 
                           {/* Price */}
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="text-lg font-bold text-[#e05a4c]">
+                            <span className="text-lg font-bold text-black">
                               ₺{product.price.toLocaleString('tr-TR')}
                             </span>
                             {product.oldPrice && (
@@ -247,7 +247,7 @@ export default function FavorilerimPage() {
                             )}
                             {/* Discount Badge */}
                             {product.oldPrice && (
-                              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-red-500 
+                              <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-black 
                                 text-white text-[10px] font-bold rounded">
                                 %{Math.round((1 - product.price / product.oldPrice) * 100)}
                               </div>
@@ -259,14 +259,14 @@ export default function FavorilerimPage() {
                         <div className="flex-1 min-w-0">
                           <Link href={`/${product.category}/${product.slug}`}>
                             <h3 className="font-medium text-gray-800 text-sm md:text-base 
-                              line-clamp-2 hover:text-[#e05a4c] transition-colors">
+                              line-clamp-2 hover:text-black transition-colors">
                               {product.name}
                             </h3>
                           </Link>
 
                           {/* Price */}
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-lg font-bold text-[#e05a4c]">
+                            <span className="text-lg font-bold text-black">
                               ₺{product.price.toLocaleString('tr-TR')}
                             </span>
                             {product.oldPrice && (
@@ -282,7 +282,7 @@ export default function FavorilerimPage() {
                               onClick={() => handleAddToCart(product)}
                               whileTap={{ scale: 0.95 }}
                               className="flex-1 flex items-center justify-center gap-1.5 py-2 
-                                bg-[#e05a4c] text-white text-xs font-medium rounded-lg"
+                                bg-black text-white text-xs font-medium rounded-lg"
                             >
                               <HiOutlineShoppingCart className="w-4 h-4" />
                               Sepete Ekle
@@ -290,7 +290,7 @@ export default function FavorilerimPage() {
                             <button
                               onClick={() => handleRemoveFavorite(product.id)}
                               className="w-9 h-9 flex items-center justify-center border border-gray-200 
-                                rounded-lg hover:bg-red-50 hover:border-red-200 transition-colors"
+                                rounded-lg hover:bg-gray-100 hover:border-gray-300 transition-colors"
                             >
                               <HiOutlineTrash className="w-4 h-4 text-gray-400" />
                             </button>
@@ -325,9 +325,9 @@ export default function FavorilerimPage() {
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className="w-11 h-11 flex items-center justify-center border border-gray-200 
-                              rounded-xl hover:bg-red-50 hover:border-red-200 transition-colors group"
+                              rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-colors group"
                           >
-                            <HiOutlineTrash className="w-5 h-5 text-gray-400 group-hover:text-red-500" />
+                            <HiOutlineTrash className="w-5 h-5 text-gray-400 group-hover:text-black" />
                           </motion.button>
                         </div>
                       </div>
@@ -342,7 +342,7 @@ export default function FavorilerimPage() {
           <FadeIn delay={0.3}>
             <GlassCard className="p-4 md:p-5">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-rose-100 to-pink-100 
+                <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 
                   rounded-xl flex items-center justify-center flex-shrink-0">
                   <span className="text-2xl">💡</span>
                 </div>
@@ -365,7 +365,7 @@ export default function FavorilerimPage() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', bounce: 0.5, duration: 0.6 }}
-              className="w-24 h-24 bg-gradient-to-br from-rose-100 to-pink-100 
+              className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 
                 rounded-full flex items-center justify-center mx-auto mb-6"
             >
               <motion.div
