@@ -170,9 +170,25 @@ export class EmailService {
   static async sendCustomerOtp(params: {
     to: string;
     code: string;
-    purpose: 'login' | 'register';
+    purpose: 'login' | 'register' | 'password-reset';
   }): Promise<boolean> {
-    const purposeLabel = params.purpose === 'register' ? 'Kayıt' : 'Giriş';
+    let purposeLabel = '';
+    let title = '';
+    
+    switch (params.purpose) {
+      case 'register':
+        purposeLabel = 'Kayıt';
+        title = 'Kayıt işleminizi tamamlamak için doğrulama kodunuz:';
+        break;
+      case 'login':
+        purposeLabel = 'Giriş';
+        title = 'Giriş işleminizi tamamlamak için doğrulama kodunuz:';
+        break;
+      case 'password-reset':
+        purposeLabel = 'Şifre Sıfırlama';
+        title = 'Şifrenizi sıfırlamak için doğrulama kodunuz:';
+        break;
+    }
 
     const html = `
       <!DOCTYPE html>
@@ -193,7 +209,7 @@ export class EmailService {
           <div class="container">
             <div class="card">
               <p class="brand">Vadiler</p>
-              <p>${purposeLabel} doğrulama kodunuz:</p>
+              <p>${title}</p>
               <div class="code">${params.code}</div>
               <p class="muted">Kod 10 dakika geçerlidir. Eğer bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
             </div>
