@@ -1,12 +1,9 @@
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCustomer } from '@/context/CustomerContext';
 import { useCart } from '@/context/CartContext';
-import { products } from '@/data/products';
 import { FadeIn, SpotlightCard, GlassCard, ShimmerButton } from '@/components/ui-kit/premium';
 import {
   HiOutlineHeart,
@@ -18,18 +15,72 @@ import {
   HiOutlineShare,
   HiOutlineExternalLink,
   HiOutlinePhotograph,
+  HiCheckCircle,
 } from 'react-icons/hi';
+
+// Toast Notification Component
+function Toast({ message, onClose }: { message: string; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -50, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.9 }}
+      className="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 bg-white 
+        rounded-xl shadow-2xl border border-gray-100 max-w-sm"
+    >
+      <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+        <HiCheckCircle className="w-6 h-6 text-green-600" />
+      </div>
+      <div className="flex-1">
+        <p className="text-sm font-medium text-gray-900">{message}</p>
+      </div>
+      <button
+        onClick={onClose}
+        className="text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </motion.div>
+  );
+}
 
 export default function FavorilerimPage() {
   const { state: customerState, removeFromFavorites } = useCustomer();
   const { addToCart } = useCart();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [removingId, setRemovingId] = useState<number | null>(null);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const customer = customerState.currentCustomer;
+
+  // Fetch products from API for latest prices
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch('/api/products');
+        const data = await response.json();
+        setProducts(data.products || data.data || []);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
   if (!customer) return null;
 
-  // Favori ürünleri getir
+  // Favori ürünleri getir - güncel fiyatlarla
   const favoriteProducts = products.filter(
     product => customer.favorites.includes(String(product.id))
   );
@@ -43,17 +94,18 @@ export default function FavorilerimPage() {
     }, 300);
   };
 
-  const handleAddToCart = (product: typeof products[0]) => {
+  const handleAddToCart = (product: any) => {
     addToCart(product);
+    setToastMessage(`${product.name} sepete eklendi!`);
   };
 
-  const handleShare = async (product: typeof products[0]) => {
+  const handleShare = async (product: any) => {
     if (navigator.share) {
       try {
         await navigator.share({
           title: product.name,
           text: `${product.name} - Vadiler Çiçek'te ₺${product.price}`,
-          url: `${window.location.origin}/${product.category}/${product.slug}`,
+          url: `${window.location.origin}/${product.slug}`,
         });
       } catch {
         // User cancelled
@@ -61,8 +113,26 @@ export default function FavorilerimPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-12 h-12 border-4 border-gray-200 border-t-[#e05a4c] rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-6">
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toastMessage && (
+          <Toast 
+            message={toastMessage} 
+            onClose={() => setToastMessage(null)} 
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header with View Toggle */}
       <FadeIn direction="down">
         <div className="flex items-center justify-between gap-4">
@@ -124,7 +194,7 @@ export default function FavorilerimPage() {
                       <div className="bg-white rounded-2xl overflow-hidden">
                         {/* Image */}
                         <div className="relative aspect-square bg-gray-100">
-                          <Link href={`/${product.category}/${product.slug}`}>
+                          <Link href={`/${product.slug}`}>
                             {product.image ? (
                               <Image
                                 src={product.image}
@@ -176,7 +246,7 @@ export default function FavorilerimPage() {
 
                         {/* Content */}
                         <div className="p-3">
-                          <Link href={`/${product.category}/${product.slug}`}>
+                          <Link href={`/${product.slug}`}>
                             <h3 className="font-medium text-gray-800 text-sm line-clamp-2 
                               hover:text-black transition-colors mb-2 min-h-[40px]">
                               {product.name}
@@ -231,7 +301,7 @@ export default function FavorilerimPage() {
                     >
                       <div className="flex items-center gap-3 p-3">
                         {/* Image */}
-                        <Link href={`/${product.category}/${product.slug}`} className="flex-shrink-0">
+                        <Link href={`/${product.slug}`} className="flex-shrink-0">
                           <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden bg-gray-100">
                             {product.image ? (
                               <Image
@@ -257,7 +327,7 @@ export default function FavorilerimPage() {
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <Link href={`/${product.category}/${product.slug}`}>
+                          <Link href={`/${product.slug}`}>
                             <h3 className="font-medium text-gray-800 text-sm md:text-base 
                               line-clamp-2 hover:text-black transition-colors">
                               {product.name}
@@ -310,7 +380,7 @@ export default function FavorilerimPage() {
                             <HiOutlineShoppingCart className="w-5 h-5" />
                             Sepete Ekle
                           </motion.button>
-                          <Link href={`/${product.category}/${product.slug}`}>
+                          <Link href={`/${product.slug}`}>
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
