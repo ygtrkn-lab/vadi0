@@ -169,6 +169,64 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('✅ Order updated via webhook:', orderId);
+
+      // Send order confirmation email if not already sent
+      try {
+        const customerEmailToSend = (order.customer_email || '').trim();
+        const orderNumber = order.order_number;
+
+        if (customerEmailToSend && orderNumber) {
+          const delivery = isRecord(order.delivery) ? order.delivery : {};
+
+          const deliveryAddress =
+            getStringProp(delivery, 'fullAddress') ||
+            getStringProp(delivery, 'recipientAddress') ||
+            getStringProp(delivery, 'address');
+
+          const deliveryDate = getStringProp(delivery, 'deliveryDate');
+          const deliveryTime = getStringProp(delivery, 'deliveryTimeSlot') || getStringProp(delivery, 'deliveryTime');
+
+          const products = order.products;
+          const items = Array.isArray(products)
+            ? products
+                .filter((p): p is Record<string, unknown> => isRecord(p))
+                .map((p) => ({
+                  name: getStringProp(p, 'name') || '',
+                  quantity: Number(p['quantity'] ?? 0),
+                  price: Number(p['price'] ?? 0),
+                }))
+            : [];
+
+          const paymentMethod = getStringProp(order.payment, 'method') || 'credit_card';
+
+          const { EmailService } = await import('@/lib/email/emailService');
+          await EmailService.sendOrderConfirmation({
+            orderNumber: String(orderNumber),
+            customerName: order.customer_name || '',
+            customerEmail: customerEmailToSend,
+            customerPhone: order.customer_phone || '',
+            verificationType: 'email',
+            verificationValue: customerEmailToSend,
+            items,
+            subtotal: Number(order.subtotal || 0),
+            discount: Number(order.discount || 0),
+            deliveryFee: Number(order.delivery_fee || 0),
+            total: Number(order.total || 0),
+            deliveryAddress,
+            district: getStringProp(delivery, 'district'),
+            deliveryDate,
+            deliveryTime,
+            recipientName: getStringProp(delivery, 'recipientName'),
+            recipientPhone: getStringProp(delivery, 'recipientPhone'),
+            paymentMethod,
+          });
+
+          console.log('✅ Order confirmation email sent via webhook:', customerEmailToSend);
+        }
+      } catch (emailErr) {
+        console.error('⚠️ Failed to send order confirmation email via webhook:', emailErr);
+        // Do not fail the webhook processing if email fails
+      }
     }
 
     // Handle payment failed event

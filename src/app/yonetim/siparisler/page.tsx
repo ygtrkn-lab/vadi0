@@ -59,6 +59,13 @@ export default function SiparislerPage() {
 
     return orderState.orders
       .filter(order => {
+        // Hide orders with pending or failed payments from default view
+        const paymentStatus = order.payment?.status?.toLowerCase();
+        const isPaymentComplete = paymentStatus !== 'pending' && paymentStatus !== 'failed';
+        if (!isPaymentComplete) {
+          return false;
+        }
+
         const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
         
         const customerName = order.customerName || '';

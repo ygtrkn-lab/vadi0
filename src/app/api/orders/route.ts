@@ -196,70 +196,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create order', details: error.message }, { status: 500 });
     }
 
-    // Send order confirmation email (guest + member)
-    try {
-      const createdOrder = data as unknown as OrderRow;
-
-      const orderNumber = createdOrder.order_number;
-      const customerEmailToSend = (createdOrder.customer_email || '').trim();
-
-      if (customerEmailToSend && orderNumber) {
-        const delivery = isRecord(createdOrder.delivery) ? createdOrder.delivery : {};
-
-        const deliveryAddress =
-          getString(delivery['fullAddress']) ||
-          getString(delivery['recipientAddress']) ||
-          getString(delivery['address']);
-
-        const deliveryDate = getString(delivery['deliveryDate']);
-        const deliveryTime = getString(delivery['deliveryTimeSlot']) || getString(delivery['deliveryTime']);
-
-        const products = createdOrder.products;
-        const items = Array.isArray(products)
-          ? products
-              .filter((p): p is Record<string, unknown> => isRecord(p))
-              .map((p) => ({
-                name: getString(p['name']),
-                quantity: Number(p['quantity'] ?? 0),
-                price: Number(p['price'] ?? 0),
-              }))
-          : [];
-
-        const paymentMethod = (() => {
-          const payment = isRecord(createdOrder.payment) ? createdOrder.payment : undefined;
-          return getString(payment?.['method']) || getString(payment?.['paymentMethod']);
-        })();
-
-        await EmailService.sendOrderConfirmation({
-          orderNumber: String(orderNumber),
-          customerName: createdOrder.customer_name || '',
-          customerEmail: customerEmailToSend,
-          customerPhone: createdOrder.customer_phone || '',
-          verificationType: 'email',
-          verificationValue: customerEmailToSend,
-          items,
-          subtotal: Number(createdOrder.subtotal || 0),
-          discount: Number(createdOrder.discount || 0),
-          deliveryFee: Number(createdOrder.delivery_fee || 0),
-          total: Number(createdOrder.total || 0),
-          deliveryAddress,
-          district: getString(delivery['district']),
-          deliveryDate,
-          deliveryTime,
-          recipientName: getString(delivery['recipientName']),
-          recipientPhone: getString(delivery['recipientPhone']),
-          paymentMethod,
-        });
-      } else {
-        console.warn('Order confirmation email skipped (missing email/order number):', {
-          orderNumber,
-          customerEmail: customerEmailToSend,
-        });
-      }
-    } catch (emailErr) {
-      console.error('Warning: Failed to send order confirmation email:', emailErr);
-      // Do not fail order creation if email fails
-    }
+    // Order confirmation email will be sent after payment is successful
+    // See /api/payment/complete and /api/payment/webhook for email sending logic
+    console.log('✅ Order created, awaiting payment confirmation:', {
+      orderId: data?.id,
+      orderNumber: (data as unknown as OrderRow)?.order_number,
+      status: (data as unknown as OrderRow)?.status,
+    });
     
     // Update customer's orders array and stats (members only)
     if (data && customerId && !isGuest) {

@@ -311,6 +311,64 @@ export async function POST(request: NextRequest) {
 
       console.log('✅ Order updated successfully:', conversationId);
 
+      // Send order confirmation email after successful payment
+      try {
+        const customerEmailToSend = (order.customer_email || '').trim();
+        const orderNumber = order.order_number;
+
+        if (customerEmailToSend && orderNumber) {
+          const delivery = isRecord(order.delivery) ? order.delivery : {};
+
+          const deliveryAddress =
+            getStringProp(delivery, 'fullAddress') ||
+            getStringProp(delivery, 'recipientAddress') ||
+            getStringProp(delivery, 'address');
+
+          const deliveryDate = getStringProp(delivery, 'deliveryDate');
+          const deliveryTime = getStringProp(delivery, 'deliveryTimeSlot') || getStringProp(delivery, 'deliveryTime');
+
+          const products = order.products;
+          const items = Array.isArray(products)
+            ? products
+                .filter((p): p is Record<string, unknown> => isRecord(p))
+                .map((p) => ({
+                  name: getStringProp(p, 'name') || '',
+                  quantity: Number(p['quantity'] ?? 0),
+                  price: Number(p['price'] ?? 0),
+                }))
+            : [];
+
+          const paymentMethod = getStringProp(order.payment, 'method') || 'credit_card';
+
+          const { EmailService } = await import('@/lib/email/emailService');
+          await EmailService.sendOrderConfirmation({
+            orderNumber: String(orderNumber),
+            customerName: order.customer_name || '',
+            customerEmail: customerEmailToSend,
+            customerPhone: order.customer_phone || '',
+            verificationType: 'email',
+            verificationValue: customerEmailToSend,
+            items,
+            subtotal: Number(order.subtotal || 0),
+            discount: Number(order.discount || 0),
+            deliveryFee: Number(order.delivery_fee || 0),
+            total: Number(order.total || 0),
+            deliveryAddress,
+            district: getStringProp(delivery, 'district'),
+            deliveryDate,
+            deliveryTime,
+            recipientName: getStringProp(delivery, 'recipientName'),
+            recipientPhone: getStringProp(delivery, 'recipientPhone'),
+            paymentMethod,
+          });
+
+          console.log('✅ Order confirmation email sent:', customerEmailToSend);
+        }
+      } catch (emailErr) {
+        console.error('⚠️ Failed to send order confirmation email:', emailErr);
+        // Do not fail the payment completion if email fails
+      }
+
       // Return success response
       return NextResponse.json({
         success: true,
@@ -606,6 +664,64 @@ export async function GET(request: NextRequest) {
       }
 
       console.log('✅ Order updated successfully (GET):', resolvedConversationId);
+
+      // Send order confirmation email after successful payment
+      try {
+        const customerEmailToSend = (order.customer_email || '').trim();
+        const orderNumber = order.order_number;
+
+        if (customerEmailToSend && orderNumber) {
+          const delivery = isRecord(order.delivery) ? order.delivery : {};
+
+          const deliveryAddress =
+            getStringProp(delivery, 'fullAddress') ||
+            getStringProp(delivery, 'recipientAddress') ||
+            getStringProp(delivery, 'address');
+
+          const deliveryDate = getStringProp(delivery, 'deliveryDate');
+          const deliveryTime = getStringProp(delivery, 'deliveryTimeSlot') || getStringProp(delivery, 'deliveryTime');
+
+          const products = order.products;
+          const items = Array.isArray(products)
+            ? products
+                .filter((p): p is Record<string, unknown> => isRecord(p))
+                .map((p) => ({
+                  name: getStringProp(p, 'name') || '',
+                  quantity: Number(p['quantity'] ?? 0),
+                  price: Number(p['price'] ?? 0),
+                }))
+            : [];
+
+          const paymentMethod = getStringProp(order.payment, 'method') || 'credit_card';
+
+          const { EmailService } = await import('@/lib/email/emailService');
+          await EmailService.sendOrderConfirmation({
+            orderNumber: String(orderNumber),
+            customerName: order.customer_name || '',
+            customerEmail: customerEmailToSend,
+            customerPhone: order.customer_phone || '',
+            verificationType: 'email',
+            verificationValue: customerEmailToSend,
+            items,
+            subtotal: Number(order.subtotal || 0),
+            discount: Number(order.discount || 0),
+            deliveryFee: Number(order.delivery_fee || 0),
+            total: Number(order.total || 0),
+            deliveryAddress,
+            district: getStringProp(delivery, 'district'),
+            deliveryDate,
+            deliveryTime,
+            recipientName: getStringProp(delivery, 'recipientName'),
+            recipientPhone: getStringProp(delivery, 'recipientPhone'),
+            paymentMethod,
+          });
+
+          console.log('✅ Order confirmation email sent (GET):', customerEmailToSend);
+        }
+      } catch (emailErr) {
+        console.error('⚠️ Failed to send order confirmation email (GET):', emailErr);
+        // Do not fail the payment completion if email fails
+      }
 
       // Return success JSON
       return NextResponse.json(
