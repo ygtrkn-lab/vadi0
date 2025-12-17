@@ -122,16 +122,24 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   const hasNotified = useRef(false);
   
   useEffect(() => {
-    if (selectedLocation && selectedDate && selectedTimeSlot && !hasNotified.current) {
-      hasNotified.current = true;
-      onDeliveryComplete({
-        location: selectedLocation,
-        district: selectedDistrict,
-        date: selectedDate,
-        timeSlot: selectedTimeSlot,
-      });
+    if (selectedLocation && selectedDate && selectedTimeSlot) {
+      // Her değişiklikte yeniden bildirim gönder
+      hasNotified.current = false;
+      
+      if (!hasNotified.current) {
+        hasNotified.current = true;
+        onDeliveryComplete({
+          location: selectedLocation,
+          district: selectedDistrict,
+          date: selectedDate,
+          timeSlot: selectedTimeSlot,
+        });
+      }
+    } else {
+      // Herhangi bir değer değiştiğinde bildirimi sıfırla
+      hasNotified.current = false;
     }
-  }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot]);
+  }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot, onDeliveryComplete]);
 
   const handleRegionSelect = (regionId: string) => {
     setSelectedRegion(regionId);

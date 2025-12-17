@@ -179,7 +179,7 @@ function SiparisTakipContent() {
       setOrder(null);
 
       if (response.status === 404) {
-        setError('Takip servisi bulunamadı (404). Bu genelde eski deploy / yanlış ortam / reverse proxy (\/api yönlenmiyor) kaynaklı olur.');
+        setError('Sipariş bulunamadı. Lütfen sipariş numaranızı ve doğrulama bilgilerinizi kontrol edin.');
         return;
       }
 
