@@ -13,7 +13,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const ADMIN_PASSWORD = 'vadiler2024!';
+const ADMIN_PASSWORD = 'Uytn22mzybn';
 const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 export function AuthProvider({ children }: { children: ReactNode }) {

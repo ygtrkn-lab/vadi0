@@ -82,7 +82,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     if (legacyAuth === 'true' && legacyLoginTime) {
       const elapsed = Date.now() - parseInt(legacyLoginTime);
       if (elapsed < ADMIN_SESSION_DURATION) {
-        setUser({ email: 'admin@vadiler.com', name: 'Admin', role: 'admin', loginTime: parseInt(legacyLoginTime) });
+        setUser({ email: 'bilgi@vadiler.com', name: 'Admin', role: 'admin', loginTime: parseInt(legacyLoginTime) });
         setIsAuthenticated(true);
         setIsChecking(false);
         return;

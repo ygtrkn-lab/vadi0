@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem(
       'vadiler_user',
       JSON.stringify({
-        email: 'admin@vadiler.com',
+        email: 'bilgi@vadiler.com',
         name: 'Admin',
         role: 'admin',
         loginTime: Date.now(),

@@ -300,7 +300,7 @@ function GirisContent() {
     setIsLoading(true);
 
     // Admin login check
-    if (email === 'admin@vadiler.com' && password === 'vadiler2024!') {
+    if (email === 'bilgi@vadiler.com' && password === 'Uytn22mzybn') {
       localStorage.setItem('vadiler_user', JSON.stringify({ 
         email, 
         name: 'Admin', 
