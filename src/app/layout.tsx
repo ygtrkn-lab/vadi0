@@ -132,6 +132,19 @@ export const metadata: Metadata = {
   verification: {
     google: 'NdD2A097rf0YcV2o0TULpp__uSTaNmzMvRBhIrZVB2s',
   },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/logo.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    other: [
+      { rel: 'mask-icon', url: '/logo.png', color: '#ec4899' },
+    ],
+  },
+  manifest: '/manifest.json',
   alternates: {
     canonical: "https://vadiler.com/",
   },
