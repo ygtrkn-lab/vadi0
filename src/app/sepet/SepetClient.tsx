@@ -149,6 +149,13 @@ export default function SepetClient() {
   const MIN_DELIVERY_DATE = getTomorrowLocalISODate();
   const MAX_DELIVERY_DATE = getMaxDeliveryDate();
 
+  // Auto-populate guest phone from recipient phone on payment step
+  useEffect(() => {
+    if (currentStep === 'payment' && !isLoggedIn && recipientPhone && !guestPhone) {
+      setGuestPhone(recipientPhone);
+    }
+  }, [currentStep, isLoggedIn, recipientPhone, guestPhone]);
+
   const DELIVERY_TIME_SLOT_IDS = ['11:00-17:00', '17:00-22:00'] as const;
   type DeliveryTimeSlotId = (typeof DELIVERY_TIME_SLOT_IDS)[number];
 
@@ -1892,7 +1899,7 @@ export default function SepetClient() {
                       </p>
                     )}
                     <p className="text-[10px] text-blue-600">
-                      * En az birini doldurmanız gerekiyor
+                      * Her iki alan da zorunludur
                     </p>
                   </div>
                 )}
