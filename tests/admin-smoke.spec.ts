@@ -18,25 +18,42 @@ test('admin pages load (smoke)', async ({ page }) => {
   await page.goto('/yonetim');
   await expect(page).toHaveURL(/\/yonetim(\/)?$/);
 
-  // Sidebar menu items from admin layout
-  await expect(page.getByRole('link', { name: 'Ürünler' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Kategoriler' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Siparişler' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Müşteriler' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Ayarlar' })).toBeVisible();
+  const sidebarNav = page.getByRole('navigation');
 
-  await page.goto('/yonetim/urunler');
+  // Sidebar menu items from admin layout
+  await expect(sidebarNav.getByRole('link', { name: 'Ürünler' })).toBeVisible();
+  await expect(sidebarNav.getByRole('link', { name: 'Kategoriler' })).toBeVisible();
+  await expect(sidebarNav.getByRole('link', { name: 'Siparişler' })).toBeVisible();
+  await expect(sidebarNav.getByRole('link', { name: 'Müşteriler' })).toBeVisible();
+  await expect(sidebarNav.getByRole('link', { name: 'Ayarlar' })).toBeVisible();
+
+  await Promise.all([
+    page.waitForURL(/\/yonetim\/urunler(\/)?$/, { timeout: 30_000 }),
+    sidebarNav.getByRole('link', { name: 'Ürünler' }).click({ force: true }),
+  ]);
   await expect(page.getByRole('heading', { name: 'Ürünler' })).toBeVisible();
 
-  await page.goto('/yonetim/kategoriler');
+  await Promise.all([
+    page.waitForURL(/\/yonetim\/kategoriler(\/)?$/, { timeout: 30_000 }),
+    sidebarNav.getByRole('link', { name: 'Kategoriler' }).click({ force: true }),
+  ]);
   await expect(page.getByRole('heading', { name: 'Kategoriler' })).toBeVisible();
 
-  await page.goto('/yonetim/siparisler');
+  await Promise.all([
+    page.waitForURL(/\/yonetim\/siparisler(\/)?$/, { timeout: 30_000 }),
+    sidebarNav.getByRole('link', { name: 'Siparişler' }).click({ force: true }),
+  ]);
   await expect(page.getByRole('heading', { name: 'Siparişler' })).toBeVisible();
 
-  await page.goto('/yonetim/musteriler');
+  await Promise.all([
+    page.waitForURL(/\/yonetim\/musteriler(\/)?$/, { timeout: 30_000 }),
+    sidebarNav.getByRole('link', { name: 'Müşteriler' }).click({ force: true }),
+  ]);
   await expect(page.getByRole('heading', { name: /Müşteriler/ })).toBeVisible();
 
-  await page.goto('/yonetim/ayarlar');
-  await expect(page.getByRole('heading', { name: 'Ayarlar' })).toBeVisible();
+  await Promise.all([
+    page.waitForURL(/\/yonetim\/ayarlar(\/)?$/, { timeout: 60_000 }),
+    sidebarNav.getByRole('link', { name: 'Ayarlar' }).click({ force: true }),
+  ]);
+  await expect(page.getByRole('heading', { name: 'Ayarlar' })).toBeVisible({ timeout: 60_000 });
 });

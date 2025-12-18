@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import orders from '@/data/orders.json';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,17 +9,47 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Starting bulk order import...');
+
+    const body = await request.json().catch(() => null);
+    const orders = Array.isArray((body as any)?.orders) ? (body as any).orders : null;
+    if (!orders) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing orders array in request body. Send { "orders": [...] }',
+        },
+        { status: 400 }
+      );
+    }
     
-    // First, set the order_number sequence to the correct value
-    const orderCounterPath = require('path').join(process.cwd(), 'src', 'data', 'orderCounter.json');
-    const orderCounter = require('fs').readFileSync(orderCounterPath, 'utf-8');
-    const { nextOrderNumber } = JSON.parse(orderCounter);
-    
-    console.log(`🔢 Setting order_number sequence to ${nextOrderNumber}`);
-    const { error: seqError } = await supabase.rpc('set_order_sequence', { seq_value: nextOrderNumber });
-    
-    if (seqError) {
-      console.warn(`⚠️  Could not set sequence (may not exist yet):`, seqError.message);
+    // Optionally set the DB sequence (no local file reads)
+    try {
+      const { data: maxExisting } = await supabase
+        .from('orders')
+        .select('order_number')
+        .order('order_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const maxExistingNumber = typeof (maxExisting as any)?.order_number === 'number'
+        ? Number((maxExisting as any).order_number)
+        : 100000;
+
+      const maxIncomingNumber = Math.max(
+        0,
+        ...orders
+          .map((o: any) => Number(o?.orderNumber))
+          .filter((n: number) => Number.isFinite(n))
+      );
+
+      const nextOrderNumber = Math.max(maxExistingNumber + 1, maxIncomingNumber + 1, 100001);
+      console.log(`🔢 Setting order_number sequence to ${nextOrderNumber}`);
+      const { error: seqError } = await supabase.rpc('set_order_sequence', { seq_value: nextOrderNumber });
+      if (seqError) {
+        console.warn(`⚠️  Could not set sequence (may not exist yet):`, seqError.message);
+      }
+    } catch (seqError: any) {
+      console.warn('⚠️  Sequence setup skipped:', seqError?.message || seqError);
     }
     
     // Get valid customer IDs from Supabase

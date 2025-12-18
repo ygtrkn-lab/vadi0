@@ -1,5 +1,3 @@
-import products from '@/data/products.json';
-
 type CatalogProduct = {
   id: number;
   name: string;
@@ -17,14 +15,8 @@ let catalogById: Map<number, CatalogProduct> | null = null;
 function getCatalogMap(): Map<number, CatalogProduct> {
   if (catalogById) return catalogById;
 
-  const map = new Map<number, CatalogProduct>();
-  for (const p of products as unknown as CatalogProduct[]) {
-    if (typeof p?.id === 'number') {
-      map.set(p.id, p);
-    }
-  }
-  catalogById = map;
-  return map;
+  catalogById = new Map<number, CatalogProduct>();
+  return catalogById;
 }
 
 export function getCatalogProductById(productId: number): CatalogProduct | undefined {

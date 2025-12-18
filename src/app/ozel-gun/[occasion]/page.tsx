@@ -2,8 +2,9 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { SPECIAL_DAYS, getSpecialDayBySlug, getAllSpecialDaySlugs } from '@/data/special-days'
-import { products } from '@/data/products'
 import ProductCard from '@/components/ProductCard'
+import supabaseAdmin from '@/lib/supabase/admin'
+import { transformProducts, type Product } from '@/lib/transformers'
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com'
 
@@ -60,8 +61,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 // Ürünleri özel güne göre filtrele
-function getProductsForSpecialDay(specialDay: typeof SPECIAL_DAYS[0]) {
-  const matchingProducts = products.filter(product => {
+function getProductsForSpecialDay(specialDay: typeof SPECIAL_DAYS[0], products: Product[]) {
+  const matchingProducts = products.filter((product) => {
     // Ürün tag'lerini kontrol et
     if (product.tags) {
       const hasMatchingTag = product.tags.some(tag =>
@@ -81,7 +82,7 @@ function getProductsForSpecialDay(specialDay: typeof SPECIAL_DAYS[0]) {
 
     // Açıklamayı kontrol et
     const descMatch = specialDay.relatedTags.some(tag =>
-      product.description.toLowerCase().includes(tag.toLowerCase())
+      (product.description || '').toLowerCase().includes(tag.toLowerCase())
     )
     if (descMatch) return true
 
@@ -109,7 +110,27 @@ export default async function SpecialDayPage({ params }: PageProps) {
     notFound()
   }
 
-  const matchingProducts = getProductsForSpecialDay(specialDay)
+  // Prefer DB tagging when available, then fallback to a larger pool for text-match.
+  const tagged = await supabaseAdmin
+    .from('products')
+    .select('*')
+    .contains('occasion_tags', [occasion])
+    .order('id', { ascending: true })
+    .limit(240);
+
+  const pool = tagged.data && tagged.data.length > 0
+    ? tagged.data
+    : (
+        (await supabaseAdmin
+          .from('products')
+          .select('*')
+          .order('id', { ascending: true })
+          .limit(500)
+        ).data ?? []
+      );
+
+  const transformedPool = transformProducts(pool as any);
+  const matchingProducts = getProductsForSpecialDay(specialDay, transformedPool)
 
   // CollectionPage JSON-LD Schema
   const collectionSchema = {

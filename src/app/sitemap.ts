@@ -4,7 +4,6 @@ import { SPECIAL_DAYS } from '@/data/special-days'
 import { ISTANBUL_ILCELERI } from '@/data/istanbul-districts'
 import { createCitySlug } from '@/data/city-content'
 import { GUIDE_CONTENTS } from '@/data/guide-contents'
-import categories from '@/data/categories.json'
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com'
 
@@ -152,11 +151,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Kombinasyonel sayfalar: Özel Gün × Kategori
   const occasionCategoryPages: MetadataRoute.Sitemap = []
-  const activeCategories = categories.filter(c => c.isActive)
+  const activeCategorySlugs = categoryPages
+    .map((entry) => {
+      const url = entry?.url || ''
+      const path = url.startsWith(BASE_URL) ? url.slice(BASE_URL.length) : url
+      const slug = path.split('/').filter(Boolean)[0]
+      return slug || null
+    })
+    .filter((v): v is string => Boolean(v))
+
   SPECIAL_DAYS.forEach(occasion => {
-    activeCategories.forEach(category => {
+    activeCategorySlugs.forEach((categorySlug) => {
       occasionCategoryPages.push({
-        url: `${BASE_URL}/ozel-gun/${occasion.slug}/${category.slug}`,
+        url: `${BASE_URL}/ozel-gun/${occasion.slug}/${categorySlug}`,
         lastModified: now,
         changeFrequency: 'weekly' as const,
         priority: 0.7,

@@ -167,7 +167,7 @@ Yıldönümleri romantizm ve bağlılık sembolüdür.
 
 Vadiler Çiçek olarak, her özel gününüzde yanınızdayız. İstanbul'un tüm ilçelerine hızlı ve güvenli teslimat ile taze çiçekler sunuyoruz.
     `,
-    relatedGuides: ['cicek-bakim-rehberi', 'cicek-renk-anlamlari', 'istanbul-ayni-gun-teslimat'],
+    relatedGuides: ['cicek-bakim-rehberi', 'cicek-renk-anlamlari', 'istanbul-hizli-teslimat-rehberi'],
     faqItems: [
       {
         question: 'Sevgililer günü için kaç gül almalıyım?',
@@ -409,7 +409,7 @@ Doğru bakım teknikleriyle çiçekleriniz hem daha uzun süre taze kalır hem d
 
 Vadiler Çiçek olarak, size ulaşan her çiçeğin en taze haliyle gelmesi için özen gösteriyoruz. Bakım kartları ve ücretsiz danışmanlık hizmeti ile çiçeklerinizin uzun ömürlü olmasını sağlıyoruz.
     `,
-    relatedGuides: ['cicek-secim-rehberi', 'orkide-bakim-rehberi', 'cicek-sorunlari-cozumleri'],
+    relatedGuides: ['cicek-secim-rehberi', 'istanbul-hizli-teslimat-rehberi', 'cicek-renk-anlamlari'],
     faqItems: [
       {
         question: 'Çiçek suyuna ne eklemeliyim?',
@@ -632,7 +632,7 @@ Hafta sonu: 09:00 - 21:00
 
 Hızlı ve güvenli teslimat için online sipariş verin!
     `,
-    relatedGuides: ['cicek-secim-rehberi', 'cicek-siparisi-ipuclari', 'istanbul-cicek-rehberi'],
+    relatedGuides: ['cicek-secim-rehberi', 'cicek-siparisi-ipuclari', 'cicek-renk-anlamlari'],
     faqItems: [
       {
         question: 'Hangi saatlerde sipariş verebilirim?',
@@ -995,6 +995,102 @@ Vadiler Çiçek olarak, size özel renk kombinasyonları öneriyoruz. Her özel 
       {
         question: 'Kaç gül vermek en iyisidir?',
         answer: '12 gül klasik ve en popüler seçimdir. 24 gül özel günler için, 50 gül ise sonsuz aşk mesajı vermek isteyenler için idealdir.',
+      },
+    ],
+  },
+
+  {
+    slug: 'cicek-siparisi-ipuclari',
+    title: 'Çiçek Siparişi Vermeden Önce: Adres, Mesaj Kartı ve Teslimat İçin 10 İpucu',
+    metaTitle: 'Çiçek Siparişi İpuçları | Adres, Not ve Teslimat Rehberi | Vadiler',
+    metaDescription:
+      'Çiçek siparişinde en sık yapılan hataları önleyin: doğru adres, alıcı iletişimi, mesaj kartı ve teslimat notları için pratik ipuçları.',
+    keywords: [
+      'çiçek siparişi ipuçları',
+      'mesaj kartı',
+      'çiçek notu',
+      'teslimat notu',
+      'adres bilgisi',
+      'çiçek gönder',
+    ],
+    category: 'tips',
+    categoryName: 'İpuçları',
+    excerpt:
+      'En önemli 3 şey: doğru adres, alıcı iletişimi ve kısa/temiz bir not. Bu rehber, siparişin sorunsuz ilerlemesi için pratik kontrol listesi sunar.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225138/vadiler/products/vadiler-sensiz-olmaz-25-beyaz-guller.jpg',
+    author: 'Vadiler Çiçek Uzmanları',
+    publishDate: '2025-12-18',
+    readTime: 6,
+    content: `
+Çiçek siparişi verirken ürün seçimi kadar **adres, alıcı bilgileri ve not** da önemlidir. Aşağıdaki ipuçları siparişin sorunsuz ilerlemesine yardımcı olur.
+
+## 1) Adresi net yazın
+
+- İlçe / mahalle / sokak / bina no / daire no
+- Site adı, blok ve giriş bilgisi
+- Mümkünse kısa bir tarif ("X eczanesinin yanı")
+
+## 2) Alıcı telefonu mutlaka doğru olsun
+
+Teslimat sırasında alıcıya ulaşılamaması en sık gecikme nedenidir. Alternatif bir numara da eklemek faydalı olur.
+
+## 3) İş yeri teslimatlarında birim/kat bilgisi ekleyin
+
+"Plaza adı + kat + departman" yazmak, teslimatı hızlandırır.
+
+## 4) Mesaj kartını kısa ve net tutun
+
+Uzun notlar kartta taşabilir. 1–2 cümle yeter.
+
+Örnekler:
+- "İyi ki varsın. Seni çok seviyorum."
+- "Yeni yaşın kutlu olsun, hep gülümse."
+- "Geçmiş olsun. Yanındayım."
+
+## 5) Gönderen adını doğru girin
+
+Sürprizse, gönderen adını gizli tutmak isteyebilirsiniz. Bu bilgiyi not kısmında netleştirin.
+
+## 6) Özel talep varsa tek cümleyle belirtin
+
+Örn: "Kırmızı ton ağırlıklı olsun" veya "Kokusu hafif bir seçenek olsun" gibi.
+
+## 7) Alıcı evde değilse ne yapılsın?
+
+Sipariş notuna şunu ekleyebilirsiniz:
+- "Kapıcıya teslim edilebilir"
+- "Komşuya bırakılabilir (Daire 3)"
+- "Bana haber verin"
+
+## 8) Doğru kategori ile başlayın
+
+Kararsızsanız rehberlerden ve kategorilerden ilerlemek seçim işini kolaylaştırır.
+
+## 9) Özel günlerde daha erken planlayın
+
+Özel günlerde yoğunluk artar; adres/iletişim bilgilerinin eksiksiz olması daha da önemlidir.
+
+## 10) Sorunuz varsa destek alın
+
+Sipariş öncesi ürün/teslimat sorularında destek ekibimiz yönlendirme yapabilir.
+    `,
+    relatedGuides: ['cicek-secim-rehberi', 'istanbul-hizli-teslimat-rehberi', 'cicek-renk-anlamlari'],
+    faqItems: [
+      {
+        question: 'Mesaj kartına ne yazmalıyım?',
+        answer:
+          'Kısa ve net bir not en iyisidir. 1–2 cümle; duygu, kutlama veya destek mesajı vermeniz yeterli olur.',
+      },
+      {
+        question: 'Adres eksik olursa ne olur?',
+        answer:
+          'Eksik veya hatalı adres, teslimatın gecikmesine neden olabilir. İlçe/mahalle/sokak ve daire bilgisi mutlaka yazılmalıdır.',
+      },
+      {
+        question: 'Alıcı evde değilse ne yapılır?',
+        answer:
+          'Kurye alıcıyla iletişime geçer. Notta belirtilmişse kapıcı/komşuya bırakılabilir ya da sizin yönlendirmeniz alınır.',
       },
     ],
   },

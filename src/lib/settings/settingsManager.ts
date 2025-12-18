@@ -1,5 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
-import settingsJsonFallback from '@/data/settings.json';
+
+const settingsJsonFallback: Record<string, Record<string, any>> = {
+  site: {
+    name: 'Vadiler',
+    description: '',
+    email: 'bilgi@vadiler.com',
+    phone: '0850 307 4876',
+    address: 'İstanbul, Türkiye',
+  },
+  delivery: {
+    min_order_amount: 100,
+    free_shipping_threshold: 500,
+    standard_shipping_cost: 29,
+  },
+  social: {
+    instagram: '',
+    facebook: '',
+    twitter: '',
+  },
+};
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY!;

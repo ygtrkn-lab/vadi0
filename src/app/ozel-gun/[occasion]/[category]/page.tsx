@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
 import { SPECIAL_DAYS } from '@/data/special-days';
-import categories from '@/data/categories.json';
+import supabaseAdmin from '@/lib/supabase/admin';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
@@ -13,19 +13,55 @@ interface PageProps {
   }>;
 }
 
+type CategoryRow = {
+  id: number;
+  name: string;
+  slug: string;
+  description?: string | null;
+  image?: string | null;
+  is_active?: boolean | null;
+};
+
+async function fetchActiveCategories(): Promise<CategoryRow[]> {
+  const { data, error } = await supabaseAdmin
+    .from('categories')
+    .select('id, name, slug, description, image, is_active')
+    .eq('is_active', true)
+    .order('order', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching categories from Supabase:', error);
+    return [];
+  }
+
+  return (data as unknown as CategoryRow[]) ?? [];
+}
+
+async function fetchCategoryBySlug(slug: string): Promise<CategoryRow | null> {
+  const { data, error } = await supabaseAdmin
+    .from('categories')
+    .select('id, name, slug, description, image, is_active')
+    .eq('slug', slug)
+    .limit(1)
+    .single();
+
+  if (error || !data) return null;
+  return data as unknown as CategoryRow;
+}
+
 // Statik sayfaları oluştur
 export async function generateStaticParams() {
   const params = [];
+
+  const categories = await fetchActiveCategories();
   
   // Her özel gün × kategori kombinasyonu
   for (const occasion of SPECIAL_DAYS) {
     for (const category of categories) {
-      if (category.isActive) {
-        params.push({
-          occasion: occasion.slug,
-          category: category.slug,
-        });
-      }
+      params.push({
+        occasion: occasion.slug,
+        category: category.slug,
+      });
     }
   }
   
@@ -36,7 +72,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { occasion, category } = await params;
   
   const specialDay = SPECIAL_DAYS.find(d => d.slug === occasion);
-  const categoryData = categories.find(c => c.slug === category);
+  const categoryData = await fetchCategoryBySlug(category);
   
   if (!specialDay || !categoryData) {
     return { title: 'Sayfa Bulunamadı' };
@@ -80,27 +116,36 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
   const { occasion, category } = await params;
   
   const specialDay = SPECIAL_DAYS.find(d => d.slug === occasion);
-  const categoryData = categories.find(c => c.slug === category);
+  const categoryData = await fetchCategoryBySlug(category);
   
   if (!specialDay || !categoryData) {
     notFound();
   }
+
+  const activeCategories = await fetchActiveCategories();
   
-  // API'den ürünleri al - özel gün tagları VE kategori ile filtrele
-  const response = await fetch(
-    `${BASE_URL}/api/products?category=${category}&limit=120`,
-    { next: { revalidate: 3600 } }
-  );
-  const allProductsJson = response.ok ? await response.json() : null;
-  const allProducts: any[] = Array.isArray(allProductsJson?.products) ? allProductsJson.products : [];
-  
-  // Kategori ve özel gün filtreleme: API product.categories alanında occasion_tags + category birleşik tutuluyor
-  const products = allProducts.filter((p: any) => {
-    const hasCategory = p.category === category;
-    const mergedCategories: string[] = Array.isArray(p.categories) ? p.categories : [];
-    const hasOccasion = mergedCategories.includes(occasion);
-    return hasCategory && (hasOccasion || allProducts.length < 10);
-  });
+  // Build-time'da dış domain'e fetch atmamak için ürünleri Supabase'den doğrudan çek
+  // Öncelik: hem kategori hem de occasion tag (occasion_tags) eşleşsin
+  const taggedQuery = await supabaseAdmin
+    .from('products')
+    .select('*')
+    .eq('category', category)
+    .contains('occasion_tags', [occasion])
+    .order('id', { ascending: true })
+    .limit(120);
+
+  const taggedProducts = Array.isArray(taggedQuery.data) ? taggedQuery.data : [];
+  const products = taggedProducts.length > 0
+    ? taggedProducts
+    : (
+        (await supabaseAdmin
+          .from('products')
+          .select('*')
+          .eq('category', category)
+          .order('id', { ascending: true })
+          .limit(120)
+        ).data ?? []
+      );
 
   // Breadcrumb Schema
   const breadcrumbSchema = {
@@ -205,7 +250,7 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
             {categoryData.name} ile {specialDay.name} Sürprizi
           </h3>
           <p className="mb-4">
-            {categoryData.description} kategorisinde {products.length} farklı ürün seçeneği sunuyoruz. 
+            {(categoryData.description || '')} kategorisinde {products.length} farklı ürün seçeneği sunuyoruz. 
             Her bütçeye uygun, özenle hazırlanmış {categoryData.name.toLowerCase()} ile sevdiklerinize 
             unutulmaz bir sürpriz yapabilirsiniz.
           </p>
@@ -282,7 +327,7 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
               Diğer {specialDay.name} Kategorileri
             </h3>
             <ul className="space-y-2">
-              {categories.filter(c => c.isActive && c.slug !== category).slice(0, 5).map(cat => (
+              {activeCategories.filter((c) => c.slug !== category).slice(0, 5).map((cat) => (
                 <li key={cat.slug}>
                   <a 
                     href={`/ozel-gun/${occasion}/${cat.slug}`}

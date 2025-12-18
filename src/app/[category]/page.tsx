@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   
   return {
     title: `${categoryName} | Online Çiçek Siparişi | Vadiler Çiçek`,
-    description: `${categoryName} kategorisinde ${categoryProducts.length} ürün bulunmaktadır. En taze çiçekler, hızlı teslimat ile Vadiler Çiçek'te. İstanbul'a aynı gün teslimat.`,
+    description: `${categoryName} kategorisinde ${categoryProducts.length} ürün bulunmaktadır. En taze çiçekler, hızlı ve özenli teslimat ile Vadiler Çiçek'te.`,
     keywords: [`${categoryName.toLowerCase()}`, `${categoryName.toLowerCase()} çiçek`, `${categoryName.toLowerCase()} online`, 'çiçek siparişi', 'istanbul çiçek'],
     alternates: {
       canonical: `${BASE_URL}/${category}`,

@@ -1,19 +1,14 @@
 import { MetadataRoute } from 'next'
-import { products } from '@/data/products'
+import { fetchProductSitemapEntriesFromOffset } from '@/lib/seo/sitemapsSupabase'
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com'
 
 // Ürünler için ayrı sitemap (500-1000 arası ürünler)
-export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date().toISOString()
-
-  // 500'den sonraki ürünler
-  const productPages: MetadataRoute.Sitemap = products.slice(500).map((product) => ({
-    url: `${BASE_URL}/${product.category}/${product.slug}`,
-    lastModified: now,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  }))
-
-  return productPages
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  try {
+    return await fetchProductSitemapEntriesFromOffset(500)
+  } catch (error) {
+    console.error('Error building product sitemap from Supabase:', error)
+    return []
+  }
 }

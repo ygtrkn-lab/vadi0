@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import products from '@/data/products.json';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,6 +9,18 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Starting bulk product import...');
+
+    const body = await request.json().catch(() => null);
+    const products = Array.isArray((body as any)?.products) ? (body as any).products : null;
+    if (!products) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing products array in request body. Send { "products": [...] }',
+        },
+        { status: 400 }
+      );
+    }
     
     // Get existing product IDs and slugs
     const { data: existingProducts, error: fetchError } = await supabase
@@ -26,11 +37,11 @@ export async function POST(request: NextRequest) {
     console.log(`✅ Found ${existingIds.size} existing products (${existingSlugs.size} unique slugs)`);
     
     // Filter new products (must have unique id AND slug)
-    const filteredProducts = products.filter(p => !existingIds.has(p.id) && !existingSlugs.has(p.slug));
+    const filteredProducts = products.filter((p: any) => !existingIds.has(p.id) && !existingSlugs.has(p.slug));
     
     // Deduplicate by slug within new products (keep first occurrence)
     const seenSlugs = new Set<string>();
-    const newProducts = filteredProducts.filter(p => {
+    const newProducts = filteredProducts.filter((p: any) => {
       if (seenSlugs.has(p.slug)) {
         console.log(`⚠️ Skipping duplicate slug in source data: ${p.slug}`);
         return false;
@@ -50,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Convert products to Supabase format (only existing columns)
-    const productsToInsert = newProducts.map(p => ({
+      const productsToInsert = newProducts.map((p: any) => ({
       id: p.id,
       name: p.name,
       slug: p.slug,

@@ -48,9 +48,33 @@ export default function CategoryPageClient({
   const [currentPage, setCurrentPage] = useState(1);
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>(() => {
+    if (products.length === 0) return [0, 0];
+    const prices = products.map(p => p.price);
+    return [Math.min(...prices), Math.max(...prices)];
+  });
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const hasProducts = products.length > 0;
+
+  // Fiyat aralığını hesapla
+  const priceStats = useMemo(() => {
+    if (products.length === 0) {
+      return { min: 0, max: 0 };
+    }
+    const prices = products.map(p => p.price);
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+    };
+  }, [products]);
+
+  // Keep price range in sync with category changes (and new data)
+  useEffect(() => {
+    setPriceRange([priceStats.min, priceStats.max]);
+    setSelectedTags([]);
+    setSortBy('default');
+    setCurrentPage(1);
+  }, [category, priceStats.min, priceStats.max]);
 
   // SEO: Manage canonical URL and noindex meta for filtered/sorted pages
   useEffect(() => {
@@ -99,18 +123,6 @@ export default function CategoryPageClient({
     const tags = new Set<string>();
     products.forEach(p => p.tags?.forEach(t => tags.add(t)));
     return Array.from(tags).sort();
-  }, [products]);
-
-  // Fiyat aralığını hesapla
-  const priceStats = useMemo(() => {
-    if (products.length === 0) {
-      return { min: 0, max: 0 };
-    }
-    const prices = products.map(p => p.price);
-    return {
-      min: Math.min(...prices),
-      max: Math.max(...prices),
-    };
   }, [products]);
 
   // Ürünleri filtrele ve sırala
@@ -165,13 +177,16 @@ export default function CategoryPageClient({
   };
 
   const clearFilters = () => {
-    setPriceRange([0, 50000]);
+    setPriceRange([priceStats.min, priceStats.max]);
     setSelectedTags([]);
     setSortBy('default');
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = selectedTags.length > 0 || priceRange[0] > 0 || priceRange[1] < 50000;
+  const hasActiveFilters =
+    selectedTags.length > 0 ||
+    priceRange[0] !== priceStats.min ||
+    priceRange[1] !== priceStats.max;
 
   return (
     <>

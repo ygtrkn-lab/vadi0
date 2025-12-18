@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import coupons from '@/data/coupons.json';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,6 +9,18 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Starting bulk coupon import...');
+
+    const body = await request.json().catch(() => null);
+    const coupons = Array.isArray((body as any)?.coupons) ? (body as any).coupons : null;
+    if (!coupons) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing coupons array in request body. Send { "coupons": [...] }',
+        },
+        { status: 400 }
+      );
+    }
     
     // Get existing coupons by code (unique)
     const { data: existingCoupons, error: fetchError } = await supabase

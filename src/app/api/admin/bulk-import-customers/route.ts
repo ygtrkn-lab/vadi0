@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import * as fs from 'fs';
-import * as path from 'path';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,18 +9,18 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Starting bulk customer import...');
-    
-    // Read customers data
-    const customersPath = path.join(process.cwd(), 'src', 'data', 'customers.json');
-    
-    if (!fs.existsSync(customersPath)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'customers.json not found.' 
-      }, { status: 400 });
+
+    const body = await request.json().catch(() => null);
+    const customersData = Array.isArray((body as any)?.customers) ? (body as any).customers : null;
+    if (!customersData) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Missing customers array in request body. Send { "customers": [...] }',
+        },
+        { status: 400 }
+      );
     }
-    
-    const customersData = JSON.parse(fs.readFileSync(customersPath, 'utf-8'));
     
     // Get existing customers (check both id and email for uniqueness)
     const { data: existingCustomers, error: fetchError } = await supabase

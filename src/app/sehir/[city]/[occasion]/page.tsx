@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
 import { SPECIAL_DAYS } from '@/data/special-days';
 import { ISTANBUL_CONTENT, DISTRICT_CONTENTS } from '@/data/city-content';
+import supabaseAdmin from '@/lib/supabase/admin';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
@@ -96,12 +97,24 @@ export default async function CityOccasionPage({ params }: PageProps) {
   
   if (!cityData) notFound();
   
-  // API'den ürünleri al - occasion slug'ı products.occasion_tags içinde tutuluyorsa category filtresiyle eşleşir
-  const response = await fetch(`${BASE_URL}/api/products?category=${occasion}&limit=60`, {
-    next: { revalidate: 3600 } // 1 saat cache
-  });
-  const productsJson = response.ok ? await response.json() : null;
-  const products: any[] = Array.isArray(productsJson?.products) ? productsJson.products : [];
+  // Build-time'da dış domain'e fetch atmamak için ürünleri Supabase'den doğrudan çek
+  const taggedQuery = await supabaseAdmin
+    .from('products')
+    .select('*')
+    .contains('occasion_tags', [occasion])
+    .order('id', { ascending: true })
+    .limit(60);
+
+  const products = Array.isArray(taggedQuery.data) && taggedQuery.data.length > 0
+    ? taggedQuery.data
+    : (
+        (await supabaseAdmin
+          .from('products')
+          .select('*')
+          .order('id', { ascending: true })
+          .limit(60)
+        ).data ?? []
+      );
 
   // Breadcrumb Schema
   const breadcrumbSchema = {

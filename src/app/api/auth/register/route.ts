@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-
-const dataFilePath = path.join(process.cwd(), 'src/data/customers.json');
+import supabaseAdmin from '@/lib/supabase/admin';
 
 interface Customer {
   id: string;
@@ -43,14 +40,15 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const data = await fs.readFile(dataFilePath, 'utf-8');
-    const customers: Customer[] = JSON.parse(data);
-    
     // E-posta kontrolü
-    const existingCustomer = customers.find(
-      (c) => c.email.toLowerCase() === email.toLowerCase()
-    );
-    
+    const normalizedEmail = String(email).toLowerCase();
+    const { data: existingCustomer } = await supabaseAdmin
+      .from('customers')
+      .select('id')
+      .eq('email', normalizedEmail)
+      .limit(1)
+      .maybeSingle();
+
     if (existingCustomer) {
       return NextResponse.json(
         { error: 'Bu e-posta adresi zaten kayıtlı.' },
@@ -59,14 +57,17 @@ export async function POST(request: NextRequest) {
     }
     
     // Yeni müşteri oluştur
+    const newCustomerId = 'cust_' + Date.now().toString(36) + Math.random().toString(36).slice(2);
+    const now = new Date().toISOString();
+
     const newCustomer: Customer = {
-      id: 'cust_' + Date.now().toString(36) + Math.random().toString(36).substr(2),
-      email,
+      id: newCustomerId,
+      email: normalizedEmail,
       name,
       phone,
-      password, // Gerçek uygulamada hash'lenmeli!
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      password, // TODO: hash (kept for backwards compatibility)
+      createdAt: now,
+      updatedAt: now,
       addresses: [],
       orders: [],
       favorites: [],
@@ -75,11 +76,34 @@ export async function POST(request: NextRequest) {
       lastOrderDate: null,
       isActive: true,
       notes: '',
-      tags: ['Yeni']
+      tags: ['Yeni'],
     };
-    
-    customers.push(newCustomer);
-    await fs.writeFile(dataFilePath, JSON.stringify(customers, null, 2), 'utf-8');
+
+    const { error: insertError } = await supabaseAdmin
+      .from('customers')
+      .insert({
+        id: newCustomer.id,
+        email: newCustomer.email,
+        name: newCustomer.name,
+        phone: newCustomer.phone,
+        password: newCustomer.password,
+        addresses: newCustomer.addresses,
+        orders: newCustomer.orders,
+        favorites: newCustomer.favorites,
+        created_at: newCustomer.createdAt,
+        updated_at: newCustomer.updatedAt,
+        total_spent: newCustomer.totalSpent,
+        order_count: newCustomer.orderCount,
+        last_order_date: newCustomer.lastOrderDate,
+        is_active: newCustomer.isActive,
+        notes: newCustomer.notes,
+        tags: newCustomer.tags,
+      });
+
+    if (insertError) {
+      console.error('Customer insert error:', insertError);
+      return NextResponse.json({ error: 'Kayıt yapılamadı.' }, { status: 500 });
+    }
     
     // Şifreyi response'dan çıkar
     const { password: _, ...customerWithoutPassword } = newCustomer;

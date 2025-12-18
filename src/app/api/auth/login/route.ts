@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
+import supabaseAdmin from '@/lib/supabase/admin';
 
-const dataFilePath = path.join(process.cwd(), 'src/data/customers.json');
-
-interface Customer {
+type CustomerRow = {
   id: string;
   email: string;
   password: string;
-  isActive: boolean;
+  is_active: boolean | null;
   [key: string]: unknown;
-}
+};
 
 // POST - Giriş yap
 export async function POST(request: NextRequest) {
@@ -24,21 +21,24 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const data = await fs.readFile(dataFilePath, 'utf-8');
-    const customers: Customer[] = JSON.parse(data);
-    
-    const customer = customers.find(
-      (c) => c.email.toLowerCase() === email.toLowerCase() && c.password === password
-    );
-    
-    if (!customer) {
+    const { data: customer, error } = await supabaseAdmin
+      .from('customers')
+      .select('*')
+      .eq('email', String(email).toLowerCase())
+      .eq('password', password)
+      .limit(1)
+      .single();
+
+    if (error || !customer) {
       return NextResponse.json(
         { error: 'E-posta veya şifre hatalı.' },
         { status: 401 }
       );
     }
     
-    if (!customer.isActive) {
+    const row = customer as unknown as CustomerRow;
+
+    if (row.is_active === false) {
       return NextResponse.json(
         { error: 'Hesabınız devre dışı bırakılmış.' },
         { status: 403 }
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Şifreyi response'dan çıkar
-    const { password: _, ...customerWithoutPassword } = customer;
+    const { password: _, ...customerWithoutPassword } = row;
     
     return NextResponse.json({
       success: true,

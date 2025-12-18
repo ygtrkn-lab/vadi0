@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SpotlightCard, FadeContent } from '@/components/admin';
 import BulkPriceAdjustment from '@/components/admin/BulkPriceAdjustment';
 import { useTheme } from '../ThemeContext';
-import categoriesData from '@/data/categories.json';
 import { 
   HiOutlineCog, 
   HiOutlineTruck, 
@@ -41,6 +40,7 @@ export default function AyarlarPage() {
   const { isDark } = useTheme();
 
   const [apiSettings, setApiSettings] = useState<SettingsData>({});
+  const [categories, setCategories] = useState<Array<{ id: number; name: string; slug: string }>>([]);
 
   const [settings, setSettings] = useState({
     siteName: '',
@@ -109,6 +109,31 @@ export default function AyarlarPage() {
     };
 
     loadSettings();
+  }, []);
+
+  // Load categories (for pricing tools)
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await fetch('/api/categories?all=true', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        const items = Array.isArray(data?.categories) ? data.categories : [];
+        setCategories(
+          items
+            .map((c: any) => ({
+              id: Number(c.id),
+              name: String(c.name ?? c.title ?? c.slug ?? ''),
+              slug: String(c.slug ?? ''),
+            }))
+            .filter((c: any) => c.slug && c.name)
+        );
+      } catch (err) {
+        console.error('Categories load error:', err);
+      }
+    };
+
+    loadCategories();
   }, []);
 
   const handleChange = (field: string, value: string | number | boolean) => {
@@ -977,7 +1002,7 @@ export default function AyarlarPage() {
           >
             <FadeContent direction="up" delay={0.15}>
               <SpotlightCard className="p-5 sm:p-6">
-                <BulkPriceAdjustment categories={categoriesData} />
+                <BulkPriceAdjustment categories={categories} />
               </SpotlightCard>
             </FadeContent>
           </motion.div>

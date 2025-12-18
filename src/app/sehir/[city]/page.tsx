@@ -5,8 +5,9 @@ import { Flower, Star, Truck } from 'lucide-react'
 import { Footer, Header } from '@/components'
 import { DISTRICT_CONTENTS, getDistrictContentBySlug, createCitySlug } from '@/data/city-content'
 import { ISTANBUL_ILCELERI } from '@/data/istanbul-districts'
-import { products } from '@/data/products'
 import ProductCard from '@/components/ProductCard'
+import supabaseAdmin from '@/lib/supabase/admin'
+import { transformProducts } from '@/lib/transformers'
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com'
 
@@ -67,10 +68,27 @@ export default async function CityPage({ params }: PageProps) {
 
   const isIstanbul = city === 'istanbul'
 
-  // Şehir bazlı sabit ürün seçimi (her şehir için tutarlı görünüm)
-  const cityIndex = DISTRICT_CONTENTS.findIndex(d => d.slug === city) + 1
-  const startIndex = (cityIndex * 7) % Math.max(products.length - 12, 1)
-  const shuffledProducts = products.slice(startIndex, startIndex + 12)
+  // Şehir bazlı sabit ürün seçimi (DB üzerinden, deterministic offset)
+  const cityIndex = Math.max(0, DISTRICT_CONTENTS.findIndex((d) => d.slug === city)) + 1
+  const offset = cityIndex * 7
+  const { data: pageRows } = await supabaseAdmin
+    .from('products')
+    .select('*')
+    .order('id', { ascending: true })
+    .range(offset, offset + 11)
+
+  const rows = Array.isArray(pageRows) && pageRows.length > 0
+    ? pageRows
+    : (
+        (await supabaseAdmin
+          .from('products')
+          .select('*')
+          .order('id', { ascending: true })
+          .limit(12)
+        ).data ?? []
+      )
+
+  const shuffledProducts = transformProducts(rows as any)
 
   // LocalBusiness JSON-LD Schema
   const localBusinessSchema = {
