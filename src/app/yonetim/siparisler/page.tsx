@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -40,10 +40,14 @@ const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'i
 export default function SiparislerPage() {
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [onlyPaid, setOnlyPaid] = useState(false);
+  const [todayToPrepare, setTodayToPrepare] = useState(false);
   
   const { isDark } = useTheme();
   const { state: orderState, updateOrderStatus } = useOrder();
@@ -56,14 +60,23 @@ export default function SiparislerPage() {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
     const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 
     return orderState.orders
       .filter(order => {
-        // Hide orders with pending or failed payments from default view
-        const paymentStatus = order.payment?.status?.toLowerCase();
-        const isPaymentComplete = paymentStatus !== 'pending' && paymentStatus !== 'failed';
-        if (!isPaymentComplete) {
-          return false;
+        // Optional: only show paid orders when toggled
+        if (onlyPaid) {
+          const paymentStatus = order.payment?.status?.toLowerCase();
+          if (paymentStatus !== 'paid') return false;
+        }
+
+        // Optional: show only orders that should be prepared/delivered today
+        if (todayToPrepare) {
+          const d = order.delivery?.deliveryDate || '';
+          const isTodayDelivery = d === todayStr;
+          const isActive = order.status !== 'delivered' && order.status !== 'cancelled';
+          if (!(isTodayDelivery && isActive)) return false;
         }
 
         const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
@@ -88,7 +101,7 @@ export default function SiparislerPage() {
         return matchesStatus && matchesSearch && matchesDate;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [orderState.orders, selectedStatus, searchTerm, dateFilter]);
+  }, [orderState.orders, selectedStatus, searchTerm, dateFilter, onlyPaid, todayToPrepare]);
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice(
@@ -247,36 +260,56 @@ export default function SiparislerPage() {
         <SpotlightCard className="p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             {/* Search */}
-            <div className="relative flex-1">
-              <HiOutlineSearch className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`} />
-              <input
+            {(() => {
+              const isSearchOpen = searchFocused || searchTerm.length > 0;
+              return (
+                <div
+                  className={`relative flex-1 sm:w-full transition-all duration-300 ${isSearchOpen ? 'sm:max-w-[820px]' : 'sm:max-w-[560px]'} ${isDark ? '' : ''}`}
+                  onClick={() => {
+                    if (!isSearchOpen) searchInputRef.current?.focus();
+                  }}
+                >
+                  <HiOutlineSearch
+                    className={`pointer-events-none absolute w-5 h-5 transition-all duration-200 ${
+                      isSearchOpen
+                        ? 'left-3 top-1/2 -translate-y-1/2'
+                        : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
+                    } ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}
+                  />
+                  <input
+                    ref={searchInputRef}
                 type="text"
                 placeholder="Sipariş veya müşteri ara..."
                 value={searchTerm}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className={`w-full pl-10 pr-4 py-2.5 border rounded-xl
-                  focus:outline-none transition-colors
+                    className={`w-full pl-10 pr-10 py-3 border rounded-2xl
+                  focus:outline-none transition-all duration-300
+                  focus:ring-2 ${isDark ? 'focus:ring-purple-500/30' : 'focus:ring-purple-500/20'}
                   ${isDark 
                     ? 'bg-neutral-800 border-neutral-700 text-white placeholder-neutral-500 focus:border-neutral-600' 
                     : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-gray-300'
                   }`}
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setCurrentPage(1);
-                  }}
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg
-                    ${isDark ? 'hover:bg-neutral-700' : 'hover:bg-gray-200'}`}
-                >
-                  <HiOutlineX className="w-4 h-4 text-neutral-400" />
-                </button>
-              )}
-            </div>
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setCurrentPage(1);
+                        searchInputRef.current?.focus();
+                      }}
+                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg ${isDark ? 'hover:bg-neutral-700' : 'hover:bg-gray-200'}`}
+                    >
+                      <HiOutlineX className={`w-4 h-4 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`} />
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Mobile Filter Button */}
             <button
@@ -292,9 +325,39 @@ export default function SiparislerPage() {
               Durum Filtrele
             </button>
 
-            {/* Desktop Status Filter */}
+            {/* Desktop Filters */}
             <div className="hidden sm:flex items-center gap-2 overflow-x-auto">
-              {['all', 'pending', 'pending_payment', 'payment_failed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
+              {/* Tümü */}
+              <button
+                onClick={() => {
+                  setSelectedStatus('all');
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+                  selectedStatus === 'all'
+                    ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
+                    : (isDark ? 'bg-neutral-800 text-neutral-400 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900')
+                }`}
+              >
+                Tümü
+              </button>
+              {/* Bugün Haz. (second right after Tümü) */}
+              <button
+                onClick={() => {
+                  setTodayToPrepare(!todayToPrepare);
+                  setCurrentPage(1);
+                }}
+                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all border ${
+                  todayToPrepare
+                    ? (isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200')
+                    : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white' : 'bg-white text-gray-600 border-gray-200 hover:text-gray-900')
+                }`}
+                title="Bugün hazırlanması gerekenleri göster (teslimat tarihi bugün)"
+              >
+                Bugün hazırlanacak
+              </button>
+              {/* Other statuses */}
+              {['pending', 'pending_payment', 'payment_failed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
                 <button
                   key={status}
                   onClick={() => {
@@ -304,12 +367,49 @@ export default function SiparislerPage() {
                   className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                     selectedStatus === status
                       ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
-                      : (isDark ? 'bg-neutral-800 text-neutral-400 hover:text-white' : 'bg-gray-100 text-gray-500 hover:text-gray-900')
+                      : (isDark ? 'bg-neutral-800 text-neutral-400 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900')
                   }`}
                 >
-                  {status === 'all' ? 'Tümü' : statusConfig[status as OrderStatus].label}
+                  {statusConfig[status as OrderStatus].label}
                 </button>
               ))}
+              {/* Only paid toggle */}
+              <button
+                onClick={() => {
+                  setOnlyPaid(!onlyPaid);
+                  setCurrentPage(1);
+                }}
+                className={`ml-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  onlyPaid
+                    ? (isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+                    : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white' : 'bg-white text-gray-600 border-gray-200 hover:text-gray-900')
+                }`}
+                title="Sadece ödenen siparişleri göster"
+              >
+                {onlyPaid ? 'Sadece ödenenler: Açık' : 'Sadece ödenenler'}
+              </button>
+
+              {/* Clear filters if active */}
+              {(() => {
+                const hasActive = selectedStatus !== 'all' || onlyPaid || todayToPrepare || dateFilter !== 'all' || !!searchTerm;
+                if (!hasActive) return null;
+                return (
+                  <button
+                    onClick={() => {
+                      setSelectedStatus('all');
+                      setOnlyPaid(false);
+                      setTodayToPrepare(false);
+                      setDateFilter('all');
+                      setSearchTerm('');
+                      setCurrentPage(1);
+                    }}
+                    className={`ml-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isDark ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                    title="Filtreleri temizle"
+                  >
+                    Temizle
+                  </button>
+                );
+              })()}
             </div>
           </div>
 
@@ -323,7 +423,40 @@ export default function SiparislerPage() {
                 className="sm:hidden overflow-hidden"
               >
                 <div className={`pt-3 mt-3 border-t flex flex-wrap gap-2 ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
-                  {['all', 'pending', 'pending_payment', 'payment_failed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
+                  {/* Tümü */}
+                  <button
+                    onClick={() => {
+                      setSelectedStatus('all');
+                      setCurrentPage(1);
+                      setShowFilters(false);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      selectedStatus === 'all'
+                        ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
+                        : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500')
+                    }`}
+                  >
+                    Tümü
+                  </button>
+
+                  {/* Bugün Haz. next to All */}
+                  <button
+                    onClick={() => {
+                      setTodayToPrepare(!todayToPrepare);
+                      setCurrentPage(1);
+                      setShowFilters(false);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                      todayToPrepare
+                        ? (isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200')
+                        : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800' : 'bg-white text-gray-600 border-gray-200')
+                    }`}
+                  >
+                    Bugün hazırlanacak
+                  </button>
+
+                  {/* Other statuses */}
+                  {['pending', 'pending_payment', 'payment_failed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
                     <button
                       key={status}
                       onClick={() => {
@@ -337,158 +470,198 @@ export default function SiparislerPage() {
                           : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500')
                       }`}
                     >
-                      {status === 'all' ? 'Tümü' : statusConfig[status as OrderStatus].label}
+                      {statusConfig[status as OrderStatus].label}
                     </button>
                   ))}
+                  {/* Mobile toggles */}
+                  <button
+                    onClick={() => {
+                      setOnlyPaid(!onlyPaid);
+                      setCurrentPage(1);
+                      setShowFilters(false);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                      onlyPaid
+                        ? (isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
+                        : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800' : 'bg-white text-gray-600 border-gray-200')
+                    }`}
+                  >
+                    {onlyPaid ? 'Sadece ödenenler: Açık' : 'Sadece ödenenler'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setTodayToPrepare(!todayToPrepare);
+                      setCurrentPage(1);
+                      setShowFilters(false);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                      todayToPrepare
+                        ? (isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200')
+                        : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800' : 'bg-white text-gray-600 border-gray-200')
+                    }`}
+                  >
+                    {todayToPrepare ? 'Bugün hazırlanacak: Açık' : 'Bugün hazırlanacak'}
+                  </button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Active filters summary */}
+          {(() => {
+            const chips: { key: string; label: string; onClear: () => void }[] = [];
+            if (searchTerm) chips.push({ key: 'q', label: `Arama: "${searchTerm}"`, onClear: () => { setSearchTerm(''); setCurrentPage(1); } });
+            if (selectedStatus !== 'all') chips.push({ key: 'st', label: statusConfig[selectedStatus as OrderStatus]?.label || selectedStatus, onClear: () => { setSelectedStatus('all'); setCurrentPage(1); } });
+            if (dateFilter !== 'all') chips.push({ key: 'df', label: dateFilter === 'today' ? 'Bugün' : dateFilter === 'week' ? 'Bu Hafta' : 'Bu Ay', onClear: () => { setDateFilter('all'); setCurrentPage(1); } });
+            if (onlyPaid) chips.push({ key: 'paid', label: 'Ödenenler', onClear: () => { setOnlyPaid(false); setCurrentPage(1); } });
+            if (todayToPrepare) chips.push({ key: 'today', label: 'Bugün hazırlanacak', onClear: () => { setTodayToPrepare(false); setCurrentPage(1); } });
+            if (chips.length === 0) return null;
+            return (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {chips.map((c) => (
+                  <span key={c.key} className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs border ${isDark ? 'bg-neutral-900 text-neutral-300 border-neutral-800' : 'bg-white text-gray-700 border-gray-200'}`}>
+                    {c.label}
+                    <button onClick={c.onClear} className={`p-0.5 rounded ${isDark ? 'hover:bg-neutral-800' : 'hover:bg-gray-100'}`}>
+                      <HiOutlineX className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
         </SpotlightCard>
       </FadeContent>
 
       {/* Orders List */}
+      {orderState.isLoading && (
+        <FadeContent direction="up" delay={0.35}>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className={`p-5 rounded-2xl border animate-pulse ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-200'}`}>
+                <div className={`h-5 w-40 rounded mb-3 ${isDark ? 'bg-neutral-800' : 'bg-gray-200'}`}></div>
+                <div className={`h-4 w-2/3 rounded ${isDark ? 'bg-neutral-800' : 'bg-gray-200'}`}></div>
+              </div>
+            ))}
+          </div>
+        </FadeContent>
+      )}
       <FadeContent direction="up" delay={0.35}>
         <div className="space-y-3">
           {paginatedOrders.map((order, index) => {
             const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
             const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
-            const displayCustomerEmail = (order.customerEmail || '').trim() || customer?.email || '-';
             const displayCustomerPhone = (order.customerPhone || '').trim() || customer?.phone || '-';
+
+            const paymentStatus = order.payment?.status?.toLowerCase();
+            const paymentBadge = (
+              <StatusBadge
+                status={paymentStatus === 'paid' ? 'success' : paymentStatus === 'failed' ? 'error' : paymentStatus === 'refunded' ? 'warning' : 'pending'}
+                text={paymentStatus === 'paid' ? 'Ödendi' : paymentStatus === 'failed' ? 'Başarısız' : paymentStatus === 'refunded' ? 'İade' : 'Bekliyor'}
+              />
+            );
 
             return (
               <motion.div
                 key={order.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                transition={{ delay: index * 0.04 }}
               >
-                <SpotlightCard className="p-4 sm:p-5">
-                <div className="flex flex-col gap-4">
-                  {/* Header Row */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`font-semibold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>#{order.orderNumber}</span>
-                      <span className={isDark ? 'text-neutral-600' : 'text-gray-300'}>•</span>
-                      <span className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                        {formatDate(order.createdAt)}
-                      </span>
-                      <StatusBadge 
-                        status={statusConfig[order.status]?.variant || 'info'}
-                        text={statusConfig[order.status]?.label || order.status || 'Bilinmiyor'}
-                        pulse={order.status === 'pending'}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getNextStatus(order.status) && (
-                        <button
-                          onClick={() => handleUpdateStatus(order.id, getNextStatus(order.status)!.status)}
-                          className={`px-3 py-2 rounded-xl text-xs font-medium transition-colors
-                            ${order.status === 'pending' ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' :
+                <SpotlightCard className="p-3 sm:p-4">
+                  <div className="flex flex-col gap-3">
+                    {/* Top Row: Order + Status + Actions */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>#{order.orderNumber}</span>
+                        <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{formatDate(order.createdAt)}</span>
+                        {paymentBadge}
+                        <StatusBadge
+                          status={statusConfig[order.status]?.variant || 'info'}
+                          text={statusConfig[order.status]?.label || order.status || 'Bilinmiyor'}
+                          pulse={order.status === 'pending'}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {getNextStatus(order.status) && (
+                          <button
+                            onClick={() => handleUpdateStatus(order.id, getNextStatus(order.status)!.status)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              order.status === 'pending' ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' :
                               order.status === 'confirmed' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' :
                               order.status === 'processing' ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' :
                               'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
                             }`}
-                        >
-                          {getNextStatus(order.status)!.label}
-                        </button>
-                      )}
-                      <button
-                        onClick={() => setSelectedOrder(order)}
-                        className={`p-2.5 rounded-xl transition-colors
-                          ${isDark 
-                            ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400' 
-                            : 'bg-gray-100 hover:bg-gray-200 text-gray-500'
-                          }`}
-                      >
-                        <HiOutlineEye className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Products Preview */}
-                  <div className="flex gap-3 overflow-x-auto pb-2">
-                    {order.products.slice(0, 4).map((product, pIndex) => (
-                      <div key={pIndex} className="relative flex-shrink-0">
-                        <div className={`w-16 h-16 rounded-lg overflow-hidden border-2 ${isDark ? 'border-neutral-700' : 'border-gray-200'} relative`}>
-                          {product.image ? (
-                            <Image 
-                              src={product.image} 
-                              alt={product.name} 
-                              fill
-                              className="object-cover"
-                              unoptimized
-                            />
-                          ) : (
-                            <div className={`w-full h-full flex items-center justify-center text-2xl ${isDark ? 'bg-neutral-800' : 'bg-gray-100'}`}>🌸</div>
-                          )}
-                        </div>
-                        {product.quantity > 1 && (
-                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#e05a4c] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                            {product.quantity}
-                          </span>
+                          >
+                            {getNextStatus(order.status)!.label}
+                          </button>
                         )}
+                        <button
+                          onClick={() => setSelectedOrder(order)}
+                          className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
+                          title="Detayı görüntüle"
+                        >
+                          <HiOutlineEye className="w-5 h-5" />
+                        </button>
                       </div>
-                    ))}
-                    {order.products.length > 4 && (
-                      <div className={`w-16 h-16 rounded-lg flex items-center justify-center text-sm font-medium ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500'}`}>
-                        +{order.products.length - 4}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Customer & Delivery Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Customer */}
-                    <div className={`p-3 rounded-lg ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-                      <p className={`text-xs font-medium mb-1 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Müşteri</p>
-                      <p className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{displayCustomerName}</p>
-                      <p className={`text-xs truncate ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>{displayCustomerEmail}</p>
-                      <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>{displayCustomerPhone}</p>
                     </div>
 
-                    {/* Delivery */}
-                    <div className={`p-3 rounded-lg ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-                      <p className={`text-xs font-medium mb-1 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Teslimat</p>
-                      <p className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{order.delivery?.recipientName || '-'}</p>
-                      <p className={`text-xs truncate ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                        {order.delivery?.district || ''}{order.delivery?.district && order.delivery?.province ? '/' : ''}{order.delivery?.province || ''}
-                      </p>
-                      {order.delivery?.deliveryDate && (
-                        <p className={`text-xs font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                          📅 {order.delivery.deliveryDate} {order.delivery.deliveryTimeSlot || ''}
+                    {/* Compact Info Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-3">
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
+                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Müşteri</p>
+                        <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{displayCustomerName}</p>
+                        <p className={`text-xs truncate ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>{displayCustomerPhone}</p>
+                      </div>
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
+                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Teslimat</p>
+                        <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          {order.delivery?.district || '-'}{order.delivery?.district && order.delivery?.province ? '/' : ''}{order.delivery?.province || ''}
                         </p>
-                      )}
-                    </div>
-
-                    {/* Price */}
-                    <div className={`p-3 rounded-lg ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-                      <p className={`text-xs font-medium mb-1 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Tutar</p>
-                      <p className={`text-xl font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatPrice(order.total)}</p>
-                      <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>{order.products.length} ürün</p>
+                        <p className={`text-xs ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                          {order.delivery?.deliveryDate ? `📅 ${order.delivery.deliveryDate} ${order.delivery.deliveryTimeSlot || ''}` : ''}
+                        </p>
+                      </div>
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
+                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Ürün</p>
+                        <div className="flex items-center gap-3">
+                          <div className="flex -space-x-3">
+                            {order.products.slice(0, 4).map((p, idx) => (
+                              <div key={idx} className={`relative w-14 h-14 rounded-md overflow-hidden border ${isDark ? 'border-neutral-700' : 'border-gray-200'}`}>
+                                {p.image ? (
+                                  <Image src={p.image} alt={p.name} fill className="object-cover" unoptimized />
+                                ) : (
+                                  <div className={`w-full h-full flex items-center justify-center text-xs ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500'}`}>🌸</div>
+                                )}
+                                {p.quantity > 1 && (
+                                  <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-[#e05a4c] text-white text-[11px] font-bold rounded-full flex items-center justify-center">
+                                    {p.quantity}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                            {order.products.length > 4 && (
+                              <div className={`w-14 h-14 rounded-md flex items-center justify-center text-xs font-medium ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500'}`}>
+                                +{order.products.length - 4}
+                              </div>
+                            )}
+                          </div>
+                          <span className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>{order.products.length} adet</span>
+                        </div>
+                      </div>
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
+                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Tutar</p>
+                        <p className={`text-sm font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatPrice(order.total)}</p>
+                      </div>
+                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'} md:text-right`}> 
+                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>No / Teslimat</p>
+                        <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>#{order.orderNumber}</p>
+                        <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
+                          {order.delivery?.deliveryDate ? `${order.delivery.deliveryDate}` : ''}
+                          {order.delivery?.deliveryTimeSlot ? ` • ${order.delivery.deliveryTimeSlot}` : ''}
+                        </p>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Message Card Preview */}
-                  {order.message?.content && (
-                    <div className={`p-3 rounded-lg border ${isDark ? 'bg-pink-500/5 border-pink-500/20' : 'bg-pink-50 border-pink-100'}`}>
-                      <p className={`text-xs font-medium ${isDark ? 'text-pink-400' : 'text-pink-600'}`}>
-                        💌 Mesaj Kartı {order.message.isGift && '(Hediye)'}
-                      </p>
-                      <p className={`text-sm italic truncate mt-1 ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-                        &quot;{order.message.content}&quot;
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Delivery Notes */}
-                  {order.delivery?.deliveryNotes && (
-                    <div className={`p-3 rounded-lg ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
-                      <p className={`text-xs font-medium ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>📝 Teslimat Notu</p>
-                      <p className={`text-sm mt-1 ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>{order.delivery.deliveryNotes}</p>
-                    </div>
-                  )}
-                </div>
                 </SpotlightCard>
               </motion.div>
             );
@@ -497,7 +670,7 @@ export default function SiparislerPage() {
       </FadeContent>
 
       {/* Empty State */}
-      {filteredOrders.length === 0 && (
+      {!orderState.isLoading && filteredOrders.length === 0 && (
         <FadeContent direction="up" delay={0.35}>
           <div className="text-center py-12">
             <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4
@@ -505,7 +678,10 @@ export default function SiparislerPage() {
               <HiOutlineClipboardList className={`w-8 h-8 ${isDark ? 'text-neutral-600' : 'text-gray-400'}`} />
             </div>
             <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Sipariş bulunamadı</h3>
-            <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Arama kriterlerinize uygun sipariş yok</p>
+            <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+              Arama/filtre kriterlerinize uygun sipariş yok
+              {onlyPaid ? ' (Sadece ödenenler açık)' : ''}
+            </p>
           </div>
         </FadeContent>
       )}
