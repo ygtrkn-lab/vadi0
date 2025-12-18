@@ -73,7 +73,7 @@ export default function RehberIndexPage() {
       />
 
       <Header />
-      <main className="container mx-auto px-4 py-8 mt-20">
+      <main className="container mx-auto px-4 pt-32 lg:pt-52 pb-8">
         <div className="relative overflow-hidden rounded-3xl border border-gray-100 bg-white/70 backdrop-blur-md shadow-soft p-8 md:p-12 mb-12">
           <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-primary-50/60 via-white/20 to-white/0" />
           <div className="relative">

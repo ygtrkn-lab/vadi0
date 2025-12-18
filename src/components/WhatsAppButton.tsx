@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
@@ -12,7 +12,7 @@ interface MenuOption {
   description: string;
   message: string;
   gradient: string;
-  icon: JSX.Element;
+  icon: ReactNode;
 }
 
 const getMenuOptions = (pageUrl: string): MenuOption[] => [
@@ -73,7 +73,7 @@ export default function WhatsAppButton() {
   const pathname = usePathname();
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
-  const shouldHide = pathname === '/sepet';
+  const shouldHide = pathname === '/sepet' || pathname.startsWith('/yonetim');
 
   useEffect(() => {
     if (shouldHide) return;

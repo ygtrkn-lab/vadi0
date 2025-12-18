@@ -152,7 +152,7 @@ export default async function GuideDetailPage({ params }: PageProps) {
       />
 
       <Header />
-      <main className="container mx-auto px-4 py-8 mt-20">
+      <main className="container mx-auto px-4 pt-32 lg:pt-52 pb-8">
         <nav className="mb-6 max-w-4xl mx-auto">
           <ol className="flex items-center gap-2 text-xs text-gray-500">
             <li>
