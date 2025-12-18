@@ -113,11 +113,16 @@ function generateJsonLd(product: any) {
         name: 'Vadiler Çiçek',
       },
     },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: product.rating,
-      reviewCount: product.reviewCount || 10,
-    },
+    // Only include aggregateRating if product has valid rating (> 0)
+    ...(product.rating > 0 && {
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: product.rating,
+        reviewCount: product.reviewCount || 1,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    }),
   };
 }
 
