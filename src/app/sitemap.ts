@@ -3,6 +3,8 @@ import { fetchActiveCategorySitemapEntries, fetchProductSitemapEntries } from '@
 import { SPECIAL_DAYS } from '@/data/special-days'
 import { ISTANBUL_ILCELERI } from '@/data/istanbul-districts'
 import { createCitySlug } from '@/data/city-content'
+import { GUIDE_CONTENTS } from '@/data/guide-contents'
+import categories from '@/data/categories.json'
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com'
 
@@ -109,11 +111,67 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
+  // Blog/Rehber sayfaları
+  const guidePages: MetadataRoute.Sitemap = [
+    {
+      url: `${BASE_URL}/rehber`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
+    ...GUIDE_CONTENTS.map((guide) => ({
+      url: `${BASE_URL}/rehber/${guide.slug}`,
+      lastModified: guide.publishDate,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  ]
+
+  // Kombinasyonel sayfalar: Şehir × Özel Gün
+  const cityOccasionPages: MetadataRoute.Sitemap = []
+  // Istanbul ana sayfası için
+  SPECIAL_DAYS.forEach(occasion => {
+    cityOccasionPages.push({
+      url: `${BASE_URL}/sehir/istanbul/${occasion.slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.75,
+    })
+  })
+  // İlçeler için (ilk 10 ilçe - çok fazla URL oluşmaması için)
+  ISTANBUL_ILCELERI.slice(0, 10).forEach(district => {
+    SPECIAL_DAYS.slice(0, 5).forEach(occasion => { // İlk 5 özel gün
+      cityOccasionPages.push({
+        url: `${BASE_URL}/sehir/${createCitySlug(district.name)}/${occasion.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly' as const,
+        priority: 0.65,
+      })
+    })
+  })
+
+  // Kombinasyonel sayfalar: Özel Gün × Kategori
+  const occasionCategoryPages: MetadataRoute.Sitemap = []
+  const activeCategories = categories.filter(c => c.isActive)
+  SPECIAL_DAYS.forEach(occasion => {
+    activeCategories.forEach(category => {
+      occasionCategoryPages.push({
+        url: `${BASE_URL}/ozel-gun/${occasion.slug}/${category.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly' as const,
+        priority: 0.7,
+      })
+    })
+  })
+
   return [
     ...staticPages,
     ...categoryPages,
     ...productPages,
     ...cityPages,
     ...specialDayPages,
+    ...guidePages,
+    ...cityOccasionPages,
+    ...occasionCategoryPages,
   ]
 }

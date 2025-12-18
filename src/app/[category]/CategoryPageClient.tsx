@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -51,6 +51,48 @@ export default function CategoryPageClient({
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const hasProducts = products.length > 0;
+
+  // SEO: Manage canonical URL and noindex meta for filtered/sorted pages
+  useEffect(() => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const canonicalUrl = `${baseUrl}/${category}`;
+    
+    // Find existing canonical tag or create new one
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+      canonicalLink = document.createElement('link');
+      canonicalLink.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonicalLink);
+    }
+    canonicalLink.setAttribute('href', canonicalUrl);
+
+    // Add noindex meta if filters/sorts are active
+    const hasFiltersOrSorts = sortBy !== 'default' || selectedTags.length > 0 || 
+                               priceRange[0] !== priceStats.min || priceRange[1] !== priceStats.max ||
+                               currentPage > 1;
+    
+    let robotsMeta = document.querySelector('meta[name="robots"]');
+    if (hasFiltersOrSorts) {
+      if (!robotsMeta) {
+        robotsMeta = document.createElement('meta');
+        robotsMeta.setAttribute('name', 'robots');
+        document.head.appendChild(robotsMeta);
+      }
+      robotsMeta.setAttribute('content', 'noindex,follow');
+    } else {
+      // Remove noindex if no filters active
+      if (robotsMeta) {
+        robotsMeta.remove();
+      }
+    }
+
+    return () => {
+      // Cleanup on unmount
+      if (robotsMeta && !hasFiltersOrSorts) {
+        robotsMeta.remove();
+      }
+    };
+  }, [category, sortBy, selectedTags, priceRange, priceStats, currentPage]);
 
   // Tüm benzersiz tag'leri topla
   const allTags = useMemo(() => {

@@ -9,4 +9,5 @@ export { default as ProductsGrid } from './ProductsGrid';
 export { default as Footer } from './Footer';
 export { default as Preloader } from './Preloader';
 export { default as SearchBar } from './SearchBar';
+export { default as RelatedProducts } from './RelatedProducts';
 export { default as HomeCategoryProducts, StoryBannerCarousel, HomeAllCategoriesProducts, FeaturedBannerGrid, QuickCategoryPills } from './HomeCategoryProducts';

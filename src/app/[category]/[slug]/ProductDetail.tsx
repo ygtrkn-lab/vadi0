@@ -794,6 +794,76 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
             />
           </div>
 
+          {/* SEO Enhanced Content Section */}
+          <div className="mt-12 bg-white rounded-2xl shadow-soft p-6 lg:p-8">
+            <article className="prose prose-gray max-w-none">
+              <h2 className="text-2xl lg:text-3xl font-bold mb-6">
+                {product.name} - Detaylı Ürün Bilgisi
+              </h2>
+              
+              {product.longDescription && (
+                <div className="mb-6">
+                  {product.longDescription.split('\n\n').map((paragraph, idx) => (
+                    <p key={idx} className="text-gray-700 leading-relaxed mb-4">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              {/* Occasion-based content */}
+              {product.tags && product.tags.length > 0 && (
+                <>
+                  <h3 className="text-xl font-bold mb-4 mt-8">
+                    Hangi Özel Günler İçin Uygundur?
+                  </h3>
+                  <p className="text-gray-700 mb-4">
+                    {product.name}, {product.tags.filter(tag => 
+                      ['romantik', 'sevgili', 'anne', 'doğum günü', 'yıldönümü', 'teşekkür'].some(keyword => 
+                        tag.toLowerCase().includes(keyword)
+                      )
+                    ).slice(0, 3).join(', ')} gibi özel günlerde tercih edebileceğiniz mükemmel bir seçimdir.
+                  </p>
+                </>
+              )}
+
+              <h3 className="text-xl font-bold mb-4 mt-8">
+                Bakım ve Koruma İpuçları
+              </h3>
+              {product.careInstructions && product.careInstructions.length > 0 ? (
+                <ul className="list-disc pl-6 space-y-2 mb-6">
+                  {product.careInstructions.map((instruction, idx) => (
+                    <li key={idx} className="text-gray-700">{instruction}</li>
+                  ))}
+                </ul>
+              ) : (
+                <>
+                  <p className="text-gray-700 mb-4">
+                    Çiçeklerinizin uzun süre taze kalması için aşağıdaki bakım talimatlarını uygulayın:
+                  </p>
+                  <ul className="list-disc pl-6 space-y-2 mb-6">
+                    <li className="text-gray-700">Vazonuzu temiz suyla doldurun ve sapları 45 derece açıyla kesin</li>
+                    <li className="text-gray-700">Her 2-3 günde bir vazo suyunu değiştirin</li>
+                    <li className="text-gray-700">Çiçeklerinizi direkt güneş ışığından uzak tutun</li>
+                    <li className="text-gray-700">Meyve ve sebzelerden uzakta muhafaza edin</li>
+                  </ul>
+                </>
+              )}
+
+              <h3 className="text-xl font-bold mb-4 mt-8">
+                İstanbul'da Teslimat
+              </h3>
+              <p className="text-gray-700 mb-4">
+                {product.name} ürünümüzü İstanbul'un tüm ilçelerine hızlı ve güvenli bir şekilde teslim ediyoruz. 
+                Kadıköy, Beşiktaş, Şişli, Ataşehir, Bakırköy, Üsküdar ve diğer tüm bölgelere özenli teslimat garantisi sunuyoruz.
+              </p>
+              <p className="text-gray-700">
+                Profesyonel kurye ekibimiz, çiçeklerinizin en taze haliyle ve özel ambalajıyla özenle teslim edilmesini sağlar. 
+                Sipariş durumunuz hakkında anlık bilgilendirme yapılır.
+              </p>
+            </article>
+          </div>
+
           {/* Related Products */}
           {relatedProducts.length > 0 && (
             <div className="mt-12">
