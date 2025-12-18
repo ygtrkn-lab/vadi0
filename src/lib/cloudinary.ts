@@ -48,11 +48,11 @@ export async function uploadToCloudinary(
             height: result.height,
             format: result.format,
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Cloudinary upload error:', error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : 'Upload failed',
+            error: error?.message || 'Upload failed',
         };
     }
 }

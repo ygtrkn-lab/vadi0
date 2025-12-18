@@ -137,7 +137,8 @@ export async function GET(request: NextRequest) {
     let formattedCategories = (categories ?? []).map((cat: any) => {
       const pc = counts.get(cat.slug) ?? 0;
       const dynamic = formatCategory(cat, pc);
-      const dynamicImage = images.get(cat.slug) ?? cat.image;
+      // Önce kategorinin kendi görseli, yoksa o kategoriye ait bir ürünün görseli
+      const dynamicImage = cat.image || images.get(cat.slug) || '';
       return { ...dynamic, image: dynamicImage };
     });
 

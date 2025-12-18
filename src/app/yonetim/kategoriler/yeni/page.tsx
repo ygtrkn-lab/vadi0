@@ -240,6 +240,26 @@ export default function YeniKategoriPage() {
                 </label>
                 
                 <div className="space-y-3">
+                  {/* Manual URL Input */}
+                  <div className="relative">
+                    <input
+                      type="url"
+                      value={formData.image}
+                      onChange={(e) => handleInputChange('image', e.target.value)}
+                      placeholder="Görsel URL'si (örn: https://res.cloudinary.com/...)"
+                      className={`w-full px-4 py-3 rounded-xl focus:outline-none transition-colors
+                        ${isDark 
+                          ? 'bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 focus:border-neutral-600' 
+                          : 'bg-gray-50 border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-purple-500'}`}
+                    />
+                  </div>
+
+                  <div className={`flex items-center gap-2 ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
+                    <div className="flex-1 h-px bg-current opacity-20"></div>
+                    <span className="text-xs">VEYA</span>
+                    <div className="flex-1 h-px bg-current opacity-20"></div>
+                  </div>
+
                   {/* Upload Button */}
                   <div className="flex gap-3">
                     <label className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl cursor-pointer transition-colors
@@ -250,7 +270,7 @@ export default function YeniKategoriPage() {
                     >
                       <HiOutlinePhotograph className="w-5 h-5" />
                       <span className="text-sm font-medium">
-                        {uploading ? 'Yüklüyor...' : 'Görsel Seç'}
+                        {uploading ? 'Yükleniyor...' : 'Bilgisayardan Görsel Seç'}
                       </span>
                       <input
                         type="file"
@@ -292,7 +312,7 @@ export default function YeniKategoriPage() {
                   )}
                   
                   <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
-                    ℹ️ JPG, PNG veya WebP formatında, maksimum 5MB
+                    ℹ️ Manuel URL girebilir veya JPG, PNG, WebP (max 5MB) yükleyebilirsiniz
                   </p>
                 </div>
               </div>

@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
     const result = await uploadToCloudinary(buffer, 'uploads', publicId);
 
     if (!result.success) {
+      console.error('Cloudinary upload failed:', result.error);
       return NextResponse.json(
         { success: false, error: result.error || 'Dosya yüklenirken bir hata oluştu' },
         { status: 500 }
