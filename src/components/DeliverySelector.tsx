@@ -16,6 +16,14 @@ const ISTANBUL_REGIONS = [
       'Zeytinburnu'
     ]
   },
+  { 
+    id: 'istanbul-anadolu', 
+    name: 'İstanbul (Anadolu)', 
+    districts: [
+      'Adalar', 'Ataşehir', 'Beykoz', 'Çekmeköy', 'Kadıköy', 'Kartal', 'Maltepe',
+      'Pendik', 'Sancaktepe', 'Sultanbeyli', 'Şile', 'Tuzla', 'Ümraniye', 'Üsküdar'
+    ]
+  },
 ];
 
 // Diğer iller
@@ -222,9 +230,10 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
 
         {/* Helper text */}
         {!selectedLocation && !isLocationOpen && (
-          <p className="text-xs text-[#e05a4c] mt-1.5 px-1">
-            Şu an sadece İstanbul (Avrupa) teslimat yapılmaktadır.
-          </p>
+          <div className="text-xs text-[#e05a4c] mt-1.5 px-1 space-y-0.5">
+            <p>Şu an sadece İstanbul (Avrupa) teslimat yapılmaktadır.</p>
+            <p className="text-[11px] text-amber-600">Anadolu yakası çok yakında hizmete açılacak.</p>
+          </div>
         )}
 
         {/* Location Dropdown */}
@@ -263,17 +272,29 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
                   {/* İstanbul Bölgeleri */}
                   <div className="p-2">
                     <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium px-2 py-1">İstanbul</p>
-                    {filteredRegions.map((region) => (
-                      <button
-                        key={region.id}
-                        onClick={() => handleRegionSelect(region.id)}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e05a4c]/5 transition-colors text-left"
-                      >
-                        <MapPin size={14} className="text-[#e05a4c]" />
-                        <span className="text-sm text-gray-700 flex-1">{region.name}</span>
-                        <ChevronRight size={14} className="text-gray-300" />
-                      </button>
-                    ))}
+                    {filteredRegions.map((region) => {
+                      const isAnadolu = region.id === 'istanbul-anadolu';
+                      return (
+                        <button
+                          key={region.id}
+                          onClick={() => {
+                            if (isAnadolu) return; // disable selection
+                            handleRegionSelect(region.id);
+                          }}
+                          disabled={isAnadolu}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
+                            isAnadolu
+                              ? 'opacity-60 cursor-not-allowed bg-gray-50'
+                              : 'hover:bg-[#e05a4c]/5'
+                          }`}
+                        >
+                          <MapPin size={14} className={isAnadolu ? 'text-gray-400' : 'text-[#e05a4c]'} />
+                          <span className={`text-sm flex-1 ${isAnadolu ? 'text-gray-500' : 'text-gray-700'}`}>{region.name}</span>
+                          <ChevronRight size={14} className={isAnadolu ? 'text-gray-200' : 'text-gray-300'} />
+                        </button>
+                      );
+                    })}
+                    <p className="text-[11px] text-amber-600 mt-2 px-2">Anadolu yakası çok yakında!</p>
                   </div>
 
                   {/* Diğer İller */}

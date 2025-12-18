@@ -48,6 +48,14 @@ const ISTANBUL_REGIONS = [
       'Zeytinburnu'
     ]
   },
+  { 
+    id: 'anadolu', 
+    name: 'İstanbul (Anadolu)', 
+    districts: [
+      'Adalar', 'Ataşehir', 'Beykoz', 'Çekmeköy', 'Kadıköy', 'Kartal', 'Maltepe',
+      'Pendik', 'Sancaktepe', 'Sultanbeyli', 'Şile', 'Tuzla', 'Ümraniye', 'Üsküdar'
+    ]
+  },
 ];
 
 const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts;
@@ -1309,18 +1317,28 @@ export default function SepetClient() {
                                 {locationStep === 'region' ? (
                                   <div className="p-2">
                                     <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium px-2 py-1">İstanbul</p>
-                                    {filteredRegions.map((region) => (
-                                      <button
-                                        key={region.id}
-                                        type="button"
-                                        onClick={() => handleRegionSelect(region.id as 'avrupa')}
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e05a4c]/5 transition-colors text-left"
-                                      >
-                                        <MapPin size={14} className="text-[#e05a4c]" />
-                                        <span className="text-sm text-gray-700 flex-1">{region.name}</span>
-                                        <ChevronRight size={14} className="text-gray-300" />
-                                      </button>
-                                    ))}
+                                    {filteredRegions.map((region) => {
+                                      const isAnadolu = region.id === 'anadolu';
+                                      return (
+                                        <button
+                                          key={region.id}
+                                          type="button"
+                                          onClick={() => {
+                                            if (isAnadolu) return;
+                                            handleRegionSelect(region.id as 'avrupa');
+                                          }}
+                                          disabled={isAnadolu}
+                                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
+                                            isAnadolu ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'hover:bg-[#e05a4c]/5'
+                                          }`}
+                                        >
+                                          <MapPin size={14} className={isAnadolu ? 'text-gray-400' : 'text-[#e05a4c]'} />
+                                          <span className={`text-sm flex-1 ${isAnadolu ? 'text-gray-500' : 'text-gray-700'}`}>{region.name}</span>
+                                          <ChevronRight size={14} className={isAnadolu ? 'text-gray-200' : 'text-gray-300'} />
+                                        </button>
+                                      );
+                                    })}
+                                    <p className="text-[11px] text-amber-600 mt-2 px-2">Anadolu yakası çok yakında!</p>
                                   </div>
                                 ) : (
                                   <div className="p-2">
