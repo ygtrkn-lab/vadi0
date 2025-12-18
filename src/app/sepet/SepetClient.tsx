@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useCustomer, Address } from '@/context/CustomerContext';
 import { useOrder } from '@/context/OrderContext';
-import { Header, Footer, MobileNavBar } from '@/components';
+import { Header, Footer } from '@/components';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -914,7 +914,6 @@ export default function SepetClient() {
           </div>
         </main>
         <Footer />
-        <MobileNavBar />
       </>
     );
   }
@@ -2003,7 +2002,40 @@ export default function SepetClient() {
       )}
       
       <Footer />
-      <MobileNavBar />
+      {/* Checkout Step Nav - Bottom Mobile */}
+      {!isEmpty && currentStep !== 'success' && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 lg:hidden">
+          <div className="flex gap-2">
+            {steps.map((step, index) => {
+              const isActive = step.id === currentStep;
+              const isCompleted = index < currentStepIndex;
+              const StepIcon = step.icon;
+              return (
+                <button
+                  key={step.id}
+                  onClick={() => {
+                    if (index < currentStepIndex) {
+                      setCurrentStep(step.id as CheckoutStep);
+                    }
+                  }}
+                  disabled={index > currentStepIndex}
+                  className={`flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-[#e05a4c] text-white'
+                      : isCompleted
+                      ? 'bg-[#549658] text-white'
+                      : 'bg-gray-100 text-gray-400'
+                  }`}
+                  title={step.label}
+                >
+                  <StepIcon size={16} />
+                  <span className="hidden sm:inline">{step.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </>
   );
 }

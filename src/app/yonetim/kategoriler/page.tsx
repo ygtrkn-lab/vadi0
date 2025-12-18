@@ -104,7 +104,12 @@ export default function KategorilerPage() {
     if (categories.length === 0 || products.length === 0) return [];
     
     return categories.map(cat => {
-      const categoryProducts = products.filter(p => p.category === cat.slug);
+      const categoryProducts = products.filter((p: any) => {
+        const primaryMatch = p.category === cat.slug;
+        const secondaryList: string[] = Array.isArray(p.categories) ? (p.categories as string[]) : [];
+        const secondaryMatch = secondaryList.includes(cat.slug);
+        return primaryMatch || secondaryMatch;
+      });
       const avgPrice = categoryProducts.length > 0
         ? Math.round(categoryProducts.reduce((sum, p) => sum + p.price, 0) / categoryProducts.length)
         : 0;
