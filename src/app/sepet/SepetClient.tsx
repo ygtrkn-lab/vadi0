@@ -628,7 +628,7 @@ export default function SepetClient() {
   const guestPhoneDigits = normalizeTrMobileDigits(guestPhone);
   const isGuestEmailValid = guestEmailTrim.length === 0 ? false : validateEmail(guestEmailTrim);
   const isGuestPhoneValid = guestPhoneDigits.length === 0 ? false : validatePhoneNumber(guestPhone);
-  const hasGuestContact = isLoggedIn || isGuestEmailValid || isGuestPhoneValid;
+  const hasGuestContact = isLoggedIn || (isGuestEmailValid && isGuestPhoneValid);
   const canProceedToPayment = canProceedToMessage;
   const canCompletePayment = acceptTerms && hasGuestContact;
 
@@ -659,17 +659,13 @@ export default function SepetClient() {
       return;
     }
     
-    // Misafir checkout için e-posta veya telefon gerekli
+    // Misafir checkout için e-posta VE telefon gerekli
     if (!isLoggedIn) {
-      if (!guestEmailTrim && !guestPhoneDigits) {
-        alert('Sipariş takibi için e-posta veya telefon numarası girmeniz gerekiyor.');
-        return;
-      }
-      if (guestEmailTrim && !isGuestEmailValid) {
+      if (!guestEmailTrim || !isGuestEmailValid) {
         alert('Lütfen geçerli bir e-posta adresi girin.');
         return;
       }
-      if (guestPhoneDigits && !isGuestPhoneValid) {
+      if (!guestPhoneDigits || !isGuestPhoneValid) {
         alert('Lütfen geçerli bir Türkiye cep telefonu numarası girin (5XX XXX XX XX).');
         return;
       }
