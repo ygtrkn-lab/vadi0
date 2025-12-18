@@ -5,10 +5,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle, Loader2, Package, CreditCard } from 'lucide-react';
 import { BorderBeam, GlassCard, SpotlightCard } from '@/components/ui-kit/premium';
+import { useCart } from '@/context/CartContext';
 
 function PaymentCompleteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { clearCart } = useCart();
   const [loading, setLoading] = useState(true);
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +60,9 @@ function PaymentCompleteContent() {
         });
         setLoading(false);
         
-        // Clear cart after successful payment
-        localStorage.removeItem('vadiler-cart');
+        // Clear cart and delivery info immediately after successful payment
+        clearCart();
+        console.log('✅ Sepet ve teslimat bilgileri temizlendi (GET redirect)');
         
         // No automatic redirect - user will use button to navigate
         return;
@@ -95,7 +98,9 @@ function PaymentCompleteContent() {
 
           if (data?.success) {
             setPaymentResult(data);
-            localStorage.removeItem('vadiler-cart');
+            // Clear cart and delivery info immediately after successful payment
+            clearCart();
+            console.log('✅ Sepet ve teslimat bilgileri temizlendi (API token)');
           } else {
             setError(data?.error || 'Ödeme tamamlanamadı');
           }
