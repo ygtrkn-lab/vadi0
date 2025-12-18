@@ -48,15 +48,9 @@ const ISTANBUL_REGIONS = [
       'Zeytinburnu'
     ]
   },
-  { 
-    id: 'anadolu', 
-    name: 'İstanbul (Anadolu)', 
-    districts: [
-      'Adalar', 'Ataşehir', 'Beykoz', 'Çekmeköy', 'Kadıköy', 'Kartal', 'Maltepe',
-      'Pendik', 'Sancaktepe', 'Sultanbeyli', 'Şile', 'Tuzla', 'Ümraniye', 'Üsküdar'
-    ]
-  },
 ];
+
+const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts;
 
 type CheckoutStep = 'cart' | 'recipient' | 'message' | 'payment' | 'success';
 
@@ -84,7 +78,7 @@ export default function SepetClient() {
   const [recipientPhone, setRecipientPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [recipientAddress, setRecipientAddress] = useState('');
-  const [istanbulSide, setIstanbulSide] = useState<'anadolu' | 'avrupa' | ''>('');
+  const [istanbulSide, setIstanbulSide] = useState<'avrupa' | ''>('');
   const [district, setDistrict] = useState('');
   const [districtId, setDistrictId] = useState(0);
   const [neighborhood, setNeighborhood] = useState('');
@@ -183,17 +177,16 @@ export default function SepetClient() {
       
       // Lokasyon bilgisini ayarla
       if (location) {
-        setSelectedLocation(location);
-        // İlçe ve yaka bilgisini ayarla
-        if (globalDistrict) {
+        // İlçe ve yaka bilgisini ayarla (sadece Avrupa yakası destekleniyor)
+        if (globalDistrict && EUROPE_DISTRICTS.some(d => d.toLowerCase() === globalDistrict.toLowerCase())) {
+          setSelectedLocation(location);
           setDistrict(globalDistrict);
-          // Hangi yaka olduğunu belirle
-          const anadoluDistricts = ISTANBUL_REGIONS.find(r => r.id === 'anadolu')?.districts || [];
-          if (anadoluDistricts.some(d => d.toLowerCase() === globalDistrict.toLowerCase())) {
-            setIstanbulSide('anadolu');
-          } else {
-            setIstanbulSide('avrupa');
-          }
+          setIstanbulSide('avrupa');
+        } else {
+          // Desteklenmeyen ilçe ise sıfırla
+          setSelectedLocation(null);
+          setDistrict('');
+          setIstanbulSide('');
         }
       }
       
@@ -302,14 +295,15 @@ export default function SepetClient() {
     setAddressTitle('');
     // İstanbul için yaka belirleme (kayıtlı adres İstanbul ise)
     if (addr.province.toLowerCase().includes('istanbul')) {
-      // İlçeye göre yaka belirle
-      const anadoluDistricts = ISTANBUL_REGIONS.find(r => r.id === 'anadolu')?.districts || [];
-      if (anadoluDistricts.some(d => d.toLowerCase() === addr.district.toLowerCase())) {
-        setIstanbulSide('anadolu');
-      } else {
+      // Sadece Avrupa yakası desteklenir
+      if (EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase())) {
         setIstanbulSide('avrupa');
+        setSelectedLocation(`${addr.district}, İstanbul`);
+      } else {
+        // Destek dışı ilçe: seçimleri sıfırla
+        setIstanbulSide('');
+        setSelectedLocation(null);
       }
-      setSelectedLocation(`${addr.district}, İstanbul`);
     }
     setDistrict(addr.district);
     setDistrictId(addr.districtId);
@@ -319,7 +313,7 @@ export default function SepetClient() {
   };
 
   // Location dropdown handlers
-  const handleRegionSelect = (regionId: 'anadolu' | 'avrupa') => {
+  const handleRegionSelect = (regionId: 'avrupa') => {
     setIstanbulSide(regionId);
     setLocationStep('district');
     setLocationSearch('');
@@ -723,7 +717,7 @@ export default function SepetClient() {
         delivery: {
           recipientName,
           recipientPhone,
-          province: istanbulSide === 'avrupa' ? 'İstanbul (Avrupa)' : 'İstanbul (Anadolu)',
+          province: 'İstanbul (Avrupa)',
           district,
           neighborhood,
           fullAddress: recipientAddress,
@@ -1319,7 +1313,7 @@ export default function SepetClient() {
                                       <button
                                         key={region.id}
                                         type="button"
-                                        onClick={() => handleRegionSelect(region.id as 'anadolu' | 'avrupa')}
+                                        onClick={() => handleRegionSelect(region.id as 'avrupa')}
                                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e05a4c]/5 transition-colors text-left"
                                       >
                                         <MapPin size={14} className="text-[#e05a4c]" />

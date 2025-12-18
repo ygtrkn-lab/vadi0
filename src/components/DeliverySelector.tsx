@@ -16,30 +16,10 @@ const ISTANBUL_REGIONS = [
       'Zeytinburnu'
     ]
   },
-  { 
-    id: 'istanbul-anadolu', 
-    name: 'İstanbul (Anadolu)', 
-    districts: [
-      'Adalar', 'Ataşehir', 'Beykoz', 'Çekmeköy', 'Kadıköy', 'Kartal', 'Maltepe',
-      'Pendik', 'Sancaktepe', 'Sultanbeyli', 'Şile', 'Tuzla', 'Ümraniye', 'Üsküdar'
-    ]
-  },
 ];
 
 // Diğer iller
-const OTHER_PROVINCES = [
-  'Adana', 'Adıyaman', 'Afyonkarahisar', 'Ağrı', 'Amasya', 'Ankara', 'Antalya', 
-  'Artvin', 'Aydın', 'Balıkesir', 'Bilecik', 'Bingöl', 'Bitlis', 'Bolu', 'Burdur',
-  'Bursa', 'Çanakkale', 'Çankırı', 'Çorum', 'Denizli', 'Diyarbakır', 'Edirne', 
-  'Elazığ', 'Erzincan', 'Erzurum', 'Eskişehir', 'Gaziantep', 'Giresun', 'Gümüşhane',
-  'Hakkari', 'Hatay', 'Isparta', 'Mersin', 'İzmir', 'Kars', 'Kastamonu', 'Kayseri',
-  'Kırklareli', 'Kırşehir', 'Kocaeli', 'Konya', 'Kütahya', 'Malatya', 'Manisa',
-  'Kahramanmaraş', 'Mardin', 'Muğla', 'Muş', 'Nevşehir', 'Niğde', 'Ordu', 'Rize',
-  'Sakarya', 'Samsun', 'Siirt', 'Sinop', 'Sivas', 'Tekirdağ', 'Tokat', 'Trabzon',
-  'Tunceli', 'Şanlıurfa', 'Uşak', 'Van', 'Yozgat', 'Zonguldak', 'Aksaray', 'Bayburt',
-  'Karaman', 'Kırıkkale', 'Batman', 'Şırnak', 'Bartın', 'Ardahan', 'Iğdır', 'Yalova',
-  'Karabük', 'Kilis', 'Osmaniye', 'Düzce'
-];
+const OTHER_PROVINCES: string[] = [];
 
 interface DeliveryInfo {
   location: string | null;
@@ -243,7 +223,7 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
         {/* Helper text */}
         {!selectedLocation && !isLocationOpen && (
           <p className="text-xs text-[#e05a4c] mt-1.5 px-1">
-            Şu an sadece İstanbul içi teslimat yapılmaktadır.
+            Şu an sadece İstanbul (Avrupa) teslimat yapılmaktadır.
           </p>
         )}
 
