@@ -73,13 +73,10 @@ export default function WhatsAppButton() {
   const pathname = usePathname();
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
-
-  // Sepet sayfasında butonu gizle
-  if (pathname === '/sepet') {
-    return null;
-  }
+  const shouldHide = pathname === '/sepet';
 
   useEffect(() => {
+    if (shouldHide) return;
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -87,10 +84,11 @@ export default function WhatsAppButton() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [shouldHide]);
 
   // Scroll davranışı - sadece mobilde
   useEffect(() => {
+    if (shouldHide) return;
     if (!isMobile) {
       setIsVisible(true);
       return;
@@ -135,7 +133,11 @@ export default function WhatsAppButton() {
         clearTimeout(scrollTimeout.current);
       }
     };
-  }, [isMobile]);
+  }, [isMobile, shouldHide]);
+
+  if (shouldHide) {
+    return null;
+  }
 
   const handleWhatsAppClick = (message: string) => {
     const fullUrl = typeof window !== 'undefined' ? window.location.href : '';
