@@ -6,6 +6,7 @@ import { Preloader } from '@/components';
 import { CartProvider } from '@/context/CartContext';
 import { CustomerProvider } from '@/context/CustomerContext';
 import { OrderProvider } from '@/context/OrderContext';
+import WhatsAppButton from '@/components/WhatsAppButton';
 
 interface LogoPosition {
   x: number;
@@ -124,6 +125,7 @@ export default function ClientRoot({ children }: ClientRootProps) {
             >
               {children}
             </div>
+            <WhatsAppButton />
           </PreloaderContext.Provider>
         </CartProvider>
       </OrderProvider>
