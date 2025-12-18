@@ -35,6 +35,7 @@ export default function UrunDuzenlePage() {
     price: 0,
     discountedPrice: 0,
     category: '',
+    secondaryCategory: '',
     description: '',
     image: '',
     hoverImage: '',
@@ -75,11 +76,20 @@ export default function UrunDuzenlePage() {
             discountedPrice = foundProduct.price;
           }
           
+          const categoriesFromProduct = [
+            ...(Array.isArray((foundProduct as any).categories) ? (foundProduct as any).categories : []),
+            ...(Array.isArray((foundProduct as any).occasion_tags) ? (foundProduct as any).occasion_tags : []),
+          ];
+          const secondaryCategory = categoriesFromProduct.find(
+            (c: string) => c && c !== foundProduct.category && c !== 'dogum-gunu-hediyeleri'
+          ) || '';
+
           setFormData({
             name: foundProduct.name || '',
             price: foundProduct.oldPrice || foundProduct.old_price || foundProduct.price || 0,
             discountedPrice: discountedPrice,
             category: foundProduct.category || '',
+            secondaryCategory,
             description: foundProduct.description || '',
             image: foundProduct.image || '',
             hoverImage: foundProduct.hoverImage || foundProduct.hover_image || '',
@@ -391,6 +401,24 @@ export default function UrunDuzenlePage() {
                       required
                     >
                       <option value="">Kategori Seçin</option>
+                      {categories.map(cat => (
+                        <option key={cat.slug || cat.id} value={cat.slug || cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-1.5 ${labelClasses}`}>
+                      2. Kategori (opsiyonel)
+                    </label>
+                    <select
+                      value={formData.secondaryCategory}
+                      onChange={(e) => handleInputChange('secondaryCategory', e.target.value)}
+                      className={`w-full px-4 py-2.5 border rounded-xl transition-all ${selectClasses}`}
+                    >
+                      <option value="">Seçimsiz (sadece ana kategori)</option>
                       {categories.map(cat => (
                         <option key={cat.slug || cat.id} value={cat.slug || cat.name}>
                           {cat.name}

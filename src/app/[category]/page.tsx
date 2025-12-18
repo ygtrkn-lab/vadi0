@@ -18,17 +18,17 @@ async function getCategoryData(slug: string) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const [categoriesRes, productsRes] = await Promise.all([
       fetch(`${baseUrl}/api/categories`, { cache: 'no-store' }),
-      fetch(`${baseUrl}/api/products`, { cache: 'no-store' })
+      fetch(`${baseUrl}/api/products?category=${slug}`, { cache: 'no-store' })
     ]);
     
     const categoriesData = await categoriesRes.json();
     const productsData = await productsRes.json();
     
     const allCategories = categoriesData.categories || categoriesData.data || [];
-    const allProducts = productsData.products || productsData.data || [];
+    const filteredProducts = productsData.products || productsData.data || [];
     
     const category = allCategories.find((c: any) => c.slug === slug);
-    const products = allProducts.filter((p: any) => p.category === slug);
+    const products = filteredProducts;
     
     return { category, products };
   } catch (error) {

@@ -28,6 +28,7 @@ export default function YeniUrunPage() {
     price: 0,
     discountedPrice: 0,
     category: '',
+    secondaryCategory: '',
     description: '',
     image: '',
     hoverImage: '',
@@ -309,6 +310,24 @@ export default function YeniUrunPage() {
                       required
                     >
                       <option value="">Kategori seçin</option>
+                      {categories.map(cat => (
+                        <option key={cat.slug || cat.id} value={cat.slug || cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-1.5 ${labelClasses}`}>
+                      2. Kategori (opsiyonel)
+                    </label>
+                    <select
+                      value={formData.secondaryCategory}
+                      onChange={(e) => handleInputChange('secondaryCategory', e.target.value)}
+                      className={`w-full px-4 py-2.5 border rounded-xl transition-all ${selectClasses}`}
+                    >
+                      <option value="">Seçimsiz (sadece ana kategori)</option>
                       {categories.map(cat => (
                         <option key={cat.slug || cat.id} value={cat.slug || cat.name}>
                           {cat.name}

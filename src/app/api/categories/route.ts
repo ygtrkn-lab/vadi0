@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     // Compute product counts dynamically from products table
     const { data: productRows, error: productsError } = await supabase
       .from('products')
-      .select('category');
+      .select('category, occasion_tags, image');
 
     if (productsError) {
       console.error('Error fetching products for category counts:', productsError);
@@ -111,15 +111,44 @@ export async function GET(request: NextRequest) {
     }
 
     const counts = new Map<string, number>();
+    const images = new Map<string, string>();
     for (const row of productRows ?? []) {
-      const slug = (row as any)?.category;
-      if (typeof slug !== 'string' || !slug) continue;
-      counts.set(slug, (counts.get(slug) ?? 0) + 1);
+      const primarySlug = (row as any)?.category;
+      const secondarySlugs: string[] = Array.isArray((row as any)?.occasion_tags)
+        ? ((row as any).occasion_tags as string[])
+        : [];
+      const productImage = (row as any)?.image;
+      if (typeof primarySlug === 'string' && primarySlug) {
+        counts.set(primarySlug, (counts.get(primarySlug) ?? 0) + 1);
+        if (typeof productImage === 'string' && productImage && !images.has(primarySlug)) {
+          images.set(primarySlug, productImage);
+        }
+      }
+      for (const s of secondarySlugs) {
+        if (typeof s === 'string' && s) {
+          counts.set(s, (counts.get(s) ?? 0) + 1);
+          if (typeof productImage === 'string' && productImage && !images.has(s)) {
+            images.set(s, productImage);
+          }
+        }
+      }
     }
 
-    const formattedCategories = (categories ?? []).map((cat: any) =>
-      formatCategory(cat, counts.get(cat.slug) ?? 0)
-    );
+    let formattedCategories = (categories ?? []).map((cat: any) => {
+      const pc = counts.get(cat.slug) ?? 0;
+      const dynamic = formatCategory(cat, pc);
+      const dynamicImage = images.get(cat.slug) ?? cat.image;
+      return { ...dynamic, image: dynamicImage };
+    });
+
+    // Pin birthday category first visually across lists
+    const PIN_SLUG = 'dogum-gunu-hediyeleri';
+    formattedCategories.sort((a: any, b: any) => {
+      if (a.slug === PIN_SLUG) return -1;
+      if (b.slug === PIN_SLUG) return 1;
+      // Preserve existing order otherwise
+      return (a.order ?? 0) - (b.order ?? 0);
+    });
     
     return NextResponse.json({ 
       categories: formattedCategories,
@@ -339,11 +368,17 @@ export async function PUT(request: NextRequest) {
     
     console.log('✅ Category updated:', data);
     
-    // Recompute productCount dynamically for response
-    const { count: productCount } = await supabaseAdmin
+    // Recompute productCount dynamically for response (primary + secondary)
+    const slug = (data as any).slug as string;
+    const { count: primaryCount } = await supabaseAdmin
       .from('products')
-      .select('*', { count: 'exact', head: true })
-      .eq('category', (data as any).slug);
+      .select('id', { count: 'exact', head: true })
+      .eq('category', slug);
+
+    const { count: secondaryCount } = await supabaseAdmin
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .contains('occasion_tags', [slug]);
 
     return NextResponse.json({
       success: true,

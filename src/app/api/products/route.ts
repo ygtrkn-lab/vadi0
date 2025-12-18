@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase/client';
 import supabaseAdmin from '@/lib/supabase/admin';
 import { transformProduct, transformProducts } from '@/lib/transformers';
 
+const SECONDARY_CATEGORY_SLUG = 'dogum-gunu-hediyeleri';
+
 function slugify(name: string): string {
   const slug = name
     .toLowerCase()
@@ -30,6 +32,19 @@ function normalizeSku(value: string): string {
 
 function generateSkuFromSlug(slug: string): string {
   return normalizeSku(`SKU-${slug}`);
+}
+
+function buildCategoryArray(primary: string, secondary?: unknown, extras?: unknown): string[] {
+  const extraSingle = typeof secondary === 'string' ? secondary : undefined;
+  const extraList = Array.isArray(extras) ? (extras as string[]).filter(Boolean) : [];
+  return Array.from(
+    new Set([
+      primary,
+      ...(extraSingle ? [extraSingle] : []),
+      ...extraList,
+      SECONDARY_CATEGORY_SLUG,
+    ].filter(Boolean))
+  );
 }
 
 function toNumber(value: unknown): number | undefined {
@@ -141,9 +156,10 @@ export async function GET(request: NextRequest) {
       .from('products')
       .select('*', { count: 'exact' });
     
-    // Filter by category
+    // Filter by category: include primary category and secondary (occasion_tags)
     if (category) {
-      query = query.eq('category', category);
+      // Use PostgREST OR with contains (cs) on occasion_tags
+      query = query.or(`category.eq.${category},occasion_tags.cs.{${category}}`);
     }
     
     // Filter by stock
@@ -216,6 +232,11 @@ export async function POST(request: NextRequest) {
     const { slug, sku } = await findUniqueSlugAndSku(baseSlug, baseSku);
 
     const category = typeof input.category === 'string' ? input.category : '';
+    const secondaryCategory = typeof input.secondaryCategory === 'string'
+      ? input.secondaryCategory
+      : typeof input.secondary_category === 'string'
+        ? input.secondary_category
+        : undefined;
     if (!category.trim()) {
       return NextResponse.json(
         { success: false, error: 'Kategori zorunludur' },
@@ -235,6 +256,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const extraOccasionTags = Array.isArray(input.occasionTags)
+      ? (input.occasionTags as string[])
+      : Array.isArray(input.occasion_tags)
+        ? (input.occasion_tags as string[])
+        : [];
 
     // Whitelist fields for Supabase insert (avoid unknown columns like "badge")
     const insertData = {
@@ -266,6 +293,7 @@ export async function POST(request: NextRequest) {
       review_count: toNumber(input.reviewCount ?? input.review_count) ?? 0,
       category,
       category_name: categoryName || category || '',
+      occasion_tags: buildCategoryArray(category, secondaryCategory, extraOccasionTags),
       in_stock:
         typeof input.inStock === 'boolean'
           ? input.inStock
@@ -287,11 +315,6 @@ export async function POST(request: NextRequest) {
           : typeof input.care_tips === 'string'
             ? input.care_tips
             : '',
-      occasion_tags: Array.isArray(input.occasionTags)
-        ? (input.occasionTags as string[])
-        : Array.isArray(input.occasion_tags)
-          ? (input.occasion_tags as string[])
-          : [],
       color_tags: Array.isArray(input.colorTags)
         ? (input.colorTags as string[])
         : Array.isArray(input.color_tags)

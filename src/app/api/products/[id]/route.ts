@@ -94,6 +94,24 @@ export async function PUT(
         .replace(/^-+|-+$/g, '');
     }
     
+    const secondaryCategory = typeof body.secondaryCategory === 'string'
+      ? body.secondaryCategory
+      : typeof body.secondary_category === 'string'
+        ? body.secondary_category
+        : undefined;
+
+    const extraOccasionTags = Array.isArray(body.occasionTags)
+      ? (body.occasionTags as string[])
+      : Array.isArray(body.occasion_tags)
+        ? (body.occasion_tags as string[])
+        : Array.isArray(existingProduct.occasion_tags)
+          ? (existingProduct.occasion_tags as string[])
+          : [];
+
+    const buildCategoryArray = (primary: string, secondary?: string, extras?: string[]) => {
+      return Array.from(new Set([primary, secondary, ...(extras || []), 'dogum-gunu-hediyeleri'].filter(Boolean)));
+    };
+
     // Prepare update data with snake_case fields
     const updateData = {
       name: body.name ?? existingProduct.name,
@@ -105,6 +123,7 @@ export async function PUT(
       hover_image: body.hoverImage ?? existingProduct.hover_image,
       gallery: body.gallery ?? existingProduct.gallery,
       category: body.category ?? existingProduct.category,
+      occasion_tags: buildCategoryArray(body.category ?? existingProduct.category, secondaryCategory, extraOccasionTags),
       description: body.description ?? existingProduct.description,
       rating: body.rating !== undefined ? parseFloat(body.rating) : existingProduct.rating,
       review_count: body.reviewCount !== undefined ? parseInt(body.reviewCount) : existingProduct.review_count,

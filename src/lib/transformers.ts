@@ -3,6 +3,8 @@
  * and frontend types (camelCase)
  */
 
+const SECONDARY_CATEGORY_SLUG = 'dogum-gunu-hediyeleri';
+
 interface DbProduct {
   id: number;
   name: string;
@@ -15,6 +17,8 @@ interface DbProduct {
   hover_image?: string;
   gallery?: string[];
   category: string;
+  categories?: string[];
+  occasion_tags?: string[];
   description?: string;
   rating: number;
   review_count: number;
@@ -38,6 +42,7 @@ export interface Product {
   hoverImage?: string;
   gallery?: string[];
   category: string;
+  categories?: string[];
   description?: string;
   rating: number;
   reviewCount: number;
@@ -53,6 +58,16 @@ export interface Product {
  * Transform database product (snake_case) to frontend product (camelCase)
  */
 export function transformProduct(dbProduct: DbProduct): Product {
+  const mergedCategories = Array.from(
+    new Set(
+      [
+        ...(Array.isArray(dbProduct.categories) ? dbProduct.categories : []),
+        ...(Array.isArray(dbProduct.occasion_tags) ? dbProduct.occasion_tags : []),
+        dbProduct.category,
+      ].filter(Boolean)
+    )
+  );
+
   return {
     id: dbProduct.id,
     name: dbProduct.name,
@@ -65,6 +80,7 @@ export function transformProduct(dbProduct: DbProduct): Product {
     hoverImage: dbProduct.hover_image,
     gallery: dbProduct.gallery,
     category: dbProduct.category,
+    categories: Array.from(new Set([...mergedCategories, SECONDARY_CATEGORY_SLUG])),
     description: dbProduct.description,
     rating: dbProduct.rating,
     reviewCount: dbProduct.review_count,
