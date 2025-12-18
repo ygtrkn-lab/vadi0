@@ -112,6 +112,39 @@ npm start        # Production sunucusunu başlat
 npm run lint     # Kod kalitesi kontrolü
 ```
 
+## 🌟 Top-50 Ürün İçin Yorum Seed (Supabase)
+
+En pahalı 50 ürüne 2–3 adet gerçekçi Türkçe müşteri yorumu eklemek için hazırlanan seeding scripti:
+
+- Script: `scripts/seed-reviews.js`
+- Kaynak: `src/data/products.json` (fiyatlara göre sıralar)
+- Hedef: Supabase `reviews` tablosu (onaylı, doğrulanmamış alım)
+
+Önkoşullar:
+- `NEXT_PUBLIC_SUPABASE_URL` ve `SUPABASE_SERVICE_KEY` ortam değişkenleri zorunlu
+
+PowerShell komutları:
+
+```powershell
+# Dry-run (sadece ne yapılacağını gösterir)
+$env:NEXT_PUBLIC_SUPABASE_URL="https://YOUR.supabase.co"
+$env:SUPABASE_SERVICE_KEY="YOUR_SERVICE_ROLE_KEY"
+node -r dotenv/config scripts/seed-reviews.js --dry-run=true --limit=50
+
+# Gerçek ekleme (2–3 yorum/ürün)
+$env:NEXT_PUBLIC_SUPABASE_URL="https://YOUR.supabase.co"
+$env:SUPABASE_SERVICE_KEY="YOUR_SERVICE_ROLE_KEY"
+node -r dotenv/config scripts/seed-reviews.js --dry-run=false --limit=50
+```
+
+İsteğe bağlı bayraklar:
+- `--append=false`: Üründe ≥2 onaylı yorum varsa atla
+- `--limit=50`: Hedef ürün sayısı
+
+Notlar:
+- Script onaylı (`is_approved: true`) ve doğrulanmamış alışveriş (`is_verified_purchase: false`) yorumları ekler.
+- İsim belirtilmediği için yorumlar arayüzde “Anonim” olarak görünür.
+
 ## 📚 Teknolojiler
 
 - **Framework:** Next.js 16

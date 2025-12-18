@@ -38,6 +38,19 @@ export default function ProductReviews({
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [votedReviews, setVotedReviews] = useState<Record<string, 'helpful' | 'unhelpful'>>({});
+
+  // Load voted reviews from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('votedReviews');
+    if (stored) {
+      try {
+        setVotedReviews(JSON.parse(stored));
+      } catch (e) {
+        console.error('Failed to parse voted reviews', e);
+      }
+    }
+  }, []);
 
   // Review form state
   const [formData, setFormData] = useState({
@@ -91,11 +104,24 @@ export default function ProductReviews({
   };
 
   const handleVote = async (reviewId: string, voteType: 'helpful' | 'unhelpful') => {
+    // Check authentication
+    if (!currentCustomerId) {
+      alert('Oy vermek için giriş yapmalısınız.');
+      window.location.href = '/giris';
+      return;
+    }
+
+    // Check if already voted
+    if (votedReviews[reviewId]) {
+      alert('Bu değerlendirme için zaten oy kullandınız.');
+      return;
+    }
+
     try {
       const res = await fetch(`/api/reviews/${reviewId}/helpful`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ voteType }),
+        body: JSON.stringify({ voteType, customerId: currentCustomerId }),
       });
 
       const data = await res.json();
@@ -107,11 +133,17 @@ export default function ProductReviews({
             ? { ...r, helpfulCount: data.data.helpfulCount, unhelpfulCount: data.data.unhelpfulCount }
             : r
         ));
+        
+        // Mark as voted in localStorage
+        const updated = { ...votedReviews, [reviewId]: voteType };
+        setVotedReviews(updated);
+        localStorage.setItem('votedReviews', JSON.stringify(updated));
       } else {
         alert(data.error || 'Oy kaydedilemedi');
       }
     } catch (error) {
       console.error('Error voting:', error);
+      alert('Bir hata oluştu');
     }
   };
 
@@ -470,16 +502,30 @@ export default function ProductReviews({
               <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
                 <button
                   onClick={() => handleVote(review.id, 'helpful')}
-                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-green-600 transition-colors"
+                  disabled={!!votedReviews[review.id]}
+                  className={`flex items-center gap-2 text-sm transition-colors ${
+                    votedReviews[review.id] === 'helpful'
+                      ? 'text-green-600 font-semibold'
+                      : votedReviews[review.id]
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:text-green-600 cursor-pointer'
+                  }`}
                 >
-                  <ThumbsUp size={16} />
+                  <ThumbsUp size={16} className={votedReviews[review.id] === 'helpful' ? 'fill-current' : ''} />
                   <span>Yararlı ({review.helpfulCount || 0})</span>
                 </button>
                 <button
                   onClick={() => handleVote(review.id, 'unhelpful')}
-                  className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors"
+                  disabled={!!votedReviews[review.id]}
+                  className={`flex items-center gap-2 text-sm transition-colors ${
+                    votedReviews[review.id] === 'unhelpful'
+                      ? 'text-red-600 font-semibold'
+                      : votedReviews[review.id]
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:text-red-600 cursor-pointer'
+                  }`}
                 >
-                  <ThumbsDown size={16} />
+                  <ThumbsDown size={16} className={votedReviews[review.id] === 'unhelpful' ? 'fill-current' : ''} />
                   <span>Yararlı Değil ({review.unhelpfulCount || 0})</span>
                 </button>
               </div>

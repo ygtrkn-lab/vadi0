@@ -54,7 +54,7 @@ export const SPECIAL_DAYS: SpecialDay[] = [
     metaTitle: "Doğum Günü Çiçekleri | Balonlu & Renkli Buketler | Vadiler Çiçek",
     metaDescription: "Doğum günü için en renkli çiçekler! Balonlu buketler, neşeli aranjmanlar, özel tasarımlar. 🎂 Vadiler Çiçek ile sürpriz yapın!",
     keywords: ["doğum günü çiçekleri", "doğum günü buketi", "balonlu çiçek", "doğum günü hediyesi", "renkli buket", "kutlama çiçeği"],
-    image: "https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225910/vadiler/products/vadiler-teraryum-i-yi-ki-dogdun-canim-arkadasim-mor.jpg",
+    image: "https://res.cloudinary.com/dgdl1vdao/image/upload/v1734545000/vadiler/special-days/dogum-gunu-hediyesi.jpg",
     relatedTags: ["doğum günü", "kutlama", "balon", "renkli", "neşeli", "parti"],
   },
   {
