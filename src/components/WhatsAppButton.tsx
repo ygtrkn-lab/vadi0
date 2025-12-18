@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
@@ -69,7 +69,15 @@ const getMenuOptions = (pageUrl: string): MenuOption[] => [
 export default function WhatsAppButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const pathname = usePathname();
+  const lastScrollY = useRef(0);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Sepet sayfasında butonu gizle
+  if (pathname === '/sepet') {
+    return null;
+  }
 
   useEffect(() => {
     const checkMobile = () => {
@@ -80,6 +88,54 @@ export default function WhatsAppButton() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Scroll davranışı - sadece mobilde
+  useEffect(() => {
+    if (!isMobile) {
+      setIsVisible(true);
+      return;
+    }
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Show only after some scroll on the page
+      if (currentScrollY <= 50) {
+        setIsVisible(true);
+      } else {
+        // Scrolling down - hide button
+        if (currentScrollY > lastScrollY.current) {
+          setIsVisible(false);
+        }
+        // Scrolling up - show button
+        if (currentScrollY < lastScrollY.current) {
+          setIsVisible(true);
+        }
+      }
+
+      lastScrollY.current = currentScrollY;
+
+      // Show button when scroll stops
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+      
+      scrollTimeout.current = setTimeout(() => {
+        if (window.scrollY > 50) {
+          setIsVisible(true);
+        }
+      }, 100);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout.current) {
+        clearTimeout(scrollTimeout.current);
+      }
+    };
+  }, [isMobile]);
 
   const handleWhatsAppClick = (message: string) => {
     const fullUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -137,13 +193,22 @@ export default function WhatsAppButton() {
       </AnimatePresence>
 
       {/* WhatsApp Button Container */}
-      <div
+      <motion.div
+        animate={{
+          x: isVisible ? 0 : isMobile ? 120 : 0,
+          opacity: isVisible ? 1 : isMobile ? 0 : 1,
+        }}
+        transition={{
+          type: 'spring',
+          stiffness: 260,
+          damping: 20,
+        }}
         className={`fixed z-[55] ${
-          isMobile ? 'bottom-28 right-4' : 'bottom-8 right-8'
+          isMobile ? 'bottom-32 right-4' : 'bottom-8 right-8'
         }`}
         style={{
           ...(isMobile && {
-            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 7rem)',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8rem)',
           }),
         }}
       >
@@ -368,7 +433,7 @@ export default function WhatsAppButton() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
     </>
   );
 }
