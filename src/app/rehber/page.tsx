@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Footer, Header, MobileNavBar } from '@/components';
 import { GUIDE_CONTENTS } from '@/data/guide-contents';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://vadilercicek.com';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
 export const metadata: Metadata = {
   title: 'Çiçek Rehberi ve İpuçları | Vadiler Çiçek Blog',

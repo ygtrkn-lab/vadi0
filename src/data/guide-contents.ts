@@ -617,10 +617,10 @@ C: İstanbul 39 ilçesinin tamamına teslimat yapıyoruz.
 
 ## İletişim ve Sipariş
 
-**Online Sipariş:** www.vadilercicek.com
+**Online Sipariş:** www.vadiler.com
 **Telefon:** +90 555 123 4567
 **WhatsApp:** +90 555 123 4567
-**E-posta:** info@vadilercicek.com
+**E-posta:** info@vadiler.com
 
 **Müşteri Hizmetleri:**
 Hafta içi: 09:00 - 22:00

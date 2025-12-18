@@ -4,7 +4,7 @@ import ProductCard from '@/components/ProductCard';
 import { SPECIAL_DAYS } from '@/data/special-days';
 import { ISTANBUL_CONTENT, DISTRICT_CONTENTS } from '@/data/city-content';
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://vadilercicek.com';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
 interface PageProps {
   params: Promise<{

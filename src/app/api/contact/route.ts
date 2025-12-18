@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // TODO: Implement email sending using EmailService
     // Example:
     // await emailService.sendContactForm({
-    //   to: 'info@vadilercicek.com',
+    //   to: 'info@vadiler.com',
     //   from: email,
     //   subject: `İletişim Formu: ${subject}`,
     //   html: `

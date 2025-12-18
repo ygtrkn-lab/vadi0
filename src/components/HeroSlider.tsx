@@ -8,13 +8,60 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 import { Autoplay, EffectCreative, EffectFade } from 'swiper/modules';
 import { ArrowRight, ArrowLeft, Play, Pause, Flower2, Leaf, Percent, ChevronRight } from 'lucide-react';
-import { slides } from '@/data/products';
+import { slides as productSlides } from '@/data/products';
 
 import 'swiper/css';
 import 'swiper/css/effect-creative';
 import 'swiper/css/effect-fade';
 
+type HeroSlide = {
+  id: string | number;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  buttonText: string;
+  buttonLink: string;
+};
+
+const FALLBACK_SLIDES: HeroSlide[] = [
+  {
+    id: 'hero-1',
+    title: 'Taze Çiçekler',
+    subtitle: 'Günün en güzel seçkisi',
+    description: 'Özenle hazırlanan buket ve aranjmanlarla sevdiklerinize zarif bir sürpriz yapın.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
+    buttonText: 'Ürünleri İncele',
+    buttonLink: '/kategoriler',
+  },
+  {
+    id: 'hero-2',
+    title: 'Orkide Seçkisi',
+    subtitle: 'Zarif ve kalıcı',
+    description: 'Minimal ve şık orkide çeşitleriyle ev ve ofisler için harika bir seçim.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
+    buttonText: 'Orkideleri Gör',
+    buttonLink: '/orkideler',
+  },
+  {
+    id: 'hero-3',
+    title: 'Özel Günler',
+    subtitle: 'Kutlamalara özel',
+    description: 'Doğum günü, yıldönümü ve tüm özel anlar için hediye seçkilerini keşfedin.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225910/vadiler/products/vadiler-teraryum-i-yi-ki-dogdun-canim-arkadasim-mor.jpg',
+    buttonText: 'Özel Günlere Git',
+    buttonLink: '/ozel-gun',
+  },
+];
+
 export default function HeroSlider() {
+  const slides: HeroSlide[] = Array.isArray(productSlides) && productSlides.length > 0
+    ? (productSlides as HeroSlide[])
+    : FALLBACK_SLIDES;
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const swiperRef = useRef<SwiperType | null>(null);
