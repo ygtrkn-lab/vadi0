@@ -12,34 +12,34 @@ export type HeroSlide = {
 
 export const slides: HeroSlide[] = [
   {
-    id: '20-kirmizi-gul-buketi',
+    id: 'haftanin-kampanyalari',
+    title: 'Haftanın Kampanyaları',
+    subtitle: 'Sınırlı süre fırsatlar',
+    description: 'İndirimli ürünlere tek bir kategori üzerinden hızlıca ulaşın.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1766171531/nxd3uxx_fid6yv.png',
+    buttonText: 'Kampanyaları Gör',
+    buttonLink: '/haftanin-kampanyalari',
+  },
+  {
+    id: 'kampanya-urun-1',
     title: '20 Kırmızı Gül Buketi',
-    subtitle: '20 Kırmızı Gül',
-    description: 'Sevdiklerinize özel 20 kırmızı gül buketi.',
+    subtitle: 'Haftanın kampanya ürünü',
+    description: 'Kampanyadaki kırmızı gül buketiyle güçlü bir jest yapın.',
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
-    buttonText: 'Keşfet',
-    buttonLink: '/haftanin-kampanyalari',
+    buttonText: 'Ürünü İncele',
+    buttonLink: '/guller/20-kirmizi-gul-buketi',
   },
   {
-    id: 'cift-dal-beyaz-orkide',
+    id: 'kampanya-urun-2',
     title: 'Çift Dal Beyaz Orkide',
-    subtitle: '63% İndirim',
-    description: 'Zarif çift dal beyaz orkide, özel tasarım.',
+    subtitle: 'Kampanya ürünü',
+    description: 'Özel tasarım çift dal orkide kampanya fiyatıyla.',
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
-    buttonText: 'Keşfet',
-    buttonLink: '/haftanin-kampanyalari',
-  },
-  {
-    id: 'beyaz-papatyalar',
-    title: 'Beyaz Papatyalar',
-    subtitle: '60% İndirim',
-    description: 'Neşeli beyaz papatyalar buketi ile sevindirin.',
-    image:
-      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225079/vadiler/products/vadiler-renkli-papatya-ve-gerberalarin-bulusmasi.jpg',
-    buttonText: 'Keşfet',
-    buttonLink: '/haftanin-kampanyalari',
+    buttonText: 'Ürünü İncele',
+    buttonLink: '/orkideler/cift-dal-beyaz-orkide',
   },
 ];
 
