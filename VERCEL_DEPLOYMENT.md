@@ -20,6 +20,9 @@ NEXT_PUBLIC_APP_URL=https://www.vadiler.com
 
 # Cloudinary (if using)
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=dgdl1vdao
+
+# Google Customer Reviews (optional)
+NEXT_PUBLIC_GOOGLE_CUSTOMER_REVIEWS_MERCHANT_ID=5696473776
 ```
 
 ### 2. Vercel Build Settings

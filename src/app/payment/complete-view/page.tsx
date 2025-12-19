@@ -6,6 +6,23 @@ import { motion } from 'framer-motion';
 import { CheckCircle, Loader2, Package, CreditCard } from 'lucide-react';
 import { BorderBeam, GlassCard, SpotlightCard } from '@/components/ui-kit/premium';
 import { useCart } from '@/context/CartContext';
+import GoogleCustomerReviewsOptIn from '@/components/checkout/GoogleCustomerReviewsOptIn';
+
+function extractEstimatedDeliveryDate(delivery: any): string | null {
+  if (!delivery) return null;
+
+  const raw =
+    typeof delivery?.deliveryDate === 'string'
+      ? delivery.deliveryDate
+      : typeof delivery?.date === 'string'
+        ? delivery.date
+        : null;
+
+  if (!raw) return null;
+
+  const m = /^\d{4}-\d{2}-\d{2}/.exec(raw);
+  return m ? m[0] : null;
+}
 
 function PaymentCompleteContent() {
   const router = useRouter();
@@ -16,6 +33,14 @@ function PaymentCompleteContent() {
   const [error, setError] = useState<string | null>(null);
   const [processingMessage, setProcessingMessage] = useState('Ödemeniz doğrulanıyor...');
   const [hasSession, setHasSession] = useState(false);
+  const [gcr, setGcr] = useState<null | {
+    orderId: string;
+    email: string;
+    estimatedDeliveryDate: string;
+  }>(null);
+
+  const gcrMerchantId = Number(process.env.NEXT_PUBLIC_GOOGLE_CUSTOMER_REVIEWS_MERCHANT_ID || '');
+  const canRenderGcr = Number.isFinite(gcrMerchantId) && gcrMerchantId > 0;
 
   useEffect(() => {
     // Check for active session
@@ -120,6 +145,52 @@ function PaymentCompleteContent() {
     completePayment();
   }, [searchParams]);
 
+  useEffect(() => {
+    const orderId = paymentResult?.orderId;
+    if (!paymentResult?.success || !orderId) return;
+
+    let cancelled = false;
+
+    const loadOrderForGcr = async () => {
+      try {
+        const orderRes = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
+
+        const order = await orderRes.json().catch(() => null);
+        if (!orderRes.ok || !order) return;
+
+        const estimatedDeliveryDate = extractEstimatedDeliveryDate(order.delivery);
+        const customerId = order.customerId as string | undefined;
+        if (!estimatedDeliveryDate || !customerId) return;
+
+        const customerRes = await fetch(`/api/customers/${encodeURIComponent(customerId)}`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
+
+        const customer = await customerRes.json().catch(() => null);
+        if (!customerRes.ok || !customer?.email) return;
+
+        if (!cancelled) {
+          setGcr({
+            orderId,
+            email: String(customer.email),
+            estimatedDeliveryDate,
+          });
+        }
+      } catch (e) {
+        console.warn('[GCR] failed to load order/customer for opt-in', e);
+      }
+    };
+
+    loadOrderForGcr();
+    return () => {
+      cancelled = true;
+    };
+  }, [paymentResult?.success, paymentResult?.orderId]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -168,6 +239,15 @@ function PaymentCompleteContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-lg">
+        {gcr && canRenderGcr && (
+          <GoogleCustomerReviewsOptIn
+            merchantId={gcrMerchantId}
+            orderId={gcr.orderId}
+            email={gcr.email}
+            deliveryCountry="TR"
+            estimatedDeliveryDate={gcr.estimatedDeliveryDate}
+          />
+        )}
         <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
           <SpotlightCard className="p-8">
             <BorderBeam size={260} duration={12} />

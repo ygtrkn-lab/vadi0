@@ -49,6 +49,10 @@ cp .env.example .env.local
 # Supabase (Gerekli)
 NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# Google Customer Reviews (optional)
+# Merchant Center → Programs → Customer Reviews → "merchant_id"
+NEXT_PUBLIC_GOOGLE_CUSTOMER_REVIEWS_MERCHANT_ID=5696473776
 SUPABASE_SERVICE_KEY=your-service-key
 
 # Site URL (Gerekli)
@@ -122,6 +126,7 @@ En pahalı 50 ürüne 2–3 adet gerçekçi Türkçe müşteri yorumu eklemek i�
 
 Önkoşullar:
 - `NEXT_PUBLIC_SUPABASE_URL` ve `SUPABASE_SERVICE_KEY` ortam değişkenleri zorunlu
+- Google Müşteri Yorumları opt-in için `NEXT_PUBLIC_GOOGLE_CUSTOMER_REVIEWS_MERCHANT_ID` (opsiyonel)
 
 PowerShell komutları:
 
