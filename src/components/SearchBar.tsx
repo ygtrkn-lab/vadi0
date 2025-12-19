@@ -142,21 +142,23 @@ export default function SearchBar({ isMobile = false, onClose, autoFocus = false
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (!isOpen || searchResults.length === 0) return;
+    if (!isOpen) return;
 
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setActiveIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : 0));
+        if (searchResults.length > 0) setActiveIndex(prev => (prev < searchResults.length - 1 ? prev + 1 : 0));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setActiveIndex(prev => (prev > 0 ? prev - 1 : searchResults.length - 1));
+        if (searchResults.length > 0) setActiveIndex(prev => (prev > 0 ? prev - 1 : searchResults.length - 1));
         break;
       case 'Enter':
         e.preventDefault();
         if (activeIndex >= 0 && searchResults[activeIndex]) {
           window.location.href = searchResults[activeIndex].slug;
+        } else if (query.trim()) {
+          window.location.href = `/arama?search=${encodeURIComponent(query)}`;
         }
         break;
       case 'Escape':
@@ -165,7 +167,7 @@ export default function SearchBar({ isMobile = false, onClose, autoFocus = false
         inputRef.current?.blur();
         break;
     }
-  }, [isOpen, searchResults, activeIndex]);
+  }, [isOpen, searchResults, activeIndex, query]);
 
   // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,7 +242,7 @@ export default function SearchBar({ isMobile = false, onClose, autoFocus = false
 
         {/* Search button */}
         <button
-          onClick={() => query && handleResultClick(`/kategoriler?search=${encodeURIComponent(query)}`)}
+          onClick={() => query && handleResultClick(`/arama?search=${encodeURIComponent(query)}`)}
           className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2.5 bg-[#e05a4c]
             text-white rounded-full hover:bg-[#c94a3c] transition-colors"
         >
@@ -379,7 +381,7 @@ export default function SearchBar({ isMobile = false, onClose, autoFocus = false
                 {/* View All Results */}
                 <div className="p-3 border-t border-gray-100 bg-gray-50">
                   <button
-                    onClick={() => handleResultClick(`/kategoriler?search=${encodeURIComponent(query)}`)}
+                    onClick={() => handleResultClick(`/arama?search=${encodeURIComponent(query)}`)}
                     className="w-full flex items-center justify-center gap-2 p-3 text-[#e05a4c] 
                       font-medium rounded-xl hover:bg-[#e05a4c]/10 transition-colors"
                   >
