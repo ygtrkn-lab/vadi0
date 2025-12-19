@@ -10,7 +10,38 @@ export type HeroSlide = {
   buttonLink: string;
 };
 
-export const slides: HeroSlide[] = [];
+export const slides: HeroSlide[] = [
+  {
+    id: '20-kirmizi-gul-buketi',
+    title: '20 Kırmızı Gül Buketi',
+    subtitle: '20 Kırmızı Gül',
+    description: 'Sevdiklerinize özel 20 kırmızı gül buketi.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
+    buttonText: 'Keşfet',
+    buttonLink: '/dogum-gunu-ozel-hediyeler-cicekler/20-kirmizi-gul-buketi',
+  },
+  {
+    id: 'cift-dal-beyaz-orkide',
+    title: 'Çift Dal Beyaz Orkide',
+    subtitle: '63% İndirim',
+    description: 'Zarif çift dal beyaz orkide, özel tasarım.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
+    buttonText: 'Keşfet',
+    buttonLink: '/dogum-gunu-ozel-hediyeler-cicekler/cift-dal-beyaz-orkide',
+  },
+  {
+    id: 'beyaz-papatyalar',
+    title: 'Beyaz Papatyalar',
+    subtitle: '60% İndirim',
+    description: 'Neşeli beyaz papatyalar buketi ile sevindirin.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225079/vadiler/products/vadiler-renkli-papatya-ve-gerberalarin-bulusmasi.jpg',
+    buttonText: 'Keşfet',
+    buttonLink: '/dogum-gunu-ozel-hediyeler-cicekler/beyaz-papatyalar',
+  },
+];
 
 export const banners: Array<{ id: string; image: string; alt: string; link: string }> = [
   {

@@ -205,15 +205,6 @@ export default function HeroSlider() {
                         <span>{slide.buttonText}</span>
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                       </Link>
-
-                      <Link
-                        href="/kategoriler"
-                        className="w-full sm:w-auto px-8 py-4 bg-white/20 backdrop-blur-sm
-                          hover:bg-white/30 text-white font-medium 
-                          rounded-2xl flex items-center justify-center gap-2 transition-all duration-300"
-                      >
-                        Kategorileri Keşfet
-                      </Link>
                     </motion.div>
 
                     {/* CTA Buttons - Desktop */}
@@ -232,14 +223,7 @@ export default function HeroSlider() {
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                       </Link>
 
-                      <Link
-                        href="/kategoriler"
-                        className="flex items-center gap-2 text-gray-600 hover:text-primary-500 
-                          transition-colors font-medium"
-                      >
-                        <span>Tüm Kategoriler</span>
-                        <ChevronRight size={18} />
-                      </Link>
+                      {/* removed category link - slider should go directly to product pages */}
                     </motion.div>
 
                     {/* Stats - Desktop Only */}
