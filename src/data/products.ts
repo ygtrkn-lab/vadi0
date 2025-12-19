@@ -12,14 +12,14 @@ export type HeroSlide = {
 
 export const slides: HeroSlide[] = [
   {
-    id: 'haftanin-kampanyalari',
-    title: 'Haftanın Kampanyaları',
-    subtitle: 'Sınırlı süre fırsatlar',
-    description: 'İndirimli ürünlere tek bir kategori üzerinden hızlıca ulaşın.',
+    id: 'kampanya-urun-0',
+    title: 'Sevginin Gücü Gül Aranjmanı',
+    subtitle: 'Haftanın kampanya ürünü',
+    description: '7 adet kırmızı gülle hazırlanan özel kampanya aranjmanı.',
     image:
-      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1766171531/nxd3uxx_fid6yv.png',
-    buttonText: 'Kampanyaları Gör',
-    buttonLink: '/haftanin-kampanyalari',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
+    buttonText: 'Ürünü İncele',
+    buttonLink: '/guller/sevginin-gucu-7-kirmizi-guller-aranjmani',
   },
   {
     id: 'kampanya-urun-1',
