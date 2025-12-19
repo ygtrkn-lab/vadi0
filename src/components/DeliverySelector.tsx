@@ -40,9 +40,10 @@ interface DeliverySelectorProps {
   onDeliveryComplete: (info: DeliveryInfo) => void;
   isRequired?: boolean;
   onOpenChange?: (open: boolean) => void;
+  openSignal?: number;
 }
 
-export default function DeliverySelector({ onDeliveryComplete, isRequired = true, onOpenChange }: DeliverySelectorProps) {
+export default function DeliverySelector({ onDeliveryComplete, isRequired = true, onOpenChange, openSignal }: DeliverySelectorProps) {
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   const [showOtherCityWarning, setShowOtherCityWarning] = useState(false);
   const [step, setStep] = useState<'region' | 'district'>('region');
   const selectorRef = useRef<HTMLDivElement | null>(null);
+  const lastOpenSignal = useRef<number | null>(null);
 
   // Generate next 7 days starting from tomorrow (no same-day delivery)
   const generateDates = () => {
@@ -126,6 +128,17 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
       hasNotified.current = false;
     }
   }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot, onDeliveryComplete]);
+
+  // External trigger to open location selector and bring into view
+  useEffect(() => {
+    if (openSignal == null) return;
+    if (lastOpenSignal.current === openSignal) return;
+    lastOpenSignal.current = openSignal;
+    setIsLocationOpen(true);
+    setShowOtherCityWarning(false);
+    selectorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof onOpenChange === 'function') onOpenChange(true);
+  }, [openSignal, onOpenChange]);
 
   const handleRegionSelect = (regionId: string) => {
     setSelectedRegion(regionId);

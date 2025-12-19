@@ -129,7 +129,7 @@ function generateJsonLd(product: any) {
 export default async function ProductPage({ params }: PageProps) {
   const { category, slug } = await params;
   
-  const { product } = await getProduct(category, slug);
+  const { product, categoryData } = await getProduct(category, slug);
 
   if (!product) {
     notFound();
@@ -144,6 +144,12 @@ export default async function ProductPage({ params }: PageProps) {
   const relatedProducts = allProducts
     .filter((p: any) => p.category === category && p.id !== product.id)
     .slice(0, 4);
+
+  const categoryName = categoryData?.name
+    || product.categoryName
+    || product.category_name
+    || product.category?.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+    || '';
 
   const jsonLd = generateJsonLd(product);
 
@@ -172,7 +178,7 @@ export default async function ProductPage({ params }: PageProps) {
               {
                 '@type': 'ListItem',
                 position: 2,
-                name: product.categoryName || product.category,
+                name: categoryName,
                 item: `https://vadiler.com/${product.category}`,
               },
               {
@@ -186,7 +192,7 @@ export default async function ProductPage({ params }: PageProps) {
         }}
       />
 
-      <ProductDetail product={product} relatedProducts={relatedProducts} />
+      <ProductDetail product={product} relatedProducts={relatedProducts} categoryName={categoryName} />
     </>
   );
 }
