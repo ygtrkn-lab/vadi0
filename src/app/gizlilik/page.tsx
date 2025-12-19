@@ -65,6 +65,10 @@ export default function GizlilikPolitikasi() {
                   Çerezleri tarayıcı ayarlarınızdan yönetebilirsiniz. Detaylı bilgi için 
                   Çerez Politikamızı inceleyebilirsiniz.
                 </p>
+                <p className="text-gray-700 mb-4">
+                  Ayrıca, bazı hizmetleri sağlamak amacıyla üçüncü taraflar (ör. Google) tarayıcınıza çerez yerleştirebilir,
+                  bu çerezlerdeki bilgileri okuyabilir veya benzer teknolojiler (web işaretçileri vb.) kullanabilir.
+                </p>
               </section>
 
               <section className="mb-8">
@@ -72,6 +76,15 @@ export default function GizlilikPolitikasi() {
                 <p className="text-gray-700 mb-4">
                   Kişisel verileriniz, yalnızca hizmetlerimizi sunmak için gerekli olduğu durumlarda 
                   (kargo firmaları, ödeme kuruluşları gibi) güvenilir üçüncü taraflarla paylaşılabilir.
+                </p>
+                <p className="text-gray-700 mb-4">
+                  Google Müşteri Yorumları (Customer Reviews) programına katılım kapsamında, sipariş onayı sayfasında
+                  müşterilere yorum anketi daveti gösterebilmek için Google ile bazı işlem bilgileri paylaşılabilir
+                  (ör. sipariş numarası, e-posta adresi, tahmini teslim tarihi ve teslimat ülkesi).
+                </p>
+                <p className="text-gray-700 mb-4">
+                  Google'ın bu kapsamda gerçekleştirdiği veri işleme faaliyetleri kendi gizlilik politikalarına tabidir.
+                  Detaylar için Google Gizlilik Politikası'nı inceleyebilirsiniz.
                 </p>
               </section>
 

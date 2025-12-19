@@ -100,6 +100,24 @@ export default function CerezPolitikasi() {
                     </tbody>
                   </table>
                 </div>
+                <p className="text-gray-700 mt-4">
+                  Not: Yukarıdaki liste örnek/temel çerezleri kapsar. Zaman zaman üçüncü taraf hizmet sağlayıcıları
+                  (ör. Google) da çerez veya benzeri teknolojiler kullanabilir.
+                </p>
+              </section>
+
+              <section className="mb-8">
+                <h2 className="text-2xl font-semibold mb-4">3.1. Google Müşteri Yorumları (Customer Reviews)</h2>
+                <p className="text-gray-700 mb-4">
+                  Sipariş onayı sayfasında, Google Müşteri Yorumları programı kapsamında Google tarafından sağlanan bir
+                  "katılım/anket" bileşeni gösterilebilir. Bu bileşen, Google'ın tarayıcınıza çerez yerleştirmesine ve
+                  benzer teknolojiler kullanmasına neden olabilir.
+                </p>
+                <p className="text-gray-700 mb-4">
+                  Google bu program kapsamında, siparişinizle ilgili bazı işlem bilgilerini (ör. sipariş numarası, e-posta,
+                  tahmini teslim tarihi) alabilir. Google'ın bu kapsamda yaptığı işlemler Google'ın gizlilik politikalarına
+                  tabidir.
+                </p>
               </section>
 
               <section className="mb-8">
@@ -115,6 +133,9 @@ export default function CerezPolitikasi() {
                   <li><strong>Safari:</strong> Tercihler &gt; Gizlilik &gt; Çerezler</li>
                   <li><strong>Edge:</strong> Ayarlar &gt; Gizlilik &gt; Çerezler</li>
                 </ul>
+                <p className="text-gray-700 mt-4">
+                  Üçüncü taraf çerez tercihlerinizi ayrıca ilgili sağlayıcıların ayar ekranlarından da yönetebilirsiniz.
+                </p>
               </section>
 
               <section className="mb-8">
