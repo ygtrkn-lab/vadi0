@@ -24,6 +24,10 @@ type HeroSlide = {
   buttonLink: string;
 };
 
+type HeroSliderProps = {
+  id?: string;
+};
+
 const FALLBACK_SLIDES: HeroSlide[] = [
   {
     id: 'hero-1',
@@ -57,7 +61,7 @@ const FALLBACK_SLIDES: HeroSlide[] = [
   },
 ];
 
-export default function HeroSlider() {
+export default function HeroSlider({ id }: HeroSliderProps) {
   const slides: HeroSlide[] = Array.isArray(productSlides) && productSlides.length > 0
     ? (productSlides as HeroSlide[])
     : FALLBACK_SLIDES;
@@ -90,7 +94,7 @@ export default function HeroSlider() {
   }, []);
 
   return (
-    <section className="relative min-h-[100svh] lg:min-h-screen lg:max-h-[900px] overflow-hidden">
+    <section id={id} className="relative min-h-[100svh] lg:min-h-screen lg:max-h-[900px] overflow-hidden">
       {/* Desktop Background */}
       <div className="hidden lg:block absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50 z-0" />
       

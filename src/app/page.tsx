@@ -5,7 +5,7 @@ import {
   Marquee,
   ProductsGrid,
   Footer,
-  MobileNavBar,
+  MobileNavVisibilityGuard,
   StoryBannerCarousel,
   FeaturedBannerGrid,
   QuickCategoryPills,
@@ -20,7 +20,7 @@ export default function Home() {
       {/* Main Content */}
       <main>
         {/* Hero Slider */}
-        <HeroSlider />
+        <HeroSlider id="hero-section" />
 
         {/* Story-style Category Carousel (like Çiçeksepeti) */}
         <StoryBannerCarousel />
@@ -190,7 +190,7 @@ export default function Home() {
       <Footer />
 
       {/* Mobile Bottom Navigation Bar */}
-      <MobileNavBar />
+      <MobileNavVisibilityGuard />
     </>
   );
 }

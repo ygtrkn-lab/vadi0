@@ -2,6 +2,7 @@ export { default as Header } from './Header';
 export { default as HeroSlider } from './HeroSlider';
 export { default as CategoryCarousel } from './CategoryCarousel';
 export { default as MobileNavBar } from './MobileNavBar';
+export { default as MobileNavVisibilityGuard } from './MobileNavVisibilityGuard';
 export { default as BannerGrid } from './BannerGrid';
 export { default as Marquee } from './Marquee';
 export { default as ProductCard } from './ProductCard';
