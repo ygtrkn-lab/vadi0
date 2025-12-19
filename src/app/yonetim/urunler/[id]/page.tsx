@@ -36,6 +36,7 @@ export default function UrunDuzenlePage() {
     discountedPrice: 0,
     category: '',
     secondaryCategory: '',
+    tertiaryCategory: '',
     description: '',
     image: '',
     hoverImage: '',
@@ -80,9 +81,11 @@ export default function UrunDuzenlePage() {
             ...(Array.isArray((foundProduct as any).categories) ? (foundProduct as any).categories : []),
             ...(Array.isArray((foundProduct as any).occasion_tags) ? (foundProduct as any).occasion_tags : []),
           ];
-          const secondaryCategory = categoriesFromProduct.find(
+          const extras = categoriesFromProduct.filter(
             (c: string) => c && c !== foundProduct.category && c !== 'dogum-gunu-hediyeleri'
-          ) || '';
+          );
+          const secondaryCategory = extras[0] || '';
+          const tertiaryCategory = extras[1] || '';
 
           setFormData({
             name: foundProduct.name || '',
@@ -90,6 +93,7 @@ export default function UrunDuzenlePage() {
             discountedPrice: discountedPrice,
             category: foundProduct.category || '',
             secondaryCategory,
+            tertiaryCategory,
             description: foundProduct.description || '',
             image: foundProduct.image || '',
             hoverImage: foundProduct.hoverImage || foundProduct.hover_image || '',
@@ -145,6 +149,14 @@ export default function UrunDuzenlePage() {
       // Remove discountedPrice as it's not a database field
       const { discountedPrice: _discountedPrice, ...dataToSend } = productData;
       void _discountedPrice;
+
+      // Ensure occasion_tags contains secondary and tertiary (if present)
+      const occ: string[] = [];
+      if (productData.secondaryCategory) occ.push(productData.secondaryCategory);
+      if ((productData as any).tertiaryCategory) occ.push((productData as any).tertiaryCategory);
+      if (occ.length > 0) {
+        (dataToSend as any).occasion_tags = occ;
+      }
 
       const res = await fetch(`/api/products/${productId}`, {
         method: 'PUT',
@@ -419,6 +431,24 @@ export default function UrunDuzenlePage() {
                       className={`w-full px-4 py-2.5 border rounded-xl transition-all ${selectClasses}`}
                     >
                       <option value="">Seçimsiz (sadece ana kategori)</option>
+                      {categories.map(cat => (
+                        <option key={cat.slug || cat.id} value={cat.slug || cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-1.5 ${labelClasses}`}>
+                      3. Kategori (opsiyonel)
+                    </label>
+                    <select
+                      value={(formData as any).tertiaryCategory}
+                      onChange={(e) => handleInputChange('tertiaryCategory', e.target.value)}
+                      className={`w-full px-4 py-2.5 border rounded-xl transition-all ${selectClasses}`}
+                    >
+                      <option value="">Seçimsiz</option>
                       {categories.map(cat => (
                         <option key={cat.slug || cat.id} value={cat.slug || cat.name}>
                           {cat.name}

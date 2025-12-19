@@ -29,6 +29,7 @@ export default function YeniUrunPage() {
     discountedPrice: 0,
     category: '',
     secondaryCategory: '',
+    tertiaryCategory: '',
     description: '',
     image: '',
     hoverImage: '',
@@ -111,6 +112,14 @@ export default function YeniUrunPage() {
       // Remove discountedPrice as it's not a database field
       const { discountedPrice: _discountedPrice, ...dataToSend } = productData;
       void _discountedPrice;
+
+      // Include secondary/tertiary categories as occasionTags array
+      const extras = [] as string[];
+      if (formData.secondaryCategory) extras.push(formData.secondaryCategory);
+      if ((formData as any).tertiaryCategory) extras.push((formData as any).tertiaryCategory);
+      if (extras.length > 0) {
+        (dataToSend as any).occasionTags = extras;
+      }
 
       const res = await fetch('/api/products', {
         method: 'POST',
@@ -328,6 +337,24 @@ export default function YeniUrunPage() {
                       className={`w-full px-4 py-2.5 border rounded-xl transition-all ${selectClasses}`}
                     >
                       <option value="">Seçimsiz (sadece ana kategori)</option>
+                      {categories.map(cat => (
+                        <option key={cat.slug || cat.id} value={cat.slug || cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className={`block text-sm font-medium mb-1.5 ${labelClasses}`}>
+                      3. Kategori (opsiyonel)
+                    </label>
+                    <select
+                      value={(formData as any).tertiaryCategory}
+                      onChange={(e) => handleInputChange('tertiaryCategory', e.target.value)}
+                      className={`w-full px-4 py-2.5 border rounded-xl transition-all ${selectClasses}`}
+                    >
+                      <option value="">Seçimsiz</option>
                       {categories.map(cat => (
                         <option key={cat.slug || cat.id} value={cat.slug || cat.name}>
                           {cat.name}

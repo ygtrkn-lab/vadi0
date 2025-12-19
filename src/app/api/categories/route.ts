@@ -142,11 +142,16 @@ export async function GET(request: NextRequest) {
       return { ...dynamic, image: dynamicImage };
     });
 
-    // Pin birthday category first visually across lists
-    const PIN_SLUG = 'dogum-gunu-hediyeleri';
+    // Pin special categories first visually across lists
+    const PIN_SLUGS = ['haftanin-kampanyalari', 'dogum-gunu-hediyeleri'];
     formattedCategories.sort((a: any, b: any) => {
-      if (a.slug === PIN_SLUG) return -1;
-      if (b.slug === PIN_SLUG) return 1;
+      const ai = PIN_SLUGS.indexOf(a.slug);
+      const bi = PIN_SLUGS.indexOf(b.slug);
+      if (ai !== -1 || bi !== -1) {
+        if (ai === -1) return 1;
+        if (bi === -1) return -1;
+        return ai - bi; // preserve defined PIN_SLUGS order
+      }
       // Preserve existing order otherwise
       return (a.order ?? 0) - (b.order ?? 0);
     });
