@@ -33,6 +33,7 @@ const footerLinks = {
     items: [
       { name: "Sipariş Takibi", href: "/siparis-takip" },
       { name: "Kullanım Koşulları", href: "/kullanim-kosullari" },
+      { name: "İade Politikası", href: "/iade-politikasi" },
       { name: "Mesafeli Satış", href: "/mesafeli-satis" },
       { name: "Üyelik Sözleşmesi", href: "/uyelik-sozlesmesi" },
       { name: "Bilgi Güvenliği", href: "/bilgi-guvenligi" },
