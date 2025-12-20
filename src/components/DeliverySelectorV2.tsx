@@ -278,9 +278,9 @@ export default function DeliverySelectorV2({
   const isComplete = selectedLocation && selectedDate && selectedTimeSlot;
 
   return (
-    <div ref={containerRef} className="w-full space-y-4 relative z-[60]">
+    <div ref={containerRef} className="w-full space-y-4 relative z-[20000]">
       {/* ========== LOCATION SELECTOR ========== */}
-      <div className="relative z-[70]">
+      <div className="relative z-[20000]">
         <div 
           className={`
             flex items-center gap-3 p-3 rounded-2xl border-2 transition-all cursor-pointer
@@ -348,7 +348,7 @@ export default function DeliverySelectorV2({
         {isLocationDropdownOpen && !selectedLocation && (
           <div 
             ref={locationDropdownRef}
-            className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl z-[100] overflow-hidden max-h-[350px] flex flex-col"
+            className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl z-[20000] overflow-hidden max-h-[350px] flex flex-col"
           >
             {/* Search Input inside dropdown */}
             <div className="p-3 border-b border-gray-100 sticky top-0 bg-white z-10">
@@ -467,7 +467,7 @@ export default function DeliverySelectorV2({
                 <p className="text-xs text-gray-400 px-3 py-2 uppercase tracking-wider">
                   {currentRegion?.name} - İlçeler
                 </p>
-                <div className="grid grid-cols-2 gap-1">
+                <div className="grid grid-cols-1 gap-1">
                   {filteredDistricts.map((district) => (
                     <button
                       key={district}
@@ -559,7 +559,7 @@ export default function DeliverySelectorV2({
 
               {/* Calendar Dropdown */}
               {isCalendarOpen && (
-                <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl z-[100] p-4 w-[280px]">
+                <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl z-[20000] p-4 w-[280px]">
                   {/* Calendar Header */}
                   <div className="flex items-center justify-between mb-4">
                     <button

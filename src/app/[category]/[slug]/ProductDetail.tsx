@@ -176,7 +176,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
   };
 
   const sectionCard = (id: "desc" | "care" | "delivery", title: string, content: React.ReactNode) => (
-    <div className="rounded-2xl border border-slate-100 bg-white/80 backdrop-blur shadow-[0_14px_40px_rgba(15,23,42,0.06)] p-4 sm:p-5">
+    <div className="relative z-[1] rounded-2xl border border-slate-100 bg-white/80 backdrop-blur shadow-[0_14px_40px_rgba(15,23,42,0.06)] p-4 sm:p-5">
       <button
         className="w-full flex items-center justify-between text-left"
         onClick={() => setActiveSection((prev) => (prev === id ? ("desc" as typeof id) : id))}
@@ -206,7 +206,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     <>
       <Header />
 
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white pt-32 lg:pt-40 pb-16">
+      <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white pt-32 lg:pt-40 pb-16 product-detail-page">
         <div className="container-custom space-y-4 lg:space-y-5">
           <nav className="flex items-center gap-1.5 text-[11px] text-slate-500">
             <Link href="/" className="hover:text-primary-500">Ana Sayfa</Link>
@@ -235,7 +235,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
           {/* Right Column: Product Information */}
           <div className="space-y-6">
             {/* Title and Basic Info */}
-            <div className="bg-white p-6">
+            <div className="bg-white p-6 relative z-[1000]">
               <h1 className="text-2xl lg:text-3xl font-light text-gray-900 mb-3">{product.name}</h1>
               <p className="text-base text-gray-600 mb-6">{product.description}</p>
 
@@ -268,7 +268,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             </div>
 
             {/* Price */}
-            <div className="bg-white p-6">
+            <div className="bg-white p-6 relative z-[1000]">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
@@ -291,7 +291,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             </div>
 
             {/* Delivery Selector */}
-            <div ref={deliverySectionRef} className="bg-white p-6 space-y-4">
+            <div ref={deliverySectionRef} className="bg-white p-6 space-y-4 relative z-[1000]">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">Teslimat Bilgileri</label>
                 <AnimatePresence>
@@ -315,7 +315,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             </div>
 
             {/* Quantity and Add to Cart */}
-            <div className="bg-white p-6 space-y-6 lg:sticky lg:top-28 lg:z-10">
+            <div className="bg-white p-6 space-y-6 lg:sticky lg:top-28 lg:z-[1000]">
               {/* Quantity Selector */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Adet</label>
@@ -944,6 +944,13 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Scoped override: ensure all .space-y-4 stacks above on product detail page */}
+      <style jsx>{`
+        :global(.product-detail-page .space-y-4) {
+          position: relative;
+          z-index: 9999 !important;
+        }
+      `}</style>
     </>
   );
 }

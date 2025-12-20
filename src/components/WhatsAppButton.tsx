@@ -83,6 +83,7 @@ export default function WhatsAppButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isHeroVisibleOnHome, setIsHeroVisibleOnHome] = useState(false);
   const pathname = usePathname();
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -147,6 +148,38 @@ export default function WhatsAppButton() {
       }
     };
   }, [isMobile, shouldHide]);
+
+  // Home (mobile): hide WhatsApp button while hero slider is visible
+  useEffect(() => {
+    if (shouldHide) return;
+    if (!isMobile) {
+      setIsHeroVisibleOnHome(false);
+      return;
+    }
+    if (pathname !== '/') {
+      setIsHeroVisibleOnHome(false);
+      return;
+    }
+
+    const target = document.getElementById('hero-section');
+    if (!target) {
+      setIsHeroVisibleOnHome(false);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        const visible = Boolean(entry?.isIntersecting);
+        setIsHeroVisibleOnHome(visible);
+        if (visible) setIsOpen(false);
+      },
+      { threshold: 0.12 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [isMobile, pathname, shouldHide]);
 
   if (shouldHide) {
     return null;
@@ -222,8 +255,8 @@ export default function WhatsAppButton() {
       {/* WhatsApp Button Container */}
       <motion.div
         animate={{
-          x: isVisible ? 0 : isMobile ? 120 : 0,
-          opacity: isVisible ? 1 : isMobile ? 0 : 1,
+          x: (isVisible && !(isMobile && pathname === '/' && isHeroVisibleOnHome)) ? 0 : isMobile ? 120 : 0,
+          opacity: (isVisible && !(isMobile && pathname === '/' && isHeroVisibleOnHome)) ? 1 : isMobile ? 0 : 1,
         }}
         transition={{
           type: 'spring',
