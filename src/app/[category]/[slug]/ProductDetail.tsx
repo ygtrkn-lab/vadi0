@@ -9,6 +9,7 @@ import type { Product } from "@/data/products";
 import { Header, Footer, MobileNavBar } from "@/components";
 import DeliverySelector from "@/components/DeliverySelector";
 import ProductReviews from "@/components/ProductReviews";
+import ProductDetailDesktop from "@/components/ProductDetailDesktop";
 import { useCart } from "@/context/CartContext";
 import { useCustomer } from "@/context/CustomerContext";
 
@@ -119,7 +120,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     setTimeout(() => setShowShareToast(false), 2000);
   };
 
-  const sectionCard = (id: "desc" | "care" | "delivery", title: string, content: JSX.Element) => (
+  const sectionCard = (id: "desc" | "care" | "delivery", title: string, content: React.ReactNode) => (
     <div className="rounded-2xl border border-slate-100 bg-white/80 backdrop-blur shadow-[0_14px_40px_rgba(15,23,42,0.06)] p-4 sm:p-5">
       <button
         className="w-full flex items-center justify-between text-left"
@@ -162,9 +163,48 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             <span className="text-slate-800 font-medium truncate max-w-[180px]">{product.name}</span>
           </nav>
 
-          <div className="grid lg:grid-cols-[1.1fr,0.9fr] gap-4 lg:gap-6 items-start">
-            <div className="relative rounded-3xl overflow-hidden bg-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
-              <motion.div layout className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5]">
+          {/* Desktop Layout */}
+          <ProductDetailDesktop
+            product={product}
+            images={images}
+            categoryName={categoryName}
+            selectedImage={selectedImage}
+            onImageSelect={setSelectedImage}
+            quantity={quantity}
+            onQuantityChange={setQuantity}
+            isWishlisted={isWishlisted}
+            onWishlistToggle={handleWishlist}
+            onAddToCart={handleAddToCart}
+            isAddedToCart={isAddedToCart}
+            canAddToCart={canAddToCart}
+            deliveryInfo={deliveryInfo}
+            onDeliveryComplete={handleDeliveryComplete}
+            onDeliveryOpenSignal={() => setDeliveryOpenSignal((s) => s + 1)}
+            showDeliveryWarning={showDeliveryWarning}
+            onShare={handleShare}
+            onDeliverySignalChange={setDeliveryOpenSignal}
+            onImageModalOpen={() => setIsImageModalOpen(true)}
+          />
+
+          {/* Mobile Layout */}
+          <div className="lg:hidden">
+            <div className="grid gap-4 lg:gap-6 items-start">
+              <div className="relative rounded-3xl overflow-hidden bg-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.10)] lg:max-h-[60vh]">
+              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/70 to-transparent z-10 pointer-events-none" />
+              <div className="hidden lg:flex flex-col gap-2 absolute left-4 top-4 z-20 max-h-[60vh] overflow-auto pr-1">
+                {images.map((img, idx) => (
+                  <button
+                    key={`rail-${idx}`}
+                    onClick={() => setSelectedImage(idx)}
+                    className={`relative h-16 w-16 rounded-2xl overflow-hidden border backdrop-blur transition-all ${
+                      selectedImage === idx ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/40" : "border-white/40 hover:border-white/80"
+                    } shadow-sm`}
+                  >
+                    <Image src={img} alt={`${product.name}-rail-${idx}`} fill className="object-cover" />
+                  </button>
+                ))}
+              </div>
+              <motion.div layout className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] max-h-[60vh]">
                 <Image
                   src={images[selectedImage] || product.image}
                   alt={product.name}
@@ -187,7 +227,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
               </motion.div>
 
               {images.length > 1 && (
-                <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white/80 backdrop-blur border-t border-slate-100">
+                <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white/80 backdrop-blur border-t border-slate-100 lg:hidden">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
@@ -204,12 +244,12 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             </div>
 
             <div className="space-y-4">
-              <div className="rounded-3xl bg-white/90 backdrop-blur border border-slate-100 shadow-[0_18px_50px_rgba(15,23,42,0.08)] p-5 sm:p-6 space-y-4">
+              <div className="rounded-3xl bg-white/90 backdrop-blur border border-slate-100 shadow-[0_18px_50px_rgba(15,23,42,0.08)] p-5 sm:p-6 space-y-4 lg:sticky lg:top-28">
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-2">
-                    <p className="text-xs text-slate-500 uppercase tracking-[0.14em]">Ürün</p>
-                    <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 leading-tight">{product.name}</h1>
-                    {product.sku && <p className="text-xs text-slate-400">SKU: {product.sku}</p>}
+                    <p className="text-xs text-slate-500 uppercase tracking-[0.14em] font-semibold">Ürün</p>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 leading-tight">{product.name}</h1>
+                    {product.sku && <p className="text-xs text-slate-400 font-medium">SKU: {product.sku}</p>}
                   </div>
                   <button
                     onClick={handleWishlist}
@@ -241,13 +281,13 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                 </div>
 
                 <div className="flex items-end gap-3">
-                  <span className="text-3xl font-bold text-[#e05a4c]">{formatPrice(product.price)}</span>
+                  <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#e05a4c]">{formatPrice(product.price)}</span>
                   {product.oldPrice > product.price && (
-                    <span className="text-lg text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>
+                    <span className="text-lg sm:text-xl text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>
                   )}
                 </div>
 
-                <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">{product.description}</p>
+                <p className="text-sm lg:text-base text-slate-600 leading-relaxed line-clamp-3">{product.description}</p>
 
                 <div ref={deliverySectionRef} className="relative space-y-3">
                   <AnimatePresence>
@@ -311,6 +351,24 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                   </button>
                 </div>
 
+                <div className="hidden lg:grid grid-cols-3 gap-3">
+                  {[{
+                    title: "Teslimat Slotu",
+                    value: deliveryInfo?.timeSlot ? `${deliveryInfo.timeSlot}` : "Slot seçin",
+                  }, {
+                    title: "İade & Değişim",
+                    value: "Koşulsuz destek",
+                  }, {
+                    title: "Destek",
+                    value: "7/24 WhatsApp",
+                  }].map((item, idx) => (
+                    <div key={idx} className="rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3 flex flex-col gap-1 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
+                      <p className="text-xs uppercase tracking-[0.12em] text-slate-400">{item.title}</p>
+                      <p className="text-sm font-semibold text-slate-900">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {[{ title: "Güvenli ödeme", icon: Truck, desc: "Hızlı teslim" }, { title: "Özel paket", icon: Package, desc: "Şık sunum" }].map((item, idx) => (
                     <div key={idx} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-100 bg-slate-50 flex-shrink-0 min-w-[160px]">
@@ -324,7 +382,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                 </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
                 {sectionCard(
                   "desc",
                   "Ürün Açıklaması",
@@ -381,6 +439,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
               </div>
             </div>
           </div>
+          </div>
 
           <div className="rounded-3xl bg-white/90 backdrop-blur border border-slate-100 shadow-[0_18px_50px_rgba(15,23,42,0.06)] p-5 lg:p-6">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">Müşteri Değerlendirmeleri</h2>
@@ -434,26 +493,28 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
         <div className="container-custom">
           <div className="flex items-center gap-3 rounded-2xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.12)] border border-slate-100 px-4 py-3">
             <div className="flex-1">
-              <p className="text-[11px] text-slate-500">{product.inStock ? "Fiyat" : "Stokta yok"}</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold text-[#e05a4c]">{formatPrice(product.price)}</span>
-                {product.oldPrice > product.price && <span className="text-sm text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>}
+              <p className="text-[10px] sm:text-xs text-slate-500 font-medium">{product.inStock ? "Fiyat" : "Stokta yok"}</p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="text-lg sm:text-xl font-bold text-[#e05a4c]">{formatPrice(product.price)}</span>
+                {product.oldPrice > product.price && <span className="text-xs sm:text-sm text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>}
               </div>
             </div>
-            <button
+            <motion.button
+              whileHover={canAddToCart ? { scale: 1.02, y: -2 } : {}}
+              whileTap={canAddToCart ? { scale: 0.98 } : {}}
               onClick={handleAddToCart}
               aria-disabled={!canAddToCart}
-              className={`min-w-[140px] inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all ${
+              className={`min-w-[130px] sm:min-w-[150px] inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold text-white shadow-lg transition-all ${
                 canAddToCart
                   ? isAddedToCart
                     ? "bg-emerald-600"
-                    : "bg-[#e05a4c] hover:-translate-y-0.5 hover:shadow-xl"
+                    : "bg-[#e05a4c] hover:shadow-xl"
                   : "bg-slate-300 cursor-not-allowed"
               }`}
             >
               {isAddedToCart ? <Check size={18} /> : <ShoppingCart size={18} />}
               {canAddToCart ? (isAddedToCart ? "Eklendi" : "Ekle") : "Teslimat"}
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
@@ -468,15 +529,15 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             className="fixed top-2 left-0 right-0 z-[80]"
           >
             <div className="container-custom">
-              <div className="flex items-center gap-3 rounded-2xl bg-white/90 backdrop-blur border border-slate-200 shadow-[0_14px_40px_rgba(15,23,42,0.12)] px-4 py-3">
-                <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
+              <div className="flex items-center gap-3 rounded-2xl bg-white/90 backdrop-blur border border-slate-200 shadow-[0_14px_40px_rgba(15,23,42,0.12)] px-4 py-3 gap-2 sm:gap-3">
+                <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 flex-shrink-0">
                   <Image src={images[0]} alt={product.name} fill className="object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-slate-500 truncate">{categoryName}</p>
-                  <p className="text-sm font-semibold text-slate-900 truncate">{product.name}</p>
+                  <p className="text-[10px] sm:text-xs text-slate-500 truncate font-medium">{categoryName}</p>
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{product.name}</p>
                 </div>
-                <div className="hidden sm:flex items-center gap-2 text-sm font-semibold text-[#e05a4c]">
+                <div className="hidden sm:flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#e05a4c] flex-shrink-0">
                   {formatPrice(product.price)}
                   {product.oldPrice > product.price && (
                     <span className="text-xs text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>
