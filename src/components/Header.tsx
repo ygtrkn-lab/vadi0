@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -92,7 +92,7 @@ export default function Header() {
   }, []);
 
   // Register logo position when component mounts
-  useEffect(() => {
+  useLayoutEffect(() => {
     registerLogoPosition();
   }, [registerLogoPosition]);
 
@@ -105,7 +105,7 @@ export default function Header() {
       }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
       className="fixed top-0 left-0 right-0 z-[9999]" 
-      style={{ pointerEvents: isHidden ? 'none' : 'none' }}
+      style={{ pointerEvents: isHidden ? 'none' : 'auto' }}
     >
       {/* Top Bar */}
       <motion.div 

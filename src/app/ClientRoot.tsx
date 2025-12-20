@@ -45,22 +45,43 @@ export default function ClientRoot({ children }: ClientRootProps) {
   const pathname = usePathname();
 
   const registerLogoPosition = useCallback(() => {
-    if (logoRef.current) {
-      const rect = logoRef.current.getBoundingClientRect();
+    const maxAttempts = 12;
+    const measure = (attempt: number) => {
+      const el = logoRef.current;
+      if (!el) {
+        if (attempt < maxAttempts) {
+          requestAnimationFrame(() => measure(attempt + 1));
+        }
+        return;
+      }
+
+      const rect = el.getBoundingClientRect();
+      const hasSize = rect.width > 0 && rect.height > 0;
+      if (!hasSize && attempt < maxAttempts) {
+        requestAnimationFrame(() => measure(attempt + 1));
+        return;
+      }
+
       setTargetPosition({
         x: rect.left + rect.width / 2,
         y: rect.top + rect.height / 2,
         width: rect.width,
         height: rect.height,
       });
-    }
+    };
+
+    measure(0);
   }, []);
 
   useEffect(() => {
-    // Calculate logo position after a short delay to ensure header is rendered
+    // Calculate logo position after layout is ready.
     const positionTimer = setTimeout(() => {
       registerLogoPosition();
-    }, 100);
+    }, 0);
+
+    // Re-measure once fonts are ready (can shift layout on first cold load).
+    const maybeFontsReady = (document as any).fonts?.ready as Promise<void> | undefined;
+    maybeFontsReady?.then(() => registerLogoPosition()).catch(() => {});
 
     // Minimum loading time for smooth UX
     const minLoadTime = setTimeout(() => {
@@ -84,6 +105,16 @@ export default function ClientRoot({ children }: ClientRootProps) {
       clearTimeout(positionTimer);
       clearTimeout(minLoadTime);
       window.removeEventListener('load', handleLoad);
+    };
+  }, [registerLogoPosition]);
+
+  useEffect(() => {
+    const handleResize = () => registerLogoPosition();
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
     };
   }, [registerLogoPosition]);
 

@@ -127,8 +127,8 @@ export default function ProductGalleryDesktop({
         onTouchEnd={handleTouchEnd}
         className="relative rounded-xl overflow-hidden bg-[#fafafa] aspect-square cursor-zoom-in select-none group"
       >
-        {/* Subtle vignette */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/5 z-10 pointer-events-none" />
+        {/* Subtle vignette (placed below image) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/5 z-0 pointer-events-none" />
 
         {/* Main image container */}
         <motion.div
@@ -139,14 +139,14 @@ export default function ProductGalleryDesktop({
             y: `${zoomState.y * 0.1}%`,
           }}
           transition={{ type: "tween", duration: 0.2 }}
-          className="w-full h-full"
+          className="w-full h-full relative z-10"
         >
           <Image
             src={images[selectedImage] || images[0]}
             alt={productName}
             fill
             sizes="(max-width: 1280px) 50vw, (max-width: 1536px) 40vw, 600px"
-            className="object-cover will-change-transform"
+            className="object-cover will-change-transform z-10"
             priority
             quality={95}
           />
