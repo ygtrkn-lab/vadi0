@@ -357,6 +357,39 @@ button:focus-visible {
   }
 }
 
+/* Header top info band marquee */
+@keyframes topbar-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.topbar-marquee {
+  position: relative;
+  overflow: hidden;
+}
+
+.topbar-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: topbar-marquee 22s linear infinite;
+  will-change: transform;
+}
+
+.topbar-marquee:hover .topbar-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-marquee-track {
+    animation: none;
+    transform: none;
+  }
+}
+
 /* Container Max Widths */
 .container-custom {
   width: 100%;

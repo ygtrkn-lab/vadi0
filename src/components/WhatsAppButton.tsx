@@ -246,7 +246,7 @@ export default function WhatsAppButton() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/25 backdrop-blur-sm z-[54]"
+            className="fixed inset-0 bg-black/25 backdrop-blur-sm z-[14000]"
             onClick={() => setIsOpen(false)}
           />
         )}
@@ -263,7 +263,7 @@ export default function WhatsAppButton() {
           stiffness: 260,
           damping: 20,
         }}
-        className={`fixed z-[55] ${isMobile ? 'right-4' : 'bottom-8 right-8'}`}
+        className={`fixed z-[15000] ${isMobile ? 'right-4' : 'bottom-8 right-8'}`}
         style={{
           ...(isMobile && {
             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px + var(--mobile-bottom-nav-offset, 0px))',
@@ -282,10 +282,10 @@ export default function WhatsAppButton() {
                 stiffness: 400,
                 damping: 30,
               }}
-              className={`absolute ${
+              className={`${
                 isMobile
-                  ? 'bottom-[68px] left-1/2 -translate-x-1/2 w-[268px]'
-                  : 'bottom-20 right-0 w-[308px]'
+                  ? 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[88vw] max-w-[320px] z-[15001]'
+                  : 'absolute bottom-20 right-0 w-[308px]'
               }`}
             >
               <div

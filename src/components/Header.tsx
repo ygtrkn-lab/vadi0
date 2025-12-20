@@ -13,7 +13,11 @@ import {
   Menu, 
   X, 
   Phone, 
-  ChevronDown 
+  ChevronDown,
+  Truck,
+  CreditCard,
+  BadgeCheck,
+  ShieldCheck
 } from 'lucide-react';
 import { usePreloader } from '@/app/ClientRoot';
 import { useCart } from '@/context/CartContext';
@@ -118,17 +122,74 @@ export default function Header() {
           duration: 0.4,
           ease: [0.25, 0.1, 0.25, 1],
         }}
-        className="text-gray-600 overflow-hidden"
-        style={{ backgroundColor: '#ffffff', pointerEvents: 'auto' }}
+        className="overflow-hidden border-b border-gray-100 bg-white/80 backdrop-blur-xl text-gray-700"
+        style={{ pointerEvents: 'auto' }}
       >
         <div className="container-custom">
-          <div className="flex items-center justify-between py-2 text-sm">
-            <div className="flex items-center gap-6">
-              <PhoneLink />
+          <div className="flex items-center justify-between gap-3 py-2">
+            {/* Info band */}
+            <div className="flex-1 min-w-0">
+              {(() => {
+                const InfoItems = () => (
+                  <>
+                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white/70 px-3 py-1">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50">
+                        <Truck size={14} className="text-gray-700" />
+                      </span>
+                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">İstanbul içi ücretsiz kargo</span>
+                    </div>
+
+                    <div className="hidden sm:block h-4 w-px bg-gray-200" />
+
+                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white/70 px-3 py-1">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50">
+                        <CreditCard size={14} className="text-gray-700" />
+                      </span>
+                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">iyzico ile güvenli ödeme</span>
+                    </div>
+
+                    <div className="hidden sm:block h-4 w-px bg-gray-200" />
+
+                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white/70 px-3 py-1">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50">
+                        <BadgeCheck size={14} className="text-gray-700" />
+                      </span>
+                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Memnuniyet garantisi</span>
+                    </div>
+
+                    <div className="hidden sm:block h-4 w-px bg-gray-200" />
+
+                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white/70 px-3 py-1">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50">
+                        <ShieldCheck size={14} className="text-gray-700" />
+                      </span>
+                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Kalite &amp; uygun fiyat garantisi</span>
+                    </div>
+                  </>
+                );
+
+                return (
+                  <div className="topbar-marquee">
+                    <div className="topbar-marquee-track gap-2 sm:gap-3">
+                      <div className="flex items-center gap-2 sm:gap-3 pr-3">
+                        <InfoItems />
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-3 pr-3" aria-hidden="true">
+                        <InfoItems />
+                      </div>
+                    </div>
+
+                    <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white/90 to-transparent" />
+                    <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white/90 to-transparent" />
+                  </div>
+                );
+              })()}
             </div>
-            <div className="flex items-center gap-4">
-              <span className="hidden md:inline animate-pulse-soft">🎁 %70&apos;e varan indirim fırsatları!</span>
-              <Link href="/siparis-takip" className="hover:text-primary-100 transition-colors">
+
+            {/* Utilities */}
+            <div className="hidden md:flex items-center gap-5 text-sm">
+              <PhoneLink />
+              <Link href="/siparis-takip" className="hover:text-primary-500 transition-colors">
                 Sipariş Takip
               </Link>
             </div>
