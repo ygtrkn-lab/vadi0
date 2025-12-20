@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle } from "lucide-react";
 import type { Product } from "@/data/products";
-import { Header, Footer, MobileNavBar } from "@/components";
-import DeliverySelector from "@/components/DeliverySelector";
+import { Header, Footer } from "@/components";
+import DeliverySelectorV2 from "@/components/DeliverySelectorV2";
 import ProductReviews from "@/components/ProductReviews";
 import ProductDetailDesktop from "@/components/ProductDetailDesktop";
 import ProductGalleryDesktop from "@/components/ProductGalleryDesktop";
@@ -21,6 +22,7 @@ type ProductDetailProps = {
 };
 
 export default function ProductDetail({ product, relatedProducts, categoryName }: ProductDetailProps) {
+  const pathname = usePathname();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeSection, setActiveSection] = useState<"desc" | "care" | "delivery">("desc");
@@ -52,12 +54,30 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
 
   useEffect(() => {
     const onScroll = () => {
-      setShowTopBar(window.scrollY > 320);
+      const shouldShow = window.scrollY > 320;
+      setShowTopBar(shouldShow);
+      
+      // Hide/show header based on scroll position
+      if (shouldShow) {
+        window.dispatchEvent(new Event('hideHeader'));
+      } else {
+        window.dispatchEvent(new Event('showHeader'));
+      }
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      // Always show header when leaving this page
+      window.dispatchEvent(new Event('showHeader'));
+    };
   }, []);
+
+  // Close any lingering overlays (mobile nav/search) and image modal on route change
+  useEffect(() => {
+    window.dispatchEvent(new Event("closeAllOverlays"));
+    setIsImageModalOpen(false);
+  }, [pathname]);
 
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", minimumFractionDigits: 0 }).format(price);
@@ -75,6 +95,10 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
   const canAddToCart = Boolean(deliveryInfo?.location && deliveryInfo?.date && deliveryInfo?.timeSlot && product.inStock);
 
   const handleAddToCart = () => {
+    // Ensure any overlays are closed before interaction
+    window.dispatchEvent(new Event("closeAllOverlays"));
+    setIsImageModalOpen(false);
+
     if (!canAddToCart) {
       if (deliverySectionRef.current) {
         deliverySectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -372,7 +396,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
               {/* Delivery Selector */}
               <div className="space-y-2.5 pt-4 border-t border-slate-200">
                 <p className="font-bold text-slate-900">Teslimat Seçin</p>
-                <DeliverySelector
+                <DeliverySelectorV2
                   onDeliveryComplete={handleDeliveryComplete}
                   onOpenChange={() => {}}
                   openSignal={deliveryOpenSignal}
@@ -554,7 +578,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                       </motion.div>
                     )}
                   </AnimatePresence>
-                  <DeliverySelector
+                  <DeliverySelectorV2
                     onDeliveryComplete={handleDeliveryComplete}
                     onOpenChange={() => {}}
                     openSignal={deliveryOpenSignal}
@@ -785,86 +809,74 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
         </div>
       </main>
 
-      <div className="fixed bottom-20 left-0 right-0 z-[60] lg:hidden">
-        <div className="container-custom">
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="flex items-center gap-3 rounded-2xl bg-white shadow-[0_-8px_32px_rgba(15,23,42,0.16)] border border-slate-200 px-4 py-3"
-          >
-            <div className="flex-1">
-              <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase">Fiyat</p>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-lg sm:text-2xl font-black text-[#e05a4c]">{formatPrice(product.price)}</span>
-                {product.oldPrice > product.price && <span className="text-xs sm:text-sm text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>}
-              </div>
-            </div>
-            <motion.button
-              whileHover={canAddToCart ? { scale: 1.05, y: -2 } : {}}
-              whileTap={canAddToCart ? { scale: 0.98 } : {}}
-              onClick={handleAddToCart}
-              aria-disabled={!canAddToCart}
-              className={`min-w-[140px] sm:min-w-[160px] inline-flex items-center justify-center gap-2 rounded-xl px-5 py-4 text-sm sm:text-base font-bold text-white shadow-lg transition-all ${
-                canAddToCart
-                  ? isAddedToCart
-                    ? "bg-emerald-600 shadow-lg"
-                    : "bg-[#e05a4c] hover:shadow-[0_8px_24px_rgba(224,90,76,0.3)] hover:bg-[#d43a2a]"
-                  : "bg-slate-400 cursor-not-allowed"
-              }`}
-            >
-              {isAddedToCart ? (
-                <>
-                  <Check size={20} />
-                  Eklendi
-                </>
-              ) : (
-                <>
-                  <ShoppingCart size={20} />
-                  {canAddToCart ? "Ekle" : "Teslimat"}
-                </>
-              )}
-            </motion.button>
-          </motion.div>
-        </div>
-      </div>
-
       <AnimatePresence>
         {showTopBar && (
           <motion.div
-            initial={{ y: -60, opacity: 0 }}
+            initial={{ y: -100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -60, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed top-2 left-0 right-0 z-[80]"
+            exit={{ y: -100, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="fixed top-0 left-0 right-0 z-[9999] bg-white shadow-lg border-b border-gray-100"
           >
-            <div className="container-custom">
-              <div className="flex items-center gap-3 rounded-2xl bg-white/90 backdrop-blur border border-slate-200 shadow-[0_14px_40px_rgba(15,23,42,0.12)] px-4 py-3 gap-2 sm:gap-3">
-                <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden bg-slate-100 border border-slate-100 flex-shrink-0">
+            <div className="container-custom py-3">
+              <div className="flex items-center gap-3">
+                {/* Back Button */}
+                <button 
+                  onClick={() => window.history.back()}
+                  className="p-2.5 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+                >
+                  <ArrowLeft size={22} className="text-gray-700" />
+                </button>
+                
+                {/* Product Info */}
+                <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 shadow-sm">
                   <Image src={images[0]} alt={product.name} fill className="object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] sm:text-xs text-slate-500 truncate font-medium">{categoryName}</p>
-                  <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{product.name}</p>
+                  <p className="text-[11px] sm:text-xs text-slate-500 truncate font-medium">{categoryName}</p>
+                  <p className="text-sm sm:text-base font-bold text-slate-900 truncate">{product.name}</p>
+                  {/* Price - Mobile */}
+                  <p className="sm:hidden text-sm font-bold text-[#e05a4c] mt-0.5">
+                    {formatPrice(product.price)}
+                    {product.oldPrice > product.price && (
+                      <span className="text-xs text-slate-400 line-through font-normal ml-2">{formatPrice(product.oldPrice)}</span>
+                    )}
+                  </p>
                 </div>
-                <div className="hidden sm:flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#e05a4c] flex-shrink-0">
+                
+                {/* Price - Desktop */}
+                <div className="hidden sm:flex items-center gap-2 text-sm font-bold text-[#e05a4c] flex-shrink-0">
                   {formatPrice(product.price)}
                   {product.oldPrice > product.price && (
-                    <span className="text-xs text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>
+                    <span className="text-xs text-slate-400 line-through font-normal">{formatPrice(product.oldPrice)}</span>
                   )}
                 </div>
+                
+                {/* Add to Cart Button */}
                 <button
                   onClick={handleAddToCart}
                   aria-disabled={!canAddToCart}
-                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-white shadow-md transition-all ${
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all flex-shrink-0 ${
                     canAddToCart
                       ? isAddedToCart
                         ? "bg-emerald-600"
-                        : "bg-[#e05a4c] hover:-translate-y-0.5 hover:shadow-lg"
+                        : "bg-[#e05a4c] hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
                       : "bg-slate-300 cursor-not-allowed"
                   }`}
                 >
                   {isAddedToCart ? <Check size={16} /> : <ShoppingCart size={16} />}
-                  {canAddToCart ? (isAddedToCart ? "Eklendi" : "Sepete Ekle") : "Teslimat"}
+                  <span className="hidden sm:inline">
+                    {canAddToCart ? (isAddedToCart ? "Sepette" : "Sepete Ekle") : "Teslimat Seç"}
+                  </span>
+                </button>
+                
+                {/* Cart Icon - Mobile */}
+                <button 
+                  onClick={() => window.location.href = '/sepet'}
+                  className="sm:hidden p-2 rounded-full transition-colors relative flex-shrink-0"
+                  style={{ backgroundColor: 'rgba(224, 90, 76, 0.1)' }}
+                >
+                  <ShoppingCart size={20} style={{ color: '#e05a4c' }} />
                 </button>
               </div>
             </div>
@@ -873,7 +885,6 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
       </AnimatePresence>
 
       <Footer />
-      <MobileNavBar />
 
       <AnimatePresence>
         {isImageModalOpen && (

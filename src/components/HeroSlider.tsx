@@ -118,6 +118,8 @@ export default function HeroSlider({ id }: HeroSliderProps) {
           delay: 5000,
           disableOnInteraction: false,
         }}
+        // Small perf win: don't eagerly preload all slide images.
+        preloadImages={false}
         loop
         className="h-full min-h-[100svh] lg:min-h-screen lg:max-h-[900px]"
         onSwiper={(swiper) => { swiperRef.current = swiper; }}
@@ -132,13 +134,28 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                   src={slide.image}
                   alt={slide.title}
                   fill
+                  sizes="100vw"
+                  quality={75}
                   className="object-cover"
                   priority={index === 0}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/20" />
+                {/* Readability overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/25" />
+                {/* Subtle flower-wallpaper feel (CSS gradients, no external assets) */}
+                <div
+                  className="absolute inset-0 pointer-events-none opacity-60"
+                  style={{
+                    backgroundImage:
+                      'radial-gradient(circle at 18% 22%, rgba(255,255,255,0.18) 0 2px, transparent 3px),\n' +
+                      'radial-gradient(circle at 82% 28%, rgba(255,255,255,0.14) 0 2px, transparent 3px),\n' +
+                      'radial-gradient(circle at 28% 78%, rgba(255,255,255,0.12) 0 2px, transparent 3px),\n' +
+                      'radial-gradient(circle at 78% 82%, rgba(255,255,255,0.10) 0 2px, transparent 3px)',
+                    backgroundSize: '160px 160px',
+                  }}
+                />
               </div>
 
-              <div className="container-custom relative z-10 pt-28 pb-32 lg:pt-32 lg:pb-20">
+              <div className="container-custom relative z-10 pt-24 pb-24 sm:pt-28 sm:pb-28 lg:pt-32 lg:pb-20">
                 <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                   {/* Text Content */}
                   <motion.div
@@ -175,7 +192,7 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                       initial={{ opacity: 0, y: 30 }}
                       animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                       transition={{ duration: 0.6, delay: 0.3 }}
-                      className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-[1.1]
+                      className="text-[34px] leading-[1.08] sm:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6
                         text-white lg:text-gray-900"
                     >
                       <span className="lg:text-gradient">{slide.title.split(' ')[0]}</span>{' '}
@@ -187,7 +204,7 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                       initial={{ opacity: 0, y: 20 }}
                       animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ duration: 0.6, delay: 0.4 }}
-                      className="text-base sm:text-lg text-white/90 lg:text-gray-600 mb-8 max-w-md 
+                      className="text-[15px] sm:text-lg text-white/90 lg:text-gray-600 mb-8 max-w-md 
                         mx-auto lg:mx-0 leading-relaxed"
                     >
                       {slide.description}
@@ -202,7 +219,7 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                     >
                       <Link
                         href={slide.buttonLink}
-                        className="w-full sm:w-auto px-8 py-4 bg-primary-500 hover:bg-primary-600 
+                        className="w-full sm:w-auto px-8 py-4.5 bg-primary-500 hover:bg-primary-600 
                           text-white font-semibold rounded-2xl flex items-center justify-center gap-3 
                           transition-all duration-300 hover:shadow-lg hover:shadow-primary-500/30 group"
                       >

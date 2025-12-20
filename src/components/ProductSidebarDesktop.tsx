@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, ShoppingCart, Share2, Check, Minus, Plus, Star, Package, Truck, AlertCircle } from "lucide-react";
 import type { Product } from "@/data/products";
-import DeliverySelector from "@/components/DeliverySelector";
+import DeliverySelectorV2 from "@/components/DeliverySelectorV2";
 
 interface ProductSidebarDesktopProps {
   product: Product;
@@ -207,7 +207,7 @@ export default function ProductSidebarDesktop({
       {/* Delivery section - Amazon style */}
       <div className="rounded-3xl bg-white border border-slate-200 shadow-[0_4px_20px_rgba(15,23,42,0.08)] p-6 space-y-4">
         <h3 className="text-base font-bold text-slate-900">Teslimat Bilgisi</h3>
-        <DeliverySelector
+        <DeliverySelectorV2
           onDeliveryComplete={onDeliveryComplete}
           onOpenChange={() => {}}
           openSignal={0}

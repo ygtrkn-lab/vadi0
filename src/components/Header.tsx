@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -35,6 +36,7 @@ export default function Header() {
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [isHidden, setIsHidden] = useState(false);
   
   // Get cart state
   const { getTotalItems } = useCart();
@@ -75,13 +77,36 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Listen for hide/show header events from product detail page
+  useEffect(() => {
+    const handleHideHeader = () => setIsHidden(true);
+    const handleShowHeader = () => setIsHidden(false);
+    
+    window.addEventListener('hideHeader', handleHideHeader);
+    window.addEventListener('showHeader', handleShowHeader);
+    
+    return () => {
+      window.removeEventListener('hideHeader', handleHideHeader);
+      window.removeEventListener('showHeader', handleShowHeader);
+    };
+  }, []);
+
   // Register logo position when component mounts
   useEffect(() => {
     registerLogoPosition();
   }, [registerLogoPosition]);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-[9999]">
+    <motion.header 
+      initial={false}
+      animate={{ 
+        y: isHidden ? -200 : 0,
+        opacity: isHidden ? 0 : 1 
+      }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      className="fixed top-0 left-0 right-0 z-[9999]" 
+      style={{ pointerEvents: isHidden ? 'none' : 'none' }}
+    >
       {/* Top Bar */}
       <motion.div 
         initial={false}
@@ -94,7 +119,7 @@ export default function Header() {
           ease: [0.25, 0.1, 0.25, 1],
         }}
         className="text-gray-600 overflow-hidden"
-        style={{ backgroundColor: '#ffffff' }}
+        style={{ backgroundColor: '#ffffff', pointerEvents: 'auto' }}
       >
         <div className="container-custom">
           <div className="flex items-center justify-between py-2 text-sm">
@@ -127,7 +152,7 @@ export default function Header() {
           duration: 0.4,
           ease: [0.25, 0.1, 0.25, 1],
         }}
-        className="relative z-[100]"
+        className="relative z-[100]" style={{ pointerEvents: 'auto' }}
       >
         <div className="container-custom">
           <div className="flex items-center justify-between gap-4">
@@ -167,7 +192,7 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-4 relative z-[9999]" style={{ pointerEvents: 'auto' }}>
               {/* Mobile Search Toggle */}
               <button 
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
@@ -177,15 +202,27 @@ export default function Header() {
               </button>
 
               {/* User Account */}
-              <Link href="/hesabim" className="hidden sm:flex items-center gap-2 p-2 hover:bg-gray-100 rounded-full transition-colors group">
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.location.href = '/hesabim';
+                }}
+                className="hidden sm:flex items-center gap-2 p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer">
                 <User size={22} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
                 <span className="hidden xl:inline text-sm text-gray-700 group-hover:text-primary-500 transition-colors">
                   Hesabım
                 </span>
-              </Link>
+              </button>
 
               {/* Wishlist */}
-              <Link href="/hesabim/favorilerim" className="relative p-2 hover:bg-gray-100 rounded-full transition-colors group">
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.location.href = '/hesabim/favorilerim';
+                }}
+                className="relative p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer">
                 <Heart size={22} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
                 {wishlistCount > 0 && (
                   <span className="absolute top-0 right-0 min-w-4 h-4 px-1 text-white text-[10px] 
@@ -194,11 +231,17 @@ export default function Header() {
                     {wishlistCount}
                   </span>
                 )}
-              </Link>
+              </button>
 
               {/* Cart */}
-              <Link href="/sepet" className="relative flex items-center gap-2 p-2 px-3 rounded-full 
-                hover:opacity-90 transition-all group shadow-md"
+              <button 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  window.location.href = '/sepet';
+                }}
+                className="relative flex items-center gap-2 p-2 px-3 rounded-full 
+                hover:opacity-90 transition-all group shadow-md cursor-pointer"
                 style={{ backgroundColor: '#e05a4c' }}>
                 <ShoppingCart size={20} className="text-white" />
                 <span className="hidden sm:inline text-sm font-medium text-white">Sepet</span>
@@ -209,7 +252,7 @@ export default function Header() {
                     {cartCount}
                   </span>
                 )}
-              </Link>
+              </button>
 
               {/* Mobile Menu Toggle */}
               <button 
@@ -354,7 +397,7 @@ export default function Header() {
           </ul>
         </div>
       </nav>
-    </header>
+    </motion.header>
   );
 }
 
