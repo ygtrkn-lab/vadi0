@@ -6,40 +6,83 @@ export type HeroSlide = {
   subtitle: string;
   description: string;
   image: string;
+  mobileImage?: string;
   buttonText: string;
   buttonLink: string;
 };
 
 export const slides: HeroSlide[] = [
   {
-    id: 'kampanya-urun-0',
-    title: 'Sevginin Gücü Gül Aranjmanı',
-    subtitle: 'Haftanın kampanya ürünü',
-    description: '7 adet kırmızı gülle hazırlanan özel kampanya aranjmanı.',
+    id: 'hero-kampanya-1',
+    title: 'Haftanın Kampanyaları',
+    subtitle: 'Özel indirim seçkisi',
+    description: 'Sınırlı süreli fırsatlarla en çok tercih edilen ürünleri avantajlı fiyatlarla keşfedin.',
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
-    buttonText: 'Ürünü İncele',
-    buttonLink: '/guller/sevginin-gucu-7-kirmizi-guller-aranjmani',
+    mobileImage:
+      'https://images.unsplash.com/photo-1530092285049-1c42085fd395?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    buttonText: 'Kampanyalara Git',
+    buttonLink: '/haftanin-cicek-kampanyalari-vadiler-com',
   },
   {
-    id: 'kampanya-urun-1',
-    title: '20 Kırmızı Gül Buketi',
-    subtitle: 'Haftanın kampanya ürünü',
-    description: 'Kampanyadaki kırmızı gül buketiyle güçlü bir jest yapın.',
+    id: 'hero-kampanya-2',
+    title: 'Haftalık İndirimler',
+    subtitle: 'Avantajlı fiyatlar',
+    description: 'Haftanın kampanyalarında seçili ürünlerde ekstra indirimleri kaçırmayın.',
     image:
-      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
-    buttonText: 'Ürünü İncele',
-    buttonLink: '/guller/20-kirmizi-gul-buketi',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225138/vadiler/products/vadiler-sensiz-olmaz-25-beyaz-guller.jpg',
+    mobileImage:
+      'https://plus.unsplash.com/premium_photo-1670444760243-155db6c38716?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    buttonText: 'İndirimleri Gör',
+    buttonLink: '/haftanin-cicek-kampanyalari-vadiler-com',
   },
   {
-    id: 'kampanya-urun-2',
-    title: 'Çift Dal Beyaz Orkide',
-    subtitle: 'Kampanya ürünü',
-    description: 'Özel tasarım çift dal orkide kampanya fiyatıyla.',
+    id: 'hero-kampanya-3',
+    title: 'Sürpriz Fırsatlar',
+    subtitle: 'Sınırlı stok',
+    description: 'Kampanya ürünleri hızlı tükenebilir. Şimdi inceleyin, fırsatı yakalayın.',
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
-    buttonText: 'Ürünü İncele',
-    buttonLink: '/orkideler/cift-dal-beyaz-orkide',
+    mobileImage:
+      'https://images.unsplash.com/photo-1446071103084-c257b5f70672?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    buttonText: 'Kampanyalara Git',
+    buttonLink: '/haftanin-cicek-kampanyalari-vadiler-com',
+  },
+  {
+    id: 'hero-category-guller',
+    title: 'Güller',
+    subtitle: 'Klasik ve etkileyici',
+    description: 'Kırmızı, beyaz ve renkli gül seçenekleriyle en zarif sürprizi hazırlayın.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
+    mobileImage:
+      'https://images.unsplash.com/photo-1576857990591-aad2585f34d1?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    buttonText: 'Güllere Git',
+    buttonLink: '/guller',
+  },
+  {
+    id: 'hero-category-orkideler',
+    title: 'Orkideler',
+    subtitle: 'Zarif ve kalıcı',
+    description: 'Minimal ve şık orkide tasarımlarıyla ev ve ofisler için güçlü bir tercih.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
+    mobileImage:
+      'https://plus.unsplash.com/premium_photo-1679177888973-99ec8477308f?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    buttonText: 'Orkidelere Git',
+    buttonLink: '/orkideler',
+  },
+  {
+    id: 'hero-category-ozel-gun',
+    title: 'Özel Günler',
+    subtitle: 'Kutlamalara özel',
+    description: 'Doğum günü, yıldönümü ve tüm özel anlar için hediye seçkilerini keşfedin.',
+    image:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225910/vadiler/products/vadiler-teraryum-i-yi-ki-dogdun-canim-arkadasim-mor.jpg',
+    mobileImage:
+      'https://plus.unsplash.com/premium_photo-1676297982083-d01e995e5e07?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+    buttonText: 'Özel Günlere Git',
+    buttonLink: '/ozel-gun',
   },
 ];
 

@@ -20,6 +20,7 @@ type HeroSlide = {
   subtitle: string;
   description: string;
   image: string;
+  mobileImage?: string;
   buttonText: string;
   buttonLink: string;
 };
@@ -131,7 +132,7 @@ export default function HeroSlider({ id }: HeroSliderProps) {
               {/* Mobile Background Image */}
               <div className="absolute inset-0 lg:hidden">
                 <Image
-                  src={slide.image}
+                  src={slide.mobileImage ?? slide.image}
                   alt={slide.title}
                   fill
                   sizes="100vw"
@@ -143,7 +144,7 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/25" />
                 {/* Subtle flower-wallpaper feel (CSS gradients, no external assets) */}
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-60"
+                  className="absolute inset-0 pointer-events-none opacity-35"
                   style={{
                     backgroundImage:
                       'radial-gradient(circle at 18% 22%, rgba(255,255,255,0.18) 0 2px, transparent 3px),\n' +
@@ -162,7 +163,9 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                     initial={{ opacity: 0, y: 40 }}
                     animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
                     transition={{ duration: 0.7, delay: 0.1 }}
-                    className="text-center lg:text-left"
+                    className="text-center lg:text-left lg:bg-transparent lg:p-0 lg:border-0 lg:backdrop-blur-none
+                      mx-auto max-w-[520px] lg:max-w-none
+                      bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-5 sm:p-6 lg:rounded-none"
                   >
                     {/* Badge - Mobile */}
                     <motion.div

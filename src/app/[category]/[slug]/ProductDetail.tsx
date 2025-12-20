@@ -176,23 +176,22 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     <>
       <Header />
 
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white pt-28 lg:pt-36 pb-20">
-        <div className="container-custom space-y-6">
-          <nav className="flex items-center gap-2 text-xs text-slate-500">
+      <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white pt-24 lg:pt-28 pb-16">
+        <div className="container-custom space-y-4 lg:space-y-5">
+          <nav className="flex items-center gap-1.5 text-[11px] text-slate-500">
             <Link href="/" className="hover:text-primary-500">Ana Sayfa</Link>
-            <ChevronRight size={14} />
+            <ChevronRight size={12} />
             <Link href={`/${product.category}`} className="hover:text-primary-500">
               {categoryName}
             </Link>
-            <ChevronRight size={14} />
-            <span className="text-slate-800 font-medium truncate max-w-[180px]">{product.name}</span>
+            <ChevronRight size={12} />
+            <span className="text-slate-800 font-medium truncate max-w-[150px]">{product.name}</span>
           </nav>
 
-        {/* Desktop Layout - Hepsiburada/Trendyol/Apple Style */}
-        <div className="hidden lg:grid grid-cols-1 xl:grid-cols-[2fr_1.2fr] gap-8 xl:gap-12 auto-rows-max">
-          {/* Left Column: Gallery + Description */}
-          <div className="space-y-6">
-            {/* Gallery - Maksimum Alan Kullan */}
+        {/* Desktop Layout - Clean 2 Column Grid */}
+        <div className="hidden lg:grid lg:grid-cols-2 gap-6 lg:gap-12 items-start">
+          {/* Left Column: Gallery (Sticky) */}
+          <div className="lg:sticky lg:top-28">
             <ProductGalleryDesktop
               images={images}
               productName={product.name}
@@ -201,261 +200,168 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
               onFullscreenOpen={() => setIsImageModalOpen(true)}
               discount={product.discount}
             />
-
-            {/* Product Description - Detaylı */}
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <h2 className="text-xl font-bold text-slate-900">Ürün Açıklaması</h2>
-                <p className="text-slate-700 leading-relaxed text-base">{product.longDescription || product.description}</p>
-              </div>
-
-              {/* Care Instructions - Card */}
-              {product.careInstructions && product.careInstructions.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="rounded-xl bg-blue-50 border border-blue-200 p-4"
-                >
-                  <h3 className="font-bold text-slate-900 mb-4">Bakım Bilgileri</h3>
-                  <ul className="space-y-3">
-                    {product.careInstructions.map((instruction, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-slate-700">
-                        <Check size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
-                        <span>{instruction}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Delivery Info - Detailed Cards */}
-            <div className="space-y-3">
-              <h2 className="text-xl font-bold text-slate-900">Teslimat Bilgileri</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <motion.div
-                  whileHover={{ y: -3 }}
-                  className="rounded-xl border border-green-200 bg-green-50 p-4"
-                >
-                  <Truck size={20} className="text-green-700 mb-2" />
-                  <h3 className="font-semibold text-slate-900 text-sm">Hızlı Teslimat</h3>
-                  <p className="text-xs text-slate-600 mt-1">İstanbul içi seçili ilçelerde 2-4 saat</p>
-                </motion.div>
-                <motion.div
-                  whileHover={{ y: -3 }}
-                  className="rounded-xl border border-purple-200 bg-purple-50 p-4"
-                >
-                  <Package size={20} className="text-purple-700 mb-2" />
-                  <h3 className="font-semibold text-slate-900 text-sm">Özenli Paket</h3>
-                  <p className="text-xs text-slate-600 mt-1">Darbelere dayanıklı, şık sunum</p>
-                </motion.div>
-              </div>
-            </div>
           </div>
 
-          {/* Right Column: Sidebar (Sticky) */}
-          <div className="space-y-4 sticky top-24">
-            {/* Main Info Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl bg-white border border-slate-200 shadow-[0_2px_12px_rgba(15,23,42,0.08)] p-6 space-y-4"
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1.5 flex-1">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Ürün</p>
-                  <h1 className="text-2xl font-black text-slate-900 leading-snug">{product.name}</h1>
-                  {product.sku && <p className="text-xs text-slate-400">SKU: {product.sku}</p>}
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleWishlist}
-                  className={`h-10 w-10 rounded-xl border flex items-center justify-center flex-shrink-0 transition ${
-                    isWishlisted
-                      ? "border-[#e05a4c] text-[#e05a4c] bg-[#e05a4c]/10"
-                      : "border-slate-300 text-slate-400 hover:border-slate-400"
-                  }`}
-                >
-                  <Heart size={24} fill={isWishlisted ? "currentColor" : "none"} />
-                </motion.button>
-              </div>
+          {/* Right Column: Product Information */}
+          <div className="space-y-6">
+            {/* Title and Basic Info */}
+            <div className="bg-white p-6">
+              <h1 className="text-2xl lg:text-3xl font-light text-gray-900 mb-3">{product.name}</h1>
+              <p className="text-base text-gray-600 mb-6">{product.description}</p>
 
-              {/* Rating */}
-              {product.reviewCount > 0 && (
-                <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
-                  <div className="flex items-center gap-1.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={18}
-                        className={i < Math.round(product.rating) ? "fill-amber-400 text-amber-400" : "text-slate-300"}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-base font-bold">
-                    <span className="text-[#e05a4c]">{product.rating.toFixed(1)}</span>
-                    <span className="text-slate-600 font-normal text-xs"> ({product.reviewCount})</span>
-                  </span>
-                </div>
-              )}
-
-              {/* Price Section - Giant */}
-              <div className="pt-1 space-y-2">
-                <div className="flex items-end gap-3">
-                  <span className="text-4xl font-black text-[#e05a4c]">{formatPrice(product.price)}</span>
-                  {product.oldPrice > product.price && (
-                    <div className="flex flex-col items-start gap-1">
-                      <span className="text-lg text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>
-                      <span className="px-3 py-1.5 rounded-lg bg-[#e05a4c]/10 text-[#e05a4c] font-black text-xs">
-                        -{Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}%
-                      </span>
+              {/* Rating and Stock */}
+              <div className="flex items-center justify-between mb-6">
+                {product.reviewCount > 0 && (
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className={`w-5 h-5 ${i < Math.round(product.rating) ? "text-amber-400 fill-current" : "text-gray-300"}`} />
+                      ))}
                     </div>
+                    <span className="text-gray-600 text-sm">({product.reviewCount} değerlendirme)</span>
+                  </div>
+                )}
+
+                {/* Stock Status */}
+                {product.inStock ? (
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-5 h-5 text-green-500" />
+                    <span className="text-green-700 text-sm font-medium">Stokta Mevcut</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                    <span className="text-red-700 text-sm font-medium">Stokta Yok</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Price */}
+            <div className="bg-white p-6">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="text-3xl font-light text-gray-900">{formatPrice(product.price)}</span>
+                    {product.oldPrice > product.price && (
+                      <div className="flex items-center space-x-2">
+                        <span className="text-base text-gray-500 line-through">{formatPrice(product.oldPrice)}</span>
+                        <span className="bg-[#e05a4c] text-white text-xs font-medium px-2 py-1 rounded">
+                          %{Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)} İndirim
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600">Hızlı Teslimat</div>
+                    <div className="text-sm font-medium text-gray-900">2-4 Saat</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Selector */}
+            <div ref={deliverySectionRef} className="bg-white p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">Teslimat Bilgileri</label>
+                <AnimatePresence>
+                  {showDeliveryWarning && (
+                    <motion.span
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      className="text-xs font-medium text-[#e05a4c]"
+                    >
+                      Lütfen seçim yapın
+                    </motion.span>
                   )}
-                </div>
+                </AnimatePresence>
               </div>
+              <DeliverySelectorV2
+                onDeliveryComplete={handleDeliveryComplete}
+                onOpenChange={() => {}}
+                openSignal={deliveryOpenSignal}
+              />
+            </div>
 
-              {/* Stock Status */}
-              <div className="flex items-center gap-2.5 rounded-lg bg-green-50 border border-green-200 px-3 py-2">
-                <Check size={18} className="text-green-700" />
-                <div>
-                  <p className="font-semibold text-slate-900 text-sm">Stokta Var</p>
-                  <p className="text-[11px] text-slate-600">Hemen sipariş verin</p>
-                </div>
-              </div>
-
+            {/* Quantity and Add to Cart */}
+            <div className="bg-white p-6 space-y-6">
               {/* Quantity Selector */}
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-slate-900">Miktar</label>
-                <div className="flex items-center rounded-lg border border-slate-300 w-fit">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3">Adet</label>
+                <div className="flex items-center space-x-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-4 py-2 hover:bg-slate-100 font-bold text-base"
+                    className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                    disabled={quantity <= 1}
                   >
-                    −
+                    <Minus className="w-4 h-4" />
                   </button>
-                  <div className="w-14 text-center font-bold text-xl text-slate-900">{quantity}</div>
+                  <span className="w-16 text-center text-lg font-medium">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="px-4 py-2 hover:bg-slate-100 font-bold text-base"
+                    className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
                   >
-                    +
+                    <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              {/* CTA Buttons */}
-              <div className="space-y-3">
-                <motion.button
-                  whileHover={canAddToCart ? { scale: 1.02 } : {}}
-                  whileTap={canAddToCart ? { scale: 0.98 } : {}}
-                  onClick={handleAddToCart}
-                  disabled={!canAddToCart}
-                  className={`w-full py-3 rounded-lg font-bold text-base flex items-center justify-center gap-3 text-white shadow-md transition ${
-                    canAddToCart
-                      ? isAddedToCart
-                        ? "bg-emerald-600"
-                        : "bg-[#e05a4c] hover:bg-[#d43a2a] hover:shadow-xl"
-                      : "bg-slate-400 cursor-not-allowed"
-                  }`}
-                >
-                  {isAddedToCart ? (
-                    <>
-                      <Check size={24} />
-                      Sepete Eklendi
-                    </>
-                  ) : (
-                    <>
-                      <ShoppingCart size={24} />
-                      {canAddToCart ? "Sepete Ekle" : "Teslimat Seçin"}
-                    </>
-                  )}
-                </motion.button>
-
-                <motion.button
-                  whileHover={canAddToCart ? { scale: 1.02 } : {}}
-                  whileTap={canAddToCart ? { scale: 0.98 } : {}}
-                  disabled={!canAddToCart}
-                  className="w-full py-3 rounded-lg font-bold text-base text-[#e05a4c] border border-[#e05a4c] hover:bg-[#e05a4c]/5 transition disabled:opacity-50"
-                >
-                  Şimdi Satın Al
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleShare}
-                  className="w-full py-3 rounded-lg font-bold text-slate-700 border border-slate-300 hover:bg-slate-50 transition flex items-center justify-center gap-2"
-                >
-                  <Share2 size={20} />
-                  Paylaş
-                </motion.button>
-              </div>
-
-              {/* Delivery Selector */}
-              <div className="space-y-2.5 pt-4 border-t border-slate-200">
-                <p className="font-bold text-slate-900">Teslimat Seçin</p>
-                <DeliverySelectorV2
-                  onDeliveryComplete={handleDeliveryComplete}
-                  onOpenChange={() => {}}
-                  openSignal={deliveryOpenSignal}
-                />
-              </div>
-
-              {/* Warning */}
-              <AnimatePresence>
-                {showDeliveryWarning && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    className="flex items-center gap-2.5 rounded-lg bg-[#e05a4c]/10 border-l-4 border-[#e05a4c] px-3 py-2"
+              {/* Action Buttons */}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={!canAddToCart}
+                    className={`relative overflow-hidden group py-3 px-6 rounded-full font-medium text-base transition-all duration-300 flex items-center justify-center space-x-2 ${
+                      canAddToCart
+                        ? isAddedToCart
+                          ? "bg-emerald-500 text-white"
+                          : "bg-[#e05a4c] text-white hover:bg-[#d43a2a]"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                   >
-                    <AlertCircle size={20} className="text-[#e05a4c]" />
-                    <p className="text-xs font-bold text-[#e05a4c]">Sepete eklemeden teslimat seçin</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
+                    <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                    {isAddedToCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+                    <span>{canAddToCart ? (isAddedToCart ? "Sepette" : "Sepete Ekle") : "Teslimat Seçin"}</span>
+                  </button>
 
-            {/* Trust Signals Cards */}
-            <div className="space-y-2.5">
-              <motion.div whileHover={{ y: -3 }} className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-green-200 p-3.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-green-100 rounded-md">
-                    <Truck size={18} className="text-green-700" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-slate-900 text-xs">Hızlı Teslimat</p>
-                    <p className="text-[11px] text-slate-600">Aynı gün veya ertesi gün</p>
-                  </div>
+                  <a
+                    href="https://wa.me/905551234567"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="relative overflow-hidden group bg-[#e05a4c] text-white py-3 px-6 rounded-full font-medium text-base hover:bg-[#d43a2a] transition-all duration-300 flex items-center justify-center space-x-2"
+                  >
+                    <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    <span>WhatsApp Destek</span>
+                  </a>
                 </div>
-              </motion.div>
 
-              <motion.div whileHover={{ y: -3 }} className="rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 p-3.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-blue-100 rounded-md">
-                    <Package size={18} className="text-blue-700" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-slate-900 text-xs">Özenli Paket</p>
-                    <p className="text-[11px] text-slate-600">Sarsıntıya dayanıklı</p>
-                  </div>
-                </div>
-              </motion.div>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={handleWishlist}
+                    className={`py-3 px-4 rounded-full font-medium transition-colors flex items-center justify-center space-x-2 ${
+                      isWishlisted
+                        ? "bg-[#e05a4c]/10 text-[#e05a4c] border border-[#e05a4c]/30"
+                        : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`} />
+                    <span>Favoriler</span>
+                  </button>
 
-              <motion.div whileHover={{ y: -3 }} className="rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-3.5">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 bg-purple-100 rounded-md">
-                    <Check size={18} className="text-purple-700" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-slate-900 text-xs">Memnuniyet Garantisi</p>
-                    <p className="text-[11px] text-slate-600">7/24 destek</p>
-                  </div>
+                  <button
+                    onClick={handleShare}
+                    className="py-3 px-4 rounded-full font-medium bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span>Paylaş</span>
+                  </button>
                 </div>
-              </motion.div>
+              </div>
             </div>
           </div>
         </div>
@@ -715,8 +621,12 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
           </div>
           </div>
 
-          <div className="rounded-2xl bg-white border border-slate-200 shadow-[0_4px_12px_rgba(15,23,42,0.08)] p-4 lg:p-5">
-            <h2 className="text-xl lg:text-2xl font-bold text-slate-900 mb-4">Müşteri Değerlendirmeleri</h2>
+          {/* Reviews Section - Compact */}
+          <div className="rounded-2xl bg-white border border-slate-200/60 shadow-sm p-4 lg:p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Star size={16} className="text-amber-500" />
+              <h2 className="text-base lg:text-lg font-bold text-slate-900">Değerlendirmeler</h2>
+            </div>
             <ProductReviews
               productId={product.id}
               productName={product.name}
@@ -725,83 +635,58 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             />
           </div>
 
-          {/* Product Features Grid */}
-          <div className="hidden lg:block space-y-4 mt-12">
-            <h2 className="text-2xl font-black text-slate-900">Ürün Özellikleri</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {/* Product Features Grid - Compact */}
+          <div className="hidden lg:block space-y-3 mt-6">
+            <h2 className="text-base font-bold text-slate-900">Özellikler</h2>
+            <div className="grid grid-cols-3 xl:grid-cols-6 gap-2">
               {[
-                { icon: "🌸", title: "Taze Çiçekler", desc: "Günlük olarak bahçelerimizden toplanan en taze çiçekler" },
-                { icon: "🎨", title: "Profesyonel Tasarım", desc: "Sertifikalı florist tasarımcılarımız tarafından özel olarak düzenlenmiş" },
-                { icon: "📦", title: "Güvenli Paketleme", desc: "Ticari paket malzemeleriyle korunan, sarsıntıya dayanıklı kargo" },
-                { icon: "⏱️", title: "Hızlı Teslimat", desc: "Siparişten 4-8 saat içinde kapınıza ulaşır" },
-                { icon: "❄️", title: "Soğuk Nakliye", desc: "Çiçeklerin tazeliğini korumak için kontrollü sıcaklıkta nakliye" },
-                { icon: "✨", title: "Hazırlık Rehberi", desc: "Çiçeklerinizin en uzun süre taze kalması için ipuçları sağlanır" },
+                { icon: "🌸", title: "Taze" },
+                { icon: "🎨", title: "Tasarım" },
+                { icon: "📦", title: "Paket" },
+                { icon: "⏱️", title: "Hızlı" },
+                { icon: "❄️", title: "Soğuk" },
+                { icon: "✨", title: "Rehber" },
               ].map((feature, idx) => (
-                <motion.div
+                <div
                   key={idx}
-                  whileHover={{ y: -4, boxShadow: "0 12px 24px rgba(224,90,76,0.12)" }}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,0.06)] hover:border-[#e05a4c]/40 transition-all"
+                  className="flex items-center gap-2 rounded-lg border border-slate-200/60 bg-slate-50/50 p-2 hover:bg-slate-100/50 transition"
                 >
-                  <div className="space-y-2">
-                    <div className="text-3xl">{feature.icon}</div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 mb-1">{feature.title}</h3>
-                      <p className="text-slate-600 text-xs leading-relaxed">{feature.desc}</p>
-                    </div>
-                  </div>
-                </motion.div>
+                  <span className="text-lg">{feature.icon}</span>
+                  <span className="text-xs font-medium text-slate-700">{feature.title}</span>
+                </div>
               ))}
             </div>
           </div>
 
+          {/* Related Products - Compact */}
           {relatedProducts.length > 0 && (
-            <div className="hidden lg:block space-y-4 mt-12">
+            <div className="hidden lg:block space-y-3 mt-6">
               <div className="flex items-center justify-between">
-                <h3 className="text-2xl font-black text-slate-900">Benzer Ürünler</h3>
-                <Link href={`/${product.category}`} className="text-lg text-[#e05a4c] font-bold flex items-center gap-3 hover:gap-4 transition-all">
-                  Tümünü Gör <ArrowRight size={20} />
+                <h3 className="text-base font-bold text-slate-900">Benzer Ürünler</h3>
+                <Link href={`/${product.category}`} className="text-xs text-[#e05a4c] font-medium hover:underline flex items-center gap-1">
+                  Tümü <ArrowRight size={12} />
                 </Link>
               </div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {relatedProducts.map((rp) => (
-                  <motion.div
+              <div className="grid grid-cols-4 xl:grid-cols-6 gap-3">
+                {relatedProducts.slice(0, 6).map((rp) => (
+                  <Link
                     key={rp.id}
-                    whileHover={{ y: -4, boxShadow: "0 12px 24px rgba(15,23,42,0.12)" }}
-                    className="h-full"
+                    href={`/${rp.category}/${rp.slug}`}
+                    className="group rounded-xl border border-slate-200/60 bg-white shadow-sm overflow-hidden hover:shadow-md hover:border-slate-300 transition"
                   >
-                    <Link
-                      href={`/${rp.category}/${rp.slug}`}
-                      className="group rounded-xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)] overflow-hidden hover:border-slate-300 transition-all flex flex-col h-full"
-                    >
-                      <div className="relative aspect-square bg-slate-100 overflow-hidden">
-                        <Image
-                          src={rp.image}
-                          alt={rp.name}
-                          fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-500"
-                          quality={85}
-                        />
-                        {rp.discount > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="absolute top-2 left-2 px-2 py-1 rounded-full text-white text-xs font-bold bg-gradient-to-r from-[#e05a4c] to-[#d43a2a] shadow-md"
-                          >
-                            -{rp.discount}%
-                          </motion.div>
-                        )}
-                      </div>
-                      <div className="p-3 flex flex-col flex-1 gap-2">
-                        <p className="text-xs font-bold text-slate-900 line-clamp-2 group-hover:text-[#e05a4c] transition-colors">{rp.name}</p>
-                        <div className="flex items-baseline gap-1 mt-auto">
-                          <span className="text-lg font-black text-[#e05a4c]">{formatPrice(rp.price)}</span>
-                          {rp.oldPrice > rp.price && (
-                            <span className="text-xs text-slate-400 line-through">{formatPrice(rp.oldPrice)}</span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
+                    <div className="relative aspect-square bg-slate-100 overflow-hidden">
+                      <Image src={rp.image} alt={rp.name} fill className="object-cover group-hover:scale-105 transition-transform" quality={75} />
+                      {rp.discount > 0 && (
+                        <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-white text-[10px] font-bold bg-[#e05a4c]">
+                          -{rp.discount}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-[11px] font-medium text-slate-800 line-clamp-2 group-hover:text-[#e05a4c] transition-colors">{rp.name}</p>
+                      <span className="text-xs font-bold text-[#e05a4c]">{formatPrice(rp.price)}</span>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>

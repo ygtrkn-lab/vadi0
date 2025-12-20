@@ -113,8 +113,8 @@ export default function ProductGalleryDesktop({
   }, [isZooming]);
 
   return (
-    <div className="hidden lg:flex flex-col gap-4">
-      {/* Main Gallery - Retina Ready - lg+ breakpoint */}
+    <div className="hidden lg:flex flex-col gap-3">
+      {/* Main Gallery - Compact Apple Style */}
       <div
         ref={containerRef}
         onMouseMove={handleMouseMove}
@@ -125,7 +125,7 @@ export default function ProductGalleryDesktop({
         }}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 shadow-[0_20px_80px_rgba(15,23,42,0.15)] aspect-square max-h-[600px] max-w-[600px] cursor-zoom-in select-none group"
+        className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50 shadow-md aspect-square max-h-[420px] cursor-zoom-in select-none group"
       >
         {/* Grid overlay for product inspection */}
         {isZooming && zoomState.scale > 1 && (
@@ -162,15 +162,11 @@ export default function ProductGalleryDesktop({
           />
         </motion.div>
 
-        {/* Discount badge - positioned better */}
+        {/* Discount badge - Compact */}
         {discount > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="absolute top-6 left-6 px-5 py-3 rounded-full text-white text-base font-bold bg-gradient-to-r from-[#e05a4c] to-[#d43a2a] shadow-[0_8px_24px_rgba(224,90,76,0.3)] z-20"
-          >
+          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-white text-xs font-bold bg-[#e05a4c] shadow-md z-20">
             -{discount}%
-          </motion.div>
+          </div>
         )}
 
         {/* Zoom hint */}
@@ -180,137 +176,104 @@ export default function ProductGalleryDesktop({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black/60 text-white text-xs font-semibold backdrop-blur-sm z-20"
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm z-20"
             >
-              Kaydır ve yakınlaştır
+              Yakınlaştır
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Zoom controls - Amazon style */}
+        {/* Zoom controls - Compact */}
         <AnimatePresence>
           {isZooming && zoomState.scale > 1 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute bottom-6 left-6 flex flex-col items-center gap-2 z-20"
+              className="absolute bottom-3 left-3 flex flex-col items-center gap-1.5 z-20"
             >
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={zoomIn}
-                className="h-10 w-10 rounded-full bg-white/95 text-slate-800 flex items-center justify-center shadow-lg hover:bg-white transition-all"
-                title="Yakınlaştır"
+                className="h-7 w-7 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition"
               >
-                <Plus size={18} />
-              </motion.button>
-              <div className="text-xs font-semibold text-slate-700 bg-white/90 px-2 py-1 rounded-full">
+                <Plus size={14} />
+              </button>
+              <span className="text-[10px] font-medium text-slate-600 bg-white/80 px-1.5 py-0.5 rounded">
                 {Math.round(zoomState.scale * 100)}%
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+              </span>
+              <button
                 onClick={zoomOut}
-                className="h-10 w-10 rounded-full bg-white/95 text-slate-800 flex items-center justify-center shadow-lg hover:bg-white transition-all"
-                title="Uzaklaştır"
+                className="h-7 w-7 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition"
               >
-                <Minus size={18} />
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                <Minus size={14} />
+              </button>
+              <button
                 onClick={resetZoom}
-                className="h-10 w-10 rounded-full bg-white/95 text-slate-800 flex items-center justify-center shadow-lg hover:bg-white transition-all"
-                title="Sıfırla"
+                className="h-7 w-7 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition"
               >
-                <RotateCw size={18} />
-              </motion.button>
+                <RotateCw size={12} />
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Fullscreen & Info button */}
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        {/* Fullscreen button - Compact */}
+        <button
           onClick={onFullscreenOpen}
-          className="absolute bottom-6 right-6 rounded-full bg-white/95 text-slate-800 px-5 py-3 text-xs font-semibold shadow-lg hover:bg-white transition-all z-20 flex items-center gap-2"
+          className="absolute bottom-3 right-3 rounded-lg bg-white/90 text-slate-700 px-3 py-1.5 text-[11px] font-semibold shadow-md hover:bg-white transition z-20 flex items-center gap-1.5"
         >
-          <Maximize2 size={16} />
+          <Maximize2 size={12} />
           Tam ekran
-        </motion.button>
+        </button>
 
-        {/* Navigation arrows - better visibility */}
+        {/* Navigation arrows - Compact */}
         {images.length > 1 && (
           <>
-            <motion.button
-              whileHover={{ scale: 1.15, x: -4 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={handlePrevImage}
-              className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 text-slate-800 flex items-center justify-center shadow-lg hover:bg-white hover:shadow-xl transition-all z-20 backdrop-blur-sm"
-              aria-label="Önceki resim"
+              className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition z-20"
             >
-              <ChevronLeft size={24} />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.15, x: 4 }}
-              whileTap={{ scale: 0.95 }}
+              <ChevronLeft size={18} />
+            </button>
+            <button
               onClick={handleNextImage}
-              className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/90 text-slate-800 flex items-center justify-center shadow-lg hover:bg-white hover:shadow-xl transition-all z-20 backdrop-blur-sm"
-              aria-label="Sonraki resim"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition z-20"
             >
-              <ChevronRight size={24} />
-            </motion.button>
+              <ChevronRight size={18} />
+            </button>
           </>
         )}
       </div>
 
-      {/* Thumbnail rail - Horizontal scroll with better UX */}
+      {/* Thumbnail rail - Compact */}
       {images.length > 1 && (
-        <div className="space-y-3">
-          <div className="flex gap-2 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
-            {images.map((img, idx) => (
-              <motion.button
-                key={`gallery-thumb-${idx}`}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => {
-                  onImageSelect(idx);
-                  resetZoom();
-                }}
-                className={`relative h-24 w-24 flex-shrink-0 rounded-2xl overflow-hidden border-2 transition-all snap-center ${
-                  selectedImage === idx
-                    ? "border-[#e05a4c] shadow-[0_0_0_4px_rgba(224,90,76,0.15)]"
-                    : "border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-100"
-                }`}
-              >
-                <Image
-                  src={img}
-                  alt={`${productName}-thumb-${idx}`}
-                  fill
-                  sizes="96px"
-                  className="object-cover group-hover:scale-105 transition-transform"
-                  quality={80}
-                />
-                {selectedImage === idx && (
-                  <div className="absolute inset-0 bg-[#e05a4c]/10" />
-                )}
-              </motion.button>
-            ))}
-          </div>
-
-          {/* Image counter & scrollbar hint */}
-          <div className="flex items-center justify-between px-1">
-            <div className="text-sm text-slate-500 font-medium">
-              <span className="text-[#e05a4c] font-bold">{selectedImage + 1}</span>
-              <span className="text-slate-400"> / {images.length}</span>
-            </div>
-            {images.length > 5 && (
-              <p className="text-xs text-slate-400">← Kaydır →</p>
-            )}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {images.map((img, idx) => (
+            <button
+              key={`gallery-thumb-${idx}`}
+              onClick={() => {
+                onImageSelect(idx);
+                resetZoom();
+              }}
+              className={`relative h-14 w-14 xl:h-16 xl:w-16 flex-shrink-0 rounded-lg overflow-hidden border transition-all ${
+                selectedImage === idx
+                  ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/20"
+                  : "border-slate-200 opacity-60 hover:opacity-100"
+              }`}
+            >
+              <Image
+                src={img}
+                alt={`${productName}-thumb-${idx}`}
+                fill
+                sizes="64px"
+                className="object-cover"
+                quality={70}
+              />
+            </button>
+          ))}
+          {/* Image counter */}
+          <div className="flex items-center px-2 text-[11px] text-slate-400 font-medium">
+            {selectedImage + 1}/{images.length}
           </div>
         </div>
       )}
