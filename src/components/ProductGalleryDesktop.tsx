@@ -113,8 +113,8 @@ export default function ProductGalleryDesktop({
   }, [isZooming]);
 
   return (
-    <div className="hidden lg:flex flex-col gap-3">
-      {/* Main Gallery - Compact Apple Style */}
+    <div className="hidden lg:flex flex-col gap-4">
+      {/* Main Gallery - Clean Style */}
       <div
         ref={containerRef}
         onMouseMove={handleMouseMove}
@@ -125,20 +125,10 @@ export default function ProductGalleryDesktop({
         }}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-50 shadow-md aspect-square max-h-[420px] cursor-zoom-in select-none group"
+        className="relative rounded-xl overflow-hidden bg-[#fafafa] aspect-square cursor-zoom-in select-none group"
       >
-        {/* Grid overlay for product inspection */}
-        {isZooming && zoomState.scale > 1 && (
-          <div className="absolute inset-0 z-10 pointer-events-none opacity-10">
-            <div className="w-full h-full" style={{
-              backgroundImage: 'linear-gradient(0deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255,255,255,.05) 25%, rgba(255,255,255,.05) 26%, transparent 27%, transparent 74%, rgba(255,255,255,.05) 75%, rgba(255,255,255,.05) 76%, transparent 77%, transparent)',
-              backgroundSize: '50px 50px'
-            }} />
-          </div>
-        )}
-
         {/* Subtle vignette */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/0 via-transparent to-black/5 z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/5 z-10 pointer-events-none" />
 
         {/* Main image container */}
         <motion.div
@@ -162,54 +152,54 @@ export default function ProductGalleryDesktop({
           />
         </motion.div>
 
-        {/* Discount badge - Compact */}
+        {/* Discount badge */}
         {discount > 0 && (
-          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-white text-xs font-bold bg-[#e05a4c] shadow-md z-20">
-            -{discount}%
+          <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-sm font-semibold bg-[#e05a4c] shadow-lg z-20">
+            -%{discount}
           </div>
         )}
 
         {/* Zoom hint */}
         <AnimatePresence>
-          {showZoomHint && isZooming && (
+          {showZoomHint && isZooming && zoomState.scale === 1 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-black/60 text-white text-[10px] font-medium backdrop-blur-sm z-20"
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full bg-black/60 text-white text-xs font-medium backdrop-blur-sm z-20"
             >
-              Yakınlaştır
+              Scroll ile yakınlaştır
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Zoom controls - Compact */}
+        {/* Zoom controls */}
         <AnimatePresence>
           {isZooming && zoomState.scale > 1 && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute bottom-3 left-3 flex flex-col items-center gap-1.5 z-20"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute bottom-4 left-4 flex items-center gap-2 z-20"
             >
               <button
-                onClick={zoomIn}
-                className="h-7 w-7 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition"
-              >
-                <Plus size={14} />
-              </button>
-              <span className="text-[10px] font-medium text-slate-600 bg-white/80 px-1.5 py-0.5 rounded">
-                {Math.round(zoomState.scale * 100)}%
-              </span>
-              <button
                 onClick={zoomOut}
-                className="h-7 w-7 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition"
+                className="h-8 w-8 rounded-full bg-white text-gray-700 flex items-center justify-center shadow-lg hover:bg-gray-50 transition"
               >
                 <Minus size={14} />
               </button>
+              <span className="text-xs font-medium text-white bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
+                {Math.round(zoomState.scale * 100)}%
+              </span>
+              <button
+                onClick={zoomIn}
+                className="h-8 w-8 rounded-full bg-white text-gray-700 flex items-center justify-center shadow-lg hover:bg-gray-50 transition"
+              >
+                <Plus size={14} />
+              </button>
               <button
                 onClick={resetZoom}
-                className="h-7 w-7 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition"
+                className="h-8 w-8 rounded-full bg-white text-gray-700 flex items-center justify-center shadow-lg hover:bg-gray-50 transition"
               >
                 <RotateCw size={12} />
               </button>
@@ -217,37 +207,37 @@ export default function ProductGalleryDesktop({
           )}
         </AnimatePresence>
 
-        {/* Fullscreen button - Compact */}
+        {/* Fullscreen button */}
         <button
           onClick={onFullscreenOpen}
-          className="absolute bottom-3 right-3 rounded-lg bg-white/90 text-slate-700 px-3 py-1.5 text-[11px] font-semibold shadow-md hover:bg-white transition z-20 flex items-center gap-1.5"
+          className="absolute bottom-4 right-4 rounded-full bg-white/90 text-gray-700 px-4 py-2 text-sm font-medium shadow-lg hover:bg-white transition z-20 flex items-center gap-2 backdrop-blur-sm"
         >
-          <Maximize2 size={12} />
+          <Maximize2 size={14} />
           Tam ekran
         </button>
 
-        {/* Navigation arrows - Compact */}
+        {/* Navigation arrows */}
         {images.length > 1 && (
           <>
             <button
               onClick={handlePrevImage}
-              className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition z-20"
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg hover:bg-white transition z-20 opacity-0 group-hover:opacity-100"
             >
-              <ChevronLeft size={18} />
+              <ChevronLeft size={20} />
             </button>
             <button
               onClick={handleNextImage}
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-white/90 text-slate-700 flex items-center justify-center shadow-md hover:bg-white transition z-20"
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg hover:bg-white transition z-20 opacity-0 group-hover:opacity-100"
             >
-              <ChevronRight size={18} />
+              <ChevronRight size={20} />
             </button>
           </>
         )}
       </div>
 
-      {/* Thumbnail rail - Compact */}
+      {/* Thumbnail rail */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex gap-3 overflow-x-auto pb-1">
           {images.map((img, idx) => (
             <button
               key={`gallery-thumb-${idx}`}
@@ -255,26 +245,22 @@ export default function ProductGalleryDesktop({
                 onImageSelect(idx);
                 resetZoom();
               }}
-              className={`relative h-14 w-14 xl:h-16 xl:w-16 flex-shrink-0 rounded-lg overflow-hidden border transition-all ${
+              className={`relative h-16 w-16 xl:h-20 xl:w-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
                 selectedImage === idx
                   ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/20"
-                  : "border-slate-200 opacity-60 hover:opacity-100"
+                  : "border-gray-200 opacity-70 hover:opacity-100 hover:border-gray-300"
               }`}
             >
               <Image
                 src={img}
                 alt={`${productName}-thumb-${idx}`}
                 fill
-                sizes="64px"
+                sizes="80px"
                 className="object-cover"
                 quality={70}
               />
             </button>
           ))}
-          {/* Image counter */}
-          <div className="flex items-center px-2 text-[11px] text-slate-400 font-medium">
-            {selectedImage + 1}/{images.length}
-          </div>
         </div>
       )}
     </div>

@@ -621,11 +621,95 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
           </div>
           </div>
 
-          {/* Reviews Section - Compact */}
-          <div className="rounded-2xl bg-white border border-slate-200/60 shadow-sm p-4 lg:p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Star size={16} className="text-amber-500" />
-              <h2 className="text-base lg:text-lg font-bold text-slate-900">Değerlendirmeler</h2>
+          {/* Product Details Tabs - Desktop */}
+          <div className="hidden lg:block mt-12">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveSection("desc")}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeSection === "desc"
+                      ? "border-[#e05a4c] text-[#e05a4c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  Açıklama
+                </button>
+                <button
+                  onClick={() => setActiveSection("care")}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeSection === "care"
+                      ? "border-[#e05a4c] text-[#e05a4c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  Bakım Bilgileri
+                </button>
+                <button
+                  onClick={() => setActiveSection("delivery")}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeSection === "delivery"
+                      ? "border-[#e05a4c] text-[#e05a4c]"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  Teslimat
+                </button>
+              </nav>
+            </div>
+
+            <div className="py-8">
+              {activeSection === "desc" && (
+                <div className="prose max-w-none text-gray-700">
+                  <p className="text-base leading-relaxed">{product.longDescription || product.description}</p>
+                </div>
+              )}
+
+              {activeSection === "care" && (
+                <div className="bg-white rounded-lg">
+                  {product.careInstructions && product.careInstructions.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {product.careInstructions.map((instruction, idx) => (
+                        <div key={idx} className="bg-gray-50/50 rounded-lg p-4 hover:bg-[#e05a4c]/5 transition-colors duration-200">
+                          <div className="flex items-center mb-2">
+                            <div className="w-2 h-2 bg-[#e05a4c] rounded-full mr-2" />
+                            <span className="text-sm text-gray-700">{instruction}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-600">Çiçeklerinizi serin ve güneş ışığından uzak tutun. Her gün su değiştirin.</p>
+                  )}
+                </div>
+              )}
+
+              {activeSection === "delivery" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-green-50/50">
+                    <Truck className="w-6 h-6 text-green-600 mt-1" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Hızlı Teslimat</h4>
+                      <p className="text-sm text-gray-600 mt-1">Siparişiniz aynı gün veya seçtiğiniz tarihte teslim edilir.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 p-4 rounded-xl bg-blue-50/50">
+                    <Package className="w-6 h-6 text-blue-600 mt-1" />
+                    <div>
+                      <h4 className="font-semibold text-gray-900">Özenli Paketleme</h4>
+                      <p className="text-sm text-gray-600 mt-1">Çiçekleriniz özel kutularda, zarar görmeden teslim edilir.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Reviews Section */}
+          <div className="rounded-2xl bg-white border border-gray-200/60 shadow-sm p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Star className="w-5 h-5 text-amber-500" />
+              <h2 className="text-lg font-semibold text-gray-900">Değerlendirmeler</h2>
             </div>
             <ProductReviews
               productId={product.id}
@@ -635,56 +719,38 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             />
           </div>
 
-          {/* Product Features Grid - Compact */}
-          <div className="hidden lg:block space-y-3 mt-6">
-            <h2 className="text-base font-bold text-slate-900">Özellikler</h2>
-            <div className="grid grid-cols-3 xl:grid-cols-6 gap-2">
-              {[
-                { icon: "🌸", title: "Taze" },
-                { icon: "🎨", title: "Tasarım" },
-                { icon: "📦", title: "Paket" },
-                { icon: "⏱️", title: "Hızlı" },
-                { icon: "❄️", title: "Soğuk" },
-                { icon: "✨", title: "Rehber" },
-              ].map((feature, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-2 rounded-lg border border-slate-200/60 bg-slate-50/50 p-2 hover:bg-slate-100/50 transition"
-                >
-                  <span className="text-lg">{feature.icon}</span>
-                  <span className="text-xs font-medium text-slate-700">{feature.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Related Products - Compact */}
+          {/* Related Products */}
           {relatedProducts.length > 0 && (
-            <div className="hidden lg:block space-y-3 mt-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-slate-900">Benzer Ürünler</h3>
-                <Link href={`/${product.category}`} className="text-xs text-[#e05a4c] font-medium hover:underline flex items-center gap-1">
-                  Tümü <ArrowRight size={12} />
+            <div className="mt-12">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">Benzer Ürünler</h3>
+                <Link href={`/${product.category}`} className="text-sm text-[#e05a4c] font-medium hover:underline flex items-center gap-1">
+                  Tümünü Gör <ArrowRight size={14} />
                 </Link>
               </div>
-              <div className="grid grid-cols-4 xl:grid-cols-6 gap-3">
-                {relatedProducts.slice(0, 6).map((rp) => (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                {relatedProducts.slice(0, 4).map((rp) => (
                   <Link
                     key={rp.id}
                     href={`/${rp.category}/${rp.slug}`}
-                    className="group rounded-xl border border-slate-200/60 bg-white shadow-sm overflow-hidden hover:shadow-md hover:border-slate-300 transition"
+                    className="group rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all"
                   >
-                    <div className="relative aspect-square bg-slate-100 overflow-hidden">
-                      <Image src={rp.image} alt={rp.name} fill className="object-cover group-hover:scale-105 transition-transform" quality={75} />
+                    <div className="relative aspect-square bg-gray-100 overflow-hidden">
+                      <Image src={rp.image} alt={rp.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" quality={75} />
                       {rp.discount > 0 && (
-                        <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded text-white text-[10px] font-bold bg-[#e05a4c]">
-                          -{rp.discount}%
+                        <span className="absolute top-3 left-3 px-2 py-1 rounded-full text-white text-xs font-semibold bg-[#e05a4c]">
+                          -%{rp.discount}
                         </span>
                       )}
                     </div>
-                    <div className="p-2">
-                      <p className="text-[11px] font-medium text-slate-800 line-clamp-2 group-hover:text-[#e05a4c] transition-colors">{rp.name}</p>
-                      <span className="text-xs font-bold text-[#e05a4c]">{formatPrice(rp.price)}</span>
+                    <div className="p-4">
+                      <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-[#e05a4c] transition-colors">{rp.name}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-base font-bold text-[#e05a4c]">{formatPrice(rp.price)}</span>
+                        {rp.oldPrice > rp.price && (
+                          <span className="text-sm text-gray-400 line-through">{formatPrice(rp.oldPrice)}</span>
+                        )}
+                      </div>
                     </div>
                   </Link>
                 ))}
