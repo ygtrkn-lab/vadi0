@@ -399,7 +399,7 @@ export default function HeroSlider({ id }: HeroSliderProps) {
       </motion.div>
 
       {/* Mobile Slide Counter */}
-      <div className="absolute top-28 right-4 lg:hidden z-20">
+      <div className="absolute top-28 right-4 lg:hidden z-20 pointer-events-none">
         <div className="flex items-center gap-1 px-3 py-1.5 bg-black/30 backdrop-blur-sm rounded-full text-white text-sm font-medium">
           <span>{String(activeIndex + 1).padStart(2, '0')}</span>
           <span className="opacity-50">/</span>

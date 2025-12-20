@@ -28,6 +28,7 @@ export default function MobileNavVisibilityGuard() {
     return () => observer.disconnect();
   }, []);
 
-  if (!showNav) return null;
-  return <MobileNavBar />;
+  // Keep MobileNavBar mounted so it can listen for Header events (openMobileSidebar)
+  // even while the hero section is visible. Only the bottom bar is toggled.
+  return <MobileNavBar showBottomBar={showNav} />;
 }
