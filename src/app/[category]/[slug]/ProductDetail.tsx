@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle } from "lucide-react";
 import type { Product } from "@/data/products";
 import { Header, Footer, MobileNavBar } from "@/components";
 import DeliverySelector from "@/components/DeliverySelector";
 import ProductReviews from "@/components/ProductReviews";
 import ProductDetailDesktop from "@/components/ProductDetailDesktop";
+import ProductGalleryDesktop from "@/components/ProductGalleryDesktop";
 import { useCart } from "@/context/CartContext";
 import { useCustomer } from "@/context/CustomerContext";
 
@@ -163,28 +164,277 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             <span className="text-slate-800 font-medium truncate max-w-[180px]">{product.name}</span>
           </nav>
 
-          {/* Desktop Layout */}
-          <ProductDetailDesktop
-            product={product}
-            images={images}
-            categoryName={categoryName}
-            selectedImage={selectedImage}
-            onImageSelect={setSelectedImage}
-            quantity={quantity}
-            onQuantityChange={setQuantity}
-            isWishlisted={isWishlisted}
-            onWishlistToggle={handleWishlist}
-            onAddToCart={handleAddToCart}
-            isAddedToCart={isAddedToCart}
-            canAddToCart={canAddToCart}
-            deliveryInfo={deliveryInfo}
-            onDeliveryComplete={handleDeliveryComplete}
-            onDeliveryOpenSignal={() => setDeliveryOpenSignal((s) => s + 1)}
-            showDeliveryWarning={showDeliveryWarning}
-            onShare={handleShare}
-            onDeliverySignalChange={setDeliveryOpenSignal}
-            onImageModalOpen={() => setIsImageModalOpen(true)}
-          />
+        {/* Desktop Layout - Hepsiburada/Trendyol/Apple Style */}
+        <div className="hidden lg:grid grid-cols-1 xl:grid-cols-[2fr_1.2fr] gap-8 xl:gap-12 auto-rows-max">
+          {/* Left Column: Gallery + Description */}
+          <div className="space-y-6">
+            {/* Gallery - Maksimum Alan Kullan */}
+            <ProductGalleryDesktop
+              images={images}
+              productName={product.name}
+              selectedImage={selectedImage}
+              onImageSelect={setSelectedImage}
+              onFullscreenOpen={() => setIsImageModalOpen(true)}
+              discount={product.discount}
+            />
+
+            {/* Product Description - Detaylı */}
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <h2 className="text-xl font-bold text-slate-900">Ürün Açıklaması</h2>
+                <p className="text-slate-700 leading-relaxed text-base">{product.longDescription || product.description}</p>
+              </div>
+
+              {/* Care Instructions - Card */}
+              {product.careInstructions && product.careInstructions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="rounded-xl bg-blue-50 border border-blue-200 p-4"
+                >
+                  <h3 className="font-bold text-slate-900 mb-4">Bakım Bilgileri</h3>
+                  <ul className="space-y-3">
+                    {product.careInstructions.map((instruction, idx) => (
+                      <li key={idx} className="flex items-start gap-3 text-slate-700">
+                        <Check size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                        <span>{instruction}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+            </div>
+
+            {/* Delivery Info - Detailed Cards */}
+            <div className="space-y-3">
+              <h2 className="text-xl font-bold text-slate-900">Teslimat Bilgileri</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  className="rounded-xl border border-green-200 bg-green-50 p-4"
+                >
+                  <Truck size={20} className="text-green-700 mb-2" />
+                  <h3 className="font-semibold text-slate-900 text-sm">Hızlı Teslimat</h3>
+                  <p className="text-xs text-slate-600 mt-1">İstanbul içi seçili ilçelerde 2-4 saat</p>
+                </motion.div>
+                <motion.div
+                  whileHover={{ y: -3 }}
+                  className="rounded-xl border border-purple-200 bg-purple-50 p-4"
+                >
+                  <Package size={20} className="text-purple-700 mb-2" />
+                  <h3 className="font-semibold text-slate-900 text-sm">Özenli Paket</h3>
+                  <p className="text-xs text-slate-600 mt-1">Darbelere dayanıklı, şık sunum</p>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Sidebar (Sticky) */}
+          <div className="space-y-4 sticky top-24">
+            {/* Main Info Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl bg-white border border-slate-200 shadow-[0_2px_12px_rgba(15,23,42,0.08)] p-6 space-y-4"
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1.5 flex-1">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Ürün</p>
+                  <h1 className="text-2xl font-black text-slate-900 leading-snug">{product.name}</h1>
+                  {product.sku && <p className="text-xs text-slate-400">SKU: {product.sku}</p>}
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleWishlist}
+                  className={`h-10 w-10 rounded-xl border flex items-center justify-center flex-shrink-0 transition ${
+                    isWishlisted
+                      ? "border-[#e05a4c] text-[#e05a4c] bg-[#e05a4c]/10"
+                      : "border-slate-300 text-slate-400 hover:border-slate-400"
+                  }`}
+                >
+                  <Heart size={24} fill={isWishlisted ? "currentColor" : "none"} />
+                </motion.button>
+              </div>
+
+              {/* Rating */}
+              {product.reviewCount > 0 && (
+                <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
+                  <div className="flex items-center gap-1.5">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        size={18}
+                        className={i < Math.round(product.rating) ? "fill-amber-400 text-amber-400" : "text-slate-300"}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-base font-bold">
+                    <span className="text-[#e05a4c]">{product.rating.toFixed(1)}</span>
+                    <span className="text-slate-600 font-normal text-xs"> ({product.reviewCount})</span>
+                  </span>
+                </div>
+              )}
+
+              {/* Price Section - Giant */}
+              <div className="pt-1 space-y-2">
+                <div className="flex items-end gap-3">
+                  <span className="text-4xl font-black text-[#e05a4c]">{formatPrice(product.price)}</span>
+                  {product.oldPrice > product.price && (
+                    <div className="flex flex-col items-start gap-1">
+                      <span className="text-lg text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>
+                      <span className="px-3 py-1.5 rounded-lg bg-[#e05a4c]/10 text-[#e05a4c] font-black text-xs">
+                        -{Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Stock Status */}
+              <div className="flex items-center gap-2.5 rounded-lg bg-green-50 border border-green-200 px-3 py-2">
+                <Check size={18} className="text-green-700" />
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm">Stokta Var</p>
+                  <p className="text-[11px] text-slate-600">Hemen sipariş verin</p>
+                </div>
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-slate-900">Miktar</label>
+                <div className="flex items-center rounded-lg border border-slate-300 w-fit">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="px-4 py-2 hover:bg-slate-100 font-bold text-base"
+                  >
+                    −
+                  </button>
+                  <div className="w-14 text-center font-bold text-xl text-slate-900">{quantity}</div>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="px-4 py-2 hover:bg-slate-100 font-bold text-base"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="space-y-3">
+                <motion.button
+                  whileHover={canAddToCart ? { scale: 1.02 } : {}}
+                  whileTap={canAddToCart ? { scale: 0.98 } : {}}
+                  onClick={handleAddToCart}
+                  disabled={!canAddToCart}
+                  className={`w-full py-3 rounded-lg font-bold text-base flex items-center justify-center gap-3 text-white shadow-md transition ${
+                    canAddToCart
+                      ? isAddedToCart
+                        ? "bg-emerald-600"
+                        : "bg-[#e05a4c] hover:bg-[#d43a2a] hover:shadow-xl"
+                      : "bg-slate-400 cursor-not-allowed"
+                  }`}
+                >
+                  {isAddedToCart ? (
+                    <>
+                      <Check size={24} />
+                      Sepete Eklendi
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart size={24} />
+                      {canAddToCart ? "Sepete Ekle" : "Teslimat Seçin"}
+                    </>
+                  )}
+                </motion.button>
+
+                <motion.button
+                  whileHover={canAddToCart ? { scale: 1.02 } : {}}
+                  whileTap={canAddToCart ? { scale: 0.98 } : {}}
+                  disabled={!canAddToCart}
+                  className="w-full py-3 rounded-lg font-bold text-base text-[#e05a4c] border border-[#e05a4c] hover:bg-[#e05a4c]/5 transition disabled:opacity-50"
+                >
+                  Şimdi Satın Al
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleShare}
+                  className="w-full py-3 rounded-lg font-bold text-slate-700 border border-slate-300 hover:bg-slate-50 transition flex items-center justify-center gap-2"
+                >
+                  <Share2 size={20} />
+                  Paylaş
+                </motion.button>
+              </div>
+
+              {/* Delivery Selector */}
+              <div className="space-y-2.5 pt-4 border-t border-slate-200">
+                <p className="font-bold text-slate-900">Teslimat Seçin</p>
+                <DeliverySelector
+                  onDeliveryComplete={handleDeliveryComplete}
+                  onOpenChange={() => {}}
+                  openSignal={deliveryOpenSignal}
+                />
+              </div>
+
+              {/* Warning */}
+              <AnimatePresence>
+                {showDeliveryWarning && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="flex items-center gap-2.5 rounded-lg bg-[#e05a4c]/10 border-l-4 border-[#e05a4c] px-3 py-2"
+                  >
+                    <AlertCircle size={20} className="text-[#e05a4c]" />
+                    <p className="text-xs font-bold text-[#e05a4c]">Sepete eklemeden teslimat seçin</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            {/* Trust Signals Cards */}
+            <div className="space-y-2.5">
+              <motion.div whileHover={{ y: -3 }} className="rounded-xl bg-gradient-to-r from-emerald-50 to-green-50 border border-green-200 p-3.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-green-100 rounded-md">
+                    <Truck size={18} className="text-green-700" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-900 text-xs">Hızlı Teslimat</p>
+                    <p className="text-[11px] text-slate-600">Aynı gün veya ertesi gün</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div whileHover={{ y: -3 }} className="rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 p-3.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-blue-100 rounded-md">
+                    <Package size={18} className="text-blue-700" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-900 text-xs">Özenli Paket</p>
+                    <p className="text-[11px] text-slate-600">Sarsıntıya dayanıklı</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div whileHover={{ y: -3 }} className="rounded-xl bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 p-3.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-purple-100 rounded-md">
+                    <Check size={18} className="text-purple-700" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-slate-900 text-xs">Memnuniyet Garantisi</p>
+                    <p className="text-[11px] text-slate-600">7/24 destek</p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
 
           {/* Mobile Layout */}
           <div className="lg:hidden">
@@ -441,8 +691,8 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
           </div>
           </div>
 
-          <div className="rounded-3xl bg-white/90 backdrop-blur border border-slate-100 shadow-[0_18px_50px_rgba(15,23,42,0.06)] p-5 lg:p-6">
-            <h2 className="text-xl font-semibold text-slate-900 mb-4">Müşteri Değerlendirmeleri</h2>
+          <div className="rounded-2xl bg-white border border-slate-200 shadow-[0_4px_12px_rgba(15,23,42,0.08)] p-4 lg:p-5">
+            <h2 className="text-xl lg:text-2xl font-bold text-slate-900 mb-4">Müşteri Değerlendirmeleri</h2>
             <ProductReviews
               productId={product.id}
               productName={product.name}
@@ -451,37 +701,83 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             />
           </div>
 
+          {/* Product Features Grid */}
+          <div className="hidden lg:block space-y-4 mt-12">
+            <h2 className="text-2xl font-black text-slate-900">Ürün Özellikleri</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {[
+                { icon: "🌸", title: "Taze Çiçekler", desc: "Günlük olarak bahçelerimizden toplanan en taze çiçekler" },
+                { icon: "🎨", title: "Profesyonel Tasarım", desc: "Sertifikalı florist tasarımcılarımız tarafından özel olarak düzenlenmiş" },
+                { icon: "📦", title: "Güvenli Paketleme", desc: "Ticari paket malzemeleriyle korunan, sarsıntıya dayanıklı kargo" },
+                { icon: "⏱️", title: "Hızlı Teslimat", desc: "Siparişten 4-8 saat içinde kapınıza ulaşır" },
+                { icon: "❄️", title: "Soğuk Nakliye", desc: "Çiçeklerin tazeliğini korumak için kontrollü sıcaklıkta nakliye" },
+                { icon: "✨", title: "Hazırlık Rehberi", desc: "Çiçeklerinizin en uzun süre taze kalması için ipuçları sağlanır" },
+              ].map((feature, idx) => (
+                <motion.div
+                  key={idx}
+                  whileHover={{ y: -4, boxShadow: "0 12px 24px rgba(224,90,76,0.12)" }}
+                  className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,0.06)] hover:border-[#e05a4c]/40 transition-all"
+                >
+                  <div className="space-y-2">
+                    <div className="text-3xl">{feature.icon}</div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 mb-1">{feature.title}</h3>
+                      <p className="text-slate-600 text-xs leading-relaxed">{feature.desc}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
           {relatedProducts.length > 0 && (
-            <div className="space-y-4">
+            <div className="hidden lg:block space-y-4 mt-12">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">Benzer ürünler</h3>
-                <Link href={`/${product.category}`} className="text-sm text-[#e05a4c] font-semibold flex items-center gap-1">
-                  Tümünü gör <ArrowRight size={16} />
+                <h3 className="text-2xl font-black text-slate-900">Benzer Ürünler</h3>
+                <Link href={`/${product.category}`} className="text-lg text-[#e05a4c] font-bold flex items-center gap-3 hover:gap-4 transition-all">
+                  Tümünü Gör <ArrowRight size={20} />
                 </Link>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 lg:gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {relatedProducts.map((rp) => (
-                  <Link
+                  <motion.div
                     key={rp.id}
-                    href={`/${rp.category}/${rp.slug}`}
-                    className="group rounded-2xl border border-slate-100 bg-white/90 shadow-[0_12px_40px_rgba(15,23,42,0.06)] overflow-hidden"
+                    whileHover={{ y: -4, boxShadow: "0 12px 24px rgba(15,23,42,0.12)" }}
+                    className="h-full"
                   >
-                    <div className="relative aspect-square">
-                      <Image src={rp.image} alt={rp.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                      {rp.discount > 0 && (
-                        <span className="absolute top-2 left-2 px-2 py-1 text-[11px] font-bold text-white bg-[#e05a4c] rounded-full">
-                          -%{rp.discount}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-3 space-y-1">
-                      <p className="text-sm font-semibold text-slate-900 line-clamp-2 group-hover:text-[#e05a4c]">{rp.name}</p>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-[#e05a4c]">{formatPrice(rp.price)}</span>
-                        {rp.oldPrice > rp.price && <span className="text-xs text-slate-400 line-through">{formatPrice(rp.oldPrice)}</span>}
+                    <Link
+                      href={`/${rp.category}/${rp.slug}`}
+                      className="group rounded-xl border border-slate-200 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.06)] overflow-hidden hover:border-slate-300 transition-all flex flex-col h-full"
+                    >
+                      <div className="relative aspect-square bg-slate-100 overflow-hidden">
+                        <Image
+                          src={rp.image}
+                          alt={rp.name}
+                          fill
+                          className="object-cover group-hover:scale-110 transition-transform duration-500"
+                          quality={85}
+                        />
+                        {rp.discount > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="absolute top-2 left-2 px-2 py-1 rounded-full text-white text-xs font-bold bg-gradient-to-r from-[#e05a4c] to-[#d43a2a] shadow-md"
+                          >
+                            -{rp.discount}%
+                          </motion.div>
+                        )}
                       </div>
-                    </div>
-                  </Link>
+                      <div className="p-3 flex flex-col flex-1 gap-2">
+                        <p className="text-xs font-bold text-slate-900 line-clamp-2 group-hover:text-[#e05a4c] transition-colors">{rp.name}</p>
+                        <div className="flex items-baseline gap-1 mt-auto">
+                          <span className="text-lg font-black text-[#e05a4c]">{formatPrice(rp.price)}</span>
+                          {rp.oldPrice > rp.price && (
+                            <span className="text-xs text-slate-400 line-through">{formatPrice(rp.oldPrice)}</span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
             </div>
@@ -491,31 +787,44 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
 
       <div className="fixed bottom-20 left-0 right-0 z-[60] lg:hidden">
         <div className="container-custom">
-          <div className="flex items-center gap-3 rounded-2xl bg-white shadow-[0_14px_40px_rgba(15,23,42,0.12)] border border-slate-100 px-4 py-3">
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="flex items-center gap-3 rounded-2xl bg-white shadow-[0_-8px_32px_rgba(15,23,42,0.16)] border border-slate-200 px-4 py-3"
+          >
             <div className="flex-1">
-              <p className="text-[10px] sm:text-xs text-slate-500 font-medium">{product.inStock ? "Fiyat" : "Stokta yok"}</p>
+              <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase">Fiyat</p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-lg sm:text-xl font-bold text-[#e05a4c]">{formatPrice(product.price)}</span>
+                <span className="text-lg sm:text-2xl font-black text-[#e05a4c]">{formatPrice(product.price)}</span>
                 {product.oldPrice > product.price && <span className="text-xs sm:text-sm text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>}
               </div>
             </div>
             <motion.button
-              whileHover={canAddToCart ? { scale: 1.02, y: -2 } : {}}
+              whileHover={canAddToCart ? { scale: 1.05, y: -2 } : {}}
               whileTap={canAddToCart ? { scale: 0.98 } : {}}
               onClick={handleAddToCart}
               aria-disabled={!canAddToCart}
-              className={`min-w-[130px] sm:min-w-[150px] inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold text-white shadow-lg transition-all ${
+              className={`min-w-[140px] sm:min-w-[160px] inline-flex items-center justify-center gap-2 rounded-xl px-5 py-4 text-sm sm:text-base font-bold text-white shadow-lg transition-all ${
                 canAddToCart
                   ? isAddedToCart
-                    ? "bg-emerald-600"
-                    : "bg-[#e05a4c] hover:shadow-xl"
-                  : "bg-slate-300 cursor-not-allowed"
+                    ? "bg-emerald-600 shadow-lg"
+                    : "bg-[#e05a4c] hover:shadow-[0_8px_24px_rgba(224,90,76,0.3)] hover:bg-[#d43a2a]"
+                  : "bg-slate-400 cursor-not-allowed"
               }`}
             >
-              {isAddedToCart ? <Check size={18} /> : <ShoppingCart size={18} />}
-              {canAddToCart ? (isAddedToCart ? "Eklendi" : "Ekle") : "Teslimat"}
+              {isAddedToCart ? (
+                <>
+                  <Check size={20} />
+                  Eklendi
+                </>
+              ) : (
+                <>
+                  <ShoppingCart size={20} />
+                  {canAddToCart ? "Ekle" : "Teslimat"}
+                </>
+              )}
             </motion.button>
-          </div>
+          </motion.div>
         </div>
       </div>
 

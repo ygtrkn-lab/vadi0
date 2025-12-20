@@ -38,9 +38,21 @@ export default function ProductGalleryDesktop({
   const [touchDistance, setTouchDistance] = useState(0);
   const [showZoomHint, setShowZoomHint] = useState(true);
 
-  // Advanced zoom handler - smooth interpolation
+  // Mouse wheel zoom - Amazon style
+  const handleWheel = useCallback((e: WheelEvent) => {
+    if (!containerRef.current?.matches(":hover")) return;
+    e.preventDefault();
+
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoomState((prev) => ({
+      ...prev,
+      scale: Math.min(Math.max(prev.scale + delta, 1), 2.5),
+    }));
+  }, []);
+
+  // Mouse move for zoom point
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isZooming || !containerRef.current) return;
+    if (zoomState.scale <= 1 || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -48,10 +60,10 @@ export default function ProductGalleryDesktop({
 
     setZoomState((prev) => ({
       ...prev,
-      x: x - 50,
-      y: y - 50,
+      x: (x - 50) * (prev.scale - 1) * 0.3,
+      y: (y - 50) * (prev.scale - 1) * 0.3,
     }));
-  }, [isZooming]);
+  }, [zoomState.scale]);
 
   // Touch pinch zoom
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
@@ -71,9 +83,11 @@ export default function ProductGalleryDesktop({
     }
   }, [touchDistance]);
 
-  const handleTouchEnd = () => {
-    setTouchDistance(0);
-  };
+  const handleTouchEnd = () => setTouchDistance(0);
+
+  // Increment/decrement zoom
+  const zoomIn = () => setZoomState((prev) => ({ ...prev, scale: Math.min(prev.scale + 0.25, 2.5) }));
+  const zoomOut = () => setZoomState((prev) => ({ ...prev, scale: Math.max(prev.scale - 0.25, 1) }));
 
   const handlePrevImage = () => {
     setZoomState({ scale: 1, x: 0, y: 0 });
@@ -85,15 +99,17 @@ export default function ProductGalleryDesktop({
     onImageSelect((selectedImage + 1) % images.length);
   };
 
-  const resetZoom = () => {
-    setZoomState({ scale: 1, x: 0, y: 0 });
-  };
+  const resetZoom = () => setZoomState({ scale: 1, x: 0, y: 0 });
 
-  // Hide zoom hint after first interaction
   useEffect(() => {
-    if (isZooming) {
-      setShowZoomHint(false);
-    }
+    const container = containerRef.current;
+    if (!container) return;
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [handleWheel]);
+
+  useEffect(() => {
+    if (isZooming) setShowZoomHint(false);
   }, [isZooming]);
 
   return (
@@ -171,21 +187,42 @@ export default function ProductGalleryDesktop({
           )}
         </AnimatePresence>
 
-        {/* Zoom controls - only show when zoomed */}
+        {/* Zoom controls - Amazon style */}
         <AnimatePresence>
           {isZooming && zoomState.scale > 1 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute top-6 right-6 flex items-center gap-2 z-20"
+              className="absolute bottom-6 left-6 flex flex-col items-center gap-2 z-20"
             >
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={zoomIn}
+                className="h-10 w-10 rounded-full bg-white/95 text-slate-800 flex items-center justify-center shadow-lg hover:bg-white transition-all"
+                title="Yakınlaştır"
+              >
+                <Plus size={18} />
+              </motion.button>
+              <div className="text-xs font-semibold text-slate-700 bg-white/90 px-2 py-1 rounded-full">
+                {Math.round(zoomState.scale * 100)}%
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={zoomOut}
+                className="h-10 w-10 rounded-full bg-white/95 text-slate-800 flex items-center justify-center shadow-lg hover:bg-white transition-all"
+                title="Uzaklaştır"
+              >
+                <Minus size={18} />
+              </motion.button>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={resetZoom}
                 className="h-10 w-10 rounded-full bg-white/95 text-slate-800 flex items-center justify-center shadow-lg hover:bg-white transition-all"
-                title="Zoom sıfırla"
+                title="Sıfırla"
               >
                 <RotateCw size={18} />
               </motion.button>

@@ -51,12 +51,12 @@ export default function ProductDetailDesktop({
 }: ProductDetailDesktopProps) {
   return (
     <div className="hidden lg:block">
-      {/* Desktop Layout - lg breakpoint */}
+      {/* Desktop Layout - lg breakpoint - Amazon premium spacing */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="grid grid-cols-[1.3fr_1fr] gap-8 lg:gap-10 items-start"
+        className="grid grid-cols-[1.4fr_1fr] gap-12 items-start xl:gap-16"
       >
         {/* Left: Gallery */}
         <ProductGalleryDesktop
@@ -68,8 +68,9 @@ export default function ProductDetailDesktop({
           discount={product.discount}
         />
 
-        {/* Right: Sidebar */}
-        <ProductSidebarDesktop
+        {/* Right: Sidebar - max-width constraint */}
+        <div className="w-full max-w-sm">
+          <ProductSidebarDesktop
           product={product}
           quantity={quantity}
           onQuantityChange={onQuantityChange}
@@ -85,14 +86,15 @@ export default function ProductDetailDesktop({
           onShare={onShare}
           onDeliverySignalChange={onDeliverySignalChange}
         />
+        </div>
       </motion.div>
 
-      {/* Desktop trust signals banner */}
+      {/* Desktop trust signals banner - Premium Amazon style */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.2 }}
-        className="mt-12 grid grid-cols-3 gap-4 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.18)]"
+        className="mt-16 grid grid-cols-3 gap-6 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.2)]"
       >
         {[
           {
@@ -113,12 +115,14 @@ export default function ProductDetailDesktop({
         ].map((item, idx) => (
           <motion.div
             key={idx}
-            whileHover={{ scale: 1.02 }}
-            className="flex items-center gap-4 rounded-2xl bg-white/5 border border-white/10 px-4 py-4 cursor-pointer transition-all"
+            whileHover={{ scale: 1.05, y: -8 }}
+            className="flex items-center gap-4 rounded-2xl bg-white/10 border border-white/20 px-6 py-5 cursor-pointer transition-all backdrop-blur-sm hover:bg-white/15"
           >
-            <item.icon size={24} className="text-white/90 flex-shrink-0" />
+            <div className="p-3 bg-white/10 rounded-full">
+              <item.icon size={28} className="text-white" />
+            </div>
             <div className="space-y-1">
-              <p className="font-semibold text-base">{item.title}</p>
+              <p className="font-bold text-lg">{item.title}</p>
               <p className="text-sm text-white/70">{item.desc}</p>
             </div>
           </motion.div>
