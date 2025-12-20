@@ -168,6 +168,46 @@ export default function HakkimizdaPage() {
                 %100 müşteri memnuniyeti garantisi
               </li>
             </ul>
+
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">Şirket Bilgilerimiz</h2>
+            <div className="bg-gray-50 rounded-2xl p-6 space-y-4 text-gray-600">
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">Ünvan</p>
+                <p>STR GRUP ANONİM ŞİRKETİ</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">Ticaret Sicil Numarası</p>
+                <p>702202</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">Adres</p>
+                <p>SOĞANLI MAH. GÖLÇE SOKAK NO: 1 İÇ KAPI NO: 4<br />BAHÇELİEVLER / İSTANBUL</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">Vergi Dairesi / Vergi Numarası</p>
+                <p>KOCASİNAN / 7810867621</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">E-posta</p>
+                <a href="mailto:bilgi@vadiler.com" className="text-primary-500 hover:underline">
+                  bilgi@vadiler.com
+                </a>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">Çağrı Merkezi</p>
+                <a href="tel:08503074876" className="text-primary-500 hover:underline">
+                  0850 307 4876
+                </a>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">KEP Adresi</p>
+                <p>strgrup@hs01.kep.tr</p>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">Yer Sağlayıcı</p>
+                <p>Vadiler İnternet Hizmetleri</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
