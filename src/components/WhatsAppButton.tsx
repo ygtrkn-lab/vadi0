@@ -230,12 +230,10 @@ export default function WhatsAppButton() {
           stiffness: 260,
           damping: 20,
         }}
-        className={`fixed z-[55] ${
-          isMobile ? 'bottom-32 right-4' : 'bottom-8 right-8'
-        }`}
+        className={`fixed z-[55] ${isMobile ? 'right-4' : 'bottom-8 right-8'}`}
         style={{
           ...(isMobile && {
-            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 8rem)',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px + var(--mobile-bottom-nav-offset, 0px))',
           }),
         }}
       >
@@ -252,7 +250,9 @@ export default function WhatsAppButton() {
                 damping: 30,
               }}
               className={`absolute ${
-                isMobile ? 'bottom-[72px] right-0 w-[268px]' : 'bottom-20 right-0 w-[308px]'
+                isMobile
+                  ? 'bottom-[68px] left-1/2 -translate-x-1/2 w-[268px]'
+                  : 'bottom-20 right-0 w-[308px]'
               }`}
             >
               <div

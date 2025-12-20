@@ -21,6 +21,7 @@ export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps
   const [categories, setCategories] = useState<any[]>([]);
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+  const bottomBarInnerRef = useRef<HTMLDivElement | null>(null);
 
   const phone = useSetting('site', 'phone', '0850 307 4876');
   const phoneHref = phone?.toString().replace(/\s/g, '') || '08503074876';
@@ -70,6 +71,45 @@ export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps
     };
   }, []);
 
+  // Expose bottom bar offset for other floating UI (e.g., WhatsApp button)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const root = document.documentElement;
+
+    const update = () => {
+      const shouldOffset = Boolean(showBottomBar && isVisible);
+      if (!shouldOffset || !bottomBarInnerRef.current) {
+        root.style.setProperty('--mobile-bottom-nav-offset', '0px');
+        return;
+      }
+
+      const rect = bottomBarInnerRef.current.getBoundingClientRect();
+
+      // paddingBottom is `env(safe-area-inset-bottom) + 6px` → computed style gives us resolved px.
+      const paddingBottomPx = parseFloat(getComputedStyle(bottomBarInnerRef.current).paddingBottom || '0');
+      const safeInsetPx = Math.max(0, paddingBottomPx - 6);
+
+      // inner has mb-4 (16px). Add a small gap above the bar (12px).
+      const offsetPx = Math.max(0, rect.height + 16 + 12 - safeInsetPx);
+      root.style.setProperty('--mobile-bottom-nav-offset', `${Math.round(offsetPx)}px`);
+    };
+
+    update();
+    window.addEventListener('resize', update);
+
+    let ro: ResizeObserver | null = null;
+    if (bottomBarInnerRef.current && 'ResizeObserver' in window) {
+      ro = new ResizeObserver(update);
+      ro.observe(bottomBarInnerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', update);
+      ro?.disconnect();
+    };
+  }, [showBottomBar, isVisible]);
+
   // Listen for open sidebar event from Header
   useEffect(() => {
     const handleOpenSidebar = () => setIsSidebarOpen(true);
@@ -118,6 +158,7 @@ export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps
           className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
         >
           <div
+            ref={bottomBarInnerRef}
             className="mx-4 mb-4 rounded-2xl overflow-hidden relative"
             style={{
               background: 'rgba(255, 255, 255, 0.85)',

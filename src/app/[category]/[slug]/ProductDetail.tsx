@@ -82,17 +82,21 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", minimumFractionDigits: 0 }).format(price);
 
-  const handleDeliveryComplete = useCallback(
-    (info: { location: string | null; district: string | null; date: Date | null; timeSlot: string | null }) => {
-      setDeliveryInfo(info);
-      if (info.location && info.district && info.date && info.timeSlot) {
-        setGlobalDeliveryInfo(info);
-      }
-    },
-    [setGlobalDeliveryInfo]
-  );
+  // Teslimat bilgisi güncellendiğinde çağrılır
+  const handleDeliveryComplete = (info: { location: string | null; district: string | null; date: Date | null; timeSlot: string | null }) => {
+    setDeliveryInfo(info);
+    if (info.location && info.district && info.date && info.timeSlot) {
+      setGlobalDeliveryInfo(info);
+    }
+  };
 
-  const canAddToCart = Boolean(deliveryInfo?.location && deliveryInfo?.date && deliveryInfo?.timeSlot && product.inStock);
+  // canAddToCart - deliveryInfo tam olduğunda true (konum, tarih ve saat seçilmeli)
+  const canAddToCart = !!(
+    deliveryInfo && 
+    deliveryInfo.location && 
+    deliveryInfo.date && 
+    deliveryInfo.timeSlot
+  );
 
   const handleAddToCart = () => {
     // Ensure any overlays are closed before interaction
@@ -316,12 +320,12 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                     className={`relative overflow-hidden group py-3 px-6 rounded-full font-medium text-base transition-all duration-300 flex items-center justify-center space-x-2 ${
                       canAddToCart
                         ? isAddedToCart
-                          ? "bg-emerald-500 text-white"
-                          : "bg-[#e05a4c] text-white hover:bg-[#d43a2a]"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          ? "bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-lg hover:-translate-y-1"
+                          : "bg-[#e05a4c] text-white hover:bg-[#d43a2a] hover:shadow-lg hover:-translate-y-1"
+                        : "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
                     }`}
                   >
-                    <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                    <div className={`absolute inset-0 transform -skew-x-12 -translate-x-full transition-transform duration-700 ${canAddToCart && !isAddedToCart ? "bg-white/20 group-hover:translate-x-full" : ""}`} />
                     {isAddedToCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
                     <span>{canAddToCart ? (isAddedToCart ? "Sepette" : "Sepete Ekle") : "Teslimat Seçin"}</span>
                   </button>
