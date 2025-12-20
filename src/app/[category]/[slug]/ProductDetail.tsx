@@ -812,72 +812,106 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
       <AnimatePresence>
         {showTopBar && (
           <motion.div
-            initial={{ y: -100, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="fixed top-0 left-0 right-0 z-[9999] bg-white shadow-lg border-b border-gray-100"
+            initial={{ y: -100, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: -100, opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+            className="fixed top-0 left-0 right-0 z-[9999]"
           >
-            <div className="container-custom py-3">
-              <div className="flex items-center gap-3">
-                {/* Back Button */}
-                <button 
+            {/* Glassmorphism background */}
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-xl" />
+            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+            
+            <div className="container-custom py-3 relative">
+              <div className="flex items-center gap-4">
+                {/* Back Button - Modern pill style */}
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => window.history.back()}
-                  className="p-2.5 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
+                  className="p-2.5 bg-gray-100/80 hover:bg-gray-200/80 rounded-2xl transition-all duration-200 flex-shrink-0 backdrop-blur-sm"
                 >
-                  <ArrowLeft size={22} className="text-gray-700" />
-                </button>
+                  <ArrowLeft size={20} className="text-gray-700" />
+                </motion.button>
                 
-                {/* Product Info */}
-                <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 shadow-sm">
-                  <Image src={images[0]} alt={product.name} fill className="object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] sm:text-xs text-slate-500 truncate font-medium">{categoryName}</p>
-                  <p className="text-sm sm:text-base font-bold text-slate-900 truncate">{product.name}</p>
-                  {/* Price - Mobile */}
-                  <p className="sm:hidden text-sm font-bold text-[#e05a4c] mt-0.5">
-                    {formatPrice(product.price)}
-                    {product.oldPrice > product.price && (
-                      <span className="text-xs text-slate-400 line-through font-normal ml-2">{formatPrice(product.oldPrice)}</span>
-                    )}
-                  </p>
-                </div>
+                {/* Product Card - Floating style */}
+                <motion.div 
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="flex items-center gap-3 flex-1 min-w-0"
+                >
+                  {/* Product Image with glow effect */}
+                  <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-pink-200 via-rose-200 to-orange-200 rounded-2xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
+                    <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden bg-white ring-1 ring-gray-100 shadow-sm">
+                      <Image src={images[0]} alt={product.name} fill className="object-cover" />
+                    </div>
+                  </div>
+                  
+                  {/* Product Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] sm:text-xs text-gray-400 truncate font-medium uppercase tracking-wide">{categoryName}</p>
+                    <p className="text-sm sm:text-base font-semibold text-gray-900 truncate leading-tight">{product.name}</p>
+                  </div>
+                </motion.div>
                 
-                {/* Price - Desktop */}
-                <div className="hidden sm:flex items-center gap-2 text-sm font-bold text-[#e05a4c] flex-shrink-0">
-                  {formatPrice(product.price)}
+                {/* Price Badge - Floating pill */}
+                <motion.div 
+                  initial={{ x: 10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.15 }}
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-50/80 backdrop-blur-sm rounded-2xl"
+                >
+                  <span className="text-base font-bold text-gray-900">{formatPrice(product.price)}</span>
                   {product.oldPrice > product.price && (
-                    <span className="text-xs text-slate-400 line-through font-normal">{formatPrice(product.oldPrice)}</span>
+                    <span className="text-xs text-gray-400 line-through">{formatPrice(product.oldPrice)}</span>
                   )}
-                </div>
+                </motion.div>
                 
-                {/* Add to Cart Button */}
-                <button
+                {/* CTA Button - Apple style */}
+                <motion.button
+                  initial={{ x: 10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={handleAddToCart}
                   aria-disabled={!canAddToCart}
-                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-md transition-all flex-shrink-0 ${
-                    canAddToCart
+                  className={`
+                    relative overflow-hidden inline-flex items-center justify-center gap-2 
+                    rounded-2xl px-5 py-3 text-sm font-semibold text-white 
+                    shadow-lg transition-all duration-300 flex-shrink-0
+                    ${canAddToCart
                       ? isAddedToCart
-                        ? "bg-emerald-600"
-                        : "bg-[#e05a4c] hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
-                      : "bg-slate-300 cursor-not-allowed"
-                  }`}
+                        ? "bg-emerald-500 shadow-emerald-200/50"
+                        : "bg-gradient-to-r from-[#e05a4c] to-[#d43a2a] shadow-rose-200/50 hover:shadow-xl hover:shadow-rose-300/40"
+                      : "bg-gray-300 shadow-none cursor-not-allowed"
+                    }
+                  `}
                 >
-                  {isAddedToCart ? <Check size={16} /> : <ShoppingCart size={16} />}
-                  <span className="hidden sm:inline">
-                    {canAddToCart ? (isAddedToCart ? "Sepette" : "Sepete Ekle") : "Teslimat Seç"}
+                  {/* Shine effect */}
+                  {canAddToCart && !isAddedToCart && (
+                    <motion.div 
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
+                      initial={{ x: '-100%' }}
+                      animate={{ x: '200%' }}
+                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                    />
+                  )}
+                  
+                  <span className="relative flex items-center gap-2">
+                    {isAddedToCart ? <Check size={18} /> : <ShoppingCart size={18} />}
+                    <span className="hidden sm:inline">
+                      {canAddToCart ? (isAddedToCart ? "Sepette ✓" : "Sepete Ekle") : "Teslimat Seç"}
+                    </span>
                   </span>
-                </button>
+                </motion.button>
                 
-                {/* Cart Icon - Mobile */}
-                <button 
-                  onClick={() => window.location.href = '/sepet'}
-                  className="sm:hidden p-2 rounded-full transition-colors relative flex-shrink-0"
-                  style={{ backgroundColor: 'rgba(224, 90, 76, 0.1)' }}
-                >
-                  <ShoppingCart size={20} style={{ color: '#e05a4c' }} />
-                </button>
+                {/* Mobile Price + Cart */}
+                <div className="flex sm:hidden items-center gap-2">
+                  <span className="text-sm font-bold text-gray-900">{formatPrice(product.price)}</span>
+                </div>
               </div>
             </div>
           </motion.div>
