@@ -428,7 +428,7 @@ export function StoryBannerCarousel() {
                   />
                   <div className="absolute inset-[3px] rounded-full bg-white flex items-center justify-center shadow-lg">
                     <div className="w-full h-full p-[2px] rounded-full bg-white">
-                      <div className="w-full h-full rounded-full overflow-hidden relative bg-gray-100">
+                      <div className="w-full h-full rounded-full overflow-hidden relative bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 shadow-sm">
                         {category.image ? (
                           <Image
                             src={category.image}
@@ -587,7 +587,7 @@ export function FeaturedBannerGrid() {
   }
 
   return (
-    <section className="py-12 md:py-16 bg-white">
+    <section className="py-4 md:py-6 bg-white">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header - Animated Apple Style */}

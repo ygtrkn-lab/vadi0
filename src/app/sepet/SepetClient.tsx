@@ -639,8 +639,104 @@ export default function SepetClient() {
   const canProceedToPayment = canProceedToMessage;
   const canCompletePayment = acceptTerms && hasGuestContact;
 
+  const scrollToElement = (elementId: string) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      const offset = 100;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+      
+      // Add highlight effect
+      element.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
+      setTimeout(() => {
+        element.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
+      }, 2000);
+    }
+  };
+
+  const validateRecipientStep = (): boolean => {
+    // Alıcı adı - hediye ise sadece 1 karakter yeterli, değilse minimum 3 karakter
+    if (isGift ? recipientName.length < 1 : recipientName.length < 3) {
+      scrollToElement('recipient-name');
+      return false;
+    }
+    if (!isPhoneValid) {
+      scrollToElement('recipient-phone');
+      return false;
+    }
+    // Şehir/Bölge ve İlçe zorunlu - selectedLocation kontrol (şehir + ilçe seçimi)
+    if (!selectedLocation || selectedLocation.length === 0) {
+      scrollToElement('delivery-location');
+      setIsLocationOpen(true);
+      return false;
+    }
+    // Mahalle adı zorunlu - minimum 5 karakter (sadece şehir seçildiyse kontrol et)
+    if (selectedLocation && (!neighborhood || neighborhood.trim().length < 5)) {
+      scrollToElement('neighborhood');
+      return false;
+    }
+    if (recipientAddress.length < 10) {
+      scrollToElement('recipient-address');
+      return false;
+    }
+    if (!deliveryDate) {
+      scrollToElement('delivery-date');
+      return false;
+    }
+    if (!isValidDeliveryTimeSlot(deliveryTimeSlot)) {
+      scrollToElement('delivery-time');
+      return false;
+    }
+    // Hediye ise gönderen adı - 1 karakter bile yeterli
+    if (requiresSenderName && senderName.trim().length < 1) {
+      scrollToElement('sender-name');
+      return false;
+    }
+    return true;
+  };
+
+  const validatePaymentStep = (): boolean => {
+    if (!isLoggedIn) {
+      // Guest email validation
+      if (!guestEmailTrim) {
+        setGuestEmailError('E-posta zorunludur');
+        scrollToElement('guest-email');
+        return false;
+      }
+      if (!isGuestEmailValid) {
+        setGuestEmailError('Geçerli bir e-posta girin');
+        scrollToElement('guest-email');
+        return false;
+      }
+
+      // Guest phone validation
+      if (!guestPhoneDigits) {
+        setGuestPhoneError('Telefon zorunludur');
+        scrollToElement('guest-phone');
+        return false;
+      }
+      if (!isGuestPhoneValid) {
+        setGuestPhoneError('Geçerli bir telefon girin');
+        scrollToElement('guest-phone');
+        return false;
+      }
+    }
+
+    if (!acceptTerms) {
+      scrollToElement('terms-checkbox');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleCompleteOrder = async () => {
-    if (!canCompletePayment) return;
+    if (!validatePaymentStep()) return;
 
     // Teslimat tarihi her zaman en erken yarın olmalı (mobil/manual giriş edge-case)
     if (!deliveryDate || deliveryDate < MIN_DELIVERY_DATE) {
@@ -1085,9 +1181,14 @@ export default function SepetClient() {
                     <div className="fixed inset-x-0 bottom-0 z-[60] bg-white/95 backdrop-blur border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-0 sm:border-0 sm:p-0 sm:pb-0">
                       <div className="max-w-2xl mx-auto">
                         <button
-                          onClick={() => setCurrentStep('recipient')}
-                          disabled={!canProceedToRecipient}
-                          className="w-full py-3.5 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          onClick={() => {
+                            if (!canProceedToRecipient) {
+                              alert('Sepetinizde ürün bulunmuyor.');
+                              return;
+                            }
+                            setCurrentStep('recipient');
+                          }}
+                          className="w-full py-3.5 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors flex items-center justify-center gap-2"
                         >
                           İleri
                           <ChevronRight size={18} />
@@ -1203,6 +1304,7 @@ export default function SepetClient() {
                         <div className="relative">
                           <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                           <input
+                            id="recipient-name"
                             type="text"
                             value={recipientName}
                             onChange={(e) => setRecipientName(e.target.value)}
@@ -1219,6 +1321,7 @@ export default function SepetClient() {
                         <div className="relative">
                           <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                           <input
+                            id="recipient-phone"
                             type="tel"
                             value={recipientPhone}
                             onChange={handlePhoneChange}
@@ -1244,6 +1347,7 @@ export default function SepetClient() {
                           Teslimat Bölgesi *
                         </label>
                         <button
+                          id="delivery-location"
                           type="button"
                           onClick={() => setIsLocationOpen(!isLocationOpen)}
                           className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
@@ -1375,10 +1479,11 @@ export default function SepetClient() {
                             exit={{ opacity: 0, height: 0 }}
                           >
                             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                              Mahalle
+                              Mahalle *
                             </label>
                             <input
                               type="text"
+                              id="neighborhood"
                               value={neighborhood}
                               onChange={(e) => setNeighborhood(e.target.value)}
                               placeholder="Mahalle adını yazın"
@@ -1395,6 +1500,7 @@ export default function SepetClient() {
                         <div className="relative">
                           <Home size={16} className="absolute left-3 top-3 text-gray-400" />
                           <textarea
+                            id="recipient-address"
                             value={recipientAddress}
                             onChange={(e) => setRecipientAddress(e.target.value)}
                             placeholder="Sokak, bina no, daire no, kat gibi detayları yazın"
@@ -1466,6 +1572,7 @@ export default function SepetClient() {
                         Teslimat Tarihi *
                       </label>
                       <input
+                        id="delivery-date"
                         type="date"
                         value={deliveryDate}
                         onChange={(e) => {
@@ -1497,7 +1604,7 @@ export default function SepetClient() {
                     </div>
 
                     {/* Saat Seçimi */}
-                    <div>
+                    <div id="delivery-time">
                       <label className="block text-xs font-medium text-gray-700 mb-1.5">
                         Teslimat Saati *
                       </label>
@@ -1569,6 +1676,7 @@ export default function SepetClient() {
                       Gönderen Adı (Kartta görünecek) *
                     </label>
                     <input
+                      id="sender-name"
                       type="text"
                       value={senderName}
                       onChange={(e) => setSenderName(e.target.value)}
@@ -1590,16 +1698,11 @@ export default function SepetClient() {
                     </button>
                     <button
                       onClick={() => {
-                        if (!isValidDeliveryTimeSlot(deliveryTimeSlot)) {
-                          alert('Lütfen teslimat saatini seçin (Gündüz veya Akşam).');
-                          return;
-                        }
-                        if (!canProceedToMessage) return;
+                        if (!validateRecipientStep()) return;
                         setCurrentStep('message');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      disabled={!canProceedToMessage}
-                      className="flex-1 py-3 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors flex items-center justify-center gap-2"
                     >
                       İleri
                       <ChevronRight size={18} />
@@ -1703,11 +1806,11 @@ export default function SepetClient() {
                     </button>
                     <button
                       onClick={() => {
-                        if (!canProceedToPayment) return;
+                        if (!validateRecipientStep()) return;
                         setCurrentStep('payment');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      disabled={!canProceedToPayment}
-                      className="flex-1 py-3 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 py-3 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors flex items-center justify-center gap-2"
                     >
                       İleri
                       <ChevronRight size={18} />
@@ -1862,6 +1965,7 @@ export default function SepetClient() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input
                         type="email"
+                        id="guest-email"
                         value={guestEmail}
                         onChange={(e) => {
                           setGuestEmail(e.target.value);
@@ -1882,6 +1986,7 @@ export default function SepetClient() {
                       />
                       <input
                         type="tel"
+                        id="guest-phone"
                         value={guestPhone}
                         onChange={handleGuestPhoneChange}
                         inputMode="numeric"
@@ -1908,6 +2013,7 @@ export default function SepetClient() {
                 <label className="flex items-start gap-2 text-xs text-gray-500 cursor-pointer">
                   <input 
                     type="checkbox" 
+                    id="terms-checkbox"
                     checked={acceptTerms}
                     onChange={(e) => setAcceptTerms(e.target.checked)}
                     className="mt-0.5 rounded border-gray-300 text-[#e05a4c] focus:ring-[#e05a4c]" 
@@ -1931,7 +2037,7 @@ export default function SepetClient() {
                         </button>
                         <button
                           onClick={handleCompleteOrder}
-                          disabled={!canCompletePayment || isProcessing}
+                          disabled={isProcessing}
                           className="flex-1 py-3.5 bg-[#549658] text-white font-semibold rounded-xl hover:bg-[#468a4a] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isProcessing ? (

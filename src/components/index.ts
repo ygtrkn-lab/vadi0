@@ -14,4 +14,5 @@ export { default as RelatedProducts } from './RelatedProducts';
 export { default as ProductDetailDesktop } from './ProductDetailDesktop';
 export { default as ProductGalleryDesktop } from './ProductGalleryDesktop';
 export { default as ProductSidebarDesktop } from './ProductSidebarDesktop';
+export { default as SeoContentSection } from './SeoContentSection';
 export { default as HomeCategoryProducts, StoryBannerCarousel, HomeAllCategoriesProducts, FeaturedBannerGrid, QuickCategoryPills } from './HomeCategoryProducts';
