@@ -1,4 +1,7 @@
 import { Metadata } from 'next';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import MobileNavBar from '@/components/MobileNavBar';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
@@ -105,6 +108,8 @@ const faqSchema = {
 export default function HakkimizdaPage() {
   return (
     <>
+      <Header />
+      
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageSchema) }}
@@ -114,9 +119,9 @@ export default function HakkimizdaPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50 pt-28 lg:pt-36">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-50 to-secondary-50 py-20">
+      <section className="bg-gradient-to-r from-primary-50 to-secondary-50 py-12 lg:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
             Hakkımızda
@@ -131,46 +136,8 @@ export default function HakkimizdaPage() {
       <section className="py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="prose prose-lg max-w-none">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Biz Kimiz?</h2>
-            <p className="text-gray-600 mb-6">
-              Vadiler Çiçek, yılların deneyimiyle Türkiye&apos;nin dört bir yanına taze çiçekler ulaştıran 
-              online çiçekçinizdir. Müşteri memnuniyetini ön planda tutarak, her siparişte en kaliteli 
-              çiçekleri en hızlı şekilde sevdiklerinize ulaştırıyoruz.
-            </p>
-            
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">Misyonumuz</h2>
-            <p className="text-gray-600 mb-6">
-              Her özel anınızda yanınızda olmak ve duygularınızı en güzel çiçeklerle ifade etmenize 
-              yardımcı olmak. Kaliteden ödün vermeden, uygun fiyatlarla en taze çiçekleri kapınıza 
-              kadar getiriyoruz.
-            </p>
-            
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">Neden Vadiler Çiçek?</h2>
-            <ul className="text-gray-600 space-y-3">
-              <li className="flex items-start gap-3">
-                <span className="text-primary-500 font-bold">✓</span>
-                Günlük taze çiçek garantisi
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary-500 font-bold">✓</span>
-                Türkiye&apos;nin her yerine hızlı teslimat
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary-500 font-bold">✓</span>
-                7/24 müşteri desteği
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary-500 font-bold">✓</span>
-                Güvenli online ödeme
-              </li>
-              <li className="flex items-start gap-3">
-                <span className="text-primary-500 font-bold">✓</span>
-                %100 müşteri memnuniyeti garantisi
-              </li>
-            </ul>
-
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">Şirket Bilgilerimiz</h2>
-            <div className="bg-gray-50 rounded-2xl p-6 space-y-4 text-gray-600">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Şirket Bilgilerimiz</h2>
+            <div className="bg-gray-50 rounded-2xl p-6 space-y-4 text-gray-600 mb-8">
               <div>
                 <p className="font-semibold text-gray-900 mb-1">Ünvan</p>
                 <p>STR GRUP ANONİM ŞİRKETİ</p>
@@ -208,6 +175,44 @@ export default function HakkimizdaPage() {
                 <p>Vadiler İnternet Hizmetleri</p>
               </div>
             </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Biz Kimiz?</h2>
+            <p className="text-gray-600 mb-6">
+              Vadiler Çiçek, yılların deneyimiyle Türkiye&apos;nin dört bir yanına taze çiçekler ulaştıran 
+              online çiçekçinizdir. Müşteri memnuniyetini ön planda tutarak, her siparişte en kaliteli 
+              çiçekleri en hızlı şekilde sevdiklerinize ulaştırıyoruz.
+            </p>
+            
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">Misyonumuz</h2>
+            <p className="text-gray-600 mb-6">
+              Her özel anınızda yanınızda olmak ve duygularınızı en güzel çiçeklerle ifade etmenize 
+              yardımcı olmak. Kaliteden ödün vermeden, uygun fiyatlarla en taze çiçekleri kapınıza 
+              kadar getiriyoruz.
+            </p>
+            
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 mt-8">Neden Vadiler Çiçek?</h2>
+            <ul className="text-gray-600 space-y-3">
+              <li className="flex items-start gap-3">
+                <span className="text-primary-500 font-bold">✓</span>
+                Günlük taze çiçek garantisi
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary-500 font-bold">✓</span>
+                Türkiye&apos;nin her yerine hızlı teslimat
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary-500 font-bold">✓</span>
+                7/24 müşteri desteği
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary-500 font-bold">✓</span>
+                Güvenli online ödeme
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-primary-500 font-bold">✓</span>
+                %100 müşteri memnuniyeti garantisi
+              </li>
+            </ul>
           </div>
         </div>
       </section>

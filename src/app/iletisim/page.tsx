@@ -14,9 +14,8 @@ export default function IletisimPage() {
   return (
     <>
       <Header />
-      <div className="h-0 lg:h-40" />
       
-      <main className="min-h-screen pt-[26px] lg:pt-[18px] pb-16 bg-gradient-to-b from-gray-50 to-white">
+      <main className="min-h-screen pt-28 lg:pt-36 pb-16 bg-gradient-to-b from-gray-50 to-white">
         <div className="container-custom">
           {/* Hero Section */}
           <motion.div
@@ -42,6 +41,43 @@ export default function IletisimPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="space-y-6"
             >
+              {/* Company Info Card */}
+              <div className="bg-white rounded-2xl lg:rounded-3xl shadow-lg shadow-gray-200/50 p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Şirket Bilgilerimiz</h3>
+                <div className="space-y-3 text-sm text-gray-600">
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Ünvan</p>
+                    <p>STR GRUP ANONİM ŞİRKETİ</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Ticaret Sicil Numarası</p>
+                    <p>702202</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Adres</p>
+                    <p>SOĞANLI MAH. GÖLÇE SOKAK NO: 1 İÇ KAPI NO: 4<br />BAHÇELİEVLER / İSTANBUL</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Vergi Dairesi / Vergi Numarası</p>
+                    <p>KOCASİNAN / 7810867621</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">E-posta</p>
+                    <a href="mailto:bilgi@vadiler.com" className="text-[#e05a4c] hover:underline">
+                      bilgi@vadiler.com
+                    </a>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">KEP Adresi</p>
+                    <p>strgrup@hs01.kep.tr</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Yer Sağlayıcı</p>
+                    <p>Vadiler İnternet Hizmetleri</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Phone Card */}
               <div className="bg-white rounded-2xl lg:rounded-3xl shadow-lg shadow-gray-200/50 p-6">
                 <div className="flex items-center gap-3 mb-4">
@@ -142,43 +178,6 @@ export default function IletisimPage() {
                     <span>Taze ve kaliteli ürün garantisi</span>
                   </li>
                 </ul>
-              </div>
-
-              {/* Company Info Card */}
-              <div className="bg-white rounded-2xl lg:rounded-3xl shadow-lg shadow-gray-200/50 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Şirket Bilgilerimiz</h3>
-                <div className="space-y-3 text-sm text-gray-600">
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1">Ünvan</p>
-                    <p>STR GRUP ANONİM ŞİRKETİ</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1">Ticaret Sicil Numarası</p>
-                    <p>702202</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1">Adres</p>
-                    <p>SOĞANLI MAH. GÖLÇE SOKAK NO: 1 İÇ KAPI NO: 4<br />BAHÇELİEVLER / İSTANBUL</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1">Vergi Dairesi / Vergi Numarası</p>
-                    <p>KOCASİNAN / 7810867621</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1">E-posta</p>
-                    <a href="mailto:bilgi@vadiler.com" className="text-[#e05a4c] hover:underline">
-                      bilgi@vadiler.com
-                    </a>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1">KEP Adresi</p>
-                    <p>strgrup@hs01.kep.tr</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 mb-1">Yer Sağlayıcı</p>
-                    <p>Vadiler İnternet Hizmetleri</p>
-                  </div>
-                </div>
               </div>
             </motion.div>
           </div>
