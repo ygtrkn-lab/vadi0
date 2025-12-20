@@ -12,6 +12,7 @@ interface ProductGalleryDesktopProps {
   onImageSelect: (index: number) => void;
   onFullscreenOpen: () => void;
   discount?: number;
+  showWeeklyCampaignBadge?: boolean;
 }
 
 interface ZoomState {
@@ -30,6 +31,7 @@ export default function ProductGalleryDesktop({
   onImageSelect,
   onFullscreenOpen,
   discount = 0,
+  showWeeklyCampaignBadge = false,
 }: ProductGalleryDesktopProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -156,6 +158,19 @@ export default function ProductGalleryDesktop({
         {discount > 0 && (
           <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-sm font-semibold bg-[#e05a4c] shadow-lg z-20">
             -%{discount}
+          </div>
+        )}
+
+        {/* Weekly campaign badge */}
+        {showWeeklyCampaignBadge && (
+          <div className="absolute left-4 top-14 z-20">
+            <Image
+              src="/TR/bugune-ozel.png"
+              alt="Bugüne Özel"
+              width={80}
+              height={80}
+              className="h-16 w-16 drop-shadow"
+            />
           </div>
         )}
 

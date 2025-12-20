@@ -254,7 +254,7 @@ export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 z-[10000] bg-black/40 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-[30000] bg-black/40 backdrop-blur-sm lg:hidden"
             />
 
             {/* Sidebar */}
@@ -263,7 +263,7 @@ export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm z-[10001] lg:hidden overflow-hidden"
+              className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm z-[30001] lg:hidden overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, #ffffff 0%, #faf9f7 100%)',
                 boxShadow: '-10px 0 40px rgba(0, 0, 0, 0.15)',
@@ -473,7 +473,7 @@ export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[10002] bg-white lg:hidden"
+            className="fixed inset-0 z-[30002] bg-white lg:hidden"
           >
             <SearchBar 
               isMobile={true}

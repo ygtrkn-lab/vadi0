@@ -94,22 +94,22 @@ export default function HeroSlider({ id }: HeroSliderProps) {
     swiperRef.current?.slideTo(index);
   }, []);
 
+  const getWallpaperSrc = useCallback((slide: HeroSlide, width: number) => {
+    const raw = slide.mobileImage ?? slide.image;
+    try {
+      const url = new URL(raw);
+      const existingW = url.searchParams.get('w');
+      if (existingW) {
+        url.searchParams.set('w', String(width));
+      }
+      return url.toString();
+    } catch {
+      return raw;
+    }
+  }, []);
+
   return (
     <section id={id} className="relative min-h-[100svh] lg:min-h-screen lg:max-h-[900px] overflow-hidden">
-      {/* Desktop Background */}
-      <div className="hidden lg:block absolute inset-0 bg-gradient-to-br from-primary-50 via-white to-secondary-50 z-0" />
-      
-      {/* Desktop Animated Circles */}
-      <motion.div 
-        animate={{ y: [0, -20, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        className="hidden lg:block absolute -top-20 -right-20 w-96 h-96 bg-primary-100 rounded-full blur-3xl opacity-50"
-      />
-      <motion.div 
-        animate={{ y: [0, 20, 0] }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        className="hidden lg:block absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-secondary-100 rounded-full blur-3xl opacity-40"
-      />
 
       <Swiper
         modules={[Autoplay, EffectCreative, EffectFade]}
@@ -129,22 +129,22 @@ export default function HeroSlider({ id }: HeroSliderProps) {
         {slides.map((slide, index) => (
           <SwiperSlide key={slide.id}>
             <div className="relative min-h-[100svh] lg:min-h-screen lg:max-h-[900px] lg:h-screen flex items-center">
-              {/* Mobile Background Image */}
-              <div className="absolute inset-0 lg:hidden">
+              {/* Background Image (mobile + desktop, same concept) */}
+              <div className="absolute inset-0">
                 <Image
-                  src={slide.mobileImage ?? slide.image}
+                  src={getWallpaperSrc(slide, 1920)}
                   alt={slide.title}
                   fill
                   sizes="100vw"
-                  quality={75}
+                  quality={80}
                   className="object-cover"
                   priority={index === 0}
                 />
                 {/* Readability overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/25" />
-                {/* Subtle flower-wallpaper feel (CSS gradients, no external assets) */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/20" />
+                {/* Subtle wallpaper texture (no external assets) */}
                 <div
-                  className="absolute inset-0 pointer-events-none opacity-35"
+                  className="absolute inset-0 pointer-events-none opacity-30"
                   style={{
                     backgroundImage:
                       'radial-gradient(circle at 18% 22%, rgba(255,255,255,0.18) 0 2px, transparent 3px),\n' +
@@ -157,15 +157,15 @@ export default function HeroSlider({ id }: HeroSliderProps) {
               </div>
 
               <div className="container-custom relative z-10 pt-24 pb-24 sm:pt-28 sm:pb-28 lg:pt-32 lg:pb-20">
-                <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                <div className="grid lg:grid-cols-1 gap-8 lg:gap-12 items-center">
                   {/* Text Content */}
                   <motion.div
                     initial={{ opacity: 0, y: 40 }}
                     animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
                     transition={{ duration: 0.7, delay: 0.1 }}
-                    className="text-center lg:text-left lg:bg-transparent lg:p-0 lg:border-0 lg:backdrop-blur-none
-                      mx-auto max-w-[520px] lg:max-w-none
-                      bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-5 sm:p-6 lg:rounded-none"
+                    className="text-center lg:text-left
+                      mx-auto max-w-[520px] lg:mx-0 lg:max-w-[640px]
+                      bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl p-4 sm:p-5 lg:p-6"
                   >
                     {/* Badge - Mobile */}
                     <motion.div
@@ -184,9 +184,10 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                       initial={{ opacity: 0, y: 20 }}
                       animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ duration: 0.6, delay: 0.3 }}
-                      className="hidden lg:inline-block px-4 py-2 bg-primary-100 text-primary-600 rounded-full 
-                        text-sm font-medium mb-4"
+                      className="hidden lg:inline-flex items-center gap-2 px-4 py-2 bg-white/90 
+                        backdrop-blur-sm rounded-full text-sm font-medium text-primary-600 mb-4 shadow-sm"
                     >
+                      <span className="w-2 h-2 bg-primary-500 rounded-full" />
                       {slide.subtitle}
                     </motion.span>
 
@@ -195,10 +196,9 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                       initial={{ opacity: 0, y: 30 }}
                       animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                       transition={{ duration: 0.6, delay: 0.3 }}
-                      className="text-[34px] leading-[1.08] sm:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6
-                        text-white lg:text-gray-900"
+                      className="text-[32px] leading-[1.08] sm:text-5xl lg:text-5xl xl:text-6xl font-bold mb-4 text-white"
                     >
-                      <span className="lg:text-gradient">{slide.title.split(' ')[0]}</span>{' '}
+                      <span className="text-white">{slide.title.split(' ')[0]}</span>{' '}
                       {slide.title.split(' ').slice(1).join(' ')}
                     </motion.h1>
 
@@ -207,7 +207,7 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                       initial={{ opacity: 0, y: 20 }}
                       animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                       transition={{ duration: 0.6, delay: 0.4 }}
-                      className="text-[15px] sm:text-lg text-white/90 lg:text-gray-600 mb-8 max-w-md 
+                      className="text-[15px] sm:text-lg text-white/90 mb-6 max-w-md 
                         mx-auto lg:mx-0 leading-relaxed"
                     >
                       {slide.description}
@@ -240,8 +240,9 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                     >
                       <Link
                         href={slide.buttonLink}
-                        className="btn-primary px-8 py-4 rounded-full text-white font-semibold 
-                          flex items-center gap-2 group"
+                        className="px-6 py-3 rounded-2xl text-white font-semibold 
+                          flex items-center gap-2 group bg-white/10 hover:bg-white/15 border border-white/15 backdrop-blur-md
+                          transition-all duration-300"
                       >
                         <span>{slide.buttonText}</span>
                         <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -255,84 +256,23 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                       initial={{ opacity: 0, y: 30 }}
                       animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                       transition={{ duration: 0.6, delay: 0.7 }}
-                      className="hidden lg:flex items-center justify-start gap-8 mt-12"
+                      className="hidden lg:flex items-center justify-start gap-6 mt-8"
                     >
                       <div className="text-center">
-                        <p className="text-3xl font-bold text-gray-900">500+</p>
-                        <p className="text-sm text-gray-500">Çiçek Çeşidi</p>
+                        <p className="text-2xl font-bold text-white">500+</p>
+                        <p className="text-sm text-white/70">Çiçek Çeşidi</p>
                       </div>
-                      <div className="w-px h-12 bg-gray-200" />
+                      <div className="w-px h-10 bg-white/15" />
                       <div className="text-center">
-                        <p className="text-3xl font-bold text-gray-900">50K+</p>
-                        <p className="text-sm text-gray-500">Mutlu Müşteri</p>
+                        <p className="text-2xl font-bold text-white">50K+</p>
+                        <p className="text-sm text-white/70">Mutlu Müşteri</p>
                       </div>
-                      <div className="w-px h-12 bg-gray-200" />
+                      <div className="w-px h-10 bg-white/15" />
                       <div className="text-center">
-                        <p className="text-3xl font-bold text-gray-900">4.9</p>
-                        <p className="text-sm text-gray-500">Puan</p>
+                        <p className="text-2xl font-bold text-white">4.9</p>
+                        <p className="text-sm text-white/70">Puan</p>
                       </div>
                     </motion.div>
-                  </motion.div>
-
-                  {/* Desktop Image - Circular Design */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={activeIndex === index ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.8, delay: 0.3 }}
-                    className="relative h-[400px] lg:h-[600px] hidden lg:block"
-                  >
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {/* Decorative Ring */}
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                        className="absolute w-[90%] h-[90%] border-2 border-dashed border-primary-200 rounded-full"
-                      />
-                      
-                      {/* Main Image Container */}
-                      <div className="relative w-[80%] h-[80%] rounded-full overflow-hidden shadow-2xl">
-                        <Image
-                          src={slide.image}
-                          alt={slide.title}
-                          fill
-                          className="object-cover"
-                          priority={index === 0}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
-                      </div>
-
-                      {/* Floating Elements */}
-                      <motion.div
-                        animate={{ y: [-10, 10, -10] }}
-                        transition={{ duration: 3, repeat: Infinity }}
-                        className="absolute top-10 right-10 w-20 h-20 bg-white rounded-2xl shadow-lg 
-                          flex items-center justify-center"
-                      >
-                        <Flower2 className="w-10 h-10 text-pink-400" />
-                      </motion.div>
-
-                      <motion.div
-                        animate={{ y: [10, -10, 10] }}
-                        transition={{ duration: 3.5, repeat: Infinity }}
-                        className="absolute bottom-20 left-0 w-16 h-16 bg-white rounded-2xl shadow-lg 
-                          flex items-center justify-center"
-                      >
-                        <Leaf className="w-8 h-8 text-green-500" />
-                      </motion.div>
-
-                      <motion.div
-                        animate={{ y: [-5, 15, -5] }}
-                        transition={{ duration: 4, repeat: Infinity }}
-                        className="absolute bottom-10 right-20 w-24 h-24 bg-primary-500 rounded-2xl shadow-lg 
-                          flex items-center justify-center text-white"
-                      >
-                        <div className="text-center flex flex-col items-center">
-                          <Percent className="w-6 h-6 mb-1" />
-                          <p className="text-xl font-bold">70</p>
-                          <p className="text-xs">İndirim</p>
-                        </div>
-                      </motion.div>
-                    </div>
                   </motion.div>
                 </div>
               </div>

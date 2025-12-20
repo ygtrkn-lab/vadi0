@@ -202,6 +202,10 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     </div>
   );
 
+  const WEEKLY_CAMPAIGN_SLUG = 'haftanin-cicek-kampanyalari-vadiler-com';
+  const isWeeklyCampaign =
+    product.category === WEEKLY_CAMPAIGN_SLUG || (product.categories || []).includes(WEEKLY_CAMPAIGN_SLUG);
+
   return (
     <>
       <Header />
@@ -229,6 +233,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
               onImageSelect={setSelectedImage}
               onFullscreenOpen={() => setIsImageModalOpen(true)}
               discount={product.discount}
+              showWeeklyCampaignBadge={isWeeklyCampaign}
             />
           </div>
 
@@ -424,6 +429,17 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                 {product.discount > 0 && (
                   <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-xs font-semibold bg-[#e05a4c] shadow-lg">
                     -%{product.discount}
+                  </div>
+                )}
+                {isWeeklyCampaign && (
+                  <div className="absolute left-4 top-14 z-20">
+                    <Image
+                      src="/TR/bugune-ozel.png"
+                      alt="Bugüne Özel"
+                      width={80}
+                      height={80}
+                      className="h-16 w-16 drop-shadow"
+                    />
                   </div>
                 )}
                 <button
@@ -917,6 +933,17 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             </button>
             <div className="relative w-full max-w-4xl aspect-[4/3]" onClick={(e) => e.stopPropagation()}>
               <Image src={images[selectedImage]} alt={product.name} fill className="object-contain" />
+              {isWeeklyCampaign && (
+                <div className="absolute left-4 top-10 z-20">
+                  <Image
+                    src="/TR/bugune-ozel.png"
+                    alt="Bugüne Özel"
+                    width={80}
+                    height={80}
+                    className="h-16 w-16 drop-shadow"
+                  />
+                </div>
+              )}
             </div>
             {images.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">

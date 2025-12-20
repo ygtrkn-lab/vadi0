@@ -68,7 +68,7 @@ export const slides: HeroSlide[] = [
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
     mobileImage:
-      'https://plus.unsplash.com/premium_photo-1679177888973-99ec8477308f?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://plus.unsplash.com/premium_photo-1679177888973-99ec8477308f?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     buttonText: 'Orkidelere Git',
     buttonLink: '/orkideler',
   },

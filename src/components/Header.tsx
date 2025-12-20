@@ -126,7 +126,7 @@ export default function Header() {
   }, []);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[10050]" style={{ pointerEvents: 'auto' }}>
+    <div className="fixed top-0 left-0 right-0 z-[20000]" style={{ pointerEvents: 'auto' }}>
       {/* Top Bar */}
       <motion.div 
         ref={topBandRef}

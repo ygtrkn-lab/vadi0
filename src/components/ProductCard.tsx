@@ -58,6 +58,10 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
     }).format(price);
   };
 
+  const WEEKLY_CAMPAIGN_SLUG = 'haftanin-cicek-kampanyalari-vadiler-com';
+  const isWeeklyCampaign =
+    product.category === WEEKLY_CAMPAIGN_SLUG || (product.categories || []).includes(WEEKLY_CAMPAIGN_SLUG);
+
   const categoryLabel = product.categoryName || getName(product.category, product.category.replace(/-/g, ' '));
 
   return (
@@ -72,6 +76,20 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         {/* Image Container */}
         <div className="relative aspect-[4/5] mx-2 mt-2 overflow-hidden rounded-xl bg-gradient-to-b from-gray-50 to-white border border-white/50 shadow-inner">
           <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-transparent to-transparent z-[1]" />
+
+          {/* Weekly campaign badge */}
+          {isWeeklyCampaign && (
+            <div className="absolute left-2 top-10 sm:top-12 z-20">
+              <Image
+                src="/TR/bugune-ozel.png"
+                alt="Bugüne Özel"
+                width={72}
+                height={72}
+                className="h-14 w-14 sm:h-16 sm:w-16 drop-shadow"
+              />
+            </div>
+          )}
+
           {/* Main Image */}
           <Image
             src={imageError ? '/placeholder-flower.jpg' : product.image}

@@ -66,6 +66,10 @@ export default function ProductDetailDesktop({
           onImageSelect={onImageSelect}
           onFullscreenOpen={onImageModalOpen}
           discount={product.discount}
+          showWeeklyCampaignBadge={
+            product.category === 'haftanin-cicek-kampanyalari-vadiler-com' ||
+            (product.categories || []).includes('haftanin-cicek-kampanyalari-vadiler-com')
+          }
         />
 
         {/* Right: Sidebar - max-width constraint */}
