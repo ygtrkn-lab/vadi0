@@ -141,7 +141,7 @@ export default function DeliverySelectorV2({
       date: selectedDate,
       timeSlot: selectedTimeSlot,
     });
-  }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot, onDeliveryComplete]);
+  }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot]);
 
   // External trigger to open location selector
   useEffect(() => {

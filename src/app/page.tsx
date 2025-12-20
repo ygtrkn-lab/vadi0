@@ -1,7 +1,6 @@
 import {
   Header,
   HeroSlider,
-  BannerGrid,
   CategoryCarousel,
   Marquee,
   SeoContentSection,
@@ -40,9 +39,6 @@ export default function Home() {
           text="✦ Ücretsiz Kargo  ★  ✦ Hızlı Teslimat  ★  ✦ Taze Çiçekler  ★  ✦ Güvenli Ödeme  ★" 
           variant="secondary" 
         />
-
-        {/* Banner Grid - 3 Promotional Banners */}
-        <BannerGrid />
 
         {/* Quick Category Pills - Kategori Kısayolları */}
         <QuickCategoryPills />
