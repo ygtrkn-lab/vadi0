@@ -795,7 +795,8 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -100, opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-            className="fixed top-0 left-0 right-0 z-[9999]"
+            className="fixed left-0 right-0 z-[9999]"
+            style={{ top: 'var(--top-info-band-height, 0px)' }}
           >
             {/* Glassmorphism background */}
             <div className="absolute inset-0 bg-white/80 backdrop-blur-xl" />

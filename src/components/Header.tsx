@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -41,6 +41,7 @@ export default function Header() {
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isHidden, setIsHidden] = useState(false);
+  const topBandRef = useRef<HTMLDivElement | null>(null);
   
   // Get cart state
   const { getTotalItems } = useCart();
@@ -100,29 +101,42 @@ export default function Header() {
     registerLogoPosition();
   }, [registerLogoPosition]);
 
+  // Expose top info band height as a CSS variable so other fixed bars can offset correctly.
+  useEffect(() => {
+    const el = topBandRef.current;
+    if (!el) return;
+
+    const setVar = () => {
+      const height = el.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--top-info-band-height', `${Math.round(height)}px`);
+    };
+
+    setVar();
+
+    const ro = new ResizeObserver(() => setVar());
+    ro.observe(el);
+    window.addEventListener('resize', setVar);
+    window.addEventListener('orientationchange', setVar);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', setVar);
+      window.removeEventListener('orientationchange', setVar);
+    };
+  }, []);
+
   return (
-    <motion.header 
-      initial={false}
-      animate={{ 
-        y: isHidden ? -200 : 0,
-        opacity: isHidden ? 0 : 1 
-      }}
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="fixed top-0 left-0 right-0 z-[9999]" 
-      style={{ pointerEvents: isHidden ? 'none' : 'auto' }}
-    >
+    <div className="fixed top-0 left-0 right-0 z-[10050]" style={{ pointerEvents: 'auto' }}>
       {/* Top Bar */}
       <motion.div 
+        ref={topBandRef}
         initial={false}
         animate={{
-          height: isScrolled ? 0 : 'auto',
-          opacity: isScrolled ? 0 : 1,
+          height: 'auto',
+          opacity: 1,
         }}
-        transition={{
-          duration: 0.4,
-          ease: [0.25, 0.1, 0.25, 1],
-        }}
-        className="overflow-hidden border-b border-gray-100 bg-white/80 backdrop-blur-xl text-gray-700"
+        transition={{ duration: 0.2, ease: 'easeOut' }}
+        className="overflow-hidden border-b border-neutral-800 bg-neutral-950/95 backdrop-blur-xl text-white"
         style={{ pointerEvents: 'auto' }}
       >
         <div className="container-custom">
@@ -132,38 +146,32 @@ export default function Header() {
               {(() => {
                 const InfoItems = () => (
                   <>
-                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white/70 px-3 py-1">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50">
-                        <Truck size={14} className="text-gray-700" />
+                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-primary-500 px-3 py-1">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                        <Truck size={14} className="text-white" />
                       </span>
-                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">İstanbul içi ücretsiz kargo</span>
+                      <span className="text-xs sm:text-sm font-semibold whitespace-nowrap text-white">İstanbul içi ücretsiz kargo</span>
                     </div>
 
-                    <div className="hidden sm:block h-4 w-px bg-gray-200" />
-
-                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white/70 px-3 py-1">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50">
-                        <CreditCard size={14} className="text-gray-700" />
+                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-primary-500 px-3 py-1">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                        <CreditCard size={14} className="text-white" />
                       </span>
-                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">iyzico ile güvenli ödeme</span>
+                      <span className="text-xs sm:text-sm font-semibold whitespace-nowrap text-white">iyzico ile güvenli ödeme</span>
                     </div>
 
-                    <div className="hidden sm:block h-4 w-px bg-gray-200" />
-
-                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white/70 px-3 py-1">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50">
-                        <BadgeCheck size={14} className="text-gray-700" />
+                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-secondary-500 px-3 py-1">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                        <BadgeCheck size={14} className="text-white" />
                       </span>
-                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Memnuniyet garantisi</span>
+                      <span className="text-xs sm:text-sm font-semibold whitespace-nowrap text-white">Memnuniyet garantisi</span>
                     </div>
 
-                    <div className="hidden sm:block h-4 w-px bg-gray-200" />
-
-                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-gray-200 bg-white/70 px-3 py-1">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gray-50">
-                        <ShieldCheck size={14} className="text-gray-700" />
+                    <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-secondary-500 px-3 py-1">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                        <ShieldCheck size={14} className="text-white" />
                       </span>
-                      <span className="text-xs sm:text-sm font-medium whitespace-nowrap">Kalite &amp; uygun fiyat garantisi</span>
+                      <span className="text-xs sm:text-sm font-semibold whitespace-nowrap text-white">Kalite &amp; uygun fiyat garantisi</span>
                     </div>
                   </>
                 );
@@ -178,18 +186,15 @@ export default function Header() {
                         <InfoItems />
                       </div>
                     </div>
-
-                    <div className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white/90 to-transparent" />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white/90 to-transparent" />
                   </div>
                 );
               })()}
             </div>
 
             {/* Utilities */}
-            <div className="hidden md:flex items-center gap-5 text-sm">
+            <div className="hidden md:flex items-center gap-5 text-sm text-white/90">
               <PhoneLink />
-              <Link href="/siparis-takip" className="hover:text-primary-500 transition-colors">
+              <Link href="/siparis-takip" className="hover:text-primary-100 transition-colors">
                 Sipariş Takip
               </Link>
             </div>
@@ -198,9 +203,11 @@ export default function Header() {
       </motion.div>
 
       {/* Main Header */}
-      <motion.div 
+      <motion.div
         initial={false}
         animate={{
+          y: isHidden ? -200 : 0,
+          opacity: isHidden ? 0 : 1,
           backgroundColor: isScrolled ? 'rgba(255, 255, 255, 0.97)' : 'rgba(255, 255, 255, 1)',
           backdropFilter: isScrolled ? 'blur(12px)' : 'blur(0px)',
           boxShadow: isScrolled 
@@ -213,7 +220,8 @@ export default function Header() {
           duration: 0.4,
           ease: [0.25, 0.1, 0.25, 1],
         }}
-        className="relative z-[100]" style={{ pointerEvents: 'auto' }}
+        className="relative z-[100]"
+        style={{ pointerEvents: isHidden ? 'none' : 'auto' }}
       >
         <div className="container-custom">
           <div className="flex items-center justify-between gap-4">
@@ -458,7 +466,7 @@ export default function Header() {
           </ul>
         </div>
       </nav>
-    </motion.header>
+    </div>
   );
 }
 
@@ -470,7 +478,7 @@ function PhoneLink() {
   return (
     <a 
       href={`tel:${phoneHref}`} 
-      className="flex items-center gap-2 hover:text-primary-100 transition-colors"
+      className="flex items-center gap-2 text-white/90 hover:text-primary-100 transition-colors"
     >
       <Phone size={14} />
       <span className="hidden sm:inline">{phone}</span>
