@@ -343,7 +343,7 @@ export function StoryBannerCarousel() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/categories');
+        const response = await fetch('/api/categories?hasProducts=true');
         const data = await response.json();
         setCategories(data.categories || data.data || []);
       } catch (error) {
@@ -553,7 +553,7 @@ export function FeaturedBannerGrid() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('/api/categories');
+        const response = await fetch('/api/categories?hasProducts=true');
         const data = await response.json();
         setCategories(data.categories || data.data || []);
       } catch (error) {

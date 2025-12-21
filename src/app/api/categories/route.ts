@@ -87,6 +87,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get('all') === 'true';
+    const onlyWithProducts = searchParams.get('hasProducts') === 'true';
 
     let query = supabase.from('categories').select('*').order('order', { ascending: true });
     if (!includeInactive) {
@@ -141,6 +142,11 @@ export async function GET(request: NextRequest) {
       const dynamicImage = cat.image || images.get(cat.slug) || '';
       return { ...dynamic, image: dynamicImage };
     });
+
+    // Filter out categories with no products if hasProducts param is true
+    if (onlyWithProducts) {
+      formattedCategories = formattedCategories.filter((cat: any) => cat.productCount > 0);
+    }
 
     // Pin special categories first visually across lists
     const PIN_SLUGS = ['haftanin-kampanyalari', 'dogum-gunu-hediyeleri'];
