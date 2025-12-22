@@ -1118,7 +1118,7 @@ export default function SepetClient() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-4 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:pb-0">
+                  <div className="space-y-4">
                     {/* Cart Items */}
                     {state.items.map((item) => (
                       <div
@@ -1200,8 +1200,8 @@ export default function SepetClient() {
                       </div>
                     </div>
 
-                    {/* Mobile Sticky Continue Button */}
-                    <div className="fixed inset-x-0 bottom-0 z-[60] bg-white/95 backdrop-blur border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-0 sm:border-0 sm:p-0 sm:pb-0">
+                    {/* Devam Et Butonu (mobilde sayfa sonunda statik) */}
+                    <div className="mt-6">
                       <div className="max-w-2xl mx-auto">
                         <button
                           onClick={() => {
@@ -1230,7 +1230,7 @@ export default function SepetClient() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="space-y-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:pb-0"
+                className="space-y-5"
               >
                 <div className="text-center mb-6">
                   <h2 className="text-lg font-semibold text-gray-900">Teslimat Adresi</h2>
@@ -1710,8 +1710,8 @@ export default function SepetClient() {
                   </motion.div>
                 )}
 
-                {/* Navigation (sticky on mobile) */}
-                <div className="fixed inset-x-0 bottom-0 z-[60] bg-white/95 backdrop-blur border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-0 sm:border-0 sm:p-0 sm:pb-0">
+                {/* Navigation (mobilde adım sonunda statik) */}
+                <div className="mt-6">
                   <div className="max-w-2xl mx-auto flex gap-3">
                     <button
                       onClick={() => setCurrentStep('cart')}
@@ -1742,7 +1742,7 @@ export default function SepetClient() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="space-y-5 pb-[calc(7.5rem+env(safe-area-inset-bottom))] sm:pb-0"
+                className="space-y-5"
               >
                 <div className="text-center mb-6">
                   <h2 className="text-lg font-semibold text-gray-900">Mesaj Kartı</h2>
@@ -1818,8 +1818,8 @@ export default function SepetClient() {
                   Mesaj kartı istemiyorum
                 </button>
 
-                {/* Navigation (sticky on mobile) */}
-                <div className="fixed inset-x-0 bottom-0 z-[60] bg-white/95 backdrop-blur border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-0 sm:border-0 sm:p-0 sm:pb-0">
+                {/* Navigation (mobilde adım sonunda statik) */}
+                <div className="mt-6">
                   <div className="max-w-2xl mx-auto flex gap-3">
                     <button
                       onClick={() => setCurrentStep('recipient')}
@@ -1850,7 +1850,7 @@ export default function SepetClient() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="space-y-5 pb-[calc(9rem+env(safe-area-inset-bottom))] sm:pb-0"
+                className="space-y-5"
               >
                 <div className="text-center mb-6">
                   <h2 className="text-lg font-semibold text-gray-900">Sipariş Özeti</h2>
@@ -2129,9 +2129,9 @@ export default function SepetClient() {
                   </span>
                 </label>
 
-                {/* Navigation (sticky on mobile) */}
+                {/* Navigation (mobilde adım sonunda statik) */}
                 {!show3DSModal && !showBankTransferModal && (
-                  <div className="fixed inset-x-0 bottom-0 z-[60] bg-white/95 backdrop-blur border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-0 sm:border-0 sm:p-0 sm:pb-0">
+                  <div className="mt-6">
                     <div className="max-w-2xl mx-auto">
                       <div className="flex gap-3">
                         <button
