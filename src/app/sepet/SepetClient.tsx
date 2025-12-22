@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useCustomer, Address } from '@/context/CustomerContext';
@@ -80,20 +80,10 @@ type RecipientErrors = {
   sender?: string;
 };
 
-function extractInlineScripts(html: string): string[] {
-  const matches = html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi);
-  const scripts: string[] = [];
-  for (const m of matches) {
-    const code = (m[1] || '').trim();
-    if (code) scripts.push(code);
-  }
-  return scripts;
-}
-
 export default function SepetClient() {
   const { state, removeFromCart, updateQuantity, getTotalPrice, getTotalItems, clearCart } = useCart();
   const { state: customerState, addOrderToCustomer, addAddress } = useCustomer();
-  const { createOrder, simulatePayment } = useOrder();
+  const { createOrder } = useOrder();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('cart');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -130,17 +120,15 @@ export default function SepetClient() {
   
   // Payment states
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [show3DSModal, setShow3DSModal] = useState(false);
-  const [threeDSHtmlContent, setThreeDSHtmlContent] = useState<string | null>(null);
-  const iyzicoContainerRef = useRef<HTMLDivElement | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'credit_card' | 'bank_transfer'>('credit_card');
   const [showBankTransferModal, setShowBankTransferModal] = useState(false);
   const [bankTransferOrderNumber, setBankTransferOrderNumber] = useState<number | null>(null);
   const [bankTransferOrderId, setBankTransferOrderId] = useState<string | null>(null);
   const [bankTransferTotal, setBankTransferTotal] = useState<number>(0);
   
-  // Misafir checkout states
-  const [isGuestCheckout, setIsGuestCheckout] = useState(false);
+  // 3DS states removed - using separate page instead of modal
+  
+  // Guest checkout mode selection
   const [checkoutMode, setCheckoutMode] = useState<'undecided' | 'guest' | 'login' | 'register'>('undecided');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
@@ -169,10 +157,6 @@ export default function SepetClient() {
   const [neighborhoodSearchOpen, setNeighborhoodSearchOpen] = useState(false);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
   const neighborhoodInputRef = useRef<HTMLInputElement>(null);
-  
-  // Step completion feedback
-  const [showStepFeedback, setShowStepFeedback] = useState(false);
-  const [stepFeedbackMessage, setStepFeedbackMessage] = useState('');
 
   const isEmpty = state.items.length === 0;
   const isLoggedIn = !!customerState.currentCustomer;
@@ -199,6 +183,43 @@ export default function SepetClient() {
 
   const MIN_DELIVERY_DATE = getTomorrowLocalISODate();
   const MAX_DELIVERY_DATE = getMaxDeliveryDate();
+
+  // handleSelectSavedAddress - useCallback ile optimize edilmiş
+  const handleSelectSavedAddress = useCallback((addr: Address) => {
+    setSelectedSavedAddress(addr);
+    setRecipientName(addr.recipientName);
+    setRecipientPhone(formatPhoneNumber(normalizeTrMobileDigits(addr.recipientPhone)));
+    setPhoneError('');
+    setSaveAddressToBook(false);
+    setAddressTitle('');
+    // İstanbul için yaka belirleme (kayıtlı adres İstanbul ise)
+    if (addr.province.toLowerCase().includes('istanbul')) {
+      // Sadece Avrupa yakası desteklenir
+      if (EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase())) {
+        setIstanbulSide('avrupa');
+        setSelectedLocation(`${addr.district}, İstanbul`);
+      } else {
+        // Destek dışı ilçe: seçimleri sıfırla
+        setIstanbulSide('');
+        setSelectedLocation(null);
+      }
+    }
+    setDistrict(addr.district);
+    setDistrictId(addr.districtId);
+    setNeighborhood(addr.neighborhood);
+    setRecipientAddress(addr.fullAddress);
+    setShowAddressForm(false);
+    setRecipientErrors((prev) => ({
+      ...prev,
+      name: undefined,
+      location: undefined,
+      neighborhood: undefined,
+      address: undefined,
+      date: undefined,
+      time: undefined,
+      sender: undefined,
+    }));
+  }, []);
 
   // Auto-populate guest phone from recipient phone on payment step
   useEffect(() => {
@@ -280,62 +301,43 @@ export default function SepetClient() {
     } else {
       setShowAddressForm(true);
     }
-  }, [customerState.currentCustomer]);
+  }, [customerState.currentCustomer, handleSelectSavedAddress]);
 
-  // Mount iyzico CheckoutForm directly into the modal (no iframe)
+  // Click outside handler for location dropdown
   useEffect(() => {
-    if (!show3DSModal || !threeDSHtmlContent) return;
-    const container = iyzicoContainerRef.current;
-    if (!container) return;
+    if (!isLocationOpen) return;
 
-    try {
-      const decoded = atob(threeDSHtmlContent);
-
-      // Clear previous content
-      container.innerHTML = '';
-
-      // Ensure required container exists for iyzico script
-      const checkoutDiv = document.createElement('div');
-      checkoutDiv.id = 'iyzipay-checkout-form';
-      checkoutDiv.className = 'responsive';
-      container.appendChild(checkoutDiv);
-
-      // Reset global iyziInit so the returned script can initialize again
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const w = window as any;
-        if (w.iyziInit) {
-          delete w.iyziInit;
-          w.iyziInit = undefined;
-        }
-      } catch {
-        // ignore
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const dropdown = document.getElementById('location-dropdown');
+      const trigger = document.getElementById('delivery-location');
+      
+      if (dropdown && !dropdown.contains(target) && trigger && !trigger.contains(target)) {
+        setIsLocationOpen(false);
       }
+    };
 
-      // Remove previously injected checkout bundle scripts to avoid stale init
-      for (const s of Array.from(document.querySelectorAll('script[data-iyzico-checkout="1"]'))) {
-        s.parentElement?.removeChild(s);
-      }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isLocationOpen]);
 
-      // Most of the time iyzico returns only a <script> block.
-      // Execute scripts by appending them as real script tags.
-      const scripts = extractInlineScripts(decoded);
-      for (const code of scripts) {
-        const scriptEl = document.createElement('script');
-        scriptEl.type = 'text/javascript';
-        scriptEl.setAttribute('data-iyzico-checkout', '1');
-        scriptEl.text = code;
-        document.body.appendChild(scriptEl);
-      }
+  // Click outside handler for neighborhood dropdown
+  useEffect(() => {
+    if (!neighborhoodSearchOpen) return;
 
-      // If content is not script-wrapped, fall back to injecting it into the container.
-      if (scripts.length === 0) {
-        container.insertAdjacentHTML('beforeend', decoded);
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const dropdown = document.getElementById('neighborhood-dropdown');
+      const input = neighborhoodInputRef.current;
+      
+      if (dropdown && !dropdown.contains(target) && input && !input.contains(target)) {
+        setNeighborhoodSearchOpen(false);
       }
-    } catch (e) {
-      console.error('❌ Failed to mount iyzico checkout form:', e);
-    }
-  }, [show3DSModal, threeDSHtmlContent]);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [neighborhoodSearchOpen]);
 
   const normalizeTrMobileDigits = (phone: string): string => {
     let digits = phone.replace(/\D/g, '');
@@ -350,42 +352,6 @@ export default function SepetClient() {
       digits = digits.slice(0, 10);
     }
     return digits;
-  };
-
-  const handleSelectSavedAddress = (addr: Address) => {
-    setSelectedSavedAddress(addr);
-    setRecipientName(addr.recipientName);
-    setRecipientPhone(formatPhoneNumber(normalizeTrMobileDigits(addr.recipientPhone)));
-    setPhoneError('');
-    setSaveAddressToBook(false);
-    setAddressTitle('');
-    // İstanbul için yaka belirleme (kayıtlı adres İstanbul ise)
-    if (addr.province.toLowerCase().includes('istanbul')) {
-      // Sadece Avrupa yakası desteklenir
-      if (EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase())) {
-        setIstanbulSide('avrupa');
-        setSelectedLocation(`${addr.district}, İstanbul`);
-      } else {
-        // Destek dışı ilçe: seçimleri sıfırla
-        setIstanbulSide('');
-        setSelectedLocation(null);
-      }
-    }
-    setDistrict(addr.district);
-    setDistrictId(addr.districtId);
-    setNeighborhood(addr.neighborhood);
-    setRecipientAddress(addr.fullAddress);
-    setShowAddressForm(false);
-    setRecipientErrors((prev) => ({
-      ...prev,
-      name: undefined,
-      location: undefined,
-      neighborhood: undefined,
-      address: undefined,
-      date: undefined,
-      time: undefined,
-      sender: undefined,
-    }));
   };
 
   // Location dropdown handlers
@@ -965,7 +931,7 @@ export default function SepetClient() {
         
         // Add to customer orders if logged in
         if (isLoggedIn && customerState.currentCustomer) {
-          await addOrderToCustomer(customerState.currentCustomer.id, orderResult.order.id);
+          await addOrderToCustomer(customerState.currentCustomer.id, orderResult.order.id, totalAmount);
         }
       } else {
         // Credit card flow - Initialize iyzico 3DS payment
@@ -994,9 +960,13 @@ export default function SepetClient() {
 
         console.log('✅ Payment initialized:', paymentData.paymentId);
 
-        // Show 3DS modal with HTML content
-        setThreeDSHtmlContent(paymentData.threeDSHtmlContent);
-        setShow3DSModal(true);
+        // Redirect to 3DS page (full page, not modal)
+        // This is e-commerce standard - callback will return to our site
+        const threeDSUrl = new URL('/payment/3ds', window.location.origin);
+        threeDSUrl.searchParams.set('html', paymentData.threeDSHtmlContent);
+        
+        // Navigate to 3DS page
+        window.location.href = threeDSUrl.toString();
       }
       
     } catch (error: unknown) {
@@ -1535,6 +1505,7 @@ export default function SepetClient() {
                         <AnimatePresence>
                           {isLocationOpen && !selectedLocation && (
                             <motion.div
+                              id="location-dropdown"
                               initial={{ opacity: 0, y: -10 }}
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, y: -10 }}
@@ -1672,6 +1643,7 @@ export default function SepetClient() {
                               <AnimatePresence>
                                 {neighborhoodSearchOpen && !loadingNeighborhoods && neighborhoodSuggestions.length > 0 && (
                                   <motion.div
+                                    id="neighborhood-dropdown"
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
@@ -2771,7 +2743,7 @@ export default function SepetClient() {
                 </label>
 
                 {/* Navigation (mobilde adım sonunda statik) */}
-                {!show3DSModal && !showBankTransferModal && (
+                {!showBankTransferModal && (
                   <div className="mt-6">
                     <div className="max-w-2xl mx-auto">
                       <div className="flex gap-3">
@@ -2822,50 +2794,6 @@ export default function SepetClient() {
           </AnimatePresence>
         </div>
       </main>
-
-      {/* 3DS Payment Modal */}
-      {show3DSModal && threeDSHtmlContent && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-stretch justify-center p-0 sm:items-center sm:p-4">
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white w-full h-[100dvh] min-h-[100svh] sm:h-auto sm:max-h-[95vh] sm:max-w-md overflow-hidden shadow-2xl rounded-none sm:rounded-2xl flex flex-col"
-          >
-            <div className="bg-gradient-to-r from-[#e05a4c] to-[#e8b4bc] p-3 sm:p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <CreditCard size={20} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">Güvenli Ödeme</h3>
-                  <p className="text-white/80 text-xs">3D Secure Doğrulama</p>
-                </div>
-              </div>
-              <Image
-                src="/iyzico/iyzicoLogoWhite.svg"
-                alt="iyzico"
-                width={60}
-                height={20}
-                className="h-5 w-auto opacity-90"
-              />
-            </div>
-            
-            <div className="px-3 py-2 sm:p-4 bg-blue-50 border-b border-blue-200">
-              <div className="flex items-start gap-2 text-blue-800 text-xs sm:text-sm">
-                <AlertCircle size={16} />
-                <p>
-                  Bankanızın 3D Secure sayfasına yönlendiriliyorsunuz. 
-                  Lütfen SMS ile gelen doğrulama kodunu girin.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex-1 min-h-0 overflow-auto">
-              <div ref={iyzicoContainerRef} className="w-full h-full" />
-            </div>
-          </motion.div>
-        </div>
-      )}
 
       {/* Bank Transfer Modal - Apple Pay Style */}
       {showBankTransferModal && bankTransferOrderNumber && (
