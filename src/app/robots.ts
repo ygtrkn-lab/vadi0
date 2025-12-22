@@ -8,31 +8,18 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: [
-          '/yonetim/',
-          '/api/',
-          '/hesabim/',
-          '/sepet/',
-          '/odeme/',
-          '/payment/',
-          '/*?sort=*',
-          '/*?price=*',
-          '/*?page=*',
-          '/*?stok=*',
-          '/*?filter=*',
-        ],
       },
       {
         userAgent: 'Googlebot',
         allow: '/',
-        disallow: [
-          '/yonetim/',
-          '/api/',
-          '/hesabim/',
-          '/sepet/',
-          '/odeme/',
-          '/payment/',
-        ],
+      },
+      {
+        userAgent: 'Bingbot',
+        allow: '/',
+      },
+      {
+        userAgent: 'Yandex',
+        allow: '/',
       },
     ],
     sitemap: [

@@ -124,10 +124,35 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: getMetadataBaseUrl(),
-  title: "Vadiler Çiçek - Online Çiçek Siparişi | Taze Çiçekler, Hızlı Teslimat",
-  description: "Vadiler Çiçek ile taze çiçekleri hızlı ve güvenli şekilde İstanbul'a gönderin. Online çiçek siparişi, hızlı teslimat, uygun fiyatlar.",
+  title: {
+    default: "Vadiler Çiçek - Online Çiçek Siparişi İstanbul | Aynı Gün Teslimat",
+    template: "%s | Vadiler Çiçek"
+  },
+  description: "İstanbul'un en güvenilir online çiçekçisi Vadiler Çiçek! Taze çiçekler, gül, orkide, buket ve çiçek aranjmanları aynı gün teslimat. ☎️ 0850 307 4876",
   keywords: [
-    "çiçek siparişi", "online çiçek", "çiçek gönder", "çiçekçi", "hediye çiçek", "hızlı teslimat", "Vadiler Çiçek", "İstanbul çiçek"
+    "çiçek siparişi",
+    "online çiçek siparişi",
+    "çiçek gönder",
+    "istanbul çiçek siparişi",
+    "çiçekçi istanbul",
+    "aynı gün çiçek teslimat",
+    "gül buketi",
+    "orkide",
+    "çiçek aranjmanı",
+    "doğum günü çiçeği",
+    "sevgiliye çiçek",
+    "anneler günü çiçek",
+    "düğün çiçeği",
+    "cenaze çiçeği",
+    "kadıköy çiçekçi",
+    "beşiktaş çiçekçi",
+    "beyoğlu çiçekçi",
+    "bakırköy çiçekçi",
+    "ucuz çiçek",
+    "taze çiçek",
+    "vadiler çiçek",
+    "vadiler.com",
+    "vadiler",
   ],
   verification: {
     google: 'NdD2A097rf0YcV2o0TULpp__uSTaNmzMvRBhIrZVB2s',
@@ -151,8 +176,8 @@ export const metadata: Metadata = {
     canonical: "https://vadiler.com/",
   },
   openGraph: {
-    title: "Vadiler Çiçek - Online Çiçek Siparişi",
-    description: "Vadiler Çiçek ile taze çiçekleri hızlı ve güvenli şekilde İstanbul'a gönderin.",
+    title: "Vadiler Çiçek - Online Çiçek Siparişi İstanbul | Aynı Gün Teslimat",
+    description: "İstanbul'un en güvenilir online çiçekçisi! Taze çiçekler, gül, orkide ve özel aranjmanlar. Aynı gün teslimat, güvenli ödeme. ☎️ 0850 307 4876",
     url: "https://vadiler.com/",
     siteName: "Vadiler Çiçek",
     images: [
@@ -160,7 +185,7 @@ export const metadata: Metadata = {
         url: "https://vadiler.com/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Vadiler Çiçek - Online Çiçek Siparişi"
+        alt: "Vadiler Çiçek - İstanbul Online Çiçek Siparişi"
       }
     ],
     locale: "tr_TR",
@@ -168,8 +193,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vadiler Çiçek - Online Çiçek Siparişi",
-    description: "Vadiler Çiçek ile taze çiçekleri hızlı ve güvenli şekilde İstanbul'a gönderin.",
+    title: "Vadiler Çiçek - İstanbul Online Çiçek Siparişi",
+    description: "Taze çiçekler, aynı gün teslimat! Gül, orkide, buket ve özel aranjmanlar. ☎️ 0850 307 4876",
     site: "@vadilercom",
     images: ["https://vadiler.com/og-image.jpg"],
   },
