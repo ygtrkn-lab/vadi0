@@ -23,6 +23,9 @@ import {
   HiOutlineSearch,
   HiOutlineCalendar,
   HiOutlineArrowRight,
+  HiOutlineExclamationCircle,
+  HiOutlineViewList,
+  HiOutlineXCircle,
 } from 'react-icons/hi';
 import { 
   FaFacebook, 
@@ -167,6 +170,30 @@ interface CheckoutFlowData {
     adds: number;
     removes: number;
     quantityChanges: number;
+  };
+}
+
+interface InsightsData {
+  scrollDepth: {
+    milestones: Record<number, number>;
+    lowEngagementPages: Array<{ path: string; total: number; count: number; avg: number }>;
+    totalMeasurements: number;
+  };
+  errors: {
+    total: number;
+    byType: Record<string, number>;
+    byPage: Record<string, number>;
+    recent: Array<{ type: string; message: string; page: string; timestamp: string; count?: number }>;
+  };
+  cartAbandonment: {
+    cartAbandons: number;
+    checkoutAbandons: number;
+    totalAbandons: number;
+    totalLostRevenue: number;
+    avgCartValue: number;
+    totalItemsAbandoned: number;
+    topAbandonedProducts: Array<{ id: string; name: string; count: number }>;
+    byHour: Array<{ hour: string; count: number }>;
   };
 }
 
@@ -869,6 +896,313 @@ function CheckoutFunnel({ data, isDark }: { data: CheckoutFlowData | null; isDar
 }
 
 // ============================================
+// Scroll Depth Chart
+// ============================================
+
+function ScrollDepthChart({ data, isDark }: { data: InsightsData['scrollDepth'] | undefined; isDark: boolean }) {
+  if (!data || data.totalMeasurements === 0) return null;
+
+  const milestones = [
+    { depth: 25, color: 'from-blue-500 to-blue-400', label: '25%' },
+    { depth: 50, color: 'from-cyan-500 to-cyan-400', label: '50%' },
+    { depth: 75, color: 'from-green-500 to-green-400', label: '75%' },
+    { depth: 90, color: 'from-yellow-500 to-yellow-400', label: '90%' },
+    { depth: 100, color: 'from-purple-500 to-purple-400', label: '100%' },
+  ];
+
+  const maxCount = Math.max(...Object.values(data.milestones), 1);
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <HiOutlineViewList className={`w-5 h-5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+        <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Scroll Derinliği
+        </h3>
+      </div>
+      <p className={`text-xs mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+        Ziyaretçilerin sayfada ne kadar aşağı kaydırdığını gösterir
+      </p>
+      
+      <div className="space-y-3">
+        {milestones.map(milestone => {
+          const count = data.milestones[milestone.depth] || 0;
+          const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+          return (
+            <div key={milestone.depth}>
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {milestone.label}
+                </span>
+                <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {formatNumber(count)}
+                </span>
+              </div>
+              <div className={`h-2.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${percent}%` }}
+                  transition={{ duration: 0.5 }}
+                  className={`h-full rounded-full bg-gradient-to-r ${milestone.color}`}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Low Engagement Pages */}
+      {data.lowEngagementPages.length > 0 && (
+        <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>
+            ⚠️ Düşük Etkileşimli Sayfalar
+          </h4>
+          <div className="space-y-2">
+            {data.lowEngagementPages.slice(0, 5).map((page) => (
+              <div 
+                key={page.path}
+                className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+              >
+                <span className={`text-xs truncate flex-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {page.path}
+                </span>
+                <span className={`text-xs font-medium ml-2 ${
+                  page.avg < 30 ? 'text-red-500' : page.avg < 50 ? 'text-yellow-500' : 'text-green-500'
+                }`}>
+                  {page.avg}%
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </SpotlightCard>
+  );
+}
+
+// ============================================
+// Error Tracking Panel
+// ============================================
+
+function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefined; isDark: boolean }) {
+  if (!data || data.total === 0) {
+    return (
+      <SpotlightCard className="p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <HiOutlineExclamationCircle className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
+          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            JavaScript Hataları
+          </h3>
+        </div>
+        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className="text-3xl mb-2">✅</div>
+          <p className="text-sm">Hiçbir hata yok! Harika!</p>
+        </div>
+      </SpotlightCard>
+    );
+  }
+
+  const errorTypeLabels: Record<string, { label: string; color: string }> = {
+    js_error: { label: 'JS Hatası', color: 'text-red-500' },
+    unhandled_rejection: { label: 'Promise Hatası', color: 'text-orange-500' },
+    api_error: { label: 'API Hatası', color: 'text-yellow-500' },
+    network_error: { label: 'Ağ Hatası', color: 'text-purple-500' },
+  };
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <HiOutlineExclamationCircle className={`w-5 h-5 text-red-500`} />
+          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            JavaScript Hataları
+          </h3>
+        </div>
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600'
+        }`}>
+          {data.total} hata
+        </span>
+      </div>
+
+      {/* Error Types */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        {Object.entries(data.byType).map(([type, count]) => (
+          <div 
+            key={type}
+            className={`p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+          >
+            <p className={`text-xs ${errorTypeLabels[type]?.color || 'text-gray-500'}`}>
+              {errorTypeLabels[type]?.label || type}
+            </p>
+            <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {count}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Errors */}
+      {data.recent.length > 0 && (
+        <div className={`border-t pt-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            Son Hatalar
+          </h4>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {data.recent.slice(0, 10).map((error, idx) => (
+              <div 
+                key={idx}
+                className={`p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-xs ${errorTypeLabels[error.type]?.color || 'text-gray-500'}`}>
+                    {errorTypeLabels[error.type]?.label || error.type}
+                  </span>
+                  {error.count && error.count > 1 && (
+                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      x{error.count}
+                    </span>
+                  )}
+                </div>
+                <p className={`text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {error.message}
+                </p>
+                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {error.page}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </SpotlightCard>
+  );
+}
+
+// ============================================
+// Cart Abandonment Panel
+// ============================================
+
+function CartAbandonmentPanel({ data, isDark }: { data: InsightsData['cartAbandonment'] | undefined; isDark: boolean }) {
+  if (!data || data.totalAbandons === 0) {
+    return (
+      <SpotlightCard className="p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <HiOutlineXCircle className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Sepet Terk
+          </h3>
+        </div>
+        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className="text-sm">Henüz sepet terk verisi yok</p>
+        </div>
+      </SpotlightCard>
+    );
+  }
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <HiOutlineXCircle className={`w-5 h-5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+        <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Sepet Terk Analizi
+        </h3>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className={`p-3 rounded-lg ${isDark ? 'bg-orange-500/20' : 'bg-orange-50'}`}>
+          <p className={`text-xs ${isDark ? 'text-orange-300' : 'text-orange-600'}`}>Sepet Terk</p>
+          <p className={`text-xl font-bold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+            {data.cartAbandons}
+          </p>
+        </div>
+        <div className={`p-3 rounded-lg ${isDark ? 'bg-red-500/20' : 'bg-red-50'}`}>
+          <p className={`text-xs ${isDark ? 'text-red-300' : 'text-red-600'}`}>Ödeme Terk</p>
+          <p className={`text-xl font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+            {data.checkoutAbandons}
+          </p>
+        </div>
+        <div className={`p-3 rounded-lg col-span-2 ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Kaybedilen Potansiyel Gelir</p>
+              <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {formatCurrency(data.totalLostRevenue)}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Ort. Sepet</p>
+              <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {formatCurrency(data.avgCartValue)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Abandoned Products */}
+      {data.topAbandonedProducts.length > 0 && (
+        <div className={`border-t pt-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            En Çok Terk Edilen Ürünler
+          </h4>
+          <div className="space-y-2">
+            {data.topAbandonedProducts.slice(0, 5).map((product) => (
+              <div 
+                key={product.id}
+                className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+              >
+                <span className={`text-xs truncate flex-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {product.name}
+                </span>
+                <span className={`text-xs font-medium ml-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {product.count}x
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Hourly Distribution */}
+      <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          Saatlik Dağılım
+        </h4>
+        <div className="flex items-end gap-0.5 h-16">
+          {data.byHour.map((hour) => {
+            const maxHourly = Math.max(...data.byHour.map(h => h.count), 1);
+            const height = maxHourly > 0 ? (hour.count / maxHourly) * 100 : 0;
+            return (
+              <div 
+                key={hour.hour}
+                className="flex-1 group relative"
+              >
+                <div 
+                  className={`w-full rounded-t ${isDark ? 'bg-orange-500/60' : 'bg-orange-400'} transition-all hover:opacity-80`}
+                  style={{ height: `${Math.max(height, 2)}%` }}
+                />
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 hidden group-hover:block">
+                  <div className={`px-2 py-1 rounded text-xs whitespace-nowrap ${isDark ? 'bg-white/20 text-white' : 'bg-gray-800 text-white'}`}>
+                    {hour.hour}: {hour.count}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>00:00</span>
+          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>12:00</span>
+          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>23:00</span>
+        </div>
+      </div>
+    </SpotlightCard>
+  );
+}
+
+// ============================================
 // Main Component
 // ============================================
 
@@ -878,6 +1212,7 @@ export default function AnalizlerPage() {
   const [realtime, setRealtime] = useState<RealtimeResponse | null>(null);
   const [clickData, setClickData] = useState<ClickData | null>(null);
   const [checkoutFlow, setCheckoutFlow] = useState<CheckoutFlowData | null>(null);
+  const [insights, setInsights] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -930,15 +1265,27 @@ export default function AnalizlerPage() {
     }
   }, [period]);
 
+  const fetchInsights = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/analytics/insights?period=${period}`);
+      if (res.ok) {
+        const data = await res.json();
+        setInsights(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch insights:', error);
+    }
+  }, [period]);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchStats(), fetchRealtime(), fetchClickData(), fetchCheckoutFlow()]);
+      await Promise.all([fetchStats(), fetchRealtime(), fetchClickData(), fetchCheckoutFlow(), fetchInsights()]);
       setLoading(false);
     };
 
     loadData();
-  }, [fetchStats, fetchRealtime, fetchClickData, fetchCheckoutFlow]);
+  }, [fetchStats, fetchRealtime, fetchClickData, fetchCheckoutFlow, fetchInsights]);
 
   // Auto-refresh realtime data
   useEffect(() => {
@@ -1001,6 +1348,7 @@ export default function AnalizlerPage() {
                 fetchRealtime();
                 fetchClickData();
                 fetchCheckoutFlow();
+                fetchInsights();
               }}
               className={`p-2 rounded-lg transition-colors ${
                 isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
@@ -1110,6 +1458,13 @@ export default function AnalizlerPage() {
                 <ClickAnalytics data={clickData} isDark={isDark} />
                 <CartClickDetails data={clickData} isDark={isDark} />
               </div>
+            </div>
+
+            {/* Insights Section - Scroll Depth, Errors, Cart Abandonment */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <ScrollDepthChart data={insights?.scrollDepth} isDark={isDark} />
+              <ErrorsPanel data={insights?.errors} isDark={isDark} />
+              <CartAbandonmentPanel data={insights?.cartAbandonment} isDark={isDark} />
             </div>
 
 

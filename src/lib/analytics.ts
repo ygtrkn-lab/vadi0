@@ -94,6 +94,15 @@ class AnalyticsTracker {
   private isInitialized: boolean = false;
   private queue: Array<() => Promise<void>> = [];
   private isProcessingQueue: boolean = false;
+  
+  // Scroll depth tracking
+  private maxScrollDepth: number = 0;
+  private scrollMilestones: number[] = [25, 50, 75, 90, 100];
+  private scrollMilestonesReached: Set<number> = new Set();
+  
+  // Cart abandonment tracking
+  private hasItemsInCart: boolean = false;
+  private cartAbandonmentTracked: boolean = false;
 
   /**
    * Tracker'ı başlat
@@ -151,6 +160,15 @@ class AnalyticsTracker {
 
       // Otomatik tıklama takibi
       this.setupClickTracking();
+      
+      // Scroll depth takibi
+      this.setupScrollTracking();
+      
+      // Error tracking (JavaScript hataları)
+      this.setupErrorTracking();
+      
+      // Cart abandonment detection
+      this.setupCartAbandonmentTracking();
 
       // Queue'daki işlemleri işle
       this.processQueue();
@@ -300,6 +318,282 @@ class AnalyticsTracker {
     if (window.location.pathname.startsWith('/payment')) return true;
 
     return false;
+  }
+
+  /**
+   * Scroll Depth Tracking - Kullanıcının sayfada ne kadar aşağı kaydırdığını takip et
+   */
+  private setupScrollTracking(): void {
+    if (typeof window === 'undefined') return;
+
+    const handleScroll = () => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      
+      if (docHeight <= 0) return;
+      
+      const scrollPercent = Math.round((scrollTop / docHeight) * 100);
+      
+      // Max scroll depth'i güncelle
+      if (scrollPercent > this.maxScrollDepth) {
+        this.maxScrollDepth = scrollPercent;
+      }
+      
+      // Milestone'ları kontrol et
+      for (const milestone of this.scrollMilestones) {
+        if (scrollPercent >= milestone && !this.scrollMilestonesReached.has(milestone)) {
+          this.scrollMilestonesReached.add(milestone);
+          
+          this.trackEvent({
+            eventName: 'scroll_depth',
+            eventCategory: 'engagement',
+            eventLabel: `${milestone}%`,
+            properties: {
+              scroll_depth: milestone,
+              page_path: window.location.pathname,
+              page_height: document.documentElement.scrollHeight,
+              viewport_height: window.innerHeight,
+              time_to_reach: Date.now() - (this.sessionData?.startedAt || Date.now()),
+              is_product_page: window.location.pathname.startsWith('/urun'),
+            },
+          });
+        }
+      }
+    };
+
+    // Throttle scroll event (her 200ms'de bir)
+    let scrollTimeout: ReturnType<typeof setTimeout> | null = null;
+    window.addEventListener('scroll', () => {
+      if (scrollTimeout) return;
+      scrollTimeout = setTimeout(() => {
+        handleScroll();
+        scrollTimeout = null;
+      }, 200);
+    }, { passive: true });
+
+    // Sayfa değiştiğinde scroll depth'i sıfırla
+    const resetScrollDepth = () => {
+      // Önce mevcut max scroll'u kaydet
+      if (this.maxScrollDepth > 0) {
+        this.trackEvent({
+          eventName: 'scroll_depth_final',
+          eventCategory: 'engagement',
+          eventLabel: `${this.maxScrollDepth}%`,
+          properties: {
+            max_scroll_depth: this.maxScrollDepth,
+            page_path: window.location.pathname,
+            milestones_reached: Array.from(this.scrollMilestonesReached),
+          },
+        });
+      }
+      
+      this.maxScrollDepth = 0;
+      this.scrollMilestonesReached.clear();
+    };
+
+    // Next.js route değişikliklerinde resetle
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', resetScrollDepth);
+    }
+  }
+
+  /**
+   * Error Tracking - JavaScript hatalarını takip et
+   */
+  private setupErrorTracking(): void {
+    if (typeof window === 'undefined') return;
+
+    // Global error handler
+    window.onerror = (message, source, lineno, colno, error) => {
+      this.trackEvent({
+        eventName: 'js_error',
+        eventCategory: 'error',
+        eventLabel: String(message).slice(0, 200),
+        properties: {
+          error_message: String(message).slice(0, 500),
+          error_source: source,
+          error_line: lineno,
+          error_column: colno,
+          error_stack: error?.stack?.slice(0, 1000),
+          page_path: window.location.pathname,
+          user_agent: navigator.userAgent,
+        },
+      });
+      
+      // Don't prevent default error handling
+      return false;
+    };
+
+    // Unhandled promise rejection handler
+    window.onunhandledrejection = (event) => {
+      const reason = event.reason;
+      const message = reason instanceof Error ? reason.message : String(reason);
+      
+      this.trackEvent({
+        eventName: 'unhandled_rejection',
+        eventCategory: 'error',
+        eventLabel: message.slice(0, 200),
+        properties: {
+          error_message: message.slice(0, 500),
+          error_stack: reason instanceof Error ? reason.stack?.slice(0, 1000) : undefined,
+          page_path: window.location.pathname,
+          user_agent: navigator.userAgent,
+        },
+      });
+    };
+
+    // Network error tracking (fetch errors)
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const startTime = Date.now();
+      try {
+        const response = await originalFetch(...args);
+        
+        // Track failed API calls (4xx, 5xx)
+        if (!response.ok && response.status >= 400) {
+          const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof Request ? args[0].url : 'unknown';
+          
+          // Analytics endpoint'lerini takip etme (sonsuz döngü önle)
+          if (!url.includes('/api/analytics')) {
+            this.trackEvent({
+              eventName: 'api_error',
+              eventCategory: 'error',
+              eventLabel: `${response.status} ${url.slice(0, 100)}`,
+              properties: {
+                status_code: response.status,
+                url: url.slice(0, 200),
+                method: args[1]?.method || 'GET',
+                duration_ms: Date.now() - startTime,
+                page_path: window.location.pathname,
+              },
+            });
+          }
+        }
+        
+        return response;
+      } catch (error) {
+        const url = typeof args[0] === 'string' ? args[0] : args[0] instanceof Request ? args[0].url : 'unknown';
+        
+        // Analytics endpoint'lerini takip etme
+        if (!url.includes('/api/analytics')) {
+          this.trackEvent({
+            eventName: 'network_error',
+            eventCategory: 'error',
+            eventLabel: `Network error: ${url.slice(0, 100)}`,
+            properties: {
+              url: url.slice(0, 200),
+              method: args[1]?.method || 'GET',
+              error_message: error instanceof Error ? error.message : String(error),
+              duration_ms: Date.now() - startTime,
+              page_path: window.location.pathname,
+            },
+          });
+        }
+        
+        throw error;
+      }
+    };
+  }
+
+  /**
+   * Cart Abandonment Tracking - Sepette ürün varken sayfa terk edilirse takip et
+   */
+  private setupCartAbandonmentTracking(): void {
+    if (typeof window === 'undefined') return;
+
+    // Sepet durumunu periyodik kontrol et
+    const checkCartStatus = () => {
+      try {
+        const cartData = localStorage.getItem('cart') || localStorage.getItem('cartItems');
+        if (cartData) {
+          const cart = JSON.parse(cartData);
+          const hasItems = Array.isArray(cart) ? cart.length > 0 : (cart.items?.length > 0 || Object.keys(cart).length > 0);
+          this.hasItemsInCart = hasItems;
+        } else {
+          this.hasItemsInCart = false;
+        }
+      } catch {
+        this.hasItemsInCart = false;
+      }
+    };
+
+    // İlk kontrol
+    checkCartStatus();
+
+    // Storage değişikliklerini dinle
+    window.addEventListener('storage', checkCartStatus);
+    
+    // Her 5 saniyede bir kontrol et (başka tab'den değişiklik olabilir)
+    setInterval(checkCartStatus, 5000);
+
+    // Sayfa terk edilirken cart abandonment kontrolü
+    window.addEventListener('beforeunload', () => {
+      if (this.hasItemsInCart && !this.cartAbandonmentTracked) {
+        this.cartAbandonmentTracked = true;
+        
+        // Sepet içeriğini al
+        let cartItems: any[] = [];
+        let cartTotal = 0;
+        try {
+          const cartData = localStorage.getItem('cart') || localStorage.getItem('cartItems');
+          if (cartData) {
+            const cart = JSON.parse(cartData);
+            cartItems = Array.isArray(cart) ? cart : (cart.items || []);
+            cartTotal = cartItems.reduce((sum: number, item: any) => {
+              return sum + ((item.price || item.finalPrice || 0) * (item.quantity || 1));
+            }, 0);
+          }
+        } catch {
+          // ignore
+        }
+
+        // Eğer ödeme sayfasından çıkıyorsa, ödeme terk etme olarak kaydet
+        const isCheckoutPage = window.location.pathname.startsWith('/payment') || 
+                               window.location.pathname === '/sepet';
+        
+        // sendBeacon kullan (beforeunload'da daha güvenilir)
+        const eventData = {
+          sessionId: this.sessionData?.sessionId,
+          visitorId: this.sessionData?.visitorId,
+          eventName: isCheckoutPage ? 'checkout_abandonment' : 'cart_abandonment',
+          eventCategory: 'conversion',
+          eventLabel: `${cartItems.length} items - ${cartTotal.toFixed(2)} TL`,
+          properties: {
+            cart_items_count: cartItems.length,
+            cart_total: cartTotal,
+            cart_items: cartItems.slice(0, 5).map((item: any) => ({
+              id: item.id,
+              name: item.name?.slice(0, 50),
+              price: item.price || item.finalPrice,
+              quantity: item.quantity,
+            })),
+            exit_page: window.location.pathname,
+            time_on_site: Date.now() - (this.sessionData?.startedAt || Date.now()),
+            page_views_count: this.sessionData?.pageViews || 0,
+          },
+        };
+
+        // sendBeacon API kullan
+        if (navigator.sendBeacon) {
+          navigator.sendBeacon('/api/analytics/event', JSON.stringify(eventData));
+        }
+      }
+    });
+
+    // Visibility change'de de kontrol et (tab değiştirme)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && this.hasItemsInCart) {
+        this.trackEvent({
+          eventName: 'cart_visibility_hidden',
+          eventCategory: 'engagement',
+          eventLabel: 'Tab hidden with cart items',
+          properties: {
+            page_path: window.location.pathname,
+            time_on_page: Date.now() - (this.sessionData?.lastActivityAt || Date.now()),
+          },
+        });
+      }
+    });
   }
 
   /**
