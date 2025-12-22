@@ -149,11 +149,198 @@ class AnalyticsTracker {
         }
       });
 
+      // Otomatik tıklama takibi
+      this.setupClickTracking();
+
       // Queue'daki işlemleri işle
       this.processQueue();
     } catch (error) {
       console.error('Analytics init error:', error);
     }
+  }
+
+  /**
+   * Otomatik tıklama takibi kur
+   */
+  private setupClickTracking(): void {
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+
+      // Tıklanan elementi bul
+      const clickedElement = this.findTrackableElement(target);
+      if (!clickedElement) return;
+
+      // Koordinatları al
+      const rect = clickedElement.getBoundingClientRect();
+      const x = Math.round(e.clientX);
+      const y = Math.round(e.clientY);
+      const relativeX = Math.round(e.clientX - rect.left);
+      const relativeY = Math.round(e.clientY - rect.top);
+
+      // Element bilgilerini al
+      const elementInfo = this.getElementInfo(clickedElement);
+
+      // Önemli elementleri takip et
+      if (this.isImportantElement(clickedElement, elementInfo)) {
+        this.trackClick({
+          element: elementInfo.type,
+          elementId: elementInfo.id,
+          elementText: elementInfo.text,
+          elementClass: elementInfo.className,
+          href: elementInfo.href,
+          x,
+          y,
+          relativeX,
+          relativeY,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          scrollY: window.scrollY,
+        });
+      }
+    });
+  }
+
+  /**
+   * Takip edilebilir element bul
+   */
+  private findTrackableElement(target: HTMLElement): HTMLElement | null {
+    let element: HTMLElement | null = target;
+    
+    // 5 seviye yukarı çık
+    for (let i = 0; i < 5 && element; i++) {
+      if (
+        element.tagName === 'A' ||
+        element.tagName === 'BUTTON' ||
+        element.getAttribute('role') === 'button' ||
+        element.onclick ||
+        element.dataset.track
+      ) {
+        return element;
+      }
+      element = element.parentElement;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Element bilgilerini al
+   */
+  private getElementInfo(element: HTMLElement): {
+    type: string;
+    id: string;
+    text: string;
+    className: string;
+    href: string | null;
+  } {
+    const tagName = element.tagName.toLowerCase();
+    const id = element.id || element.dataset.trackId || '';
+    const text = (element.textContent || element.getAttribute('aria-label') || '').trim().substring(0, 100);
+    const className = element.className?.toString?.() || '';
+    const href = element.getAttribute('href');
+
+    // Tür belirle
+    let type = tagName;
+    if (element.dataset.track) {
+      type = element.dataset.track;
+    } else if (tagName === 'a') {
+      type = 'link';
+    } else if (tagName === 'button' || element.getAttribute('role') === 'button') {
+      type = 'button';
+    } else if (tagName === 'input') {
+      type = `input_${(element as HTMLInputElement).type}`;
+    }
+
+    return { type, id, text, className, href };
+  }
+
+  /**
+   * Önemli element mi kontrol et
+   */
+  private isImportantElement(element: HTMLElement, info: { type: string; className: string; href: string | null }): boolean {
+    // data-track özelliği varsa her zaman takip et
+    if (element.dataset.track) return true;
+
+    // Linkler
+    if (info.type === 'link' && info.href) {
+      // Dış linkler
+      if (!info.href.startsWith('/') && !info.href.startsWith('#')) return true;
+      // Önemli iç linkler
+      if (info.href.includes('/sepet') || 
+          info.href.includes('/payment') ||
+          info.href.includes('/hesabim') ||
+          info.href.includes('/siparis')) return true;
+    }
+
+    // Butonlar
+    if (info.type === 'button') {
+      const text = element.textContent?.toLowerCase() || '';
+      const className = info.className.toLowerCase();
+      
+      // Önemli butonlar
+      if (text.includes('sepet') || 
+          text.includes('ekle') ||
+          text.includes('satın') ||
+          text.includes('ödeme') ||
+          text.includes('devam') ||
+          text.includes('sipariş') ||
+          text.includes('kayıt') ||
+          text.includes('giriş') ||
+          className.includes('cart') ||
+          className.includes('checkout') ||
+          className.includes('buy') ||
+          className.includes('add')) return true;
+    }
+
+    // Sepet sayfasında her şeyi takip et
+    if (window.location.pathname === '/sepet') return true;
+
+    // Ödeme sayfasında her şeyi takip et
+    if (window.location.pathname.startsWith('/payment')) return true;
+
+    return false;
+  }
+
+  /**
+   * Tıklama event'i kaydet
+   */
+  trackClick(data: {
+    element: string;
+    elementId?: string;
+    elementText?: string;
+    elementClass?: string;
+    href?: string | null;
+    x: number;
+    y: number;
+    relativeX?: number;
+    relativeY?: number;
+    viewportWidth: number;
+    viewportHeight: number;
+    scrollY: number;
+    properties?: Record<string, any>;
+  }): void {
+    this.trackEvent({
+      eventName: 'click',
+      eventCategory: 'engagement',
+      eventLabel: data.element,
+      properties: {
+        element_type: data.element,
+        element_id: data.elementId,
+        element_text: data.elementText,
+        element_class: data.elementClass,
+        href: data.href,
+        click_x: data.x,
+        click_y: data.y,
+        relative_x: data.relativeX,
+        relative_y: data.relativeY,
+        viewport_width: data.viewportWidth,
+        viewport_height: data.viewportHeight,
+        scroll_y: data.scrollY,
+        page_path: window.location.pathname,
+        ...data.properties,
+      },
+    });
   }
 
   /**
@@ -163,6 +350,7 @@ class AnalyticsTracker {
     const sessionId = this.generateId('sess');
     const now = Date.now();
     
+    // Önce local state'i ayarla
     this.sessionData = {
       sessionId,
       visitorId,
@@ -178,7 +366,7 @@ class AnalyticsTracker {
     const utmParams = this.getUTMParams();
 
     try {
-      await fetch('/api/analytics/session', {
+      const response = await fetch('/api/analytics/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -191,8 +379,15 @@ class AnalyticsTracker {
           landingPage: window.location.pathname,
         }),
       });
+
+      // Eğer session oluşturulamazsa, local storage'ı temizle
+      if (!response.ok) {
+        console.error('Failed to create session, status:', response.status);
+        // Yine de devam et - session local'de var
+      }
     } catch (error) {
       console.error('Failed to start session:', error);
+      // Yine de devam et - session local'de var
     }
   }
 

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb } from '@/lib/supabase/analytics-client';
+import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
 
 // Type definitions
 interface RealtimeSession {
   id: string;
   visitor_id: string;
   device_type: string | null;
-  device_model: string | null;
   browser: string | null;
   os: string | null;
   country: string | null;
@@ -32,6 +31,10 @@ interface PageViewData {
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ count: 0, visitors: [], activePages: [], timestamp: new Date().toISOString() });
+    }
+
     const { searchParams } = new URL(request.url);
     const minutes = parseInt(searchParams.get('minutes') || '5');
 
@@ -44,7 +47,6 @@ export async function GET(request: NextRequest) {
         id,
         visitor_id,
         device_type,
-        device_model,
         browser,
         os,
         country,
@@ -95,7 +97,6 @@ export async function GET(request: NextRequest) {
       sessionId: s.id,
       visitorId: s.visitor_id,
       device: s.device_type,
-      deviceModel: s.device_model,
       browser: s.browser,
       os: s.os,
       location: s.city ? `${s.city}, ${s.country}` : s.country,

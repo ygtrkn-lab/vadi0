@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb } from '@/lib/supabase/analytics-client';
+import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
 import crypto from 'crypto';
 
 /**
@@ -8,6 +8,10 @@ import crypto from 'crypto';
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ success: false, error: 'Analytics disabled' }, { status: 503 });
+    }
+
     const body = await request.json();
     const {
       sessionId,
@@ -64,7 +68,6 @@ export async function POST(request: NextRequest) {
         ip_hash: ipHash,
         user_agent: userAgent,
         device_type: deviceType,
-        device_model: deviceModel,
         browser: browser,
         browser_version: browserVersion,
         os: os,
@@ -104,6 +107,10 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ success: false, error: 'Analytics disabled' }, { status: 503 });
+    }
+
     const body = await request.json();
     const { sessionId, customerId, converted, conversionValue, exitPage, ended } = body;
 
@@ -165,6 +172,10 @@ export async function PATCH(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ sessions: [], total: 0, limit: 50, offset: 0 });
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');

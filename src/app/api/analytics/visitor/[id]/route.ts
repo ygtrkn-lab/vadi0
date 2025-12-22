@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb } from '@/lib/supabase/analytics-client';
+import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
 
 // Type definitions
 interface SessionDetail {
@@ -80,6 +80,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ error: 'Analytics disabled' }, { status: 503 });
+    }
+
     const { id: visitorId } = await params;
 
     if (!visitorId) {

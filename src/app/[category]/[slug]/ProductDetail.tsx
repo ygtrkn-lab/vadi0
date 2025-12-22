@@ -14,6 +14,7 @@ import ProductDetailDesktop from "@/components/ProductDetailDesktop";
 import ProductGalleryDesktop from "@/components/ProductGalleryDesktop";
 import { useCart } from "@/context/CartContext";
 import { useCustomer } from "@/context/CustomerContext";
+import { useAnalytics } from "@/context/AnalyticsContext";
 
 type ProductDetailProps = {
   product: Product;
@@ -44,6 +45,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
 
   const { addToCart, setGlobalDeliveryInfo } = useCart();
   const { state: customerState, addToFavorites, removeFromFavorites, isFavorite } = useCustomer();
+  const { trackEvent } = useAnalytics();
   const customer = customerState.currentCustomer;
   const isWishlisted = customer ? isFavorite(customer.id, String(product.id)) : false;
 
@@ -52,6 +54,18 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     const valid = (gallery || []).filter((img) => img && img !== "" && !img.includes("placeholder"));
     return valid.length ? valid : [product.image];
   }, [product.gallery, product.image, product.hoverImage]);
+
+  // Track product view
+  useEffect(() => {
+    trackEvent('view_item', {
+      product_id: product.id,
+      product_name: product.name,
+      product_price: product.price,
+      product_category: categoryName,
+      product_slug: product.slug,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]); // Only track when product changes
 
   useEffect(() => {
     const onScroll = () => {
@@ -114,6 +128,18 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
       return;
     }
     addToCart(product);
+    
+    // Track add to cart event
+    trackEvent('add_to_cart', {
+      product_id: product.id,
+      product_name: product.name,
+      product_price: product.price,
+      product_category: categoryName,
+      quantity: quantity,
+      delivery_location: deliveryInfo?.location,
+      delivery_district: deliveryInfo?.district,
+    });
+    
     setIsAddedToCart(true);
     // Redirect to cart after a short delay to show success state
     setTimeout(() => {
@@ -128,8 +154,17 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     }
     if (isWishlisted) {
       removeFromFavorites(customer.id, String(product.id));
+      trackEvent('favorite_remove', {
+        product_id: product.id,
+        product_name: product.name,
+      });
     } else {
       addToFavorites(customer.id, String(product.id));
+      trackEvent('favorite_add', {
+        product_id: product.id,
+        product_name: product.name,
+        product_price: product.price,
+      });
     }
   };
 

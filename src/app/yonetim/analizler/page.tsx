@@ -66,6 +66,45 @@ interface StatsResponse {
   eventBreakdown: Record<string, number>;
 }
 
+interface ClickData {
+  totalClicks: number;
+  topElements: Array<{
+    id: string;
+    element: string;
+    text: string;
+    count: number;
+  }>;
+  cartClicks: {
+    total: number;
+    breakdown: Array<{ text: string; count: number }>;
+  };
+}
+
+interface CheckoutFlowData {
+  funnel: {
+    add_to_cart: number;
+    view_cart: number;
+    begin_checkout: number;
+    step_recipient: number;
+    step_message: number;
+    step_payment: number;
+    select_payment_method: number;
+    purchase: number;
+  };
+  conversionRates: {
+    cartToCheckout: string;
+    checkoutToPayment: string;
+    paymentToPurchase: string;
+    overall: string;
+  };
+  paymentMethods: Array<{ method: string; count: number }>;
+  cartActions: {
+    adds: number;
+    removes: number;
+    quantityChanges: number;
+  };
+}
+
 interface RealtimeVisitor {
   sessionId: string;
   visitorId: string;
@@ -89,6 +128,45 @@ interface RealtimeResponse {
   visitors: RealtimeVisitor[];
   activePages: Array<{ path: string; count: number }>;
   timestamp: string;
+}
+
+interface ClickData {
+  totalClicks: number;
+  topElements: Array<{
+    id: string;
+    element: string;
+    text: string;
+    count: number;
+  }>;
+  cartClicks: {
+    total: number;
+    breakdown: Array<{ text: string; count: number }>;
+  };
+}
+
+interface CheckoutFlowData {
+  funnel: {
+    add_to_cart: number;
+    view_cart: number;
+    begin_checkout: number;
+    step_recipient: number;
+    step_message: number;
+    step_payment: number;
+    select_payment_method: number;
+    purchase: number;
+  };
+  conversionRates: {
+    cartToCheckout: string;
+    checkoutToPayment: string;
+    paymentToPurchase: string;
+    overall: string;
+  };
+  paymentMethods: Array<{ method: string; count: number }>;
+  cartActions: {
+    adds: number;
+    removes: number;
+    quantityChanges: number;
+  };
 }
 
 // ============================================
@@ -497,6 +575,228 @@ function RealtimeVisitorsList({ visitors, isDark }: { visitors: RealtimeVisitor[
   );
 }
 
+// Click Analytics Component
+function ClickAnalytics({ data, isDark }: { data: ClickData | null; isDark: boolean }) {
+  if (!data) return null;
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <span className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+          👆
+        </span>
+        Tıklama Analizi
+      </h3>
+      
+      <div className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        {formatNumber(data.totalClicks)} <span className="text-sm font-normal opacity-60">toplam tıklama</span>
+      </div>
+
+      <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+        En Çok Tıklanan Elementler
+      </h4>
+      <div className="space-y-2 max-h-64 overflow-y-auto">
+        {data.topElements.slice(0, 10).map((item, idx) => (
+          <div 
+            key={idx}
+            className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+          >
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className={`w-5 h-5 flex items-center justify-center rounded text-xs font-medium ${
+                isDark ? 'bg-white/10 text-gray-300' : 'bg-gray-200 text-gray-600'
+              }`}>
+                {idx + 1}
+              </span>
+              <span className={`text-sm truncate ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                {item.text || item.id}
+              </span>
+              <span className={`text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-white/10 text-gray-400' : 'bg-gray-200 text-gray-500'}`}>
+                {item.element}
+              </span>
+            </div>
+            <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {item.count}
+            </span>
+          </div>
+        ))}
+      </div>
+    </SpotlightCard>
+  );
+}
+
+// Cart Click Details Component
+function CartClickDetails({ data, isDark }: { data: ClickData | null; isDark: boolean }) {
+  if (!data || data.cartClicks.total === 0) return null;
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <span className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+          🛒
+        </span>
+        Sepet Sayfası Tıklamaları
+      </h3>
+      
+      <div className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        {formatNumber(data.cartClicks.total)} <span className="text-sm font-normal opacity-60">sepet tıklaması</span>
+      </div>
+
+      <div className="space-y-2">
+        {data.cartClicks.breakdown.map((item, idx) => (
+          <div 
+            key={idx}
+            className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+          >
+            <span className={`text-sm truncate flex-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+              {item.text}
+            </span>
+            <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {item.count}
+            </span>
+          </div>
+        ))}
+      </div>
+    </SpotlightCard>
+  );
+}
+
+// Checkout Funnel Component
+function CheckoutFunnel({ data, isDark }: { data: CheckoutFlowData | null; isDark: boolean }) {
+  if (!data) return null;
+
+  const funnelSteps = [
+    { key: 'add_to_cart', label: 'Sepete Ekle', icon: '🛒', count: data.funnel.add_to_cart },
+    { key: 'begin_checkout', label: 'Ödeme Başlat', icon: '💳', count: data.funnel.begin_checkout },
+    { key: 'step_recipient', label: 'Alıcı Bilgisi', icon: '👤', count: data.funnel.step_recipient },
+    { key: 'step_message', label: 'Mesaj Kartı', icon: '✉️', count: data.funnel.step_message },
+    { key: 'step_payment', label: 'Ödeme Adımı', icon: '💰', count: data.funnel.step_payment },
+    { key: 'purchase', label: 'Satın Alma', icon: '✅', count: data.funnel.purchase },
+  ];
+
+  const maxCount = Math.max(...funnelSteps.map(s => s.count), 1);
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <span className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
+          📊
+        </span>
+        Satın Alma Hunisi
+      </h3>
+
+      <div className="space-y-3">
+        {funnelSteps.map((step, idx) => {
+          const widthPercent = (step.count / maxCount) * 100;
+          const dropOff = idx > 0 && funnelSteps[idx - 1].count > 0
+            ? ((funnelSteps[idx - 1].count - step.count) / funnelSteps[idx - 1].count * 100).toFixed(1)
+            : null;
+
+          return (
+            <div key={step.key} className="relative">
+              <div className="flex items-center gap-2 mb-1">
+                <span>{step.icon}</span>
+                <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                  {step.label}
+                </span>
+                <span className={`text-sm font-bold ml-auto ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {formatNumber(step.count)}
+                </span>
+                {dropOff && parseFloat(dropOff) > 0 && (
+                  <span className="text-xs text-red-500">
+                    -{dropOff}%
+                  </span>
+                )}
+              </div>
+              <div className={`h-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-400 transition-all duration-500"
+                  style={{ width: `${widthPercent}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Conversion Rates */}
+      <div className={`mt-6 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          Dönüşüm Oranları
+        </h4>
+        <div className="grid grid-cols-2 gap-3">
+          <div className={`p-3 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Sepet → Ödeme</p>
+            <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {data.conversionRates.cartToCheckout}%
+            </p>
+          </div>
+          <div className={`p-3 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Ödeme → Satın Alma</p>
+            <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {data.conversionRates.paymentToPurchase}%
+            </p>
+          </div>
+          <div className={`p-3 rounded-lg col-span-2 ${isDark ? 'bg-green-500/20' : 'bg-green-50'}`}>
+            <p className={`text-xs ${isDark ? 'text-green-300' : 'text-green-600'}`}>Genel Dönüşüm</p>
+            <p className={`text-xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+              {data.conversionRates.overall}%
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Methods */}
+      {data.paymentMethods.length > 0 && (
+        <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            Ödeme Yöntemi Tercihleri
+          </h4>
+          <div className="space-y-2">
+            {data.paymentMethods.map((pm) => (
+              <div 
+                key={pm.method}
+                className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+              >
+                <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                  {pm.method === 'credit_card' ? '💳 Kredi Kartı' : 
+                   pm.method === 'bank_transfer' ? '🏦 Havale/EFT' : pm.method}
+                </span>
+                <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {pm.count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cart Actions Summary */}
+      <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          Sepet İşlemleri
+        </h4>
+        <div className="grid grid-cols-3 gap-2">
+          <div className={`p-2 rounded-lg text-center ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+            <p className="text-lg">➕</p>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Ekleme</p>
+            <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{data.cartActions.adds}</p>
+          </div>
+          <div className={`p-2 rounded-lg text-center ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+            <p className="text-lg">➖</p>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Çıkarma</p>
+            <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{data.cartActions.removes}</p>
+          </div>
+          <div className={`p-2 rounded-lg text-center ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+            <p className="text-lg">🔄</p>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Miktar</p>
+            <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{data.cartActions.quantityChanges}</p>
+          </div>
+        </div>
+      </div>
+    </SpotlightCard>
+  );
+}
+
 // ============================================
 // Main Component
 // ============================================
@@ -505,6 +805,8 @@ export default function AnalizlerPage() {
   const { isDark } = useTheme();
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [realtime, setRealtime] = useState<RealtimeResponse | null>(null);
+  const [clickData, setClickData] = useState<ClickData | null>(null);
+  const [checkoutFlow, setCheckoutFlow] = useState<CheckoutFlowData | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -533,15 +835,39 @@ export default function AnalizlerPage() {
     }
   }, []);
 
+  const fetchClickData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/analytics/clicks?period=${period}&page=all`);
+      if (res.ok) {
+        const data = await res.json();
+        setClickData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch click data:', error);
+    }
+  }, [period]);
+
+  const fetchCheckoutFlow = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/analytics/checkout-flow?period=${period}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCheckoutFlow(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch checkout flow:', error);
+    }
+  }, [period]);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchStats(), fetchRealtime()]);
+      await Promise.all([fetchStats(), fetchRealtime(), fetchClickData(), fetchCheckoutFlow()]);
       setLoading(false);
     };
 
     loadData();
-  }, [fetchStats, fetchRealtime]);
+  }, [fetchStats, fetchRealtime, fetchClickData, fetchCheckoutFlow]);
 
   // Auto-refresh realtime data
   useEffect(() => {
@@ -602,6 +928,8 @@ export default function AnalizlerPage() {
               onClick={() => {
                 fetchStats();
                 fetchRealtime();
+                fetchClickData();
+                fetchCheckoutFlow();
               }}
               className={`p-2 rounded-lg transition-colors ${
                 isDark ? 'hover:bg-white/10 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
@@ -697,6 +1025,21 @@ export default function AnalizlerPage() {
                 <TopProductsTable products={stats?.topProducts || []} isDark={isDark} />
               </div>
             </div>
+
+            {/* Click & Checkout Analytics */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Checkout Funnel - Takes 2 columns */}
+              <div className="lg:col-span-2">
+                <CheckoutFunnel data={checkoutFlow} isDark={isDark} />
+              </div>
+
+              {/* Click Analytics */}
+              <div className="space-y-6">
+                <ClickAnalytics data={clickData} isDark={isDark} />
+                <CartClickDetails data={clickData} isDark={isDark} />
+              </div>
+            </div>
+
 
             {/* Active Visitors Detail */}
             {realtime && realtime.visitors.length > 0 && (

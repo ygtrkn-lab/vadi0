@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useCustomer, Address } from '@/context/CustomerContext';
 import { useOrder } from '@/context/OrderContext';
+import { useAnalytics } from '@/context/AnalyticsContext';
 import { Header, Footer } from '@/components';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -84,6 +85,7 @@ export default function SepetClient() {
   const { state, removeFromCart, updateQuantity, getTotalPrice, getTotalItems, clearCart } = useCart();
   const { state: customerState, addOrderToCustomer, addAddress } = useCustomer();
   const { createOrder } = useOrder();
+  const { trackEvent, trackBeginCheckout } = useAnalytics();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('cart');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -222,12 +224,92 @@ export default function SepetClient() {
     }));
   }, []);
 
+  // Track view_cart when component mounts with items
+  useEffect(() => {
+    if (state.items.length > 0) {
+      trackEvent({
+        eventName: 'view_cart',
+        eventCategory: 'ecommerce',
+        properties: {
+          cart_total: getTotalPrice(),
+          cart_items: getTotalItems(),
+          products: state.items.map(item => ({
+            id: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity
+          }))
+        }
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
   // Auto-populate guest phone from recipient phone on payment step
   useEffect(() => {
     if (currentStep === 'payment' && !isLoggedIn && recipientPhone && !guestPhone) {
       setGuestPhone(recipientPhone);
     }
   }, [currentStep, isLoggedIn, recipientPhone, guestPhone]);
+
+  // Track checkout step changes
+  useEffect(() => {
+    if (currentStep === 'recipient') {
+      // Sepet görüntülendi, alıcı bilgilerine geçildi
+      trackEvent({
+        eventName: 'checkout_step',
+        eventCategory: 'ecommerce',
+        eventLabel: 'recipient_info',
+        eventValue: 1,
+        properties: {
+          step: 'recipient',
+          step_number: 1,
+          cart_total: getTotalPrice(),
+          cart_items: getTotalItems(),
+        },
+      });
+    } else if (currentStep === 'message') {
+      trackEvent({
+        eventName: 'checkout_step',
+        eventCategory: 'ecommerce',
+        eventLabel: 'message_card',
+        eventValue: 2,
+        properties: {
+          step: 'message',
+          step_number: 2,
+          cart_total: getTotalPrice(),
+          recipient_name: recipientName,
+          delivery_district: district,
+        },
+      });
+    } else if (currentStep === 'payment') {
+      // Ödeme adımına geçildi - begin_checkout
+      trackBeginCheckout({
+        items: state.items.map(item => ({
+          id: item.product.id,
+          name: item.product.name,
+          price: item.product.price,
+          quantity: item.quantity,
+        })),
+        total: getTotalPrice(),
+      });
+      
+      trackEvent({
+        eventName: 'checkout_step',
+        eventCategory: 'ecommerce',
+        eventLabel: 'payment',
+        eventValue: 3,
+        properties: {
+          step: 'payment',
+          step_number: 3,
+          cart_total: getTotalPrice(),
+          cart_items: getTotalItems(),
+          is_gift: isGift,
+          has_message: !!messageCard,
+        },
+      });
+    }
+  }, [currentStep]);
 
   // Safety: whenever checkout selection error becomes visible, scroll to top
   useEffect(() => {
@@ -1298,14 +1380,38 @@ export default function SepetClient() {
                           <div className="flex items-center justify-between mt-2">
                             <div className="flex items-center gap-1 bg-white rounded-xl border border-gray-200">
                               <button
-                                onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                                onClick={() => {
+                                  updateQuantity(item.product.id, item.quantity - 1);
+                                  trackEvent({
+                                    eventName: 'cart_quantity_change',
+                                    eventCategory: 'ecommerce',
+                                    properties: {
+                                      action: 'decrease',
+                                      product_id: item.product.id,
+                                      product_name: item.product.name,
+                                      new_quantity: item.quantity - 1
+                                    }
+                                  });
+                                }}
                                 className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 active:scale-95 transition-transform"
                               >
                                 <Minus size={14} />
                               </button>
                               <span className="w-7 text-center text-sm font-semibold text-gray-800">{item.quantity}</span>
                               <button
-                                onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                                onClick={() => {
+                                  updateQuantity(item.product.id, item.quantity + 1);
+                                  trackEvent({
+                                    eventName: 'cart_quantity_change',
+                                    eventCategory: 'ecommerce',
+                                    properties: {
+                                      action: 'increase',
+                                      product_id: item.product.id,
+                                      product_name: item.product.name,
+                                      new_quantity: item.quantity + 1
+                                    }
+                                  });
+                                }}
                                 className="w-10 h-10 flex items-center justify-center text-gray-600 hover:text-gray-800 active:scale-95 transition-transform"
                               >
                                 <Plus size={14} />
@@ -1313,7 +1419,18 @@ export default function SepetClient() {
                             </div>
 
                             <button
-                              onClick={() => removeFromCart(item.product.id)}
+                              onClick={() => {
+                                trackEvent({
+                                  eventName: 'remove_from_cart',
+                                  eventCategory: 'ecommerce',
+                                  properties: {
+                                    product_id: item.product.id,
+                                    product_name: item.product.name,
+                                    quantity: item.quantity
+                                  }
+                                });
+                                removeFromCart(item.product.id);
+                              }}
                               className="p-3 -mr-2 text-gray-400 hover:text-red-500 transition-colors"
                             >
                               <Trash2 size={16} />
@@ -2719,7 +2836,18 @@ export default function SepetClient() {
                     {/* Kredi Kartı Seçeneği */}
                     <button
                       type="button"
-                      onClick={() => setSelectedPaymentMethod('credit_card')}
+                      onClick={() => {
+                        setSelectedPaymentMethod('credit_card');
+                        trackEvent({
+                          eventName: 'select_payment_method',
+                          eventCategory: 'ecommerce',
+                          eventLabel: 'credit_card',
+                          properties: {
+                            payment_method: 'credit_card',
+                            cart_total: getTotalPrice(),
+                          },
+                        });
+                      }}
                       className={`w-full border-2 rounded-xl p-4 transition-all text-left ${
                         selectedPaymentMethod === 'credit_card'
                           ? 'border-[#e05a4c] bg-[#e05a4c]/5'
@@ -2747,7 +2875,18 @@ export default function SepetClient() {
                     {/* Havale/EFT Seçeneği */}
                     <button
                       type="button"
-                      onClick={() => setSelectedPaymentMethod('bank_transfer')}
+                      onClick={() => {
+                        setSelectedPaymentMethod('bank_transfer');
+                        trackEvent({
+                          eventName: 'select_payment_method',
+                          eventCategory: 'ecommerce',
+                          eventLabel: 'bank_transfer',
+                          properties: {
+                            payment_method: 'bank_transfer',
+                            cart_total: getTotalPrice(),
+                          },
+                        });
+                      }}
                       className={`w-full border-2 rounded-xl p-4 transition-all text-left ${
                         selectedPaymentMethod === 'bank_transfer'
                           ? 'border-[#549658] bg-[#549658]/5'

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb } from '@/lib/supabase/analytics-client';
+import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
 
 /**
  * POST /api/analytics/event
@@ -7,6 +7,10 @@ import { analyticsDb } from '@/lib/supabase/analytics-client';
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ success: false, error: 'Analytics disabled' }, { status: 503 });
+    }
+
     const body = await request.json();
     const {
       sessionId,
@@ -26,6 +30,26 @@ export async function POST(request: NextRequest) {
         { error: 'sessionId, visitorId and eventName are required' },
         { status: 400 }
       );
+    }
+
+    // Önce session var mı kontrol et
+    const { data: existingSession } = await analyticsDb
+      .from('visitor_sessions')
+      .select('id')
+      .eq('id', sessionId)
+      .single();
+
+    // Session yoksa, önce session oluştur
+    if (!existingSession) {
+      await analyticsDb
+        .from('visitor_sessions')
+        .insert({
+          id: sessionId,
+          visitor_id: visitorId,
+          landing_page: pagePath || '/',
+          started_at: new Date().toISOString(),
+          last_activity_at: new Date().toISOString(),
+        });
     }
 
     // Event kaydet
@@ -84,6 +108,10 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ events: [], total: 0, limit: 100, offset: 0 });
+    }
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');

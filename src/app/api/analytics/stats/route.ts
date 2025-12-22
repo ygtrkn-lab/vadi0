@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb } from '@/lib/supabase/analytics-client';
+import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
 
 /**
  * GET /api/analytics/stats
@@ -7,6 +7,10 @@ import { analyticsDb } from '@/lib/supabase/analytics-client';
  */
 export async function GET(request: NextRequest) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ error: 'Analytics disabled' }, { status: 503 });
+    }
+
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '7d'; // 1d, 7d, 30d, 90d
     const startDate = searchParams.get('startDate');

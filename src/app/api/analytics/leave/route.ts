@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb } from '@/lib/supabase/analytics-client';
+import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
 
 /**
  * POST /api/analytics/leave
@@ -7,6 +7,10 @@ import { analyticsDb } from '@/lib/supabase/analytics-client';
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!isAnalyticsEnabled || !analyticsDb) {
+      return new NextResponse(null, { status: 200 }); // Beacon için sessizce başarılı dön
+    }
+
     // Beacon API text/plain gönderebilir
     const text = await request.text();
     const body = JSON.parse(text);
