@@ -173,14 +173,61 @@ export async function GET(request: NextRequest) {
       referral: 0,
       email: 0,
     };
+    
+    // Detaylı kaynak bilgisi (TikTok, Instagram, Facebook, Google vs.)
+    const detailedSources: Record<string, number> = {};
+    
     ((trafficSourcesResult.data || []) as TrafficRow[]).forEach(s => {
+      // Detaylı kaynak ekle
+      const source = s.utm_source || s.referrer_domain || 'direct';
+      const normalizedSource = source.toLowerCase()
+        .replace('www.', '')
+        .replace('.com', '')
+        .replace('.co', '')
+        .replace('.net', '')
+        .replace('.org', '');
+      
+      // Bilinen sosyal medya platformlarını normalize et
+      let displaySource = normalizedSource;
+      if (normalizedSource.includes('instagram') || normalizedSource.includes('ig')) {
+        displaySource = 'Instagram';
+      } else if (normalizedSource.includes('facebook') || normalizedSource.includes('fb')) {
+        displaySource = 'Facebook';
+      } else if (normalizedSource.includes('tiktok')) {
+        displaySource = 'TikTok';
+      } else if (normalizedSource.includes('twitter') || normalizedSource.includes('x.')) {
+        displaySource = 'Twitter/X';
+      } else if (normalizedSource.includes('google')) {
+        displaySource = 'Google';
+      } else if (normalizedSource.includes('bing')) {
+        displaySource = 'Bing';
+      } else if (normalizedSource.includes('yandex')) {
+        displaySource = 'Yandex';
+      } else if (normalizedSource.includes('linkedin')) {
+        displaySource = 'LinkedIn';
+      } else if (normalizedSource.includes('youtube')) {
+        displaySource = 'YouTube';
+      } else if (normalizedSource.includes('pinterest')) {
+        displaySource = 'Pinterest';
+      } else if (normalizedSource === 'direct' || !source || source === 'direct') {
+        displaySource = 'Doğrudan';
+      } else {
+        displaySource = source; // Orijinal kaynak adını kullan
+      }
+      
+      detailedSources[displaySource] = (detailedSources[displaySource] || 0) + 1;
+      
+      // Kategori bazlı gruplama
       if (s.utm_medium === 'cpc' || s.utm_medium === 'paid') {
         trafficSources.paid++;
       } else if (s.utm_medium === 'email') {
         trafficSources.email++;
-      } else if (['facebook', 'instagram', 'twitter', 'tiktok', 'linkedin'].includes(s.utm_source || '')) {
+      } else if (['facebook', 'instagram', 'twitter', 'tiktok', 'linkedin', 'youtube', 'pinterest'].some(
+        platform => (s.utm_source || '').toLowerCase().includes(platform) || 
+                    (s.referrer_domain || '').toLowerCase().includes(platform)
+      )) {
         trafficSources.social++;
-      } else if (s.referrer_domain?.match(/google|bing|yandex|yahoo/)) {
+      } else if (s.referrer_domain?.match(/google|bing|yandex|yahoo/i)) {
         trafficSources.organic++;
       } else if (s.referrer_domain) {
         trafficSources.referral++;
@@ -188,6 +235,12 @@ export async function GET(request: NextRequest) {
         trafficSources.direct++;
       }
     });
+    
+    // Detaylı kaynakları sırala
+    const topSources = Object.entries(detailedSources)
+      .map(([source, count]) => ({ source, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15);
 
     // Cihaz dağılımı
     const deviceStats: Record<string, number> = { desktop: 0, mobile: 0, tablet: 0 };
@@ -234,8 +287,11 @@ export async function GET(request: NextRequest) {
         revenue: totalRevenue,
       },
 
-      // Trafik kaynakları
+      // Trafik kaynakları (kategoriler)
       trafficSources,
+      
+      // Detaylı trafik kaynakları (TikTok, Instagram, Facebook vs.)
+      topSources,
 
       // Cihaz ve tarayıcı
       devices: deviceStats,

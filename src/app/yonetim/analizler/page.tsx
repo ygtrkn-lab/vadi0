@@ -58,6 +58,7 @@ interface StatsResponse {
   overview: OverviewStats;
   conversions: ConversionStats;
   trafficSources: Record<string, number>;
+  topSources: Array<{ source: string; count: number }>;
   devices: Record<string, number>;
   browsers: Record<string, number>;
   operatingSystems: Record<string, number>;
@@ -348,6 +349,76 @@ function TrafficSourcesChart({ data, isDark }: { data: Record<string, number>; i
               </span>
               <span className={`text-xs font-medium ml-auto ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {percent}%
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </SpotlightCard>
+  );
+}
+
+// Detaylı Trafik Kaynakları (TikTok, Instagram, Facebook vs.)
+function DetailedSourcesChart({ data, isDark }: { data: Array<{ source: string; count: number }>; isDark: boolean }) {
+  if (!data || data.length === 0) return null;
+
+  const total = data.reduce((sum, item) => sum + item.count, 0);
+
+  // Platform için ikon ve renk eşleştirmesi
+  const getSourceStyle = (source: string) => {
+    const s = source.toLowerCase();
+    if (s.includes('instagram')) return { icon: FaInstagram, color: 'text-pink-500', bg: 'bg-pink-500/20' };
+    if (s.includes('facebook')) return { icon: FaFacebook, color: 'text-blue-600', bg: 'bg-blue-600/20' };
+    if (s.includes('tiktok')) return { icon: FaTiktok, color: 'text-gray-900 dark:text-white', bg: 'bg-gray-500/20' };
+    if (s.includes('google')) return { icon: FaGoogle, color: 'text-red-500', bg: 'bg-red-500/20' };
+    if (s.includes('twitter') || s.includes('x.')) return { icon: HiOutlineGlobe, color: 'text-blue-400', bg: 'bg-blue-400/20' };
+    if (s.includes('youtube')) return { icon: HiOutlineGlobe, color: 'text-red-600', bg: 'bg-red-600/20' };
+    if (s.includes('linkedin')) return { icon: HiOutlineGlobe, color: 'text-blue-700', bg: 'bg-blue-700/20' };
+    if (s === 'doğrudan' || s === 'direct') return { icon: HiOutlineGlobe, color: 'text-gray-500', bg: 'bg-gray-500/20' };
+    return { icon: HiOutlineGlobe, color: 'text-purple-500', bg: 'bg-purple-500/20' };
+  };
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-500/20 to-purple-500/20 flex items-center justify-center">
+          📊
+        </span>
+        Ziyaretçi Kaynakları
+      </h3>
+      
+      <div className="space-y-2">
+        {data.slice(0, 10).map((item, idx) => {
+          const style = getSourceStyle(item.source);
+          const Icon = style.icon;
+          const percent = total > 0 ? ((item.count / total) * 100).toFixed(1) : '0';
+          
+          return (
+            <div 
+              key={idx}
+              className={`flex items-center gap-3 p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+            >
+              <div className={`w-8 h-8 rounded-lg ${style.bg} flex items-center justify-center`}>
+                <Icon className={`w-4 h-4 ${style.color}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {item.source}
+                  </span>
+                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {percent}%
+                  </span>
+                </div>
+                <div className={`h-1.5 mt-1 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                  <div 
+                    className={`h-full rounded-full ${style.bg.replace('/20', '')}`}
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+              </div>
+              <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {formatNumber(item.count)}
               </span>
             </div>
           );
@@ -1016,6 +1087,7 @@ export default function AnalizlerPage() {
               {/* Middle Column - Traffic & Events */}
               <div className="space-y-6">
                 <TrafficSourcesChart data={stats?.trafficSources || {}} isDark={isDark} />
+                <DetailedSourcesChart data={stats?.topSources || []} isDark={isDark} />
                 <EventBreakdown events={stats?.eventBreakdown || {}} isDark={isDark} />
               </div>
 
