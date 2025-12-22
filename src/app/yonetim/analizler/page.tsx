@@ -1042,6 +1042,43 @@ function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefine
         ))}
       </div>
 
+      {/* Errors by Page */}
+      {Object.keys(data.byPage).length > 0 && (
+        <div className={`border-t pt-4 mb-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            📍 Sayfalara Göre Hatalar
+          </h4>
+          <div className="space-y-2">
+            {Object.entries(data.byPage).slice(0, 8).map(([page, count]) => {
+              const maxCount = Math.max(...Object.values(data.byPage));
+              const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+              return (
+                <div key={page}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`text-xs truncate flex-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {page}
+                    </span>
+                    <span className={`text-xs font-medium ml-2 ${
+                      count > 10 ? 'text-red-500' : count > 5 ? 'text-yellow-500' : isDark ? 'text-gray-400' : 'text-gray-500'
+                    }`}>
+                      {count}
+                    </span>
+                  </div>
+                  <div className={`h-1.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                    <div 
+                      className={`h-full rounded-full ${
+                        count > 10 ? 'bg-red-500' : count > 5 ? 'bg-yellow-500' : 'bg-blue-500'
+                      }`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Recent Errors */}
       {data.recent.length > 0 && (
         <div className={`border-t pt-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
