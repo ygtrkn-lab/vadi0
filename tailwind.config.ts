@@ -87,6 +87,7 @@ export default {
         'shine': 'shine 5s linear infinite',
         'gradient': 'gradient 4s linear infinite',
         'shimmer': 'shimmer 2s linear infinite',
+        'shake': 'shake 0.5s ease-in-out',
         'star-movement-bottom': 'star-movement-bottom linear infinite alternate',
         'star-movement-top': 'star-movement-top linear infinite alternate',
       },
@@ -94,6 +95,11 @@ export default {
         marquee: {
           '0%': { transform: 'translateX(0%)' },
           '100%': { transform: 'translateX(-50%)' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-5px)' },
+          '20%, 40%, 60%, 80%': { transform: 'translateX(5px)' },
         },
         fadeIn: {
           '0%': { opacity: '0' },

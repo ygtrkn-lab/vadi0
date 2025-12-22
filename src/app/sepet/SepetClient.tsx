@@ -130,6 +130,7 @@ export default function SepetClient() {
   
   // Guest checkout mode selection
   const [checkoutMode, setCheckoutMode] = useState<'undecided' | 'guest' | 'login' | 'register'>('undecided');
+  const [checkoutModeError, setCheckoutModeError] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestPhoneError, setGuestPhoneError] = useState('');
@@ -227,6 +228,13 @@ export default function SepetClient() {
       setGuestPhone(recipientPhone);
     }
   }, [currentStep, isLoggedIn, recipientPhone, guestPhone]);
+
+  // Safety: whenever checkout selection error becomes visible, scroll to top
+  useEffect(() => {
+    if (checkoutModeError) {
+      scrollToTop();
+    }
+  }, [checkoutModeError]);
 
   const DELIVERY_TIME_SLOT_IDS = ['11:00-17:00', '17:00-22:00'] as const;
   type DeliveryTimeSlotId = (typeof DELIVERY_TIME_SLOT_IDS)[number];
@@ -682,7 +690,7 @@ export default function SepetClient() {
   const scrollToElement = (elementId: string) => {
     const element = document.getElementById(elementId);
     if (element) {
-      const offset = 100;
+      const offset = 20; // Daha az offset - element tam görünsün
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
       
@@ -691,16 +699,36 @@ export default function SepetClient() {
         behavior: 'smooth'
       });
 
-      if (typeof element.focus === 'function') {
-        element.focus({ preventScroll: true });
+      // Focus için tabindex ekle
+      if (!element.hasAttribute('tabindex')) {
+        element.setAttribute('tabindex', '-1');
       }
       
-      // Add highlight effect
+      // Kısa delay ile focus
+      setTimeout(() => {
+        if (typeof element.focus === 'function') {
+          element.focus({ preventScroll: true });
+        }
+      }, 300);
+      
+      // Add highlight effect - daha uzun süre
       element.classList.add('ring-2', 'ring-red-500', 'ring-offset-2');
       setTimeout(() => {
         element.classList.remove('ring-2', 'ring-red-500', 'ring-offset-2');
-      }, 2000);
+      }, 3000);
     }
+  };
+
+  // Scroll page to very top (for prominent error exposure)
+  const scrollToTop = () => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (_) {}
+    // Fallbacks for some browsers/containers
+    try {
+      document.documentElement?.scrollTo?.({ top: 0, behavior: 'smooth' } as any);
+      document.body?.scrollTo?.({ top: 0, behavior: 'smooth' } as any);
+    } catch (_) {}
   };
 
   const validateRecipientStep = (options?: { skipScroll?: boolean }): ValidationResult => {
@@ -769,7 +797,10 @@ export default function SepetClient() {
     if (!isLoggedIn) {
       // Önce mode seçilmiş mi kontrol et
       if (checkoutMode === 'undecided') {
-        const msg = 'Devam etmek için bir seçenek belirleyin';
+        const msg = 'Lütfen "Misafir Olarak Devam" veya "Üye Ol / Giriş Yap" seçeneklerinden birini seçin';
+        setCheckoutModeError(msg);
+        // Kullanıcı hatayı en üstte görsün
+        scrollToTop();
         firstId = 'checkout-mode';
         firstMessage = msg;
         return { ok: false, firstId, message: firstMessage };
@@ -862,7 +893,9 @@ export default function SepetClient() {
         
         const addressSaved = await addAddress(customerState.currentCustomer.id, newAddress);
         if (!addressSaved) {
-          console.warn('Adres kaydedilemedi, ancak sipariş devam ediyor.');
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('Adres kaydedilemedi, ancak sipariş devam ediyor.');
+          }
         }
       }
 
@@ -877,7 +910,9 @@ export default function SepetClient() {
       // For guest checkout, we don't create a customer record
       // Orders API accepts customer_id = null for guest orders
       if (!isLoggedIn) {
-        console.log('👤 Guest checkout - order will be created without customer_id');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('👤 Guest checkout - order will be created without customer_id');
+        }
       }
 
       // Create order with pending_payment status
@@ -915,7 +950,9 @@ export default function SepetClient() {
         throw new Error(orderResult.error || 'Sipariş oluşturulamadı');
       }
 
-      console.log('✅ Order created:', orderResult.order.id);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Order created:', orderResult.order.id);
+      }
 
       // Handle payment based on selected method
       if (selectedPaymentMethod === 'bank_transfer') {
@@ -958,7 +995,13 @@ export default function SepetClient() {
           throw new Error(paymentData.error || 'Payment initialization failed');
         }
 
-        console.log('✅ Payment initialized:', paymentData.paymentId);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Payment initialized:', paymentData.paymentId);
+        }
+
+        // Clear cart before redirecting to 3DS
+        // Order is already created, no need to keep items in cart
+        clearCart();
 
         // Redirect to 3DS page (full page, not modal)
         // This is e-commerce standard - callback will return to our site
@@ -1186,24 +1229,33 @@ export default function SepetClient() {
               >
                 {isEmpty ? (
                   /* Empty State */
-                  <div className="text-center py-16">
-                    <div className="w-20 h-20 mx-auto mb-6 bg-gray-50 rounded-full flex items-center justify-center">
-                      <ShoppingBag size={32} className="text-gray-300" />
-                    </div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                      Sepetiniz boş
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center py-20"
+                  >
+                    <motion.div 
+                      initial={{ scale: 0.8 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.1, type: "spring" }}
+                      className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-[#e05a4c]/10 to-[#e05a4c]/5 rounded-3xl flex items-center justify-center"
+                    >
+                      <ShoppingBag size={40} className="text-[#e05a4c]" />
+                    </motion.div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                      Sepetiniz Boş
                     </h2>
-                    <p className="text-gray-500 text-sm mb-6">
-                      Sevdiklerinize güzel bir sürpriz yapmaya ne dersiniz?
+                    <p className="text-gray-600 text-base mb-8 max-w-md mx-auto">
+                      Sevdiklerinize özel çiçekler ve hediyeler ile mutluluk gönderin ✨
                     </p>
                     <Link
                       href="/"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#e05a4c] text-white text-sm font-medium rounded-full hover:bg-[#cd3f31] transition-colors"
+                      className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-all hover:shadow-lg active:scale-95"
                     >
-                      <ArrowLeft size={16} />
+                      <ArrowLeft size={18} />
                       Alışverişe Başla
                     </Link>
-                  </div>
+                  </motion.div>
                 ) : (
                   <div className="space-y-4">
                     {/* Cart Items */}
@@ -1623,6 +1675,12 @@ export default function SepetClient() {
                                   // Delay to allow click on suggestion
                                   setTimeout(() => setNeighborhoodSearchOpen(false), 200);
                                 }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') {
+                                    setNeighborhoodSearchOpen(false);
+                                    setNeighborhoodSearch('');
+                                  }
+                                }}
                                 placeholder={loadingNeighborhoods ? "Mahalleler yükleniyor..." : "Mahalle ara veya seç..."}
                                 disabled={loadingNeighborhoods}
                                 autoComplete="off"
@@ -1665,6 +1723,15 @@ export default function SepetClient() {
                                             setNeighborhoodSearch('');
                                             setNeighborhoodSearchOpen(false);
                                             setRecipientErrors((prev) => ({ ...prev, neighborhood: undefined }));
+                                          }}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                              e.preventDefault();
+                                              setNeighborhood(n.name);
+                                              setNeighborhoodSearch('');
+                                              setNeighborhoodSearchOpen(false);
+                                              setRecipientErrors((prev) => ({ ...prev, neighborhood: undefined }));
+                                            }
                                           }}
                                           className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#e05a4c]/5 transition-colors flex items-center gap-2 ${
                                             neighborhood === n.name ? 'bg-[#e05a4c]/10 text-[#e05a4c]' : 'text-gray-700'
@@ -1956,8 +2023,11 @@ export default function SepetClient() {
                 <div className="mt-6">
                   <div className="max-w-2xl mx-auto flex gap-3">
                     <button
-                      onClick={() => setCurrentStep('cart')}
-                      className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                      onClick={() => {
+                        setCurrentStep('cart');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all active:scale-95"
                     >
                       Geri
                     </button>
@@ -1966,8 +2036,9 @@ export default function SepetClient() {
                         const check = validateRecipientStep();
                         if (!check.ok) return;
                         setCurrentStep('message');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="flex-1 py-3 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-all hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
                     >
                       İleri
                       <ChevronRight size={18} />
@@ -2075,8 +2146,11 @@ export default function SepetClient() {
                 <div className="mt-6">
                   <div className="max-w-2xl mx-auto flex gap-3">
                     <button
-                      onClick={() => setCurrentStep('recipient')}
-                      className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                      onClick={() => {
+                        setCurrentStep('recipient');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all active:scale-95"
                     >
                       Geri
                     </button>
@@ -2085,8 +2159,9 @@ export default function SepetClient() {
                         const check = validateRecipientStep();
                         if (!check.ok) return;
                         setCurrentStep('payment');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="flex-1 py-3 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 py-3 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-all hover:shadow-lg active:scale-95 flex items-center justify-center gap-2"
                     >
                       İleri
                       <ChevronRight size={18} />
@@ -2112,8 +2187,49 @@ export default function SepetClient() {
 
                 {/* Üye / Misafir Seçimi - Sadece giriş yapmamışsa göster */}
                 {!isLoggedIn && (
-                  <div className="space-y-3">
-                    <p className="text-xs font-medium text-gray-700">Nasıl devam etmek istersiniz?</p>
+                  <div id="checkout-mode" className="space-y-3">
+                    {/* Önemli Başlık */}
+                    <div className={`p-4 rounded-xl border-2 transition-all ${
+                      checkoutModeError
+                        ? 'border-red-500 bg-red-50 shadow-lg shadow-red-500/20 animate-[shake_0.5s_ease-in-out]' 
+                        : checkoutMode === 'undecided'
+                        ? 'border-red-300 bg-red-50/50 animate-pulse' 
+                        : 'border-blue-100 bg-blue-50'
+                    }`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                          checkoutModeError ? 'bg-red-600 animate-pulse' : 'bg-[#e05a4c]'
+                        }`}>
+                          <AlertCircle size={20} className="text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-base font-bold text-gray-900 flex items-center gap-2">
+                            Nasıl devam etmek istersiniz?
+                            <span className="text-red-600 text-lg">*</span>
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Lütfen aşağıdaki seçeneklerden birini seçin
+                          </p>
+                        </div>
+                      </div>
+                      {checkoutModeError && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="flex items-center gap-3 mt-3 bg-red-600 text-white rounded-xl px-4 py-3.5 shadow-lg"
+                        >
+                          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <AlertCircle size={18} className="animate-pulse" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-bold text-sm mb-0.5">Zorunlu Seçim!</p>
+                            <p className="text-xs opacity-95">
+                              {checkoutModeError}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
                     
                     {/* Seçim Kartları */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2122,29 +2238,40 @@ export default function SepetClient() {
                         type="button"
                         onClick={() => {
                           setCheckoutMode('guest');
+                          setCheckoutModeError('');
                           setInlineAuthStep('form');
                           setInlineAuthError('');
                         }}
-                        className={`p-4 rounded-xl border-2 transition-all text-left ${
+                        className={`p-4 rounded-xl border-2 transition-all text-left transform hover:scale-[1.02] hover:shadow-lg ${
                           checkoutMode === 'guest'
-                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500/20'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                            ? 'border-blue-500 bg-blue-50 ring-4 ring-blue-500/20 shadow-md'
+                            : checkoutModeError
+                            ? 'border-red-400 bg-red-50/30 animate-[shake_0.5s_ease-in-out] shadow-red-400/20 shadow-lg'
+                            : 'border-gray-200 hover:border-blue-300 bg-white'
                         }`}
                       >
                         <div className="flex items-center gap-3 mb-2">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            checkoutMode === 'guest' ? 'bg-blue-500' : 'bg-gray-100'
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
+                            checkoutMode === 'guest' ? 'bg-blue-500 scale-110' : 'bg-gray-100'
                           }`}>
-                            <User size={20} className={checkoutMode === 'guest' ? 'text-white' : 'text-gray-500'} />
+                            <User size={22} className={checkoutMode === 'guest' ? 'text-white' : 'text-gray-500'} />
                           </div>
                           <div>
-                            <p className={`font-semibold ${checkoutMode === 'guest' ? 'text-blue-700' : 'text-gray-700'}`}>
+                            <p className={`font-bold text-base ${
+                              checkoutMode === 'guest' ? 'text-blue-700' : 'text-gray-700'
+                            }`}>
                               Misafir Olarak Devam
                             </p>
-                            <p className="text-[10px] text-gray-500">Kayıt olmadan • Sadece 2 dakika</p>
+                            <p className="text-[11px] text-gray-500">🚀 Kayıt olmadan • Hemen</p>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500">E-posta ve telefon ile sipariş takibi yapabilirsiniz</p>
+                        <p className="text-xs text-gray-600">E-posta ve telefon ile sipariş takibi yapabilirsiniz</p>
+                        {checkoutMode === 'guest' && (
+                          <div className="mt-2 flex items-center gap-1 text-blue-600">
+                            <Check size={14} strokeWidth={3} />
+                            <span className="text-xs font-semibold">Seçildi</span>
+                          </div>
+                        )}
                       </button>
 
                       {/* Üye Ol / Giriş Yap */}
@@ -2152,29 +2279,40 @@ export default function SepetClient() {
                         type="button"
                         onClick={() => {
                           setCheckoutMode('login');
+                          setCheckoutModeError('');
                           setInlineAuthStep('form');
                           setInlineAuthError('');
                         }}
-                        className={`p-4 rounded-xl border-2 transition-all text-left ${
+                        className={`p-4 rounded-xl border-2 transition-all text-left transform hover:scale-[1.02] hover:shadow-lg ${
                           checkoutMode === 'login' || checkoutMode === 'register'
-                            ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500/20'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                            ? 'border-emerald-500 bg-emerald-50 ring-4 ring-emerald-500/20 shadow-md'
+                            : checkoutModeError
+                            ? 'border-red-400 bg-red-50/30 animate-[shake_0.5s_ease-in-out] shadow-red-400/20 shadow-lg'
+                            : 'border-gray-200 hover:border-emerald-300 bg-white'
                         }`}
                       >
                         <div className="flex items-center gap-3 mb-2">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                            checkoutMode === 'login' || checkoutMode === 'register' ? 'bg-emerald-500' : 'bg-gray-100'
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
+                            checkoutMode === 'login' || checkoutMode === 'register' ? 'bg-emerald-500 scale-110' : 'bg-gray-100'
                           }`}>
-                            <Check size={20} className={checkoutMode === 'login' || checkoutMode === 'register' ? 'text-white' : 'text-gray-500'} />
+                            <Check size={22} className={checkoutMode === 'login' || checkoutMode === 'register' ? 'text-white' : 'text-gray-500'} />
                           </div>
                           <div>
-                            <p className={`font-semibold ${checkoutMode === 'login' || checkoutMode === 'register' ? 'text-emerald-700' : 'text-gray-700'}`}>
+                            <p className={`font-bold text-base ${
+                              checkoutMode === 'login' || checkoutMode === 'register' ? 'text-emerald-700' : 'text-gray-700'
+                            }`}>
                               Üye Ol veya Giriş Yap
                             </p>
-                            <p className="text-[10px] text-gray-500">Siparişlerinizi takip edin</p>
+                            <p className="text-[11px] text-gray-500">⭐ Siparişlerinizi takip edin</p>
                           </div>
                         </div>
-                        <p className="text-xs text-gray-500">Adres defteri, sipariş geçmişi ve daha fazlası</p>
+                        <p className="text-xs text-gray-600">Adres defteri, sipariş geçmişi ve daha fazlası</p>
+                        {(checkoutMode === 'login' || checkoutMode === 'register') && (
+                          <div className="mt-2 flex items-center gap-1 text-emerald-600">
+                            <Check size={14} strokeWidth={3} />
+                            <span className="text-xs font-semibold">Seçildi</span>
+                          </div>
+                        )}
                       </button>
                     </div>
 
@@ -2543,7 +2681,15 @@ export default function SepetClient() {
                       <p className="text-sm font-medium text-gray-900">{recipientName}</p>
                       <p className="text-xs text-gray-600">{recipientAddress}</p>
                     </div>
-                    <button onClick={() => setCurrentStep('recipient')} className="text-xs text-[#e05a4c]">Düzenle</button>
+                    <button 
+                      onClick={() => {
+                        setCurrentStep('recipient');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }} 
+                      className="text-xs text-[#e05a4c] hover:text-[#cd3f31] font-medium transition-colors"
+                    >
+                      Düzenle
+                    </button>
                   </div>
 
                   {messageCard && (
@@ -2553,7 +2699,15 @@ export default function SepetClient() {
                         <p className="text-xs text-gray-500">Mesaj Kartı</p>
                         <p className="text-sm text-gray-700 italic truncate">&ldquo;{messageCard}&rdquo;</p>
                       </div>
-                      <button onClick={() => setCurrentStep('message')} className="text-xs text-[#e05a4c]">Düzenle</button>
+                      <button 
+                        onClick={() => {
+                          setCurrentStep('message');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }} 
+                        className="text-xs text-[#e05a4c] hover:text-[#cd3f31] font-medium transition-colors"
+                      >
+                        Düzenle
+                      </button>
                     </div>
                   )}
                 </div>
@@ -2748,34 +2902,40 @@ export default function SepetClient() {
                     <div className="max-w-2xl mx-auto">
                       <div className="flex gap-3">
                         <button
-                          onClick={() => setCurrentStep('message')}
-                          className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                          onClick={() => {
+                            setCurrentStep('message');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all active:scale-95"
                         >
                           Geri
                         </button>
                         <button
                           onClick={handleCompleteOrder}
                           disabled={isProcessing}
-                          className={`flex-1 py-3.5 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          className={`relative flex-1 py-3.5 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                             selectedPaymentMethod === 'bank_transfer' 
-                              ? 'bg-[#549658] hover:bg-[#468a4a]' 
-                              : 'bg-[#e05a4c] hover:bg-[#cd3f31]'
-                          }`}
+                              ? 'bg-[#549658] hover:bg-[#468a4a] active:scale-95' 
+                              : 'bg-[#e05a4c] hover:bg-[#cd3f31] active:scale-95'
+                          } ${isProcessing ? 'shadow-xl' : 'hover:shadow-lg'}`}
                         >
+                          {isProcessing && (
+                            <div className="absolute inset-0 bg-black/10 rounded-xl animate-pulse" />
+                          )}
                           {isProcessing ? (
                             <>
                               <Loader2 size={18} className="animate-spin" />
-                              İşleniyor...
+                              <span>İşleniyor...</span>
                             </>
                           ) : selectedPaymentMethod === 'bank_transfer' ? (
                             <>
                               <Check size={18} />
-                              Siparişi Tamamla
+                              <span>Siparişi Tamamla</span>
                             </>
                           ) : (
                             <>
                               <CreditCard size={18} />
-                              Ödemeyi Yap
+                              <span>Ödemeyi Yap</span>
                             </>
                           )}
                         </button>
