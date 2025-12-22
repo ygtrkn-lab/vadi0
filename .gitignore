@@ -72,20 +72,32 @@ test-email.js
 # Migration scripts and docs
 /scripts/
 /taslak/
-CLOUDINARY_MIGRATION.md
-CLOUDINARY_UPLOAD_PRESET.md
-cloudinary-migration-map.json
-DEPLOYMENT_READY.md
-IMPLEMENTATION_COMPLETE.md
-IMPLEMENTATION_SUMMARY.md
-migration plan.md
-supabase migration.txt
-SUPABASE_MIGRATION_COMPLETE.md
-SUPABASE_MIGRATION.md
-SUPABASE_QUICKSTART.md
-SUPABASE_SUMMARY.md
-supabase-rls-fix.sql
-ANA_SITE_KATEGORI_SISTEM.md
-planosevio.dockerfile
+*.md
+!README.md
+
+# Utility scripts
+generate-favicons.js
+*.backup
+*.sql
+
+# Test and config files
+test-*.js
+check-*.js
+create-*.js
+nuke-*.js
+delete-*.js
+recreate-*.js
+*.postman_collection.json
+
+# Documentation and planning
+DESKTOP_REDESIGN_SUMMARY.md
+PAYMENT_405_FIX.md
+RECOVERY_SCRIPT_GUIDE.md
+VERCEL_DEPLOYMENT.md
+seo planı.md
+iyzico entegrasyon planı.md
+test-email-flow-simple.md
+Tüm siparişler için yalnızca teslim günü çalışacak olan sistem.md
+figma css.css
 
 .vercel
