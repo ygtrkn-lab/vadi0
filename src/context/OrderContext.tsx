@@ -25,6 +25,7 @@ function getOrderTimeGroupForNewOrder(): 'noon' | 'evening' | 'overnight' {
 export type OrderStatus =
   | 'pending'
   | 'pending_payment'
+  | 'awaiting_payment'
   | 'payment_failed'
   | 'confirmed'
   | 'processing'

@@ -246,6 +246,14 @@ export default function Footer() {
         {/* Divider */}
         <div className="border-t border-gray-200 mb-6 sm:mb-8"></div>
 
+        {/* Visible SEO tagline */}
+        <div className="mb-6 sm:mb-8 text-center">
+          <p className="text-xs sm:text-sm text-gray-600">
+            Vadiler Çiçek — İstanbul’da online çiçek siparişi, aynı gün teslimat ve uygun çiçek fiyatlarıyla
+            güvendesiniz. Gül buketi, aranjman, orkide ve doğum günü çiçeklerinde hızlı teslimat.
+          </p>
+        </div>
+
         {/* Payment Methods Band */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-center">
@@ -318,6 +326,14 @@ export default function Footer() {
             </div>
           </div>
         </div>
+
+        {/* SEO helper text (visually hidden, accessible) */}
+        <p className="sr-only">
+          Vadiler Çiçek: İstanbul online çiçek siparişi, uygun çiçek fiyatları, aynı gün teslimat, 
+          gül buketi, orkide, lilyum, papatya, aranjmanlar, doğum günü çiçeği, sevgililer günü
+          çiçekleri, açılış çiçekleri ve kurumsal çiçek gönderimi. Güvenli ödeme, hızlı teslimat,
+          kaliteli çiçekler ve müşteri memnuniyeti ile Vadiler.com.
+        </p>
       </div>
     </footer>
   );

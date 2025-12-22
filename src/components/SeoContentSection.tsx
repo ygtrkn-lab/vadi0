@@ -1,3 +1,4 @@
+import Link from 'next/link';
 const SeoContentSection = () => {
   return (
     <section className="bg-white py-12 lg:py-16">
@@ -71,6 +72,17 @@ const SeoContentSection = () => {
             <p>
               Kaliteli çiçek aranjmanları, hızlı teslimat hizmeti, güvenli alışveriş süreci ve müşteri odaklı yaklaşımıyla Vadiler Çiçek, Türkiye'nin en iyi çiçek gönderme sitesi seçenekleri arasında yer almayı başarıyor. Sevdiklerinizi mutlu etmek için daha fazla beklemeyin. Vadiler Çiçek ile hemen çiçek gönderin ve zarafeti hissettirin.
             </p>
+
+            {/* Internal links for topical relevance */}
+            <div className="not-prose mt-6">
+              <div className="flex flex-wrap gap-2">
+                <Link href="/guller" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Güller</Link>
+                <Link href="/aranjmanlar" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Aranjmanlar</Link>
+                <Link href="/orkideler" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Orkideler</Link>
+                <Link href="/dogum-gunu" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Doğum Günü</Link>
+                <Link href="/sehir/istanbul" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">İstanbul Çiçek Gönder</Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

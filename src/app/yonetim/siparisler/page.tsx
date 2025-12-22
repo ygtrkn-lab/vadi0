@@ -29,6 +29,7 @@ import {
 const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'info' | 'pending' | 'success' | 'error'; icon: React.ReactNode }> = {
   pending: { label: 'Beklemede', variant: 'warning', icon: <HiOutlineClock className="w-4 h-4" /> },
   pending_payment: { label: 'Ödeme Bekleniyor', variant: 'pending', icon: <HiOutlineClock className="w-4 h-4" /> },
+  awaiting_payment: { label: 'Havale Bekleniyor', variant: 'warning', icon: <HiOutlineCurrencyDollar className="w-4 h-4" /> },
   payment_failed: { label: 'Ödeme Başarısız', variant: 'error', icon: <HiOutlineXCircle className="w-4 h-4" /> },
   confirmed: { label: 'Onaylandı', variant: 'info', icon: <HiOutlineCheckCircle className="w-4 h-4" /> },
   processing: { label: 'Hazırlanıyor', variant: 'info', icon: <HiOutlineClipboardList className="w-4 h-4" /> },
@@ -1065,6 +1066,50 @@ export default function SiparislerPage() {
               </div>
               )}
 
+              {/* Bank Transfer Payment Confirmation */}
+              {selectedOrder.payment?.method === 'bank_transfer' && selectedOrder.payment?.status !== 'paid' && (
+                <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'}`}>
+                  <p className={`text-sm font-medium mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>🏦 Havale Ödeme Onayı</p>
+                  <p className={`text-xs mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+                    Müşteriden havale ödemesi alındıysa aşağıdaki butona tıklayarak onaylayın. Onay sonrası müşteriye sipariş onay e-postası gönderilecektir.
+                  </p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/orders/confirm-bank-payment', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ orderId: selectedOrder.id }),
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                          setSelectedOrder(prev => prev ? {
+                            ...prev,
+                            status: 'confirmed',
+                            payment: { ...prev.payment!, status: 'paid', paidAt: new Date().toISOString() },
+                            timeline: [
+                              ...prev.timeline,
+                              { status: 'confirmed', timestamp: new Date().toISOString(), note: 'Havale ödemesi onaylandı' }
+                            ]
+                          } : null);
+                          alert('Ödeme onaylandı ve müşteriye bildirim gönderildi!');
+                          window.location.reload();
+                        } else {
+                          alert(data.error || 'Bir hata oluştu');
+                        }
+                      } catch (err) {
+                        console.error(err);
+                        alert('Bir hata oluştu');
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <HiOutlineCheckCircle className="w-5 h-5" />
+                    Havale Ödemesini Onayla
+                  </button>
+                </div>
+              )}
+
               {/* Timeline */}
               {selectedOrder.timeline && selectedOrder.timeline.length > 0 && (
               <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
@@ -1076,6 +1121,8 @@ export default function SiparislerPage() {
                         entry.status === 'delivered' ? 'bg-emerald-400' :
                         entry.status === 'cancelled' ? 'bg-red-400' :
                         entry.status === 'shipped' ? 'bg-purple-400' :
+                        entry.status === 'awaiting_payment' ? 'bg-amber-400' :
+                        entry.status === 'confirmed' ? 'bg-emerald-400' :
                         'bg-blue-400'
                       }`} />
                       <div>
