@@ -690,6 +690,38 @@ export function FeaturedBannerGrid() {
                       from-gray-900/60 via-gray-900/20 to-transparent 
                       group-hover:from-gray-900/70 transition-all duration-500" />
                   </>
+                ) : category.slug === 'lilyumlar' ? (
+                  <>
+                    <Image
+                      src="https://res.cloudinary.com/dgdl1vdao/image/upload/v1766423482/Inspirational_Female_Novel_Poem_Book_Cover_oluwdd.webp"
+                      alt={category.name}
+                      fill
+                      loading="lazy"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      quality={75}
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    {/* Lighter gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t 
+                      from-gray-900/60 via-gray-900/20 to-transparent 
+                      group-hover:from-gray-900/70 transition-all duration-500" />
+                  </>
+                ) : category.slug === 'papatyalar' ? (
+                  <>
+                    <Image
+                      src="https://res.cloudinary.com/dgdl1vdao/image/upload/v1766424365/Yellow_Red_Modern_Illustrative_Stationery_Shop_Instagram_Reels_Video_Promo_yqhf9b.webp"
+                      alt={category.name}
+                      fill
+                      loading="lazy"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      quality={75}
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    {/* Lighter gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t 
+                      from-gray-900/60 via-gray-900/20 to-transparent 
+                      group-hover:from-gray-900/70 transition-all duration-500" />
+                  </>
                 ) : category.image ? (
                   <>
                     <Image

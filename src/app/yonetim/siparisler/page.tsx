@@ -105,10 +105,12 @@ export default function SiparislerPage() {
   }, [orderState.orders, selectedStatus, searchTerm, dateFilter, onlyPaid, todayToPrepare]);
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const paginatedOrders = filteredOrders.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const paginatedOrders = useMemo(() => {
+    return filteredOrders.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filteredOrders, currentPage, itemsPerPage]);
 
   const stats = useMemo(() => {
     const orders = orderState.orders;
@@ -489,20 +491,6 @@ export default function SiparislerPage() {
                   >
                     {onlyPaid ? 'Sadece ödenenler: Açık' : 'Sadece ödenenler'}
                   </button>
-                  <button
-                    onClick={() => {
-                      setTodayToPrepare(!todayToPrepare);
-                      setCurrentPage(1);
-                      setShowFilters(false);
-                    }}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-                      todayToPrepare
-                        ? (isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200')
-                        : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800' : 'bg-white text-gray-600 border-gray-200')
-                    }`}
-                  >
-                    {todayToPrepare ? 'Bugün hazırlanacak: Açık' : 'Bugün hazırlanacak'}
-                  </button>
                 </div>
               </motion.div>
             )}
@@ -534,7 +522,7 @@ export default function SiparislerPage() {
       </FadeContent>
 
       {/* Orders List */}
-      {orderState.isLoading && (
+      {orderState.isLoading ? (
         <FadeContent direction="up" delay={0.35}>
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -545,10 +533,11 @@ export default function SiparislerPage() {
             ))}
           </div>
         </FadeContent>
-      )}
-      <FadeContent direction="up" delay={0.35}>
-        <div className="space-y-3">
-          {paginatedOrders.map((order, index) => {
+      ) : (
+        paginatedOrders.length > 0 && (
+          <FadeContent direction="up" delay={0.35}>
+            <div className="space-y-3">
+              {paginatedOrders.map((order, index) => {
             const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
             const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
             const displayCustomerPhone = (order.customerPhone || '').trim() || customer?.phone || '-';
@@ -669,6 +658,8 @@ export default function SiparislerPage() {
           })}
         </div>
       </FadeContent>
+        )
+      )}
 
       {/* Empty State */}
       {!orderState.isLoading && filteredOrders.length === 0 && (
