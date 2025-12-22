@@ -26,6 +26,15 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineViewList,
   HiOutlineXCircle,
+  HiOutlineX,
+  HiOutlineChevronDown,
+  HiOutlineChevronUp,
+  HiOutlineExternalLink,
+  HiOutlineCode,
+  HiOutlineClipboard,
+  HiOutlineCheckCircle,
+  HiOutlineInformationCircle,
+  HiOutlineFilter,
 } from 'react-icons/hi';
 import { 
   FaFacebook, 
@@ -286,6 +295,354 @@ function StatCard({
           <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isDark ? 'text-white' : 'text-gray-600'}`} />
         </div>
       </div>
+    </SpotlightCard>
+  );
+}
+
+// ============================================
+// Critical Metrics Card - Öne Çıkan Metrikler
+// ============================================
+
+function CriticalMetricsCard({
+  realtime,
+  errors,
+  cartAbandonment,
+  conversionRate,
+  isDark
+}: {
+  realtime: number;
+  errors: number;
+  cartAbandonment: number;
+  conversionRate: number;
+  isDark: boolean;
+}) {
+  const metrics = [
+    {
+      label: 'Anlık Ziyaretçi',
+      value: realtime,
+      icon: '🟢',
+      color: 'from-green-500 to-emerald-600',
+      bgColor: isDark ? 'bg-green-500/10' : 'bg-green-50',
+      textColor: 'text-green-500',
+      isLive: true,
+    },
+    {
+      label: 'Dönüşüm Oranı',
+      value: `${conversionRate.toFixed(1)}%`,
+      icon: '📈',
+      color: 'from-blue-500 to-indigo-600',
+      bgColor: isDark ? 'bg-blue-500/10' : 'bg-blue-50',
+      textColor: 'text-blue-500',
+    },
+    {
+      label: 'Sepet Terk',
+      value: cartAbandonment,
+      icon: '🛒',
+      color: 'from-orange-500 to-amber-600',
+      bgColor: isDark ? 'bg-orange-500/10' : 'bg-orange-50',
+      textColor: 'text-orange-500',
+      isWarning: cartAbandonment > 50,
+    },
+    {
+      label: 'Hatalar',
+      value: errors,
+      icon: '⚠️',
+      color: 'from-red-500 to-rose-600',
+      bgColor: isDark ? 'bg-red-500/10' : 'bg-red-50',
+      textColor: errors > 0 ? 'text-red-500' : 'text-green-500',
+      isDanger: errors > 10,
+    },
+  ];
+
+  return (
+    <div className={`relative overflow-hidden rounded-2xl ${isDark ? 'bg-white/5' : 'bg-white'} p-4 sm:p-6 border ${isDark ? 'border-white/10' : 'border-gray-200'} shadow-xl`}>
+      {/* Animated gradient background */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute -inset-full animate-[spin_20s_linear_infinite] bg-gradient-conic from-blue-500 via-purple-500 to-blue-500" />
+      </div>
+      
+      <div className="relative">
+        <div className="flex items-center gap-2 mb-4">
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20 flex items-center justify-center`}>
+            <span className="text-xl">📊</span>
+          </div>
+          <div>
+            <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Kritik Metrikler
+            </h2>
+            <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+              Anlık önemli göstergeler
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {metrics.map((metric, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className={`relative p-4 rounded-xl ${metric.bgColor} ${metric.isDanger ? 'ring-2 ring-red-500/30 animate-pulse' : ''}`}
+            >
+              {/* Live indicator */}
+              {metric.isLive && (
+                <span className="absolute top-2 right-2 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+              )}
+              
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">{metric.icon}</span>
+                <span className={`text-xs font-medium ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+                  {metric.label}
+                </span>
+              </div>
+              
+              <p className={`text-2xl sm:text-3xl font-bold ${metric.textColor}`}>
+                {typeof metric.value === 'number' ? (
+                  <AnimatedCounter value={metric.value} />
+                ) : (
+                  metric.value
+                )}
+              </p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// All Visitors Panel - Tüm Ziyaretçiler
+// ============================================
+
+function AllVisitorsPanel({
+  visitors,
+  isDark,
+  showAll,
+  onToggleShowAll
+}: {
+  visitors: RealtimeVisitor[];
+  isDark: boolean;
+  showAll: boolean;
+  onToggleShowAll: () => void;
+}) {
+  const [sortBy, setSortBy] = useState<'duration' | 'pageViews'>('duration');
+  const [filterDevice, setFilterDevice] = useState<string>('all');
+  
+  const sortedVisitors = [...visitors].sort((a, b) => {
+    if (sortBy === 'duration') return b.duration - a.duration;
+    return b.pageViews - a.pageViews;
+  });
+  
+  const filteredVisitors = filterDevice === 'all' 
+    ? sortedVisitors 
+    : sortedVisitors.filter(v => v.device === filterDevice);
+  
+  const displayVisitors = showAll ? filteredVisitors : filteredVisitors.slice(0, 5);
+  
+  // En uzun oturumlar
+  const longestSessions = [...visitors].sort((a, b) => b.duration - a.duration).slice(0, 3);
+
+  if (visitors.length === 0) {
+    return (
+      <SpotlightCard className="p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <HiOutlineUsers className={`w-5 h-5 ${isDark ? 'text-white/70' : 'text-gray-500'}`} />
+          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Ziyaretçiler
+          </h3>
+        </div>
+        <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className="text-4xl mb-3">👻</div>
+          <p className="text-sm font-medium">Şu anda aktif ziyaretçi yok</p>
+          <p className="text-xs opacity-70 mt-1">Birazdan kontrol edin</p>
+        </div>
+      </SpotlightCard>
+    );
+  }
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className={`w-8 h-8 rounded-lg ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'} flex items-center justify-center`}>
+            <HiOutlineUsers className="w-5 h-5 text-blue-500" />
+          </div>
+          <div>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Aktif Ziyaretçiler
+            </h3>
+            <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+              {visitors.length} kişi sitede
+            </p>
+          </div>
+        </div>
+        
+        <button
+          onClick={onToggleShowAll}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1 transition-colors ${
+            isDark 
+              ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' 
+              : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+          }`}
+        >
+          {showAll ? 'Gizle' : 'Tümünü Gör'}
+          {showAll ? <HiOutlineChevronUp className="w-4 h-4" /> : <HiOutlineChevronDown className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* En Uzun Oturumlar - Öne Çıkan */}
+      {longestSessions.length > 0 && (
+        <div className={`mb-4 p-3 rounded-xl ${isDark ? 'bg-gradient-to-r from-purple-500/10 to-blue-500/10' : 'bg-gradient-to-r from-purple-50 to-blue-50'}`}>
+          <h4 className={`text-xs font-medium mb-2 flex items-center gap-1 ${isDark ? 'text-white/70' : 'text-gray-600'}`}>
+            <span>🏆</span> En Uzun Oturumlar
+          </h4>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {longestSessions.map((visitor, idx) => (
+              <a
+                key={visitor.sessionId}
+                href={`/yonetim/analizler/ziyaretci/${visitor.visitorId}`}
+                className={`flex-shrink-0 p-2 rounded-lg transition-all hover:scale-[1.02] ${
+                  isDark ? 'bg-white/10 hover:bg-white/15' : 'bg-white hover:bg-gray-50'
+                } ${idx === 0 ? 'ring-2 ring-yellow-500/30' : ''}`}
+              >
+                <div className="flex items-center gap-2">
+                  {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                  <div>
+                    <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {visitor.duration} dk
+                    </p>
+                    <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+                      {visitor.pageViews} sayfa
+                    </p>
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      {showAll && (
+        <div className={`flex flex-wrap items-center gap-2 mb-4 pb-4 border-b ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+          {/* Sort */}
+          <div className="flex items-center gap-1">
+            <span className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>Sırala:</span>
+            <button
+              onClick={() => setSortBy('duration')}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                sortBy === 'duration'
+                  ? isDark ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'
+                  : isDark ? 'text-white/60 hover:bg-white/10' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              Süre
+            </button>
+            <button
+              onClick={() => setSortBy('pageViews')}
+              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                sortBy === 'pageViews'
+                  ? isDark ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'
+                  : isDark ? 'text-white/60 hover:bg-white/10' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              Sayfa
+            </button>
+          </div>
+          
+          {/* Device Filter */}
+          <div className="flex items-center gap-1">
+            <HiOutlineFilter className={`w-3 h-3 ${isDark ? 'text-white/50' : 'text-gray-400'}`} />
+            <select
+              value={filterDevice}
+              onChange={(e) => setFilterDevice(e.target.value)}
+              className={`text-xs rounded px-2 py-1 ${
+                isDark 
+                  ? 'bg-white/10 text-white border-white/10' 
+                  : 'bg-gray-100 text-gray-700 border-gray-200'
+              } border`}
+            >
+              <option value="all">Tüm Cihazlar</option>
+              <option value="mobile">Mobil</option>
+              <option value="desktop">Masaüstü</option>
+              <option value="tablet">Tablet</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Visitors List */}
+      <div className={`space-y-2 ${showAll ? 'max-h-[500px] overflow-y-auto pr-1' : ''}`}>
+        <AnimatePresence>
+          {displayVisitors.map((visitor, idx) => (
+            <motion.a
+              key={visitor.sessionId}
+              href={`/yonetim/analizler/ziyaretci/${visitor.visitorId}`}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ delay: idx * 0.05 }}
+              className={`block p-3 rounded-lg transition-all hover:scale-[1.01] ${isDark ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-50 hover:bg-gray-100'}`}
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  {getDeviceIcon(visitor.device)}
+                  <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {visitor.browser}
+                  </span>
+                  <span className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+                    {visitor.os}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                    {visitor.duration} dk
+                  </span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-white/10 text-white/60' : 'bg-gray-200 text-gray-500'}`}>
+                    {visitor.pageViews} sayfa
+                  </span>
+                </div>
+              </div>
+              
+              <div className={`flex items-center gap-2 text-xs ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
+                <div className="flex items-center gap-1 truncate flex-1">
+                  <HiOutlineLink className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate">{visitor.currentPage}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {getSourceIcon(visitor.source)}
+                  <span>{visitor.source}</span>
+                </div>
+                <HiOutlineArrowRight className={`w-3 h-3 ${isDark ? 'text-green-400' : 'text-green-500'}`} />
+              </div>
+            </motion.a>
+          ))}
+        </AnimatePresence>
+      </div>
+      
+      {/* Show more indicator */}
+      {!showAll && visitors.length > 5 && (
+        <button
+          onClick={onToggleShowAll}
+          className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-colors ${
+            isDark 
+              ? 'bg-white/5 hover:bg-white/10 text-white/70' 
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
+          }`}
+        >
+          +{visitors.length - 5} daha fazla ziyaretçi
+        </button>
+      )}
     </SpotlightCard>
   );
 }
@@ -1214,95 +1571,127 @@ function ScrollDepthChart({ data, isDark }: { data: InsightsData['scrollDepth'] 
 }
 
 // ============================================
-// Error Tracking Panel
+// Error Tracking Panel - Detaylı
 // ============================================
 
 function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefined; isDark: boolean }) {
+  const [expandedError, setExpandedError] = useState<number | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [showAllErrors, setShowAllErrors] = useState(false);
+
+  const copyToClipboard = async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   if (!data || data.total === 0) {
     return (
       <SpotlightCard className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <HiOutlineExclamationCircle className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
+          <HiOutlineCheckCircle className={`w-5 h-5 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
           <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
             JavaScript Hataları
           </h3>
         </div>
         <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-          <div className="text-3xl mb-2">✅</div>
-          <p className="text-sm">Hiçbir hata yok! Harika!</p>
+          <div className="text-4xl mb-3">✅</div>
+          <p className="text-sm font-medium">Hiçbir hata yok!</p>
+          <p className="text-xs opacity-70 mt-1">Siteniz sorunsuz çalışıyor</p>
         </div>
       </SpotlightCard>
     );
   }
 
-  const errorTypeLabels: Record<string, { label: string; color: string }> = {
-    js_error: { label: 'JS Hatası', color: 'text-red-500' },
-    unhandled_rejection: { label: 'Promise Hatası', color: 'text-orange-500' },
-    api_error: { label: 'API Hatası', color: 'text-yellow-500' },
-    network_error: { label: 'Ağ Hatası', color: 'text-purple-500' },
+  const errorTypeLabels: Record<string, { label: string; color: string; icon: string; bgColor: string }> = {
+    js_error: { label: 'JavaScript Hatası', color: 'text-red-500', icon: '🐛', bgColor: 'bg-red-500/20' },
+    unhandled_rejection: { label: 'Promise Hatası', color: 'text-orange-500', icon: '⚠️', bgColor: 'bg-orange-500/20' },
+    api_error: { label: 'API Hatası', color: 'text-yellow-500', icon: '🔌', bgColor: 'bg-yellow-500/20' },
+    network_error: { label: 'Ağ Hatası', color: 'text-purple-500', icon: '🌐', bgColor: 'bg-purple-500/20' },
   };
+
+  const displayErrors = showAllErrors ? data.recent : data.recent.slice(0, 5);
 
   return (
     <SpotlightCard className="p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <HiOutlineExclamationCircle className={`w-5 h-5 text-red-500`} />
-          <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            JavaScript Hataları
-          </h3>
-        </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600'
-        }`}>
-          {data.total} hata
-        </span>
-      </div>
-
-      {/* Error Types */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        {Object.entries(data.byType).map(([type, count]) => (
-          <div 
-            key={type}
-            className={`p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
-          >
-            <p className={`text-xs ${errorTypeLabels[type]?.color || 'text-gray-500'}`}>
-              {errorTypeLabels[type]?.label || type}
-            </p>
-            <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {count}
+          <div className={`w-8 h-8 rounded-lg ${isDark ? 'bg-red-500/20' : 'bg-red-100'} flex items-center justify-center`}>
+            <HiOutlineExclamationCircle className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Hata Takibi
+            </h3>
+            <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+              Gerçek zamanlı hata izleme
             </p>
           </div>
-        ))}
+        </div>
+        <div className={`px-3 py-1.5 rounded-full text-sm font-bold ${
+          data.total > 10 
+            ? isDark ? 'bg-red-500/30 text-red-400' : 'bg-red-100 text-red-600'
+            : isDark ? 'bg-yellow-500/30 text-yellow-400' : 'bg-yellow-100 text-yellow-600'
+        }`}>
+          {data.total} hata
+        </div>
       </div>
 
-      {/* Errors by Page */}
+      {/* Error Types Summary */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        {Object.entries(data.byType).map(([type, count]) => {
+          const info = errorTypeLabels[type] || { label: type, color: 'text-gray-500', icon: '❓', bgColor: 'bg-gray-500/20' };
+          return (
+            <div 
+              key={type}
+              className={`p-3 rounded-lg ${isDark ? info.bgColor : 'bg-gray-50'} transition-all hover:scale-[1.02]`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span>{info.icon}</span>
+                <span className={`text-xs font-medium ${info.color}`}>{info.label}</span>
+              </div>
+              <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {count}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Errors by Page - İyileştirilmiş */}
       {Object.keys(data.byPage).length > 0 && (
         <div className={`border-t pt-4 mb-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
-            📍 Sayfalara Göre Hatalar
+          <h4 className={`text-sm font-medium mb-3 flex items-center gap-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+            <HiOutlineLocationMarker className="w-4 h-4" />
+            Sayfalara Göre Dağılım
           </h4>
           <div className="space-y-2">
-            {Object.entries(data.byPage).slice(0, 8).map(([page, count]) => {
+            {Object.entries(data.byPage).slice(0, 5).map(([page, count]) => {
               const maxCount = Math.max(...Object.values(data.byPage));
               const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
               return (
-                <div key={page}>
+                <div key={page} className={`p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs truncate flex-1 ${isDark ? 'text-white/80' : 'text-gray-600'}`}>
+                    <span className={`text-xs truncate flex-1 font-mono ${isDark ? 'text-white/80' : 'text-gray-600'}`}>
                       {page}
                     </span>
-                    <span className={`text-xs font-medium ml-2 ${
-                      count > 10 ? 'text-red-500' : count > 5 ? 'text-yellow-500' : isDark ? 'text-gray-400' : 'text-gray-500'
+                    <span className={`text-xs font-bold ml-2 px-2 py-0.5 rounded ${
+                      count > 10 ? 'bg-red-500/20 text-red-400' : count > 5 ? 'bg-yellow-500/20 text-yellow-400' : isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
                     }`}>
                       {count}
                     </span>
                   </div>
                   <div className={`h-1.5 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
-                    <div 
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percent}%` }}
                       className={`h-full rounded-full ${
                         count > 10 ? 'bg-red-500' : count > 5 ? 'bg-yellow-500' : 'bg-blue-500'
                       }`}
-                      style={{ width: `${percent}%` }}
                     />
                   </div>
                 </div>
@@ -1312,36 +1701,177 @@ function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefine
         </div>
       )}
 
-      {/* Recent Errors */}
+      {/* Recent Errors - Detaylı Görünüm */}
       {data.recent.length > 0 && (
         <div className={`border-t pt-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
-            Son Hatalar
-          </h4>
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {data.recent.slice(0, 10).map((error, idx) => (
-              <div 
-                key={idx}
-                className={`p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+          <div className="flex items-center justify-between mb-3">
+            <h4 className={`text-sm font-medium flex items-center gap-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+              <HiOutlineCode className="w-4 h-4" />
+              Son Hatalar
+            </h4>
+            {data.recent.length > 5 && (
+              <button
+                onClick={() => setShowAllErrors(!showAllErrors)}
+                className={`text-xs font-medium flex items-center gap-1 ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs ${errorTypeLabels[error.type]?.color || 'text-gray-500'}`}>
-                    {errorTypeLabels[error.type]?.label || error.type}
-                  </span>
-                  {error.count && error.count > 1 && (
-                    <span className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
-                      x{error.count}
-                    </span>
-                  )}
-                </div>
-                <p className={`text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {error.message}
-                </p>
-                <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
-                  {error.page}
-                </p>
-              </div>
-            ))}
+                {showAllErrors ? 'Daha Az' : `Tümü (${data.recent.length})`}
+                {showAllErrors ? <HiOutlineChevronUp className="w-3 h-3" /> : <HiOutlineChevronDown className="w-3 h-3" />}
+              </button>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <AnimatePresence>
+              {displayErrors.map((error, idx) => {
+                const info = errorTypeLabels[error.type] || { label: error.type, color: 'text-gray-500', icon: '❓', bgColor: 'bg-gray-500/20' };
+                const isExpanded = expandedError === idx;
+                
+                return (
+                  <motion.div 
+                    key={idx}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`rounded-lg overflow-hidden ${isDark ? 'bg-white/5' : 'bg-gray-50'} ${isExpanded ? 'ring-2 ring-red-500/30' : ''}`}
+                  >
+                    {/* Header - Tıklanabilir */}
+                    <button
+                      onClick={() => setExpandedError(isExpanded ? null : idx)}
+                      className={`w-full p-3 text-left transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-100'}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="text-lg">{info.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className={`text-xs font-medium ${info.color}`}>
+                                {info.label}
+                              </span>
+                              {error.count && error.count > 1 && (
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full ${isDark ? 'bg-white/10 text-white/70' : 'bg-gray-200 text-gray-600'}`}>
+                                  x{error.count}
+                                </span>
+                              )}
+                            </div>
+                            <p className={`text-sm truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                              {error.message}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isExpanded ? (
+                            <HiOutlineChevronUp className={`w-4 h-4 ${isDark ? 'text-white/50' : 'text-gray-400'}`} />
+                          ) : (
+                            <HiOutlineChevronDown className={`w-4 h-4 ${isDark ? 'text-white/50' : 'text-gray-400'}`} />
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Sayfa bilgisi */}
+                      <div className={`flex items-center gap-1 mt-1 ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+                        <HiOutlineLocationMarker className="w-3 h-3" />
+                        <span className="text-xs font-mono truncate">{error.page}</span>
+                      </div>
+                    </button>
+                    
+                    {/* Genişletilmiş Detaylar */}
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className={`border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}
+                        >
+                          <div className="p-3 space-y-3">
+                            {/* Hata Mesajı - Tam */}
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className={`text-xs font-medium ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
+                                  Hata Mesajı
+                                </span>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyToClipboard(error.message, idx);
+                                  }}
+                                  className={`text-xs flex items-center gap-1 ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
+                                >
+                                  {copiedIndex === idx ? (
+                                    <>
+                                      <HiOutlineCheckCircle className="w-3 h-3" />
+                                      Kopyalandı
+                                    </>
+                                  ) : (
+                                    <>
+                                      <HiOutlineClipboard className="w-3 h-3" />
+                                      Kopyala
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                              <div className={`p-2 rounded font-mono text-xs break-all ${isDark ? 'bg-black/30 text-red-400' : 'bg-red-50 text-red-600'}`}>
+                                {error.message}
+                              </div>
+                            </div>
+                            
+                            {/* Sayfa Bilgisi */}
+                            <div>
+                              <span className={`text-xs font-medium ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
+                                Sayfa
+                              </span>
+                              <div className={`mt-1 p-2 rounded font-mono text-xs ${isDark ? 'bg-black/30 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                                {error.page}
+                              </div>
+                            </div>
+                            
+                            {/* Timestamp */}
+                            {error.timestamp && (
+                              <div>
+                                <span className={`text-xs font-medium ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
+                                  Son Görülme
+                                </span>
+                                <div className={`mt-1 p-2 rounded text-xs ${isDark ? 'bg-black/30 text-white/70' : 'bg-gray-100 text-gray-600'}`}>
+                                  {new Date(error.timestamp).toLocaleString('tr-TR')}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Aksiyon Butonları */}
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(error.page, '_blank');
+                                }}
+                                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
+                                  isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                                }`}
+                              >
+                                <HiOutlineExternalLink className="w-3 h-3" />
+                                Sayfayı Aç
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  copyToClipboard(`Hata: ${error.message}\nSayfa: ${error.page}\nTür: ${error.type}`, idx + 1000);
+                                }}
+                                className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium flex items-center justify-center gap-1 transition-colors ${
+                                  isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                                }`}
+                              >
+                                <HiOutlineClipboard className="w-3 h-3" />
+                                {copiedIndex === idx + 1000 ? 'Kopyalandı!' : 'Detay Kopyala'}
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         </div>
       )}
@@ -1486,6 +2016,7 @@ export default function AnalizlerPage() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [showAllVisitors, setShowAllVisitors] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -1636,6 +2167,25 @@ export default function AnalizlerPage() {
           </div>
         ) : (
           <>
+            {/* 🚨 KRİTİK METRİKLER - EN ÜSTTE */}
+            <CriticalMetricsCard
+              realtime={realtime?.count || stats?.overview.realtimeVisitors || 0}
+              errors={insights?.errors?.total || 0}
+              cartAbandonment={insights?.cartAbandonment?.totalAbandons || 0}
+              conversionRate={stats?.conversions.rate || 0}
+              isDark={isDark}
+            />
+
+            {/* 👥 AKTİF ZİYARETÇİLER - KRİTİK METRİKLERİN HEMEN ALTINDA */}
+            {realtime && realtime.visitors.length > 0 && (
+              <AllVisitorsPanel 
+                visitors={realtime.visitors}
+                isDark={isDark}
+                showAll={showAllVisitors}
+                onToggleShowAll={() => setShowAllVisitors(!showAllVisitors)}
+              />
+            )}
+
             {/* Overview Stats */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
@@ -1804,13 +2354,82 @@ export default function AnalizlerPage() {
               <CartAbandonmentPanel data={insights?.cartAbandonment} isDark={isDark} />
             </div>
 
-
-            {/* Active Visitors Detail */}
-            {realtime && realtime.visitors.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <RealtimeVisitorsList visitors={realtime.visitors.slice(0, 10)} isDark={isDark} />
+            {/* Hızlı Özet */}
+            <SpotlightCard className="p-4 sm:p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className={`w-8 h-8 rounded-lg ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'} flex items-center justify-center`}>
+                  <HiOutlineInformationCircle className="w-5 h-5 text-indigo-500" />
+                </div>
+                <div>
+                  <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Hızlı Özet
+                  </h3>
+                  <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+                    Dönem: {period === '1d' ? 'Bugün' : period === '7d' ? 'Son 7 Gün' : period === '30d' ? 'Son 30 Gün' : 'Son 90 Gün'}
+                  </p>
+                </div>
               </div>
-            )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Performance Indicators */}
+                <div className={`p-3 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm font-medium ${isDark ? 'text-white/80' : 'text-gray-600'}`}>
+                      📊 Performans Skoru
+                    </span>
+                    <span className={`text-lg font-bold ${
+                      (stats?.conversions.rate || 0) > 3 ? 'text-green-500' : 
+                      (stats?.conversions.rate || 0) > 1 ? 'text-yellow-500' : 'text-red-500'
+                    }`}>
+                      {(stats?.conversions.rate || 0) > 3 ? 'İyi' : (stats?.conversions.rate || 0) > 1 ? 'Orta' : 'Düşük'}
+                    </span>
+                  </div>
+                  <div className={`h-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min((stats?.conversions.rate || 0) * 10, 100)}%` }}
+                      className={`h-full rounded-full ${
+                        (stats?.conversions.rate || 0) > 3 ? 'bg-green-500' : 
+                        (stats?.conversions.rate || 0) > 1 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                    />
+                  </div>
+                </div>
+                
+                {/* Key Metrics Summary */}
+                <div className={`p-3 rounded-lg ${isDark ? 'bg-green-500/10' : 'bg-green-50'}`}>
+                  <p className={`text-xs ${isDark ? 'text-green-400' : 'text-green-600'}`}>Toplam Sipariş</p>
+                  <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {stats?.conversions.total || 0}
+                  </p>
+                </div>
+                
+                <div className={`p-3 rounded-lg ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+                  <p className={`text-xs ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Toplam Gelir</p>
+                  <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {formatCurrency(stats?.conversions.revenue || 0)}
+                  </p>
+                </div>
+                
+                {/* Top Traffic Source */}
+                {stats?.topSources && stats.topSources.length > 0 && (
+                  <div className={`p-3 rounded-lg ${isDark ? 'bg-purple-500/10' : 'bg-purple-50'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      {getSourceIcon(stats.topSources[0].source)}
+                      <span className={`text-xs ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
+                        En Çok Trafik
+                      </span>
+                    </div>
+                    <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {stats.topSources[0].source}
+                    </span>
+                    <span className={`text-xs ml-1 ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+                      ({stats.topSources[0].count})
+                    </span>
+                  </div>
+                )}
+              </div>
+            </SpotlightCard>
           </>
         )}
       </div>

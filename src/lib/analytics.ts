@@ -103,6 +103,18 @@ class AnalyticsTracker {
   // Cart abandonment tracking
   private hasItemsInCart: boolean = false;
   private cartAbandonmentTracked: boolean = false;
+  
+  // Admin panel rotaları - bu rotalarda analytics çalışmayacak
+  private excludedPaths: string[] = ['/yonetim', '/admin', '/api'];
+
+  /**
+   * Admin panel mi kontrol et
+   */
+  private isExcludedPath(): boolean {
+    if (typeof window === 'undefined') return true;
+    const path = window.location.pathname;
+    return this.excludedPaths.some(excluded => path.startsWith(excluded));
+  }
 
   /**
    * Tracker'ı başlat
@@ -110,6 +122,12 @@ class AnalyticsTracker {
   async init(): Promise<void> {
     if (typeof window === 'undefined') return;
     if (this.isInitialized) return;
+    
+    // Admin panelde analytics çalışmasın
+    if (this.isExcludedPath()) {
+      console.log('[Analytics] Excluded path, skipping init');
+      return;
+    }
 
     try {
       // Visitor ID al veya oluştur
@@ -709,6 +727,9 @@ class AnalyticsTracker {
    * Sayfa görüntüleme kaydet
    */
   async trackPageView(props: PageViewProps): Promise<void> {
+    // Admin panelde track yapma
+    if (this.isExcludedPath()) return;
+    
     if (!this.isInitialized) {
       this.queue.push(() => this.trackPageView(props));
       return;
@@ -751,6 +772,9 @@ class AnalyticsTracker {
    * Event kaydet
    */
   async trackEvent(props: TrackEventProps): Promise<void> {
+    // Admin panelde track yapma
+    if (this.isExcludedPath()) return;
+    
     if (!this.isInitialized) {
       this.queue.push(() => this.trackEvent(props));
       return;
