@@ -115,6 +115,11 @@ export default function SepetClient() {
   const [show3DSModal, setShow3DSModal] = useState(false);
   const [threeDSHtmlContent, setThreeDSHtmlContent] = useState<string | null>(null);
   const iyzicoContainerRef = useRef<HTMLDivElement | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'credit_card' | 'bank_transfer'>('credit_card');
+  const [showBankTransferModal, setShowBankTransferModal] = useState(false);
+  const [bankTransferOrderNumber, setBankTransferOrderNumber] = useState<number | null>(null);
+  const [bankTransferOrderId, setBankTransferOrderId] = useState<string | null>(null);
+  const [bankTransferTotal, setBankTransferTotal] = useState<number>(0);
   
   // Misafir checkout states
   const [isGuestCheckout, setIsGuestCheckout] = useState(false);
@@ -833,7 +838,7 @@ export default function SepetClient() {
           deliveryNotes,
         },
         payment: {
-          method: 'credit_card',
+          method: selectedPaymentMethod,
           status: 'pending',
         },
         message: (messageCard || isGift) ? {
@@ -841,7 +846,7 @@ export default function SepetClient() {
           senderName: senderName || '',
           isGift,
         } : null,
-        status: 'pending_payment',
+        status: selectedPaymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'pending_payment',
       });
 
       if (!orderResult.success || !orderResult.order) {
@@ -850,35 +855,53 @@ export default function SepetClient() {
 
       console.log('✅ Order created:', orderResult.order.id);
 
-      // Initialize iyzico 3DS payment
-      const paymentResponse = await fetch('/api/payment/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: orderResult.order.id,
-          cartItems: state.items,
-          customer: customerInfo,
-          deliveryInfo: {
-            province: { name: district }, // Using district as province for iyzico
-            recipientName,
-            recipientPhone,
-            recipientAddress,
-          },
-          totalAmount: getTotalPrice(),
-        }),
-      });
+      // Handle payment based on selected method
+      if (selectedPaymentMethod === 'bank_transfer') {
+        // Bank transfer flow - show bank details modal
+        const totalAmount = getTotalPrice(); // Save total before clearing cart
+        setBankTransferOrderNumber(orderResult.order.orderNumber);
+        setBankTransferOrderId(orderResult.order.id);
+        setBankTransferTotal(totalAmount);
+        setShowBankTransferModal(true);
+        
+        // Clear cart after successful order creation
+        clearCart();
+        
+        // Add to customer orders if logged in
+        if (isLoggedIn && customerState.currentCustomer) {
+          await addOrderToCustomer(customerState.currentCustomer.id, orderResult.order.id);
+        }
+      } else {
+        // Credit card flow - Initialize iyzico 3DS payment
+        const paymentResponse = await fetch('/api/payment/initialize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderResult.order.id,
+            cartItems: state.items,
+            customer: customerInfo,
+            deliveryInfo: {
+              province: { name: district }, // Using district as province for iyzico
+              recipientName,
+              recipientPhone,
+              recipientAddress,
+            },
+            totalAmount: getTotalPrice(),
+          }),
+        });
 
-      const paymentData = await paymentResponse.json();
+        const paymentData = await paymentResponse.json();
 
-      if (!paymentData.success) {
-        throw new Error(paymentData.error || 'Payment initialization failed');
+        if (!paymentData.success) {
+          throw new Error(paymentData.error || 'Payment initialization failed');
+        }
+
+        console.log('✅ Payment initialized:', paymentData.paymentId);
+
+        // Show 3DS modal with HTML content
+        setThreeDSHtmlContent(paymentData.threeDSHtmlContent);
+        setShow3DSModal(true);
       }
-
-      console.log('✅ Payment initialized:', paymentData.paymentId);
-
-      // Show 3DS modal with HTML content
-      setThreeDSHtmlContent(paymentData.threeDSHtmlContent);
-      setShow3DSModal(true);
       
     } catch (error: unknown) {
       console.error('Order error:', error);
@@ -1899,58 +1922,140 @@ export default function SepetClient() {
 
                 {/* Payment Method */}
                 <div>
-                  <p className="text-xs font-medium text-gray-700 mb-2">Ödeme Yöntemi</p>
-                  <div className="border-2 border-[#e05a4c] bg-[#e05a4c]/5 rounded-xl p-4">
-                    <div className="flex items-center gap-3">
-                      <CreditCard size={24} className="text-[#e05a4c]" />
+                  <p className="text-xs font-medium text-gray-700 mb-2">Ödeme Yöntemi Seçin</p>
+                  <div className="space-y-3">
+                    {/* Kredi Kartı Seçeneği */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod('credit_card')}
+                      className={`w-full border-2 rounded-xl p-4 transition-all text-left ${
+                        selectedPaymentMethod === 'credit_card'
+                          ? 'border-[#e05a4c] bg-[#e05a4c]/5'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedPaymentMethod === 'credit_card' ? 'border-[#e05a4c]' : 'border-gray-300'
+                        }`}>
+                          {selectedPaymentMethod === 'credit_card' && (
+                            <div className="w-3 h-3 bg-[#e05a4c] rounded-full" />
+                          )}
+                        </div>
+                        <CreditCard size={24} className={selectedPaymentMethod === 'credit_card' ? 'text-[#e05a4c]' : 'text-gray-400'} />
+                        <div>
+                          <p className={`font-semibold ${selectedPaymentMethod === 'credit_card' ? 'text-gray-900' : 'text-gray-700'}`}>
+                            Kredi/Banka Kartı
+                          </p>
+                          <p className="text-xs text-gray-500">Güvenli 3D Secure ile ödeme</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Havale/EFT Seçeneği */}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedPaymentMethod('bank_transfer')}
+                      className={`w-full border-2 rounded-xl p-4 transition-all text-left ${
+                        selectedPaymentMethod === 'bank_transfer'
+                          ? 'border-[#549658] bg-[#549658]/5'
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          selectedPaymentMethod === 'bank_transfer' ? 'border-[#549658]' : 'border-gray-300'
+                        }`}>
+                          {selectedPaymentMethod === 'bank_transfer' && (
+                            <div className="w-3 h-3 bg-[#549658] rounded-full" />
+                          )}
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={selectedPaymentMethod === 'bank_transfer' ? 'text-[#549658]' : 'text-gray-400'}>
+                          <rect x="2" y="4" width="20" height="16" rx="2"/>
+                          <path d="M12 9v6"/>
+                          <path d="M8 12h8"/>
+                        </svg>
+                        <div>
+                          <p className={`font-semibold ${selectedPaymentMethod === 'bank_transfer' ? 'text-gray-900' : 'text-gray-700'}`}>
+                            Havale / EFT
+                          </p>
+                          <p className="text-xs text-gray-500">Banka havalesi ile ödeme</p>
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                  
+                  {/* Payment Logos - Sadece Kredi Kartı seçiliyse */}
+                  {selectedPaymentMethod === 'credit_card' && (
+                    <>
+                      <div className="mt-3 flex items-center justify-center">
+                        <Image
+                          src="/logo_band_colored@3x.png"
+                          alt="Güvenli Ödeme"
+                          width={300}
+                          height={20}
+                          className="w-full h-auto object-contain max-w-xs opacity-70"
+                        />
+                      </div>
+
+                      {/* iyzico Logo */}
+                      <div className="mt-3 flex items-center justify-center gap-2">
+                        <span className="text-xs text-gray-500">Güvenli ödeme sağlayıcısı:</span>
+                        <Image
+                          src="iyzico/iyzico.svg"
+                          alt="iyzico"
+                          width={60}
+                          height={20}
+                          className="h-5 w-auto"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* 3DS Info Box - Kredi Kartı seçiliyse */}
+                {selectedPaymentMethod === 'credit_card' && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <Check size={16} className="text-white" />
+                      </div>
                       <div>
-                        <p className="font-semibold text-gray-900">Kredi/Banka Kartı</p>
-                        <p className="text-xs text-gray-600">Güvenli 3D Secure ile ödeme</p>
+                        <p className="text-sm font-semibold text-blue-900 mb-1">
+                          Güvenli Ödeme Bilgilendirmesi
+                        </p>
+                        <p className="text-xs text-blue-800">
+                          &quot;Siparişi Tamamla&quot; butonuna tıkladıktan sonra bankanızın 3D Secure sayfasına yönlendirileceksiniz. 
+                          Kart bilgilerinizi ve SMS ile gelen doğrulama kodunu güvenli bir şekilde girebilirsiniz.
+                        </p>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Payment Logos */}
-                  <div className="mt-3 flex items-center justify-center">
-                    <Image
-                      src="/logo_band_colored@3x.png"
-                      alt="Güvenli Ödeme"
-                      width={300}
-                      height={20}
-                      className="w-full h-auto object-contain max-w-xs opacity-70"
-                    />
-                  </div>
+                )}
 
-                  {/* iyzico Logo */}
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    <span className="text-xs text-gray-500">Güvenli ödeme sağlayıcısı:</span>
-                    <Image
-                      src="iyzico/iyzico.svg"
-                      alt="iyzico"
-                      width={60}
-                      height={20}
-                      className="h-5 w-auto"
-                    />
-                  </div>
-                </div>
-
-                {/* 3DS Info Box */}
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Check size={16} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-blue-900 mb-1">
-                        Güvenli Ödeme Bilgilendirmesi
-                      </p>
-                      <p className="text-xs text-blue-800">
-                        &quot;Siparişi Tamamla&quot; butonuna tıkladıktan sonra bankanızın 3D Secure sayfasına yönlendirileceksiniz. 
-                        Kart bilgilerinizi ve SMS ile gelen doğrulama kodunu güvenli bir şekilde girebilirsiniz.
-                      </p>
+                {/* Havale Bilgilendirme - Havale seçiliyse */}
+                {selectedPaymentMethod === 'bank_transfer' && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-[#549658] rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                          <rect x="2" y="4" width="20" height="16" rx="2"/>
+                          <path d="M12 9v6"/>
+                          <path d="M8 12h8"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-green-900 mb-1">
+                          Havale / EFT Bilgilendirmesi
+                        </p>
+                        <p className="text-xs text-green-800">
+                          Siparişinizi tamamladıktan sonra banka hesap bilgileri ve sipariş numaranız gösterilecektir. 
+                          Havale açıklamasına sipariş numaranızı yazmayı unutmayın.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Misafir İletişim Bilgileri */}
                 {!isLoggedIn && (
@@ -2025,7 +2130,7 @@ export default function SepetClient() {
                 </label>
 
                 {/* Navigation (sticky on mobile) */}
-                {!show3DSModal && (
+                {!show3DSModal && !showBankTransferModal && (
                   <div className="fixed inset-x-0 bottom-0 z-[60] bg-white/95 backdrop-blur border-t border-gray-100 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:static sm:bg-transparent sm:backdrop-blur-0 sm:border-0 sm:p-0 sm:pb-0">
                     <div className="max-w-2xl mx-auto">
                       <div className="flex gap-3">
@@ -2038,16 +2143,25 @@ export default function SepetClient() {
                         <button
                           onClick={handleCompleteOrder}
                           disabled={isProcessing}
-                          className="flex-1 py-3.5 bg-[#549658] text-white font-semibold rounded-xl hover:bg-[#468a4a] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className={`flex-1 py-3.5 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                            selectedPaymentMethod === 'bank_transfer' 
+                              ? 'bg-[#549658] hover:bg-[#468a4a]' 
+                              : 'bg-[#e05a4c] hover:bg-[#cd3f31]'
+                          }`}
                         >
                           {isProcessing ? (
                             <>
                               <Loader2 size={18} className="animate-spin" />
                               İşleniyor...
                             </>
-                          ) : (
+                          ) : selectedPaymentMethod === 'bank_transfer' ? (
                             <>
                               <Check size={18} />
+                              Siparişi Tamamla
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard size={18} />
                               Ödemeyi Yap
                             </>
                           )}
@@ -2055,7 +2169,9 @@ export default function SepetClient() {
                       </div>
 
                       <p className="mt-2 text-[10px] text-center text-gray-400">
-                        🔒 Ödeme bilgileriniz 256-bit SSL ile korunmaktadır
+                        🔒 {selectedPaymentMethod === 'bank_transfer' 
+                          ? 'Siparişiniz güvenli bir şekilde oluşturulacaktır' 
+                          : 'Ödeme bilgileriniz 256-bit SSL ile korunmaktadır'}
                       </p>
                     </div>
                   </div>
@@ -2105,6 +2221,112 @@ export default function SepetClient() {
             
             <div className="flex-1 min-h-0 overflow-auto">
               <div ref={iyzicoContainerRef} className="w-full h-full" />
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Bank Transfer Modal - Apple Pay Style */}
+      {showBankTransferModal && bankTransferOrderNumber && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center">
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-white w-full sm:max-w-sm sm:mx-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+          >
+            {/* Success Header */}
+            <div className="pt-6 pb-4 px-6 text-center relative">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", damping: 15 }}
+                className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full mx-auto flex items-center justify-center shadow-lg shadow-emerald-200"
+              >
+                <CheckCircle size={32} className="text-white" />
+              </motion.div>
+              <h3 className="text-xl font-bold text-gray-900 mt-4">Sipariş Oluşturuldu</h3>
+              <p className="text-gray-500 text-sm mt-1">Havale ile ödemenizi tamamlayın</p>
+            </div>
+
+            {/* Amount Card */}
+            <div className="mx-6 mb-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-4 text-white shadow-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-xs uppercase tracking-wider">Ödenecek Tutar</p>
+                  <p className="text-2xl font-bold mt-0.5">{formatPrice(bankTransferTotal)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-gray-400 text-xs">Sipariş No</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="font-mono font-bold">#{bankTransferOrderNumber}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(String(bankTransferOrderNumber));
+                      }}
+                      className="p-1 hover:bg-white/10 rounded transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bank Details - Compact */}
+            <div className="px-6 pb-4 space-y-2">
+              <div className="flex items-center justify-between py-2.5 border-b border-gray-100">
+                <span className="text-gray-500 text-sm">Banka</span>
+                <Image src="/TR/garanti.svg" alt="Garanti Bankası" width={100} height={24} className="h-6 w-auto" />
+              </div>
+              <div className="flex items-center justify-between py-2.5 border-b border-gray-100">
+                <span className="text-gray-500 text-sm">Hesap Sahibi</span>
+                <span className="font-medium text-gray-900">STR GRUP A.Ş</span>
+              </div>
+              <div className="flex items-center justify-between py-2.5">
+                <span className="text-gray-500 text-sm">IBAN</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-gray-900">TR12 0006 2000 7520 0006 2942 76</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText('TR120006200075200006294276');
+                    }}
+                    className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Warning */}
+            <div className="mx-6 mb-4 bg-amber-50 rounded-xl px-4 py-3 flex items-start gap-3">
+              <AlertCircle size={18} className="text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800">
+                Açıklama kısmına <strong className="text-amber-900">{bankTransferOrderNumber}</strong> yazın
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 pb-6 pt-2 space-y-2">
+              <Link
+                href={`/siparis-takip?order=${bankTransferOrderNumber}`}
+                className="w-full py-3.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              >
+                Siparişi Takip Et
+              </Link>
+              <Link
+                href="/"
+                className="w-full py-3 text-gray-600 font-medium hover:text-gray-900 transition-colors text-center block"
+              >
+                Alışverişe Devam Et
+              </Link>
             </div>
           </motion.div>
         </div>

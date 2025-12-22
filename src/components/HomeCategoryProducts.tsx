@@ -675,7 +675,7 @@ export function FeaturedBannerGrid() {
                 ) : category.slug === 'aranjmanlar' ? (
                   <>
                     <video
-                      src="https://res.cloudinary.com/dgdl1vdao/video/upload/v1766362128/aranjmanlar_zemzwn.mp4"
+                      src="https://res.cloudinary.com/dgdl1vdao/video/upload/v1766362485/aranjmanlas_brfu9v.mp4"
                       autoPlay
                       muted
                       loop

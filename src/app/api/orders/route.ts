@@ -196,13 +196,59 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create order', details: error.message }, { status: 500 });
     }
 
-    // Order confirmation email will be sent after payment is successful
-    // See /api/payment/complete and /api/payment/webhook for email sending logic
-    console.log('✅ Order created, awaiting payment confirmation:', {
-      orderId: data?.id,
-      orderNumber: (data as unknown as OrderRow)?.order_number,
-      status: (data as unknown as OrderRow)?.status,
-    });
+    const orderRow = data as unknown as OrderRow;
+    const orderNumber = orderRow?.order_number;
+    const paymentMethod = isRecord(orderData.payment) ? getString(orderData.payment.method) : '';
+
+    // For bank transfer orders, send email immediately with bank details
+    if (paymentMethod === 'bank_transfer' && customerEmail && orderNumber) {
+      console.log('📧 Sending bank transfer confirmation email for order:', orderNumber);
+      try {
+        const deliveryFields = getDeliveryFields(orderData.delivery);
+        const emailData = {
+          orderNumber: String(orderNumber),
+          customerName,
+          customerEmail,
+          customerPhone,
+          verificationType: 'email' as const,
+          verificationValue: customerEmail,
+          items: trustedProducts.map((p: { name: string; quantity: number; price: number }) => ({
+            name: p.name,
+            quantity: p.quantity,
+            price: p.price,
+          })),
+          subtotal: trustedSubtotal,
+          discount,
+          deliveryFee,
+          total,
+          deliveryAddress: deliveryFields.deliveryAddress || '',
+          district: deliveryFields.district,
+          deliveryDate: deliveryFields.deliveryDate || '',
+          deliveryTime: deliveryFields.deliveryTime || '',
+          recipientName: deliveryFields.recipientName,
+          recipientPhone: deliveryFields.recipientPhone,
+          paymentMethod: 'Havale/EFT',
+        };
+        
+        const emailSent = await EmailService.sendBankTransferConfirmation(emailData);
+        if (emailSent) {
+          console.log('✅ Bank transfer confirmation email sent successfully');
+        } else {
+          console.warn('⚠️ Bank transfer confirmation email failed to send');
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending bank transfer email:', emailError);
+        // Don't fail the order creation if email fails
+      }
+    } else {
+      // Order confirmation email will be sent after payment is successful
+      // See /api/payment/complete and /api/payment/webhook for email sending logic
+      console.log('✅ Order created, awaiting payment confirmation:', {
+        orderId: data?.id,
+        orderNumber,
+        status: orderRow?.status,
+      });
+    }
     
     // Update customer's orders array and stats (members only)
     if (data && customerId && !isGuest) {

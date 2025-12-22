@@ -31,6 +31,7 @@ const footerLinks = {
   yardim: {
     title: "Yardım",
     items: [
+      { name: "Banka Hesaplarımız", href: "/banka-hesaplarimiz" },
       { name: "Sipariş Takibi", href: "/siparis-takip" },
       { name: "Kullanım Koşulları", href: "/kullanim-kosullari" },
       { name: "İade Politikası", href: "/iade-politikasi" },
@@ -48,6 +49,12 @@ const footerLinks = {
       { name: "Favorilerim", href: "/hesabim/favorilerim" },
       { name: "Adreslerim", href: "/hesabim/adreslerim" },
       { name: "Ayarlar", href: "/hesabim/ayarlar" },
+    ]
+  },
+  banka: {
+    title: "Banka Hesaplarımız",
+    items: [
+      { name: "Banka Hesaplarımız", href: "/banka-hesaplarimiz" },
     ]
   },
 };

@@ -770,4 +770,176 @@ export class EmailService {
       text: 'Email yapılandırması başarılı! Bu bir test emailidir.',
     });
   }
+
+  /**
+   * Send bank transfer order confirmation email
+   */
+  static async sendBankTransferConfirmation(data: OrderEmailData & { orderNumber: string }): Promise<boolean> {
+    const trackingUrl = this.buildTrackingUrl({
+      orderNumber: data.orderNumber,
+      verificationType: data.verificationType,
+      verificationValue: data.verificationValue,
+    });
+
+    const itemsHtml = data.items
+      .map(
+        (item) => `
+        <tr>
+          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.name}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${item.price.toFixed(2)} ₺</td>
+        </tr>
+      `
+      )
+      .join('');
+
+    const safeCustomerPhone = (data.customerPhone || '').trim();
+    const safeRecipientName = (data.recipientName || '').trim();
+    const safeRecipientPhone = (data.recipientPhone || '').trim();
+    const safeDistrict = (data.district || '').trim();
+    const discount = typeof data.discount === 'number' ? data.discount : 0;
+    const showDiscount = discount > 0;
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #111827; background: #f5f5f7; margin: 0; padding: 0; }
+            .container { max-width: 640px; margin: 0 auto; padding: 24px; }
+            .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+            .header { padding: 22px 24px; border-bottom: 1px solid #e5e7eb; }
+            .brand { font-weight: 700; font-size: 14px; letter-spacing: 0.2px; color: #111827; margin: 0 0 8px 0; }
+            .title { font-weight: 800; font-size: 22px; margin: 0; color: #111827; }
+            .sub { margin: 6px 0 0 0; color: #6b7280; font-size: 13px; }
+            .content { padding: 24px; }
+            .section { background: #f9fafb; padding: 16px; border-radius: 12px; margin: 16px 0; border: 1px solid #eef2f7; }
+            .section h3 { margin: 0 0 10px 0; font-size: 14px; color: #111827; }
+            .bank-section { background: #ecfdf5; padding: 20px; border-radius: 12px; margin: 20px 0; border: 2px solid #10b981; }
+            .bank-section h3 { margin: 0 0 16px 0; font-size: 16px; color: #065f46; }
+            .bank-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #d1fae5; }
+            .bank-row:last-child { border-bottom: none; }
+            .bank-label { color: #047857; font-size: 13px; }
+            .bank-value { color: #065f46; font-weight: 600; font-size: 14px; }
+            .warning-box { background: #fffbeb; padding: 16px; border-radius: 12px; margin: 16px 0; border: 1px solid #f59e0b; }
+            .warning-box p { margin: 0; color: #92400e; font-size: 13px; }
+            .muted { color: #6b7280; }
+            table { width: 100%; border-collapse: collapse; margin: 16px 0 0 0; }
+            th, td { font-size: 13px; }
+            .total-row { font-weight: 800; }
+            .footer { text-align: center; padding: 18px 24px 24px; color: #6b7280; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="card">
+              <div class="header">
+                <p class="brand">Vadiler</p>
+                <h1 class="title">Siparişiniz Alındı - Ödeme Bekleniyor</h1>
+                <p class="sub">Sipariş No: <strong>#${data.orderNumber}</strong></p>
+              </div>
+              <div class="content">
+              <p>Merhaba ${data.customerName},</p>
+              <p>Siparişiniz başarıyla oluşturuldu. Aşağıdaki banka hesabına havale/EFT yaparak ödemenizi tamamlayabilirsiniz.</p>
+
+              <div class="bank-section">
+                <h3>🏦 Banka Hesap Bilgileri</h3>
+                <div style="margin-bottom: 12px;">
+                  <div class="bank-label">Banka</div>
+                  <div class="bank-value">Garanti Bankası</div>
+                </div>
+                <div style="margin-bottom: 12px;">
+                  <div class="bank-label">IBAN</div>
+                  <div class="bank-value" style="font-family: monospace;">TR12 0006 2000 7520 0006 2942 76</div>
+                </div>
+                <div style="margin-bottom: 12px;">
+                  <div class="bank-label">Hesap Sahibi</div>
+                  <div class="bank-value">STR GRUP A.Ş</div>
+                </div>
+                <div style="margin-bottom: 12px;">
+                  <div class="bank-label">Ödenecek Tutar</div>
+                  <div class="bank-value" style="font-size: 18px; color: #059669;">${data.total.toFixed(2)} ₺</div>
+                </div>
+              </div>
+
+              <div class="warning-box">
+                <p><strong>⚠️ Önemli:</strong> Havale/EFT yaparken açıklama kısmına mutlaka sipariş numaranızı (<strong>${data.orderNumber}</strong>) yazınız. Aksi takdirde ödemeniz eşleştirilemeyebilir.</p>
+              </div>
+
+              <div class="section">
+                <h3>Sipariş Bilgileri</h3>
+                <p><strong>Sipariş No:</strong> #${data.orderNumber}</p>
+                <p><strong>Ödeme Yöntemi:</strong> Havale/EFT</p>
+                <p><strong>İletişim:</strong> ${data.customerEmail}${safeCustomerPhone ? ` • ${safeCustomerPhone}` : ''}</p>
+              </div>
+              
+              <div class="section">
+                <h3>Teslimat Bilgileri</h3>
+                ${safeRecipientName ? `<p><strong>Alıcı:</strong> ${safeRecipientName}${safeRecipientPhone ? ` • ${safeRecipientPhone}` : ''}</p>` : ''}
+                <p><strong>Adres:</strong> ${data.deliveryAddress}</p>
+                ${safeDistrict ? `<p><strong>İlçe:</strong> ${safeDistrict}</p>` : ''}
+                <p><strong>Tarih:</strong> ${data.deliveryDate}</p>
+                <p><strong>Zaman:</strong> ${data.deliveryTime}</p>
+              </div>
+
+              <h3>Sipariş Detayları</h3>
+              <table>
+                <thead>
+                  <tr style="background: #f9fafb;">
+                    <th style="padding: 10px; text-align: left;">Ürün</th>
+                    <th style="padding: 10px; text-align: center;">Adet</th>
+                    <th style="padding: 10px; text-align: right;">Fiyat</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsHtml}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2" style="padding: 10px; text-align: right;">Ara Toplam:</td>
+                    <td style="padding: 10px; text-align: right;">${data.subtotal.toFixed(2)} ₺</td>
+                  </tr>
+                  ${showDiscount ? `
+                  <tr>
+                    <td colspan="2" style="padding: 10px; text-align: right;">İndirim:</td>
+                    <td style="padding: 10px; text-align: right;">-${discount.toFixed(2)} ₺</td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td colspan="2" style="padding: 10px; text-align: right;">Teslimat Ücreti:</td>
+                    <td style="padding: 10px; text-align: right;">${data.deliveryFee === 0 ? 'ÜCRETSİZ' : data.deliveryFee.toFixed(2) + ' ₺'}</td>
+                  </tr>
+                  <tr class="total-row">
+                    <td colspan="2" style="padding: 10px; text-align: right; border-top: 2px solid #e5e7eb;">TOPLAM:</td>
+                    <td style="padding: 10px; text-align: right; border-top: 2px solid #e5e7eb; color: #059669; font-size: 16px;">${data.total.toFixed(2)} ₺</td>
+                  </tr>
+                </tfoot>
+              </table>
+
+              <div style="text-align: center; margin-top: 24px;">
+                <a href="${trackingUrl}" style="display:inline-block;background:#059669;color:#ffffff !important;padding:12px 18px;text-decoration:none;border-radius:10px;font-weight:700;letter-spacing:0.2px;">Siparişimi Takip Et</a>
+              </div>
+
+              <p style="margin-top: 26px; font-size: 12px; color: #6b7280;">
+                Ödemenizi yaptıktan sonra siparişiniz onaylanacak ve size bilgi verilecektir. Sorularınız için <strong>0850 307 4876</strong> numaralı telefondan bize ulaşabilirsiniz.
+              </p>
+              </div>
+              <div class="footer">
+                <p style="margin:0;">Vadiler Çiçekçilik</p>
+                <p style="margin:6px 0 0 0;">Bu email ${data.customerEmail} adresine gönderilmiştir.</p>
+              </div>
+            </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmail({
+      to: data.customerEmail,
+      subject: `Siparişiniz Alındı - Ödeme Bekleniyor - #${data.orderNumber}`,
+      html,
+      text: `Siparişiniz alındı! Sipariş No: ${data.orderNumber}. Havale/EFT için: Garanti Bankası, IBAN: TR12 0006 2000 7520 0006 2942 76, Hesap Sahibi: STR GRUP A.Ş, Tutar: ${data.total.toFixed(2)} ₺. Açıklamaya sipariş numaranızı yazınız. Sipariş takibi: ${trackingUrl}`,
+    });
+  }
 }
