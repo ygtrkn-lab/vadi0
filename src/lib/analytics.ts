@@ -528,7 +528,7 @@ class AnalyticsTracker {
 
     // Sayfa terk edilirken cart abandonment kontrolü
     window.addEventListener('beforeunload', () => {
-      if (this.hasItemsInCart && !this.cartAbandonmentTracked) {
+      if (this.hasItemsInCart && !this.cartAbandonmentTracked && this.sessionData?.sessionId && this.sessionData?.visitorId) {
         this.cartAbandonmentTracked = true;
         
         // Sepet içeriğini al
@@ -575,7 +575,8 @@ class AnalyticsTracker {
 
         // sendBeacon API kullan
         if (navigator.sendBeacon) {
-          navigator.sendBeacon('/api/analytics/event', JSON.stringify(eventData));
+          const blob = new Blob([JSON.stringify(eventData)], { type: 'application/json' });
+          navigator.sendBeacon('/api/analytics/event', blob);
         }
       }
     });

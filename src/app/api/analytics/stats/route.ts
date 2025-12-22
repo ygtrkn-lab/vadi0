@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       // Trafik kaynakları
       analyticsDb
         .from('visitor_sessions')
-        .select('utm_source, utm_medium, referrer_domain')
+        .select('utm_source, utm_medium, utm_campaign, utm_content, utm_term, referrer, referrer_domain, landing_page')
         .gte('started_at', dateFromStr)
         .lte('started_at', dateToStr),
 
@@ -111,7 +111,16 @@ export async function GET(request: NextRequest) {
     type SessionRow = { id: string; visitor_id: string; duration_seconds: number; is_bounce: boolean; page_views: number };
     type PageViewRow = { page_path: string; page_title: string | null };
     type ProductViewRow = { product_id: number | null; product_name: string | null };
-    type TrafficRow = { utm_source: string | null; utm_medium: string | null; referrer_domain: string | null };
+    type TrafficRow = { 
+      utm_source: string | null; 
+      utm_medium: string | null; 
+      utm_campaign: string | null;
+      utm_content: string | null;
+      utm_term: string | null;
+      referrer: string | null;
+      referrer_domain: string | null;
+      landing_page: string | null;
+    };
     type DeviceRow = { device_type: string | null; browser: string | null; os: string | null };
     type EventRow = { id: string; event_name: string };
     type ConversionRow = { converted: boolean; conversion_value: number };
@@ -242,6 +251,64 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);
 
+    // Kampanya analizi
+    const campaignStats: Record<string, { count: number; source: string; medium: string }> = {};
+    const referrerStats: Record<string, { count: number; fullUrl: string }> = {};
+    const landingPageStats: Record<string, number> = {};
+    const mediumStats: Record<string, number> = {};
+    
+    ((trafficSourcesResult.data || []) as TrafficRow[]).forEach(s => {
+      // Kampanya istatistikleri
+      if (s.utm_campaign) {
+        if (!campaignStats[s.utm_campaign]) {
+          campaignStats[s.utm_campaign] = { count: 0, source: s.utm_source || '', medium: s.utm_medium || '' };
+        }
+        campaignStats[s.utm_campaign].count++;
+      }
+      
+      // Referrer istatistikleri
+      if (s.referrer_domain && s.referrer_domain !== 'direct') {
+        if (!referrerStats[s.referrer_domain]) {
+          referrerStats[s.referrer_domain] = { count: 0, fullUrl: s.referrer || '' };
+        }
+        referrerStats[s.referrer_domain].count++;
+      }
+      
+      // Landing page istatistikleri
+      if (s.landing_page) {
+        landingPageStats[s.landing_page] = (landingPageStats[s.landing_page] || 0) + 1;
+      }
+      
+      // Medium istatistikleri
+      if (s.utm_medium) {
+        mediumStats[s.utm_medium] = (mediumStats[s.utm_medium] || 0) + 1;
+      }
+    });
+    
+    // Kampanyaları sırala
+    const topCampaigns = Object.entries(campaignStats)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    // Referrer'ları sırala
+    const topReferrers = Object.entries(referrerStats)
+      .map(([domain, data]) => ({ domain, ...data }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    // Landing page'leri sırala
+    const topLandingPages = Object.entries(landingPageStats)
+      .map(([page, count]) => ({ page, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    // Medium'ları sırala
+    const topMediums = Object.entries(mediumStats)
+      .map(([medium, count]) => ({ medium, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
     // Cihaz dağılımı
     const deviceStats: Record<string, number> = { desktop: 0, mobile: 0, tablet: 0 };
     const browserStats: Record<string, number> = {};
@@ -292,6 +359,18 @@ export async function GET(request: NextRequest) {
       
       // Detaylı trafik kaynakları (TikTok, Instagram, Facebook vs.)
       topSources,
+      
+      // Kampanya analizi
+      topCampaigns,
+      
+      // Referrer analizi
+      topReferrers,
+      
+      // Giriş sayfaları
+      topLandingPages,
+      
+      // Medium analizi  
+      topMediums,
 
       // Cihaz ve tarayıcı
       devices: deviceStats,

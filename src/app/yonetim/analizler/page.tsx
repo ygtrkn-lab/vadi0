@@ -62,6 +62,10 @@ interface StatsResponse {
   conversions: ConversionStats;
   trafficSources: Record<string, number>;
   topSources: Array<{ source: string; count: number }>;
+  topCampaigns: Array<{ name: string; count: number; source: string; medium: string }>;
+  topReferrers: Array<{ domain: string; count: number; fullUrl: string }>;
+  topLandingPages: Array<{ page: string; count: number }>;
+  topMediums: Array<{ medium: string; count: number }>;
   devices: Record<string, number>;
   browsers: Record<string, number>;
   operatingSystems: Record<string, number>;
@@ -455,6 +459,208 @@ function DetailedSourcesChart({ data, isDark }: { data: Array<{ source: string; 
   );
 }
 
+// Detaylı Trafik Analizi Paneli
+function TrafficDetailsPanel({ 
+  campaigns, 
+  referrers, 
+  landingPages, 
+  mediums,
+  isDark 
+}: { 
+  campaigns: Array<{ name: string; count: number; source: string; medium: string }>;
+  referrers: Array<{ domain: string; count: number; fullUrl: string }>;
+  landingPages: Array<{ page: string; count: number }>;
+  mediums: Array<{ medium: string; count: number }>;
+  isDark: boolean;
+}) {
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'referrers' | 'landing' | 'medium'>('campaigns');
+
+  const tabs = [
+    { key: 'campaigns', label: '🎯 Kampanyalar', count: campaigns?.length || 0 },
+    { key: 'referrers', label: '🔗 Referanslar', count: referrers?.length || 0 },
+    { key: 'landing', label: '📄 Giriş Sayfaları', count: landingPages?.length || 0 },
+    { key: 'medium', label: '📡 Kanallar', count: mediums?.length || 0 },
+  ];
+
+  const mediumLabels: Record<string, { label: string; icon: string; color: string }> = {
+    'organic': { label: 'Organik Arama', icon: '🔍', color: 'bg-green-500' },
+    'cpc': { label: 'Tıklama Başı Ücret (CPC)', icon: '💰', color: 'bg-yellow-500' },
+    'paid': { label: 'Ücretli Reklam', icon: '💵', color: 'bg-orange-500' },
+    'social': { label: 'Sosyal Medya', icon: '📱', color: 'bg-pink-500' },
+    'email': { label: 'E-posta', icon: '📧', color: 'bg-blue-500' },
+    'referral': { label: 'Referans', icon: '🔗', color: 'bg-purple-500' },
+    'display': { label: 'Görüntülü Reklam', icon: '🖼️', color: 'bg-indigo-500' },
+    'affiliate': { label: 'Ortaklık', icon: '🤝', color: 'bg-teal-500' },
+    'video': { label: 'Video', icon: '🎬', color: 'bg-red-500' },
+  };
+
+  return (
+    <SpotlightCard className="p-4 sm:p-6">
+      <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center">
+          🔍
+        </span>
+        Detaylı Trafik Analizi
+      </h3>
+
+      {/* Tabs */}
+      <div className={`flex flex-wrap gap-1 mb-4 p-1 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}>
+        {tabs.map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key as any)}
+            className={`flex-1 min-w-0 px-2 py-1.5 text-xs font-medium rounded-md transition-all ${
+              activeTab === tab.key
+                ? isDark ? 'bg-white text-black' : 'bg-gray-900 text-white'
+                : isDark ? 'text-white/70 hover:bg-white/10' : 'text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+            {tab.count > 0 && (
+              <span className={`ml-1 ${activeTab === tab.key ? 'opacity-70' : 'opacity-50'}`}>
+                ({tab.count})
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="space-y-2 max-h-80 overflow-y-auto">
+        {activeTab === 'campaigns' && (
+          campaigns && campaigns.length > 0 ? (
+            campaigns.map((campaign, idx) => (
+              <div 
+                key={idx}
+                className={`p-3 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    🎯 {campaign.name}
+                  </span>
+                  <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {campaign.count}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  {campaign.source && (
+                    <span className={`text-xs px-2 py-0.5 rounded ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-600'}`}>
+                      {campaign.source}
+                    </span>
+                  )}
+                  {campaign.medium && (
+                    <span className={`text-xs px-2 py-0.5 rounded ${isDark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-600'}`}>
+                      {campaign.medium}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className={`text-center py-8 ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+              <p className="text-2xl mb-2">📭</p>
+              <p className="text-sm">Henüz kampanya verisi yok</p>
+              <p className="text-xs mt-1 opacity-70">UTM parametreleri kullanarak kampanyalarınızı takip edin</p>
+            </div>
+          )
+        )}
+
+        {activeTab === 'referrers' && (
+          referrers && referrers.length > 0 ? (
+            referrers.map((ref, idx) => (
+              <div 
+                key={idx}
+                className={`p-3 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      🔗 {ref.domain}
+                    </span>
+                    {ref.fullUrl && (
+                      <p className={`text-xs truncate ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+                        {ref.fullUrl}
+                      </p>
+                    )}
+                  </div>
+                  <span className={`text-sm font-bold ml-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {ref.count}
+                  </span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className={`text-center py-8 ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+              <p className="text-2xl mb-2">🔗</p>
+              <p className="text-sm">Henüz referans verisi yok</p>
+              <p className="text-xs mt-1 opacity-70">Diğer sitelerden gelen trafiği gösterir</p>
+            </div>
+          )
+        )}
+
+        {activeTab === 'landing' && (
+          landingPages && landingPages.length > 0 ? (
+            landingPages.map((lp, idx) => (
+              <div 
+                key={idx}
+                className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+              >
+                <span className={`text-sm truncate flex-1 ${isDark ? 'text-white/90' : 'text-gray-700'}`}>
+                  📄 {lp.page === '/' ? 'Ana Sayfa' : lp.page}
+                </span>
+                <span className={`text-sm font-bold ml-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {lp.count}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div className={`text-center py-8 ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+              <p className="text-2xl mb-2">📄</p>
+              <p className="text-sm">Henüz giriş sayfası verisi yok</p>
+            </div>
+          )
+        )}
+
+        {activeTab === 'medium' && (
+          mediums && mediums.length > 0 ? (
+            mediums.map((m, idx) => {
+              const info = mediumLabels[m.medium.toLowerCase()] || { label: m.medium, icon: '📡', color: 'bg-gray-500' };
+              return (
+                <div 
+                  key={idx}
+                  className={`flex items-center gap-3 p-3 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+                >
+                  <div className={`w-8 h-8 rounded-lg ${info.color}/20 flex items-center justify-center`}>
+                    <span>{info.icon}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {info.label}
+                    </span>
+                    <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+                      utm_medium: {m.medium}
+                    </p>
+                  </div>
+                  <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {m.count}
+                  </span>
+                </div>
+              );
+            })
+          ) : (
+            <div className={`text-center py-8 ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
+              <p className="text-2xl mb-2">📡</p>
+              <p className="text-sm">Henüz kanal verisi yok</p>
+              <p className="text-xs mt-1 opacity-70">UTM medium parametresi ile kanal takibi yapın</p>
+            </div>
+          )
+        )}
+      </div>
+    </SpotlightCard>
+  );
+}
+
 function DeviceChart({ data, isDark }: { data: Record<string, number>; isDark: boolean }) {
   const total = Object.values(data).reduce((a, b) => a + b, 0);
   if (total === 0) return null;
@@ -578,22 +784,34 @@ function TopProductsTable({ products, isDark }: { products: Array<{ productId: n
 }
 
 function EventBreakdown({ events, isDark }: { events: Record<string, number>; isDark: boolean }) {
-  const eventLabels: Record<string, string> = {
-    'page_view': 'Sayfa Görüntüleme',
-    'add_to_cart': 'Sepete Ekleme',
-    'remove_from_cart': 'Sepetten Çıkarma',
-    'view_item': 'Ürün Görüntüleme',
-    'begin_checkout': 'Ödeme Başlatma',
-    'purchase': 'Satın Alma',
-    'search': 'Arama',
-    'favorite_add': 'Favorilere Ekleme',
-    'login': 'Giriş',
-    'sign_up': 'Kayıt',
-    'click': 'Tıklama',
+  const eventLabels: Record<string, { label: string; icon: string; color: string }> = {
+    'page_view': { label: 'Sayfa Görüntüleme', icon: '👁️', color: 'from-blue-500 to-blue-400' },
+    'add_to_cart': { label: 'Sepete Ekleme', icon: '🛒', color: 'from-green-500 to-green-400' },
+    'remove_from_cart': { label: 'Sepetten Çıkarma', icon: '🗑️', color: 'from-red-500 to-red-400' },
+    'view_item': { label: 'Ürün Görüntüleme', icon: '📦', color: 'from-purple-500 to-purple-400' },
+    'begin_checkout': { label: 'Ödeme Başlatma', icon: '💳', color: 'from-yellow-500 to-yellow-400' },
+    'purchase': { label: 'Satın Alma', icon: '✅', color: 'from-emerald-500 to-emerald-400' },
+    'search': { label: 'Arama', icon: '🔍', color: 'from-indigo-500 to-indigo-400' },
+    'favorite_add': { label: 'Favorilere Ekleme', icon: '❤️', color: 'from-pink-500 to-pink-400' },
+    'login': { label: 'Giriş Yapma', icon: '🔐', color: 'from-cyan-500 to-cyan-400' },
+    'sign_up': { label: 'Kayıt Olma', icon: '📝', color: 'from-teal-500 to-teal-400' },
+    'click': { label: 'Tıklama', icon: '⚡', color: 'from-orange-500 to-orange-400' },
+    'view_cart': { label: 'Sepet Görüntüleme', icon: '🛒', color: 'from-amber-500 to-amber-400' },
+    'checkout_step': { label: 'Ödeme Adımı', icon: '📋', color: 'from-violet-500 to-violet-400' },
+    'scroll_depth': { label: 'Scroll Derinliği', icon: '📊', color: 'from-sky-500 to-sky-400' },
+    'scroll_depth_final': { label: 'Sayfa Sonu Scroll', icon: '📈', color: 'from-lime-500 to-lime-400' },
+    'cart_visibility_hidden': { label: 'Sepetli Tab Değişimi', icon: '👀', color: 'from-rose-500 to-rose-400' },
+    'cart_abandonment': { label: 'Sepet Terk', icon: '🚪', color: 'from-red-600 to-red-500' },
+    'checkout_abandonment': { label: 'Ödeme Terk', icon: '💔', color: 'from-red-700 to-red-600' },
+    'js_error': { label: 'JavaScript Hatası', icon: '🐛', color: 'from-red-500 to-red-400' },
+    'api_error': { label: 'API Hatası', icon: '⚠️', color: 'from-yellow-600 to-yellow-500' },
+    'network_error': { label: 'Ağ Hatası', icon: '🌐', color: 'from-gray-500 to-gray-400' },
   };
 
   const entries = Object.entries(events);
   if (entries.length === 0) return null;
+
+  const maxCount = Math.max(...entries.map(([_, count]) => count));
 
   return (
     <SpotlightCard className="p-4 sm:p-6">
@@ -601,20 +819,35 @@ function EventBreakdown({ events, isDark }: { events: Record<string, number>; is
         Kullanıcı Eylemleri
       </h3>
       
-      <div className="grid grid-cols-2 gap-3">
-        {entries.map(([event, count]) => (
-          <div 
-            key={event}
-            className={`p-3 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
-          >
-            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {eventLabels[event] || event}
-            </p>
-            <p className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {formatNumber(count)}
-            </p>
-          </div>
-        ))}
+      <div className="space-y-3">
+        {entries.map(([event, count]) => {
+          const eventInfo = eventLabels[event] || { label: event, icon: '⚡', color: 'from-gray-500 to-gray-400' };
+          const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+          
+          return (
+            <div key={event}>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{eventInfo.icon}</span>
+                  <span className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-700'}`}>
+                    {eventInfo.label}
+                  </span>
+                </div>
+                <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {formatNumber(count)}
+                </span>
+              </div>
+              <div className={`h-2 rounded-full ${isDark ? 'bg-white/10' : 'bg-gray-200'}`}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${percent}%` }}
+                  transition={{ duration: 0.5 }}
+                  className={`h-full rounded-full bg-gradient-to-r ${eventInfo.color}`}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </SpotlightCard>
   );
@@ -690,7 +923,7 @@ function ClickAnalytics({ data, isDark }: { data: ClickData | null; isDark: bool
         {formatNumber(data.totalClicks)} <span className="text-sm font-normal opacity-60">toplam tıklama</span>
       </div>
 
-      <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+      <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
         En Çok Tıklanan Elementler
       </h4>
       <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -705,7 +938,7 @@ function ClickAnalytics({ data, isDark }: { data: ClickData | null; isDark: bool
               }`}>
                 {idx + 1}
               </span>
-              <span className={`text-sm truncate ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+              <span className={`text-sm truncate ${isDark ? 'text-white/90' : 'text-gray-700'}`}>
                 {item.text || item.id}
               </span>
               <span className={`text-xs px-1.5 py-0.5 rounded ${isDark ? 'bg-white/10 text-gray-400' : 'bg-gray-200 text-gray-500'}`}>
@@ -745,7 +978,7 @@ function CartClickDetails({ data, isDark }: { data: ClickData | null; isDark: bo
             key={idx}
             className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
           >
-            <span className={`text-sm truncate flex-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+            <span className={`text-sm truncate flex-1 ${isDark ? 'text-white/90' : 'text-gray-700'}`}>
               {item.text}
             </span>
             <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -793,7 +1026,7 @@ function CheckoutFunnel({ data, isDark }: { data: CheckoutFlowData | null; isDar
             <div key={step.key} className="relative">
               <div className="flex items-center gap-2 mb-1">
                 <span>{step.icon}</span>
-                <span className={`text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                <span className={`text-sm font-medium ${isDark ? 'text-white/90' : 'text-gray-700'}`}>
                   {step.label}
                 </span>
                 <span className={`text-sm font-bold ml-auto ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -818,7 +1051,7 @@ function CheckoutFunnel({ data, isDark }: { data: CheckoutFlowData | null; isDar
 
       {/* Conversion Rates */}
       <div className={`mt-6 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
           Dönüşüm Oranları
         </h4>
         <div className="grid grid-cols-2 gap-3">
@@ -846,7 +1079,7 @@ function CheckoutFunnel({ data, isDark }: { data: CheckoutFlowData | null; isDar
       {/* Payment Methods */}
       {data.paymentMethods.length > 0 && (
         <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
             Ödeme Yöntemi Tercihleri
           </h4>
           <div className="space-y-2">
@@ -855,7 +1088,7 @@ function CheckoutFunnel({ data, isDark }: { data: CheckoutFlowData | null; isDar
                 key={pm.method}
                 className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
               >
-                <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                <span className={`text-sm ${isDark ? 'text-white/90' : 'text-gray-700'}`}>
                   {pm.method === 'credit_card' ? '💳 Kredi Kartı' : 
                    pm.method === 'bank_transfer' ? '🏦 Havale/EFT' : pm.method}
                 </span>
@@ -870,7 +1103,7 @@ function CheckoutFunnel({ data, isDark }: { data: CheckoutFlowData | null; isDar
 
       {/* Cart Actions Summary */}
       <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
           Sepet İşlemleri
         </h4>
         <div className="grid grid-cols-3 gap-2">
@@ -1045,7 +1278,7 @@ function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefine
       {/* Errors by Page */}
       {Object.keys(data.byPage).length > 0 && (
         <div className={`border-t pt-4 mb-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
             📍 Sayfalara Göre Hatalar
           </h4>
           <div className="space-y-2">
@@ -1055,7 +1288,7 @@ function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefine
               return (
                 <div key={page}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs truncate flex-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <span className={`text-xs truncate flex-1 ${isDark ? 'text-white/80' : 'text-gray-600'}`}>
                       {page}
                     </span>
                     <span className={`text-xs font-medium ml-2 ${
@@ -1082,7 +1315,7 @@ function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefine
       {/* Recent Errors */}
       {data.recent.length > 0 && (
         <div className={`border-t pt-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
             Son Hatalar
           </h4>
           <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -1096,7 +1329,7 @@ function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefine
                     {errorTypeLabels[error.type]?.label || error.type}
                   </span>
                   {error.count && error.count > 1 && (
-                    <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    <span className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-500'}`}>
                       x{error.count}
                     </span>
                   )}
@@ -1104,7 +1337,7 @@ function ErrorsPanel({ data, isDark }: { data: InsightsData['errors'] | undefine
                 <p className={`text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {error.message}
                 </p>
-                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <p className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>
                   {error.page}
                 </p>
               </div>
@@ -1163,13 +1396,13 @@ function CartAbandonmentPanel({ data, isDark }: { data: InsightsData['cartAbando
         <div className={`p-3 rounded-lg col-span-2 ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
           <div className="flex items-center justify-between">
             <div>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Kaybedilen Potansiyel Gelir</p>
+              <p className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-500'}`}>Kaybedilen Potansiyel Gelir</p>
               <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {formatCurrency(data.totalLostRevenue)}
               </p>
             </div>
             <div className="text-right">
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Ort. Sepet</p>
+              <p className={`text-xs ${isDark ? 'text-white/60' : 'text-gray-500'}`}>Ort. Sepet</p>
               <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {formatCurrency(data.avgCartValue)}
               </p>
@@ -1181,7 +1414,7 @@ function CartAbandonmentPanel({ data, isDark }: { data: InsightsData['cartAbando
       {/* Top Abandoned Products */}
       {data.topAbandonedProducts.length > 0 && (
         <div className={`border-t pt-4 ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
             En Çok Terk Edilen Ürünler
           </h4>
           <div className="space-y-2">
@@ -1190,7 +1423,7 @@ function CartAbandonmentPanel({ data, isDark }: { data: InsightsData['cartAbando
                 key={product.id}
                 className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
               >
-                <span className={`text-xs truncate flex-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <span className={`text-xs truncate flex-1 ${isDark ? 'text-white/80' : 'text-gray-600'}`}>
                   {product.name}
                 </span>
                 <span className={`text-xs font-medium ml-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -1204,7 +1437,7 @@ function CartAbandonmentPanel({ data, isDark }: { data: InsightsData['cartAbando
 
       {/* Hourly Distribution */}
       <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
-        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+        <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
           Saatlik Dağılım
         </h4>
         <div className="flex items-end gap-0.5 h-16">
@@ -1230,9 +1463,9 @@ function CartAbandonmentPanel({ data, isDark }: { data: InsightsData['cartAbando
           })}
         </div>
         <div className="flex justify-between mt-1">
-          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>00:00</span>
-          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>12:00</span>
-          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>23:00</span>
+          <span className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>00:00</span>
+          <span className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>12:00</span>
+          <span className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>23:00</span>
         </div>
       </div>
     </SpotlightCard>
@@ -1481,6 +1714,73 @@ export default function AnalizlerPage() {
                 <TopPagesTable pages={stats?.topPages || []} isDark={isDark} />
                 <TopProductsTable products={stats?.topProducts || []} isDark={isDark} />
               </div>
+            </div>
+
+            {/* Detaylı Trafik Analizi - Full Width */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <TrafficDetailsPanel 
+                campaigns={stats?.topCampaigns || []}
+                referrers={stats?.topReferrers || []}
+                landingPages={stats?.topLandingPages || []}
+                mediums={stats?.topMediums || []}
+                isDark={isDark}
+              />
+              
+              {/* Browser & OS Stats */}
+              <SpotlightCard className="p-4 sm:p-6">
+                <h3 className={`font-semibold mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center">
+                    🌐
+                  </span>
+                  Tarayıcı & İşletim Sistemi
+                </h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Browsers */}
+                  <div>
+                    <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+                      🌐 Tarayıcılar
+                    </h4>
+                    <div className="space-y-2">
+                      {Object.entries(stats?.browsers || {}).map(([browser, count]) => (
+                        <div 
+                          key={browser}
+                          className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+                        >
+                          <span className={`text-sm ${isDark ? 'text-white/90' : 'text-gray-700'}`}>
+                            {browser}
+                          </span>
+                          <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {count}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* OS */}
+                  <div>
+                    <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-white/80' : 'text-gray-700'}`}>
+                      💻 İşletim Sistemleri
+                    </h4>
+                    <div className="space-y-2">
+                      {Object.entries(stats?.operatingSystems || {}).map(([os, count]) => (
+                        <div 
+                          key={os}
+                          className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}
+                        >
+                          <span className={`text-sm ${isDark ? 'text-white/90' : 'text-gray-700'}`}>
+                            {os}
+                          </span>
+                          <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {count}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </SpotlightCard>
             </div>
 
             {/* Click & Checkout Analytics */}
