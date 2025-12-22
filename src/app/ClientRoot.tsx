@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, useRef, useCallback } from 'react';
+import { useState, useEffect, createContext, useContext, useRef, useCallback, Suspense } from 'react';
 import { usePathname } from 'next/navigation';
 import { Preloader } from '@/components';
 import { CartProvider } from '@/context/CartContext';
 import { CustomerProvider } from '@/context/CustomerContext';
 import { OrderProvider } from '@/context/OrderContext';
+import { AnalyticsProvider } from '@/context/AnalyticsContext';
 import WhatsAppButton from '@/components/WhatsAppButton';
 
 interface LogoPosition {
@@ -140,24 +141,28 @@ export default function ClientRoot({ children }: ClientRootProps) {
     <CustomerProvider>
       <OrderProvider>
         <CartProvider>
-          <PreloaderContext.Provider value={{ isPreloaderComplete: isHomePage ? isPreloaderComplete : true, showHeaderLogo: isHomePage ? showHeaderLogo : true, logoRef, registerLogoPosition }}>
-            {shouldShowPreloader && (
-              <Preloader 
-                isLoading={isLoading} 
-                targetPosition={targetPosition}
-                onLogoArrived={handleLogoArrived}
-              />
-            )}
-            <div 
-              style={{ 
-                opacity: (isHomePage ? isPreloaderComplete : true) ? 1 : 0.99,
-                transition: 'opacity 0.3s ease'
-              }}
-            >
-              {children}
-            </div>
-            <WhatsAppButton />
-          </PreloaderContext.Provider>
+          <Suspense fallback={null}>
+            <AnalyticsProvider>
+              <PreloaderContext.Provider value={{ isPreloaderComplete: isHomePage ? isPreloaderComplete : true, showHeaderLogo: isHomePage ? showHeaderLogo : true, logoRef, registerLogoPosition }}>
+                {shouldShowPreloader && (
+                  <Preloader 
+                    isLoading={isLoading} 
+                    targetPosition={targetPosition}
+                    onLogoArrived={handleLogoArrived}
+                  />
+                )}
+                <div 
+                  style={{ 
+                    opacity: (isHomePage ? isPreloaderComplete : true) ? 1 : 0.99,
+                    transition: 'opacity 0.3s ease'
+                  }}
+                >
+                  {children}
+                </div>
+                <WhatsAppButton />
+              </PreloaderContext.Provider>
+            </AnalyticsProvider>
+          </Suspense>
         </CartProvider>
       </OrderProvider>
     </CustomerProvider>

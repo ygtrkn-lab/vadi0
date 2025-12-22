@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import { Product } from '@/data/products';
+import { trackAddToCart, trackRemoveFromCart } from '@/lib/analytics';
 
 // Types
 export interface CartItem {
@@ -217,9 +218,29 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = (product: Product) => {
     dispatch({ type: 'ADD_ITEM', payload: product });
+    
+    // Analytics tracking
+    trackAddToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      category: product.category,
+    });
   };
 
   const removeFromCart = (id: number) => {
+    // Find product info before removing for analytics
+    const item = state.items.find(item => item.product.id === id);
+    if (item) {
+      trackRemoveFromCart({
+        id: item.product.id,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+      });
+    }
+    
     dispatch({ type: 'REMOVE_ITEM', payload: id });
   };
 

@@ -19,7 +19,8 @@ import {
   HiOutlineChevronDown,
   HiOutlineMoon,
   HiOutlineSun,
-  HiOutlineUsers
+  HiOutlineUsers,
+  HiOutlineChartBar
 } from 'react-icons/hi';
 import { GradientText, ShinyText, Squares } from '@/components/ui-kit';
 import { ThemeProvider, useTheme, useThemeColors } from './ThemeContext';
@@ -39,6 +40,7 @@ const menuItems = [
   { href: '/yonetim/kategoriler', label: 'Kategoriler', icon: HiOutlineTag },
   { href: '/yonetim/siparisler', label: 'Siparişler', icon: HiOutlineClipboardList, badge: 3 },
   { href: '/yonetim/musteriler', label: 'Müşteriler', icon: HiOutlineUsers },
+  { href: '/yonetim/analizler', label: 'Analizler', icon: HiOutlineChartBar },
   { href: '/yonetim/ayarlar', label: 'Ayarlar', icon: HiOutlineCog },
 ];
 
