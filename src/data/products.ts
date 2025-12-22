@@ -20,7 +20,7 @@ export const slides: HeroSlide[] = [
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
     mobileImage:
-      'https://images.unsplash.com/photo-1530092285049-1c42085fd395?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1766363505/vadiler/slider/slide-1_tgwu5t.jpg',
     buttonText: 'Kampanyalara Git',
     buttonLink: '/haftanin-cicek-kampanyalari-vadiler-com',
   },
@@ -32,7 +32,7 @@ export const slides: HeroSlide[] = [
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225138/vadiler/products/vadiler-sensiz-olmaz-25-beyaz-guller.jpg',
     mobileImage:
-      'https://plus.unsplash.com/premium_photo-1670444760243-155db6c38716?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1766363506/vadiler/slider/slide-2_az8hcp.jpg',
     buttonText: 'İndirimleri Gör',
     buttonLink: '/haftanin-cicek-kampanyalari-vadiler-com',
   },
@@ -44,7 +44,7 @@ export const slides: HeroSlide[] = [
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
     mobileImage:
-      'https://images.unsplash.com/photo-1446071103084-c257b5f70672?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1766363507/vadiler/slider/slide-3_ibzway.jpg',
     buttonText: 'Kampanyalara Git',
     buttonLink: '/haftanin-cicek-kampanyalari-vadiler-com',
   },
@@ -56,7 +56,7 @@ export const slides: HeroSlide[] = [
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
     mobileImage:
-      'https://images.unsplash.com/photo-1576857990591-aad2585f34d1?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1766363509/vadiler/slider/slide-4_a44nhb.jpg',
     buttonText: 'Güllere Git',
     buttonLink: '/guller',
   },
@@ -68,7 +68,7 @@ export const slides: HeroSlide[] = [
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
     mobileImage:
-      'https://plus.unsplash.com/premium_photo-1679177888973-99ec8477308f?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1766363509/vadiler/slider/slide-5_pydgc1.jpg',
     buttonText: 'Orkidelere Git',
     buttonLink: '/orkideler',
   },
@@ -80,7 +80,7 @@ export const slides: HeroSlide[] = [
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225910/vadiler/products/vadiler-teraryum-i-yi-ki-dogdun-canim-arkadasim-mor.jpg',
     mobileImage:
-      'https://plus.unsplash.com/premium_photo-1676297982083-d01e995e5e07?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1766363510/vadiler/slider/slide-6_vuleoj.jpg',
     buttonText: 'Özel Günlere Git',
     buttonLink: '/ozel-gun',
   },

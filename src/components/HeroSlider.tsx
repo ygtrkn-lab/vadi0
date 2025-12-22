@@ -156,7 +156,7 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                 />
               </div>
 
-              <div className="container-custom relative z-10 pt-24 pb-24 sm:pt-28 sm:pb-28 lg:pt-32 lg:pb-20">
+              <div className="container-custom relative z-10 pt-40 pb-24 sm:pt-40 sm:pb-28 lg:pt-32 lg:pb-20">
                 <div className="grid lg:grid-cols-1 gap-8 lg:gap-12 items-center">
                   {/* Text Content */}
                   <motion.div
@@ -357,15 +357,6 @@ export default function HeroSlider({ id }: HeroSliderProps) {
           />
         </div>
       </motion.div>
-
-      {/* Mobile Slide Counter */}
-      <div className="absolute top-28 right-4 lg:hidden z-20 pointer-events-none">
-        <div className="flex items-center gap-1 px-3 py-1.5 bg-black/30 backdrop-blur-sm rounded-full text-white text-sm font-medium">
-          <span>{String(activeIndex + 1).padStart(2, '0')}</span>
-          <span className="opacity-50">/</span>
-          <span className="opacity-50">{String(slides.length).padStart(2, '0')}</span>
-        </div>
-      </div>
     </section>
   );
 }

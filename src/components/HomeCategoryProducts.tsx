@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { Heart, ShoppingCart, ChevronRight, ChevronLeft, Star, Truck, Gift, Clock, Check } from 'lucide-react';
 import type { Product } from '@/data/products';
 import { useCustomer } from '@/context/CustomerContext';
@@ -399,32 +399,19 @@ export function StoryBannerCarousel() {
                   whileHover={{ scale: 1.06, transition: { duration: 0.25 } }}
                 >
                   <motion.div
-                    className="absolute inset-0 rounded-full"
+                    className="absolute inset-0 rounded-full will-change-transform"
                     style={{
-                      // Start state: pink + white
                       background: 'conic-gradient(from 0deg, #f9a8d4, #ec4899, #ffffff, #f9a8d4)',
                     }}
                     animate={{
                       background: [
-                        // 1) Pink + white
                         'conic-gradient(from 0deg, #f9a8d4, #ec4899, #ffffff, #f9a8d4)',
-                        // 2) Soft black + white
                         'conic-gradient(from 0deg, #1f2937, #111827, #f5f5f5, #1f2937)',
-                        // 3) Red + white
-                        'conic-gradient(from 0deg, #fca5a5, #ef4444, #ffffff, #fca5a5)',
-                        // 4) Soft black + white
-                        'conic-gradient(from 0deg, #1f2937, #111827, #f5f5f5, #1f2937)',
-                        // 5) Orange + white
-                        'conic-gradient(from 0deg, #fdba74, #f97316, #ffffff, #fdba74)',
-                        // 6) Soft black + white
-                        'conic-gradient(from 0deg, #1f2937, #111827, #f5f5f5, #1f2937)',
-                        // 7) Loop seamlessly back to pink + white to avoid snapping
                         'conic-gradient(from 0deg, #f9a8d4, #ec4899, #ffffff, #f9a8d4)',
                       ],
                       rotate: 360,
-                      opacity: [0.9, 1, 0.9],
                     }}
-                    transition={{ duration: 4.2, repeat: Infinity, ease: 'linear' }}
+                    transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
                   />
                   <div className="absolute inset-[3px] rounded-full bg-white flex items-center justify-center shadow-lg">
                     <div className="w-full h-full p-[2px] rounded-full bg-white">
@@ -434,6 +421,8 @@ export function StoryBannerCarousel() {
                             src={category.image}
                             alt={category.name}
                             fill
+                            loading="lazy"
+                            sizes="80px"
                             className="object-cover"
                           />
                         ) : (
@@ -655,7 +644,8 @@ export function FeaturedBannerGrid() {
                       muted
                       loop
                       playsInline
-                      preload="metadata"
+                      preload="none"
+                      loading="lazy"
                       onEnded={(e) => (e.target as HTMLVideoElement).play()}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
@@ -672,7 +662,8 @@ export function FeaturedBannerGrid() {
                       muted
                       loop
                       playsInline
-                      preload="metadata"
+                      preload="none"
+                      loading="lazy"
                       onEnded={(e) => (e.target as HTMLVideoElement).play()}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
@@ -689,7 +680,8 @@ export function FeaturedBannerGrid() {
                       muted
                       loop
                       playsInline
-                      preload="metadata"
+                      preload="none"
+                      loading="lazy"
                       onEnded={(e) => (e.target as HTMLVideoElement).play()}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
@@ -704,6 +696,9 @@ export function FeaturedBannerGrid() {
                       src={category.image}
                       alt={category.name}
                       fill
+                      loading="lazy"
+                      sizes="(max-width: 768px) 50vw, 25vw"
+                      quality={75}
                       className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
                     {/* Lighter gradient overlay */}
