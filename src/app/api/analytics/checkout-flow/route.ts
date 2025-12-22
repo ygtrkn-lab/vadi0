@@ -68,8 +68,8 @@ export async function GET(request: Request) {
 
     const { data: checkoutEvents, error } = await supabase
       .from('visitor_events')
-      .select('id, event_type, event_data, created_at, session_id')
-      .in('event_type', checkoutEventTypes)
+      .select('id, event_name, properties, created_at, session_id')
+      .in('event_name', checkoutEventTypes)
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: false })
       .limit(1000);
@@ -105,8 +105,8 @@ export async function GET(request: Request) {
 
     // Process events
     events.forEach((event: any) => {
-      const eventType = event.event_type;
-      const data = event.event_data || {};
+      const eventType = event.event_name;
+      const data = event.properties || {};
 
       switch (eventType) {
         case 'add_to_cart':
@@ -165,7 +165,7 @@ export async function GET(request: Request) {
       if (!sessionJourneys[sessionId]) {
         sessionJourneys[sessionId] = [];
       }
-      sessionJourneys[sessionId].push(event.event_type);
+      sessionJourneys[sessionId].push(event.event_name);
     });
 
     // Find drop-off points
@@ -184,7 +184,7 @@ export async function GET(request: Request) {
         // Check last step
         const lastCheckoutStep = [...journey].reverse().find(e => e === 'checkout_step');
         if (lastCheckoutStep) {
-          dropOffAnalysis.atPayment++; // Simplified - would need event_data for precise step
+          dropOffAnalysis.atPayment++; // Simplified - would need properties for precise step
         }
       } else if (hasPurchase) {
         dropOffAnalysis.completed++;
@@ -202,8 +202,8 @@ export async function GET(request: Request) {
       totalSessions: Object.keys(sessionJourneys).length,
       recentEvents: events.slice(0, 50).map((e: any) => ({
         id: e.id,
-        type: e.event_type,
-        data: e.event_data,
+        type: e.event_name,
+        data: e.properties,
         timestamp: e.created_at
       }))
     });

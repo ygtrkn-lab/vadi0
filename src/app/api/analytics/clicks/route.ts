@@ -40,8 +40,8 @@ export async function GET(request: Request) {
     // Get click events with details
     const { data: clicks, error } = await supabase
       .from('visitor_events')
-      .select('id, event_type, event_data, created_at, session_id')
-      .eq('event_type', 'click')
+      .select('id, event_name, properties, created_at, session_id')
+      .eq('event_name', 'click')
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: false })
       .limit(500);
@@ -55,8 +55,8 @@ export async function GET(request: Request) {
     let filteredClicks = clicks || [];
     if (page !== 'all') {
       filteredClicks = filteredClicks.filter((click: any) => 
-        click.event_data?.page_path?.includes(page) ||
-        click.event_data?.pagePath?.includes(page)
+        click.properties?.page_path?.includes(page) ||
+        click.properties?.pagePath?.includes(page)
       );
     }
 
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
     }> = {};
 
     filteredClicks.forEach((click: any) => {
-      const data = click.event_data || {};
+      const data = click.properties || {};
       const key = data.element_id || data.elementId || data.element_text || data.text || 'unknown';
       
       if (!clickAggregation[key]) {
@@ -102,14 +102,14 @@ export async function GET(request: Request) {
 
     // Get cart-specific click data
     const cartClicks = filteredClicks.filter((click: any) => {
-      const pagePath = click.event_data?.page_path || click.event_data?.pagePath || '';
+      const pagePath = click.properties?.page_path || click.properties?.pagePath || '';
       return pagePath.includes('/sepet');
     });
 
     const cartClickSummary: Record<string, number> = {};
     cartClicks.forEach((click: any) => {
-      const text = click.event_data?.element_text || click.event_data?.text || 
-                   click.event_data?.element_id || click.event_data?.elementId || 'Bilinmeyen';
+      const text = click.properties?.element_text || click.properties?.text || 
+                   click.properties?.element_id || click.properties?.elementId || 'Bilinmeyen';
       cartClickSummary[text] = (cartClickSummary[text] || 0) + 1;
     });
 
@@ -126,11 +126,11 @@ export async function GET(request: Request) {
       rawClicks: filteredClicks.slice(0, 100).map((click: any) => ({
         id: click.id,
         timestamp: click.created_at,
-        element: click.event_data?.element_type || click.event_data?.elementType || 'unknown',
-        text: click.event_data?.element_text || click.event_data?.text || '',
-        x: click.event_data?.x,
-        y: click.event_data?.y,
-        page: click.event_data?.page_path || click.event_data?.pagePath || '/'
+        element: click.properties?.element_type || click.properties?.elementType || 'unknown',
+        text: click.properties?.element_text || click.properties?.text || '',
+        x: click.properties?.x,
+        y: click.properties?.y,
+        page: click.properties?.page_path || click.properties?.pagePath || '/'
       }))
     });
   } catch (error) {
