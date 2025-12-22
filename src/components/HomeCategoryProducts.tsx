@@ -644,9 +644,61 @@ export function FeaturedBannerGrid() {
                   backdrop-blur-xl border border-gray-200/60 hover:border-gray-300 
                   shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1"
               >
-              {/* Image Container with Modern Overlay */}
+              {/* Image/Video Container with Modern Overlay */}
               <div className="relative aspect-[3/4] overflow-hidden">
-                {category.image ? (
+                {/* Use video background for specific categories */}
+                {category.slug === 'guller' ? (
+                  <>
+                    <video
+                      src="https://res.cloudinary.com/dgdl1vdao/video/upload/v1766358300/guller_x8udgg.mp4"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      onEnded={(e) => (e.target as HTMLVideoElement).play()}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    {/* Gradient overlay to improve text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t 
+                      from-gray-900/60 via-gray-900/20 to-transparent 
+                      group-hover:from-gray-900/70 transition-all duration-500" />
+                  </>
+                ) : category.slug === 'dogum-gunu-ozel-hediyeler-cicekler' ? (
+                  <>
+                    <video
+                      src="https://res.cloudinary.com/dgdl1vdao/video/upload/v1766360287/dogum_gknrbi.mp4"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      onEnded={(e) => (e.target as HTMLVideoElement).play()}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    {/* Gradient overlay to improve text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t 
+                      from-gray-900/60 via-gray-900/20 to-transparent 
+                      group-hover:from-gray-900/70 transition-all duration-500" />
+                  </>
+                ) : category.slug === 'aranjmanlar' ? (
+                  <>
+                    <video
+                      src="https://res.cloudinary.com/dgdl1vdao/video/upload/v1766362128/aranjmanlar_zemzwn.mp4"
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      onEnded={(e) => (e.target as HTMLVideoElement).play()}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    />
+                    {/* Gradient overlay to improve text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t 
+                      from-gray-900/60 via-gray-900/20 to-transparent 
+                      group-hover:from-gray-900/70 transition-all duration-500" />
+                  </>
+                ) : category.image ? (
                   <>
                     <Image
                       src={category.image}
@@ -683,15 +735,6 @@ export function FeaturedBannerGrid() {
                     <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
                   </div>
                 </div>
-
-                {/* Product Count Pill - Top Right */}
-                {category.productCount && (
-                  <div className="absolute top-4 right-4 px-3 py-1.5 
-                    bg-white/95 backdrop-blur-md text-gray-900 text-xs font-bold rounded-full 
-                    shadow-lg border border-white/20 z-10">
-                    {category.productCount}+
-                  </div>
-                )}
               </div>
               </Link>
             </motion.div>
