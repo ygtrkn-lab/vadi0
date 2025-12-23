@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,7 +8,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle } from "lucide-react";
 import type { Product } from "@/data/products";
 import { Header, Footer } from "@/components";
-import DeliverySelectorV2 from "@/components/DeliverySelectorV2";
 import ProductReviews from "@/components/ProductReviews";
 import ProductDetailDesktop from "@/components/ProductDetailDesktop";
 import ProductGalleryDesktop from "@/components/ProductGalleryDesktop";
@@ -31,19 +30,9 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [showTopBar, setShowTopBar] = useState(false);
-  const [deliveryOpenSignal, setDeliveryOpenSignal] = useState(0);
-  const [deliveryInfo, setDeliveryInfo] = useState<{
-    location: string | null;
-    district: string | null;
-    date: Date | null;
-    timeSlot: string | null;
-  } | null>(null);
-  const [showDeliveryWarning, setShowDeliveryWarning] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
 
-  const deliverySectionRef = useRef<HTMLDivElement>(null);
-
-  const { addToCart, setGlobalDeliveryInfo } = useCart();
+  const { addToCart } = useCart();
   const { state: customerState, addToFavorites, removeFromFavorites, isFavorite } = useCustomer();
   const { trackEvent } = useAnalytics();
   const customer = customerState.currentCustomer;
@@ -97,14 +86,6 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", minimumFractionDigits: 0 }).format(price);
 
-  // Teslimat bilgisi güncellendiğinde çağrılır
-  const handleDeliveryComplete = useCallback((info: { location: string | null; district: string | null; date: Date | null; timeSlot: string | null }) => {
-    setDeliveryInfo(info);
-    if (info.location && info.district && info.date && info.timeSlot) {
-      setGlobalDeliveryInfo(info);
-    }
-  }, [setGlobalDeliveryInfo]);
-
   // canAddToCart - allow adding to cart without delivery selection; only require product to be in stock
   const canAddToCart = !!product.inStock;
 
@@ -126,8 +107,6 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
       product_price: product.price,
       product_category: categoryName,
       quantity: quantity,
-      delivery_location: deliveryInfo?.location,
-      delivery_district: deliveryInfo?.district,
     });
 
     setIsAddedToCart(true);
@@ -320,28 +299,16 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
               </div>
             </div>
 
-            {/* Delivery Selector */}
-            <div ref={deliverySectionRef} className="bg-white p-6 space-y-4 relative z-[1000]">
-              <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700">Teslimat Bilgileri</label>
-                <AnimatePresence>
-                  {showDeliveryWarning && (
-                    <motion.span
-                      initial={{ opacity: 0, x: 10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 10 }}
-                      className="text-xs font-medium text-[#e05a4c]"
-                    >
-                      Lütfen seçim yapın
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+            {/* Delivery Info (selection moved to cart) */}
+            <div className="bg-white p-6 space-y-3 relative z-[1000]">
+              <p className="text-sm font-medium text-gray-700">Teslimat Bilgileri</p>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 flex items-start gap-3">
+                <Truck className="w-5 h-5 text-emerald-600 mt-0.5" />
+                <div className="text-sm text-gray-700 space-y-1">
+                  <p className="font-semibold text-gray-900">Teslimatı sepetten seçin</p>
+                  <p className="text-gray-600">Teslimat tarih ve saatini sepet adımında belirleyebilirsiniz.</p>
+                </div>
               </div>
-              <DeliverySelectorV2
-                onDeliveryComplete={handleDeliveryComplete}
-                onOpenChange={() => {}}
-                openSignal={deliveryOpenSignal}
-              />
             </div>
 
             {/* Quantity and Add to Cart */}
@@ -538,26 +505,14 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
 
                 <p className="text-sm lg:text-base text-slate-600 leading-relaxed line-clamp-3">{product.description}</p>
 
-                <div ref={deliverySectionRef} className="relative space-y-3">
-                  <AnimatePresence>
-                    {showDeliveryWarning && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -6 }}
-                        className="absolute -top-8 left-0 right-0"
-                      >
-                        <div className="mx-auto w-fit rounded-full bg-[#e05a4c] text-white text-xs font-semibold px-3 py-1.5 shadow-lg">
-                          Lütfen teslimat bilgisi seçin
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  <DeliverySelectorV2
-                    onDeliveryComplete={handleDeliveryComplete}
-                    onOpenChange={() => {}}
-                    openSignal={deliveryOpenSignal}
-                  />
+                <div className="relative space-y-3">
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 flex items-start gap-3">
+                    <Truck className="w-5 h-5 text-emerald-600 mt-0.5" />
+                    <div className="text-sm text-gray-700 space-y-1">
+                      <p className="font-semibold text-gray-900">Teslimatı sepetten seçin</p>
+                      <p className="text-gray-600">Teslimat tarih ve saatini sepet sayfasında belirleyebilirsiniz.</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -603,7 +558,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                 <div className="hidden lg:grid grid-cols-3 gap-3">
                   {[{
                     title: "Teslimat Slotu",
-                    value: deliveryInfo?.timeSlot ? `${deliveryInfo.timeSlot}` : "Slot seçin",
+                    value: "Sepette seçilecek",
                   }, {
                     title: "İade & Değişim",
                     value: "Koşulsuz destek",
