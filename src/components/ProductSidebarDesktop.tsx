@@ -164,7 +164,7 @@ export default function ProductSidebarDesktop({
           }`}
         >
           {isAddedToCart ? <Check size={24} /> : <ShoppingCart size={24} />}
-          <span>{canAddToCart ? (isAddedToCart ? "Sepete Eklendi!" : "Sepete Ekle") : "Teslimat Seçin"}</span>
+          <span>{canAddToCart ? (isAddedToCart ? "Sepete Eklendi!" : "Sepete Ekle") : "Stokta Yok"}</span>
         </motion.button>
 
         {/* Secondary CTA - "Şimdi Satın Al" */}
@@ -198,7 +198,7 @@ export default function ProductSidebarDesktop({
               className="flex items-center gap-2 rounded-xl bg-[#e05a4c]/10 border-l-4 border-[#e05a4c] px-4 py-3"
             >
               <AlertCircle size={18} className="text-[#e05a4c] flex-shrink-0" />
-              <p className="text-sm text-[#e05a4c] font-semibold">Sepete eklemeden önce teslimat bilgisi seçin</p>
+              <p className="text-sm text-[#e05a4c] font-semibold">Teslimat adresini sepette seçebilirsiniz</p>
             </motion.div>
           )}
         </AnimatePresence>

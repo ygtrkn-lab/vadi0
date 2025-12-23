@@ -74,6 +74,8 @@ test-email.js
 /taslak/
 *.md
 !README.md
+# Allow Copilot instruction file to be committed
+!/.github/copilot-instructions.md
 
 # Utility scripts
 generate-favicons.js

@@ -105,31 +105,21 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     }
   }, [setGlobalDeliveryInfo]);
 
-  // canAddToCart - deliveryInfo tam olduğunda true (konum, tarih ve saat seçilmeli)
-  const canAddToCart = !!(
-    deliveryInfo && 
-    deliveryInfo.location && 
-    deliveryInfo.date && 
-    deliveryInfo.timeSlot
-  );
+  // canAddToCart - allow adding to cart without delivery selection; only require product to be in stock
+  const canAddToCart = !!product.inStock;
 
   const handleAddToCart = () => {
-    // Ensure any overlays are closed before interaction
+    // Ensure overlays are closed before interaction
     window.dispatchEvent(new Event("closeAllOverlays"));
     setIsImageModalOpen(false);
 
-    if (!canAddToCart) {
-      if (deliverySectionRef.current) {
-        deliverySectionRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      setDeliveryOpenSignal((s) => s + 1);
-      setShowDeliveryWarning(true);
-      setTimeout(() => setShowDeliveryWarning(false), 2200);
-      return;
-    }
+    // If product is out of stock, do nothing
+    if (!product.inStock) return;
+
+    // Add to cart even if delivery info is not set; delivery can be selected in the cart
     addToCart(product);
-    
-    // Track add to cart event
+
+    // Track add to cart event (delivery fields may be undefined)
     trackEvent('add_to_cart', {
       product_id: product.id,
       product_name: product.name,
@@ -139,7 +129,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
       delivery_location: deliveryInfo?.location,
       delivery_district: deliveryInfo?.district,
     });
-    
+
     setIsAddedToCart(true);
     // Redirect to cart after a short delay to show success state
     setTimeout(() => {
@@ -393,7 +383,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                   >
                     <div className={`absolute inset-0 transform -skew-x-12 -translate-x-full transition-transform duration-700 ${canAddToCart && !isAddedToCart ? "bg-white/20 group-hover:translate-x-full" : ""}`} />
                     {isAddedToCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-                    <span>{canAddToCart ? (isAddedToCart ? "Sepette" : "Sepete Ekle") : "Teslimat Seçin"}</span>
+                    <span>{product.inStock ? (isAddedToCart ? "Sepette" : "Sepete Ekle") : "Stokta Yok"}</span>
                   </button>
 
                   <button
@@ -599,7 +589,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                     }`}
                   >
                     {isAddedToCart ? <Check size={18} /> : <ShoppingCart size={18} />}
-                    {canAddToCart ? (isAddedToCart ? "Sepete Eklendi" : "Sepete Ekle") : "Teslimat Seçin"}
+                    {product.inStock ? (isAddedToCart ? "Sepete Eklendi" : "Sepete Ekle") : "Stokta Yok"}
                   </button>
 
                   <button
@@ -934,7 +924,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                   <span className="relative flex items-center gap-2">
                     {isAddedToCart ? <Check size={18} /> : <ShoppingCart size={18} />}
                     <span className="hidden sm:inline">
-                      {canAddToCart ? (isAddedToCart ? "Sepette ✓" : "Sepete Ekle") : "Teslimat Seç"}
+                      {product.inStock ? (isAddedToCart ? "Sepette ✓" : "Sepete Ekle") : "Stokta Yok"}
                     </span>
                   </span>
                 </motion.button>
