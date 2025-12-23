@@ -25,8 +25,8 @@ interface AnalyticsContextType {
   // Sayfa görüntüleme
   trackPageView: (props?: Partial<PageViewProps>) => void;
   
-  // Genel event
-  trackEvent: (props: TrackEventProps) => void;
+  // Genel event - supports both (props) and (eventName, properties) signatures
+  trackEvent: ((props: TrackEventProps) => void) & ((eventName: string, properties?: Record<string, any>) => void);
   
   // E-commerce events
   trackViewItem: (product: { id: number; name: string; price: number; category?: string }) => void;
@@ -37,7 +37,7 @@ interface AnalyticsContextType {
   
   // Engagement events
   trackSearch: (query: string, resultsCount: number) => void;
-  trackFavoriteAdd: (product: { id: number; name: string }) => void;
+  trackFavoriteAdd: (product: { id: number; name: string; price?: number; category?: string }) => void;
   trackClick: (element: string, properties?: Record<string, any>) => void;
   
   // Auth events
@@ -161,8 +161,17 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     });
   }, [pathname, searchParams]);
 
-  const trackEvent = useCallback((props: TrackEventProps) => {
-    analytics.trackEvent(props);
+  const trackEvent = useCallback((propsOrEventName: TrackEventProps | string, properties?: Record<string, any>) => {
+    if (typeof propsOrEventName === 'string') {
+      // Called as trackEvent('eventName', { properties })
+      analytics.trackEvent({
+        eventName: propsOrEventName,
+        properties,
+      });
+    } else {
+      // Called as trackEvent({ eventName, ... })
+      analytics.trackEvent(propsOrEventName);
+    }
   }, []);
 
   const trackClick = useCallback((element: string, properties?: Record<string, any>) => {

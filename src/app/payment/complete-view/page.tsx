@@ -1,12 +1,13 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle, Loader2, Package, CreditCard } from 'lucide-react';
 import { BorderBeam, GlassCard, SpotlightCard } from '@/components/ui-kit/premium';
 import { useCart } from '@/context/CartContext';
 import GoogleCustomerReviewsOptIn from '@/components/checkout/GoogleCustomerReviewsOptIn';
+import { trackMetaPurchase } from '@/lib/meta-pixel';
 
 function extractEstimatedDeliveryDate(delivery: any): string | null {
   if (!delivery) return null;
@@ -38,6 +39,8 @@ function PaymentCompleteContent() {
     email: string;
     estimatedDeliveryDate: string;
   }>(null);
+  // Track if Meta Pixel Purchase event was already fired to prevent duplicates
+  const purchaseTrackedRef = useRef(false);
 
   const gcrMerchantId = Number(process.env.NEXT_PUBLIC_GOOGLE_CUSTOMER_REVIEWS_MERCHANT_ID || '');
   const canRenderGcr = Number.isFinite(gcrMerchantId) && gcrMerchantId > 0;
@@ -144,6 +147,63 @@ function PaymentCompleteContent() {
 
     completePayment();
   }, [searchParams]);
+
+  // Meta Pixel: Track Purchase event when payment is successful
+  useEffect(() => {
+    const orderId = paymentResult?.orderId;
+    const paidAmount = paymentResult?.paidAmount;
+    
+    // Only track if payment was successful and we haven't tracked yet
+    if (!paymentResult?.success || !orderId || purchaseTrackedRef.current) return;
+    
+    // Mark as tracked immediately to prevent duplicates
+    purchaseTrackedRef.current = true;
+    
+    // Fetch order details for proper tracking with product info
+    const trackPurchaseEvent = async () => {
+      try {
+        const orderRes = await fetch(`/api/orders/${encodeURIComponent(orderId)}`, {
+          method: 'GET',
+          headers: { Accept: 'application/json' },
+        });
+        
+        const order = await orderRes.json().catch(() => null);
+        
+        if (order && order.items) {
+          // Track with full item details
+          trackMetaPurchase({
+            orderId: String(orderId),
+            total: paidAmount || order.totalAmount || 0,
+            items: order.items.map((item: any) => ({
+              id: item.productId || item.id,
+              name: item.productName || item.name || 'Ürün',
+              price: item.price || 0,
+              quantity: item.quantity || 1,
+            })),
+          });
+          console.log('[Meta Pixel] Purchase event tracked for order:', orderId);
+        } else {
+          // Fallback: track with minimal info
+          trackMetaPurchase({
+            orderId: String(orderId),
+            total: paidAmount || 0,
+            items: [],
+          });
+          console.log('[Meta Pixel] Purchase event tracked (minimal) for order:', orderId);
+        }
+      } catch (e) {
+        // Fallback on error
+        trackMetaPurchase({
+          orderId: String(orderId),
+          total: paidAmount || 0,
+          items: [],
+        });
+        console.warn('[Meta Pixel] Purchase tracked with fallback due to error:', e);
+      }
+    };
+    
+    trackPurchaseEvent();
+  }, [paymentResult?.success, paymentResult?.orderId, paymentResult?.paidAmount]);
 
   useEffect(() => {
     const orderId = paymentResult?.orderId;

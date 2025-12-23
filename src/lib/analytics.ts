@@ -3,6 +3,17 @@
  * Google Analytics benzeri özel ziyaretçi takip sistemi
  */
 
+import {
+  trackMetaViewContent,
+  trackMetaAddToCart,
+  trackMetaRemoveFromCart,
+  trackMetaInitiateCheckout,
+  trackMetaPurchase,
+  trackMetaSearch,
+  trackMetaAddToWishlist,
+  trackMetaCompleteRegistration,
+} from './meta-pixel';
+
 // Session ID için localStorage key
 const SESSION_KEY = 'vadiler_analytics_session';
 const VISITOR_KEY = 'vadiler_visitor_id';
@@ -824,6 +835,14 @@ class AnalyticsTracker {
         category: product.category,
       },
     });
+
+    // Meta Pixel: ViewContent
+    trackMetaViewContent({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      category: product.category,
+    });
   }
 
   /**
@@ -849,6 +868,15 @@ class AnalyticsTracker {
         category: product.category,
       },
     });
+
+    // Meta Pixel: AddToCart
+    trackMetaAddToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: product.quantity,
+      category: product.category,
+    });
   }
 
   /**
@@ -872,6 +900,14 @@ class AnalyticsTracker {
         quantity: product.quantity,
       },
     });
+
+    // Meta Pixel: RemoveFromCart (custom event)
+    trackMetaRemoveFromCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: product.quantity,
+    });
   }
 
   /**
@@ -892,6 +928,9 @@ class AnalyticsTracker {
         item_count: cart.items.length,
       },
     });
+
+    // Meta Pixel: InitiateCheckout
+    trackMetaInitiateCheckout(cart);
   }
 
   /**
@@ -917,6 +956,9 @@ class AnalyticsTracker {
       },
     });
 
+    // Meta Pixel: Purchase
+    trackMetaPurchase(order);
+
     // Session'ı conversion olarak işaretle
     this.markConversion(order.total);
   }
@@ -935,12 +977,15 @@ class AnalyticsTracker {
         results_count: resultsCount,
       },
     });
+
+    // Meta Pixel: Search
+    trackMetaSearch(query);
   }
 
   /**
    * Favorilere ekleme
    */
-  trackFavoriteAdd(product: { id: number; name: string }): void {
+  trackFavoriteAdd(product: { id: number; name: string; price?: number; category?: string }): void {
     this.trackEvent({
       eventName: 'favorite_add',
       eventCategory: 'engagement',
@@ -950,6 +995,16 @@ class AnalyticsTracker {
         product_name: product.name,
       },
     });
+
+    // Meta Pixel: AddToWishlist
+    if (product.price !== undefined) {
+      trackMetaAddToWishlist({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        category: product.category,
+      });
+    }
   }
 
   /**
@@ -979,6 +1034,9 @@ class AnalyticsTracker {
         customer_id: customerId,
       },
     });
+
+    // Meta Pixel: CompleteRegistration
+    trackMetaCompleteRegistration(customerId);
 
     this.linkCustomer(customerId);
   }
