@@ -116,6 +116,7 @@ export default function SepetClient() {
   const [locationStep, setLocationStep] = useState<'region' | 'district'>('region');
   const [locationSearch, setLocationSearch] = useState('');
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const [closedWarning, setClosedWarning] = useState<string | null>(null);
   
   // Saved address selection
   const [selectedSavedAddress, setSelectedSavedAddress] = useState<Address | null>(null);
@@ -457,6 +458,11 @@ export default function SepetClient() {
   };
 
   const handleDistrictSelect = (districtName: string) => {
+    if (DISABLED_DISTRICTS.includes(districtName)) {
+      setClosedWarning(districtName);
+      setTimeout(() => setClosedWarning(null), 3500);
+      return;
+    }
     setDistrict(districtName);
     const region = ISTANBUL_REGIONS.find(r => r.id === istanbulSide);
     setSelectedLocation(`${districtName}, ${region?.name}`);
@@ -1745,16 +1751,40 @@ export default function SepetClient() {
                                       {currentRegion?.name} - İlçeler
                                     </p>
                                     {filteredDistricts.map((districtName) => (
-                                      <button
-                                        key={districtName}
-                                        type="button"
-                                        onClick={() => handleDistrictSelect(districtName)}
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e05a4c]/5 transition-colors text-left"
-                                      >
-                                        <Check size={14} className="text-transparent" />
-                                        <span className="text-sm text-gray-700">{districtName}</span>
-                                      </button>
+                                      (() => {
+                                        const isDisabled = DISABLED_DISTRICTS.includes(districtName);
+                                        return (
+                                          <button
+                                            key={districtName}
+                                            type="button"
+                                            onClick={() => {
+                                              if (isDisabled) {
+                                                setClosedWarning(districtName);
+                                                setTimeout(() => setClosedWarning(null), 3500);
+                                                return;
+                                              }
+                                              handleDistrictSelect(districtName);
+                                            }}
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${isDisabled ? 'opacity-60 bg-gray-50' : 'hover:bg-[#e05a4c]/5'}`}
+                                          >
+                                            <Check size={14} className="text-transparent" />
+                                            <span className={`text-sm ${isDisabled ? 'text-gray-500' : 'text-gray-700'}`}>{districtName}</span>
+                                            {isDisabled && <span className="ml-auto text-xs text-rose-600">Kapalı</span>}
+                                          </button>
+                                        );
+                                      })()
                                     ))}
+                                    {closedWarning && (
+                                      <div className="mt-2 p-3 bg-rose-50 rounded-lg">
+                                        <div className="flex items-start gap-2">
+                                          <AlertCircle size={16} className="text-rose-600 mt-0.5" />
+                                          <div>
+                                            <p className="text-sm text-rose-800 font-medium">{closedWarning} — Bu bölge geçici olarak kapalı</p>
+                                            <p className="text-xs text-rose-600">Lütfen başka bir ilçe seçin veya daha sonra tekrar deneyin.</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
