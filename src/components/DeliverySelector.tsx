@@ -26,6 +26,9 @@ const ISTANBUL_REGIONS = [
   },
 ];
 
+// Geçici olarak hizmet verilmeyen ilçeler
+const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
+
 // Diğer iller
 const OTHER_PROVINCES: string[] = [];
 
@@ -103,7 +106,7 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
 
   const currentRegion = ISTANBUL_REGIONS.find(r => r.id === selectedRegion);
   const filteredDistricts = currentRegion?.districts.filter(d =>
-    d.toLowerCase().includes(searchTerm.toLowerCase())
+    d.toLowerCase().includes(searchTerm.toLowerCase()) && !DISABLED_DISTRICTS.includes(d)
   ) || [];
 
   // Notify parent when delivery info is complete

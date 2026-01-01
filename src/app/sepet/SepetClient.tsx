@@ -61,7 +61,10 @@ const ISTANBUL_REGIONS = [
   },
 ];
 
-const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts;
+// Geçici olarak hizmet verilmeyen ilçeler
+const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
+
+const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts.filter(d => !DISABLED_DISTRICTS.includes(d));
 
 type CheckoutStep = 'cart' | 'recipient' | 'message' | 'payment' | 'success';
 

@@ -26,6 +26,9 @@ const ISTANBUL_REGIONS = [
   },
 ];
 
+// Geçici olarak hizmet verilmeyen ilçeler
+const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
+
 interface DeliveryInfo {
   location: string | null;
   district: string | null;
@@ -123,14 +126,14 @@ export default function DeliverySelectorV2({
   );
   
   const filteredDistricts = currentRegion?.districts.filter(d =>
-    d.toLowerCase().includes(locationSearchTerm.toLowerCase())
+    d.toLowerCase().includes(locationSearchTerm.toLowerCase()) && !DISABLED_DISTRICTS.includes(d)
   ) || [];
 
   // All districts for search across regions
   const allDistricts = ISTANBUL_REGIONS.flatMap(r => 
     r.districts.map(d => ({ district: d, region: r }))
   ).filter(item => 
-    item.district.toLowerCase().includes(locationSearchTerm.toLowerCase())
+    item.district.toLowerCase().includes(locationSearchTerm.toLowerCase()) && !DISABLED_DISTRICTS.includes(item.district)
   );
 
   // Notify parent when delivery info changes
@@ -187,6 +190,7 @@ export default function DeliverySelectorV2({
   };
 
   const handleDistrictSelect = (district: string, regionId?: string) => {
+    if (DISABLED_DISTRICTS.includes(district)) return; // geçici olarak engellendi
     const region = regionId 
       ? ISTANBUL_REGIONS.find(r => r.id === regionId)
       : currentRegion;
