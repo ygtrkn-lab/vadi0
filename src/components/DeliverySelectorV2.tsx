@@ -126,14 +126,14 @@ export default function DeliverySelectorV2({
   );
   
   const filteredDistricts = currentRegion?.districts.filter(d =>
-    d.toLowerCase().includes(locationSearchTerm.toLowerCase()) && !DISABLED_DISTRICTS.includes(d)
+    d.toLowerCase().includes(locationSearchTerm.toLowerCase())
   ) || [];
 
   // All districts for search across regions
   const allDistricts = ISTANBUL_REGIONS.flatMap(r => 
     r.districts.map(d => ({ district: d, region: r }))
   ).filter(item => 
-    item.district.toLowerCase().includes(locationSearchTerm.toLowerCase()) && !DISABLED_DISTRICTS.includes(item.district)
+    item.district.toLowerCase().includes(locationSearchTerm.toLowerCase())
   );
 
   // Notify parent when delivery info changes
@@ -386,25 +386,28 @@ export default function DeliverySelectorV2({
                     <p className="text-xs text-gray-400 px-3 py-2 uppercase tracking-wider">Bulunan İlçeler</p>
                     {allDistricts.slice(0, 10).map((item, index) => {
                       const isAnadolu = item.region.id === 'istanbul-anadolu';
+                      const isDisabled = DISABLED_DISTRICTS.includes(item.district);
+                      const showDisabled = isAnadolu || isDisabled;
                       return (
                         <button
                           key={`${item.region.id}-${item.district}-${index}`}
-                          onClick={() => !isAnadolu && handleDistrictSelect(item.district, item.region.id)}
-                          disabled={isAnadolu}
+                          onClick={() => !showDisabled && handleDistrictSelect(item.district, item.region.id)}
+                          disabled={showDisabled}
                           className={`
                             w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left
-                            ${isAnadolu 
+                            ${showDisabled 
                               ? 'opacity-50 cursor-not-allowed bg-gray-50' 
                               : 'hover:bg-[#549658]/5 active:bg-[#549658]/10'
                             }
                           `}
                         >
-                          <MapPin size={16} className={isAnadolu ? 'text-gray-300' : 'text-[#549658]'} />
+                          <MapPin size={16} className={showDisabled ? 'text-gray-300' : 'text-[#549658]'} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-800 truncate">{item.district}</p>
                             <p className="text-xs text-gray-400">{item.region.name}</p>
                           </div>
                           {isAnadolu && <span className="text-xs text-amber-600">Yakında</span>}
+                          {isDisabled && !isAnadolu && <span className="text-xs text-rose-600">Kapalı</span>}
                         </button>
                       );
                     })}
@@ -472,15 +475,22 @@ export default function DeliverySelectorV2({
                   {currentRegion?.name} - İlçeler
                 </p>
                 <div className="grid grid-cols-1 gap-1">
-                  {filteredDistricts.map((district) => (
-                    <button
-                      key={district}
-                      onClick={() => handleDistrictSelect(district)}
-                      className="px-3 py-2.5 text-sm text-gray-700 rounded-xl hover:bg-[#549658]/5 active:bg-[#549658]/10 transition-colors text-left"
-                    >
-                      {district}
-                    </button>
-                  ))}
+                  {filteredDistricts.map((district) => {
+                    const isDisabled = DISABLED_DISTRICTS.includes(district);
+                    return (
+                      <button
+                        key={district}
+                        onClick={() => !isDisabled && handleDistrictSelect(district)}
+                        disabled={isDisabled}
+                        className={`px-3 py-2.5 text-sm rounded-xl transition-colors text-left ${isDisabled ? 'text-gray-400 opacity-60 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-[#549658]/5 active:bg-[#549658]/10'}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>{district}</span>
+                          {isDisabled && <span className="text-xs text-rose-600">Kapalı</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

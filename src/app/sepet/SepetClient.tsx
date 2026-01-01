@@ -64,7 +64,7 @@ const ISTANBUL_REGIONS = [
 // Geçici olarak hizmet verilmeyen ilçeler
 const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
 
-const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts.filter(d => !DISABLED_DISTRICTS.includes(d));
+const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts;
 
 type CheckoutStep = 'cart' | 'recipient' | 'message' | 'payment' | 'success';
 
@@ -200,12 +200,13 @@ export default function SepetClient() {
     setAddressTitle('');
     // İstanbul için yaka belirleme (kayıtlı adres İstanbul ise)
     if (addr.province.toLowerCase().includes('istanbul')) {
-      // Sadece Avrupa yakası desteklenir
-      if (EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase())) {
+      // Sadece Avrupa yakası desteklenir ve bazı ilçeler geçici kapalı
+      const isSupportedEurope = EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase()) && !DISABLED_DISTRICTS.includes(addr.district);
+      if (isSupportedEurope) {
         setIstanbulSide('avrupa');
         setSelectedLocation(`${addr.district}, İstanbul`);
       } else {
-        // Destek dışı ilçe: seçimleri sıfırla
+        // Destek dışı veya kapalı ilçe: seçimleri sıfırla
         setIstanbulSide('');
         setSelectedLocation(null);
       }
@@ -358,12 +359,12 @@ export default function SepetClient() {
       // Lokasyon bilgisini ayarla
       if (location) {
         // İlçe ve yaka bilgisini ayarla (sadece Avrupa yakası destekleniyor)
-        if (globalDistrict && EUROPE_DISTRICTS.some(d => d.toLowerCase() === globalDistrict.toLowerCase())) {
+        if (globalDistrict && EUROPE_DISTRICTS.some(d => d.toLowerCase() === globalDistrict.toLowerCase()) && !DISABLED_DISTRICTS.includes(globalDistrict)) {
           setSelectedLocation(location);
           setDistrict(globalDistrict);
           setIstanbulSide('avrupa');
         } else {
-          // Desteklenmeyen ilçe ise sıfırla
+          // Desteklenmeyen veya geçici kapalı ilçe ise sıfırla
           setSelectedLocation(null);
           setDistrict('');
           setIstanbulSide('');

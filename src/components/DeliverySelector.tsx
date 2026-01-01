@@ -26,8 +26,6 @@ const ISTANBUL_REGIONS = [
   },
 ];
 
-// Geçici olarak hizmet verilmeyen ilçeler
-const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
 
 // Diğer iller
 const OTHER_PROVINCES: string[] = [];
@@ -105,8 +103,11 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   );
 
   const currentRegion = ISTANBUL_REGIONS.find(r => r.id === selectedRegion);
+// Geçici olarak hizmet verilmeyen ilçeler
+const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
+
   const filteredDistricts = currentRegion?.districts.filter(d =>
-    d.toLowerCase().includes(searchTerm.toLowerCase()) && !DISABLED_DISTRICTS.includes(d)
+    d.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   // Notify parent when delivery info is complete
@@ -336,16 +337,21 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
                   <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium px-2 py-1">
                     {currentRegion?.name} - İlçeler
                   </p>
-                  {filteredDistricts.map((district) => (
-                    <button
-                      key={district}
-                      onClick={() => handleDistrictSelect(district)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e05a4c]/5 transition-colors text-left"
-                    >
-                      <Check size={14} className="text-transparent" />
-                      <span className="text-sm text-gray-700">{district}</span>
-                    </button>
-                  ))}
+                  {filteredDistricts.map((district) => {
+                    const isDisabled = DISABLED_DISTRICTS.includes(district);
+                    return (
+                      <button
+                        key={district}
+                        onClick={() => !isDisabled && handleDistrictSelect(district)}
+                        disabled={isDisabled}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${isDisabled ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'hover:bg-[#e05a4c]/5'}`}
+                      >
+                        <Check size={14} className={isDisabled ? 'text-gray-300' : 'text-transparent'} />
+                        <span className={`text-sm ${isDisabled ? 'text-gray-500' : 'text-gray-700'}`}>{district}</span>
+                        {isDisabled && <span className="ml-auto text-xs text-rose-600">Kapalı</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
