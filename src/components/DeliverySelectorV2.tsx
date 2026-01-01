@@ -56,6 +56,7 @@ export default function DeliverySelectorV2({
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
   const [locationStep, setLocationStep] = useState<'region' | 'district'>('region');
+  const [closedWarning, setClosedWarning] = useState<string | null>(null);
   
   // Date states
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -391,8 +392,14 @@ export default function DeliverySelectorV2({
                       return (
                         <button
                           key={`${item.region.id}-${item.district}-${index}`}
-                          onClick={() => !showDisabled && handleDistrictSelect(item.district, item.region.id)}
-                          disabled={showDisabled}
+                          onClick={() => {
+                            if (showDisabled) {
+                              setClosedWarning(item.district);
+                              setTimeout(() => setClosedWarning(null), 3500);
+                              return;
+                            }
+                            handleDistrictSelect(item.district, item.region.id);
+                          }}
                           className={`
                             w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left
                             ${showDisabled 
@@ -411,6 +418,17 @@ export default function DeliverySelectorV2({
                         </button>
                       );
                     })}
+                    {closedWarning && (
+                      <div className="p-3">
+                        <div className="p-3 bg-rose-50 flex items-start gap-2 rounded-lg">
+                          <AlertCircle size={16} className="text-rose-600 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-rose-800 font-medium">{closedWarning} — Bu bölge geçici olarak kapalı</p>
+                            <p className="text-xs text-rose-600 mt-0.5">Lütfen başka bir ilçe seçin veya daha sonra tekrar deneyin.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="p-4 text-center text-gray-500 text-sm">
@@ -480,9 +498,15 @@ export default function DeliverySelectorV2({
                     return (
                       <button
                         key={district}
-                        onClick={() => !isDisabled && handleDistrictSelect(district)}
-                        disabled={isDisabled}
-                        className={`px-3 py-2.5 text-sm rounded-xl transition-colors text-left ${isDisabled ? 'text-gray-400 opacity-60 cursor-not-allowed bg-gray-50' : 'text-gray-700 hover:bg-[#549658]/5 active:bg-[#549658]/10'}`}
+                        onClick={() => {
+                          if (isDisabled) {
+                            setClosedWarning(district);
+                            setTimeout(() => setClosedWarning(null), 3500);
+                            return;
+                          }
+                          handleDistrictSelect(district);
+                        }}
+                        className={`px-3 py-2.5 text-sm rounded-xl transition-colors text-left ${isDisabled ? 'text-gray-400 opacity-60 bg-gray-50' : 'text-gray-700 hover:bg-[#549658]/5 active:bg-[#549658]/10 cursor-pointer'}`}
                       >
                         <div className="flex items-center justify-between">
                           <span>{district}</span>
@@ -491,6 +515,17 @@ export default function DeliverySelectorV2({
                       </button>
                     );
                   })}
+                  {closedWarning && (
+                    <div className="p-3">
+                      <div className="p-3 bg-rose-50 flex items-start gap-2 rounded-lg">
+                        <AlertCircle size={16} className="text-rose-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm text-rose-800 font-medium">{closedWarning} — Bu bölge geçici olarak kapalı</p>
+                          <p className="text-xs text-rose-600 mt-0.5">Lütfen başka bir ilçe seçin veya daha sonra tekrar deneyin.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -53,6 +53,7 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showOtherCityWarning, setShowOtherCityWarning] = useState(false);
+  const [closedWarning, setClosedWarning] = useState<string | null>(null);
   const [step, setStep] = useState<'region' | 'district'>('region');
   const selectorRef = useRef<HTMLDivElement | null>(null);
   const lastOpenSignal = useRef<number | null>(null);
@@ -342,9 +343,15 @@ const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
                     return (
                       <button
                         key={district}
-                        onClick={() => !isDisabled && handleDistrictSelect(district)}
-                        disabled={isDisabled}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${isDisabled ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'hover:bg-[#e05a4c]/5'}`}
+                        onClick={() => {
+                          if (isDisabled) {
+                            setClosedWarning(district);
+                            setTimeout(() => setClosedWarning(null), 3500);
+                            return;
+                          }
+                          handleDistrictSelect(district);
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${isDisabled ? 'opacity-60 bg-gray-50' : 'hover:bg-[#e05a4c]/5 cursor-pointer'}`}
                       >
                         <Check size={14} className={isDisabled ? 'text-gray-300' : 'text-transparent'} />
                         <span className={`text-sm ${isDisabled ? 'text-gray-500' : 'text-gray-700'}`}>{district}</span>
@@ -353,6 +360,17 @@ const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
                     );
                   })}
                 </div>
+                {closedWarning && (
+                  <div className="border-t border-gray-100">
+                    <div className="p-3 bg-rose-50 flex items-start gap-2">
+                      <AlertCircle size={16} className="text-rose-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-rose-800 font-medium">{closedWarning} — Bu bölge geçici olarak kapalı</p>
+                        <p className="text-xs text-rose-600 mt-0.5">Lütfen başka bir ilçe seçin veya daha sonra tekrar deneyin.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               )}
             </div>
 
