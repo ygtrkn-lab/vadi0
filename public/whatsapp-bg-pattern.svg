@@ -1,0 +1,29 @@
+<svg width="375" height="644" viewBox="0 0 375 644" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="whatsapp-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+      <!-- Emoji faces pattern similar to WhatsApp background -->
+      <g opacity="0.03" fill="#999">
+        <path d="M25,20 Q30,15 35,20 Q30,25 25,20 M28,22 L28,24 M32,22 L32,24" />
+        <circle cx="28" cy="18" r="1" />
+        <circle cx="32" cy="18" r="1" />
+        
+        <path d="M65,30 Q70,25 75,30 Q70,35 65,30 M68,32 L68,34 M72,32 L72,34" />
+        <circle cx="68" cy="28" r="1" />
+        <circle cx="72" cy="28" r="1" />
+        
+        <path d="M15,60 Q20,55 25,60 Q20,65 15,60 M18,62 L18,64 M22,62 L22,64" />
+        <circle cx="18" cy="58" r="1" />
+        <circle cx="22" cy="58" r="1" />
+        
+        <path d="M55,70 Q60,65 65,70 Q60,75 55,70 M58,72 L58,74 M62,72 L62,74" />
+        <circle cx="58" cy="68" r="1" />
+        <circle cx="62" cy="68" r="1" />
+        
+        <path d="M80,50 Q85,45 90,50 Q85,55 80,50 M83,52 L83,54 M87,52 L87,54" />
+        <circle cx="83" cy="48" r="1" />
+        <circle cx="87" cy="48" r="1" />
+      </g>
+    </pattern>
+  </defs>
+  <rect width="375" height="644" fill="url(#whatsapp-pattern)" />
+</svg>

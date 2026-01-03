@@ -1,0 +1,105 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# playwright
+/test-results/
+/playwright-report/
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# local env
+.env.local
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# UI kit templates & docs
+/ui-kits/
+BACKEND_STRUCTURE.md
+SIPARIS_AKISI_DUZELTMELER.md
+TEST_CHECKLIST.md
+
+# Product images (using Cloudinary CDN)
+/public/products/
+
+# Zip files
+*.zip
+/public/uploads/
+
+# Test files
+test-email.js
+
+# Backup files
+*.backup
+
+# Scraped data
+/scraped-data/
+
+# Migration scripts and docs
+/scripts/
+/taslak/
+*.md
+!README.md
+# Allow Copilot instruction file to be committed
+!/.github/copilot-instructions.md
+
+# Utility scripts
+generate-favicons.js
+*.backup
+*.sql
+
+# Test and config files
+test-*.js
+check-*.js
+create-*.js
+nuke-*.js
+delete-*.js
+recreate-*.js
+*.postman_collection.json
+
+# Documentation and planning
+DESKTOP_REDESIGN_SUMMARY.md
+PAYMENT_405_FIX.md
+RECOVERY_SCRIPT_GUIDE.md
+VERCEL_DEPLOYMENT.md
+seo planı.md
+iyzico entegrasyon planı.md
+test-email-flow-simple.md
+Tüm siparişler için yalnızca teslim günü çalışacak olan sistem.md
+figma css.css
+
+.vercel
