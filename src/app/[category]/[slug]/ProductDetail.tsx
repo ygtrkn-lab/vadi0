@@ -83,6 +83,17 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     setIsImageModalOpen(false);
   }, [pathname]);
 
+  // Keep modal state in sync with native Fullscreen API - close modal when fullscreen is exited
+  useEffect(() => {
+    const onFsChange = () => {
+      if (!document.fullscreenElement) {
+        setIsImageModalOpen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", minimumFractionDigits: 0 }).format(price);
 

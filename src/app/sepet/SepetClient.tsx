@@ -351,7 +351,16 @@ export default function SepetClient() {
     const dd = String(d.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
-  
+
+  // Helper: check if a YYYY-MM-DD local ISO date string is a Sunday (Pazar)
+  const isLocalIsoDateSunday = (iso: string): boolean => {
+    if (!iso) return false;
+    const parts = iso.split('-').map(Number);
+    if (parts.length !== 3 || parts.some(p => !Number.isFinite(p))) return false;
+    const [y, m, d] = parts;
+    return new Date(y, m - 1, d).getDay() === 0;
+  };
+
   // Global delivery info'dan teslimat bilgilerini yükle (ürün detay sayfasından seçilen)
   useEffect(() => {
     if (state.globalDeliveryInfo) {
@@ -770,7 +779,7 @@ export default function SepetClient() {
   const isPhoneValid = validatePhoneNumber(recipientPhone);
   const canProceedToRecipient = state.items.length > 0;
   const requiresSenderName = isGift;
-  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && recipientAddress.length >= 10 && district.length > 0 && deliveryDate.length > 0 && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
+  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && recipientAddress.length >= 10 && district.length > 0 && deliveryDate.length > 0 && !isLocalIsoDateSunday(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
   const guestEmailTrim = guestEmail.trim();
   const guestPhoneDigits = normalizeTrMobileDigits(guestPhone);
   const isGuestEmailValid = guestEmailTrim.length === 0 ? false : validateEmail(guestEmailTrim);
@@ -861,6 +870,23 @@ export default function SepetClient() {
       setErr('delivery-date', 'date', 'Teslimat tarihi seçilmelidir');
     } else if (deliveryDate < MIN_DELIVERY_DATE) {
       setErr('delivery-date', 'date', 'Teslimat tarihi en erken yarın olabilir');
+    } else {
+      // Validate Sunday (Pazar) - not deliverable
+      const [y, m, d] = deliveryDate.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      if (!Number.isFinite(dt.getTime())) {
+        setErr('delivery-date', 'date', 'Geçersiz tarih seçildi');
+        if (!firstId) {
+          firstId = 'delivery-date';
+          firstMessage = 'Geçersiz tarih seçildi';
+        }
+      } else if (dt.getDay() === 0) {
+        setErr('delivery-date', 'date', 'Yoğunluk sebebiyle Pazar günleri teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.');
+        if (!firstId) {
+          firstId = 'delivery-date';
+          firstMessage = 'Yoğunluk sebebiyle Pazar günleri teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.';
+        }
+      }
     }
     if (!isValidDeliveryTimeSlot(deliveryTimeSlot)) {
       setErr('delivery-time', 'time', 'Teslimat saat dilimini seçin');
@@ -2020,6 +2046,16 @@ export default function SepetClient() {
                             setRecipientErrors((prev) => ({ ...prev, date: undefined }));
                             return;
                           }
+
+                          // Pazar kontrolü (local date)
+                          const [y, m, d] = next.split('-').map(Number);
+                          const tmp = new Date(y, m - 1, d);
+                          if (tmp.getDay() === 0) {
+                            setDeliveryDate(next);
+                            setRecipientErrors((prev) => ({ ...prev, date: 'Yoğunluk sebebiyle Pazar günleri teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.' }));
+                            return;
+                          }
+
                           setDeliveryDate(next);
                           setRecipientErrors((prev) => ({ ...prev, date: undefined }));
                         }}

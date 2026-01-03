@@ -103,6 +103,25 @@ export default function ProductGalleryDesktop({
 
   const resetZoom = () => setZoomState({ scale: 1, x: 0, y: 0 });
 
+  // Attempt to open native Fullscreen on the image container. If not available or fails,
+  // fall back to opening the site's modal via the parent callback.
+  const handleFullscreen = async () => {
+    const el = imageContainerRef.current ?? containerRef.current ?? document.documentElement;
+    const request = (el as any)?.requestFullscreen?.bind(el);
+    if (typeof request === "function") {
+      try {
+        await request();
+        return;
+      } catch (err) {
+        // If the request fails (rare), fall back to modal
+        // eslint-disable-next-line no-console
+        console.warn("Fullscreen request failed:", err);
+      }
+    }
+    // Fallback: open the modal overlay in parent component
+    onFullscreenOpen();
+  };
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -224,7 +243,7 @@ export default function ProductGalleryDesktop({
 
         {/* Fullscreen button */}
         <button
-          onClick={onFullscreenOpen}
+          onClick={handleFullscreen}
           className="absolute bottom-4 right-4 rounded-full bg-white/90 text-gray-700 px-4 py-2 text-sm font-medium shadow-lg hover:bg-white transition z-20 flex items-center gap-2 backdrop-blur-sm"
         >
           <Maximize2 size={14} />

@@ -160,6 +160,18 @@ export async function POST(request: NextRequest) {
     const discount = clampMoney(newOrder.discount ?? 0, { min: 0, max: trustedSubtotal + deliveryFee });
     const total = trustedSubtotal + deliveryFee - discount;
 
+    // Server-side: block Sunday deliveries (Pazar)
+    const deliveryDateStr = newOrder.delivery?.deliveryDate;
+    if (deliveryDateStr) {
+      const parsed = new Date(deliveryDateStr);
+      if (Number.isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: 'Geçersiz teslimat tarihi' }, { status: 400 });
+      }
+      if (parsed.getUTCDay() === 0) {
+        return NextResponse.json({ error: 'Teslimat günü Pazar olamaz.' }, { status: 400 });
+      }
+    }
+
     // Build order data with only valid Supabase columns
     const orderData = {
       customer_id: customerId,
