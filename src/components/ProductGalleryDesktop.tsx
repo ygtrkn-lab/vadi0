@@ -103,22 +103,8 @@ export default function ProductGalleryDesktop({
 
   const resetZoom = () => setZoomState({ scale: 1, x: 0, y: 0 });
 
-  // Attempt to open native Fullscreen on the image container. If not available or fails,
-  // fall back to opening the site's modal via the parent callback.
-  const handleFullscreen = async () => {
-    const el = imageContainerRef.current ?? containerRef.current ?? document.documentElement;
-    const request = (el as any)?.requestFullscreen?.bind(el);
-    if (typeof request === "function") {
-      try {
-        await request();
-        return;
-      } catch (err) {
-        // If the request fails (rare), fall back to modal
-        // eslint-disable-next-line no-console
-        console.warn("Fullscreen request failed:", err);
-      }
-    }
-    // Fallback: open the modal overlay in parent component
+  // Always open the app modal for a consistent fullscreen experience across browsers
+  const handleFullscreen = () => {
     onFullscreenOpen();
   };
 
@@ -146,7 +132,7 @@ export default function ProductGalleryDesktop({
         }}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        className="relative rounded-xl overflow-hidden bg-[#fafafa] aspect-square cursor-zoom-in select-none group"
+        className="relative rounded-xl overflow-hidden bg-[#fafafa] aspect-[4/5] xl:aspect-[3/4] cursor-zoom-in select-none group"
       >
         {/* Subtle vignette (placed below image) */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/5 z-0 pointer-events-none" />

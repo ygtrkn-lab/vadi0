@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle, X } from "lucide-react";
 import type { Product } from "@/data/products";
 import { Header, Footer } from "@/components";
 import ProductReviews from "@/components/ProductReviews";
@@ -420,7 +420,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                   </button>
                 ))}
               </div>
-              <motion.div layout className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] max-h-[60vh]">
+              <motion.div layout className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] min-h-[60vh]">
                 <Image
                   src={images[selectedImage] || product.image}
                   alt={product.name}
@@ -447,7 +447,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                 )}
                 <button
                   onClick={() => setIsImageModalOpen(true)}
-                  className="absolute bottom-4 right-4 rounded-full bg-white/90 text-slate-800 px-4 py-2 text-xs font-semibold shadow-md"
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/90 text-slate-800 px-5 py-2 text-xs font-semibold shadow-md"
                 >
                   Tam ekran
                 </button>
@@ -913,40 +913,79 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[120] bg-black/90 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center"
+            style={{ zIndex: 200000 }}
             onClick={() => setIsImageModalOpen(false)}
           >
             <button
-              className="absolute top-6 right-6 text-white/80 hover:text-white"
-              onClick={() => setIsImageModalOpen(false)}
+              className="absolute top-5 right-5 rounded-full bg-white/10 text-white/80 hover:text-white hover:bg-white/20 p-2"
+              style={{ zIndex: 200010 }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsImageModalOpen(false);
+              }}
+              aria-label="Kapat"
             >
-              <ArrowLeft size={24} />
+              <X size={24} />
             </button>
-            <div className="relative w-full max-w-4xl aspect-[4/3]" onClick={(e) => e.stopPropagation()}>
-              <Image src={images[selectedImage]} alt={product.name} fill className="object-contain" />
-              {isWeeklyCampaign && (
-                <div className="absolute left-4 top-10 z-20">
-                  <Image
-                    src="/TR/bugune-ozel.png"
-                    alt="Bugüne Özel"
-                    width={80}
-                    height={80}
-                    className="h-16 w-16 drop-shadow"
-                  />
+            <div
+              className="relative w-full h-full max-w-none px-0 sm:px-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setSelectedImage((selectedImage - 1 + images.length) % images.length)}
+                    className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 text-white hover:bg-white/30 transition shadow-lg"
+                    aria-label="Önceki görsel"
+                  >
+                    <ArrowLeft size={24} />
+                  </button>
+                  <button
+                    onClick={() => setSelectedImage((selectedImage + 1) % images.length)}
+                    className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 text-white hover:bg-white/30 transition shadow-lg"
+                    aria-label="Sonraki görsel"
+                  >
+                    <ArrowRight size={24} />
+                  </button>
+                </>
+              )}
+
+              <div className="relative w-full h-full min-h-[90vh] flex items-center justify-center">
+                <Image
+                  src={images[selectedImage]}
+                  alt={product.name}
+                  fill
+                  className="object-contain"
+                  sizes="100vw"
+                  priority
+                />
+                {isWeeklyCampaign && (
+                  <div className="absolute left-6 top-10 z-20">
+                    <Image
+                      src="/TR/bugune-ozel.png"
+                      alt="Bugüne Özel"
+                      width={90}
+                      height={90}
+                      className="h-16 w-16 drop-shadow"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {images.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                  {images.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImage(idx)}
+                      className={`h-2.5 w-10 rounded-full transition ${selectedImage === idx ? "bg-white" : "bg-white/40"}`}
+                      aria-label={`Görsel ${idx + 1}`}
+                    />
+                  ))}
                 </div>
               )}
             </div>
-            {images.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                {images.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`h-2 w-10 rounded-full ${selectedImage === idx ? "bg-white" : "bg-white/40"}`}
-                  />
-                ))}
-              </div>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
