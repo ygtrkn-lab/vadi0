@@ -443,6 +443,87 @@ export default function SepetClient() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [neighborhoodSearchOpen]);
 
+  // LocalStorage'dan form verilerini yükle (sayfa yüklendiğinde)
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('vadiler_sepet_form');
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        // Sadece kullanıcı giriş yapmamışsa veya kayıtlı adres seçilmemişse yükle
+        if (!customerState.currentCustomer || !selectedSavedAddress) {
+          if (parsed.recipientName) setRecipientName(parsed.recipientName);
+          if (parsed.recipientPhone) setRecipientPhone(parsed.recipientPhone);
+          if (parsed.recipientAddress) setRecipientAddress(parsed.recipientAddress);
+          if (parsed.istanbulSide) setIstanbulSide(parsed.istanbulSide);
+          if (parsed.district) setDistrict(parsed.district);
+          if (parsed.districtId) setDistrictId(parsed.districtId);
+          if (parsed.neighborhood) setNeighborhood(parsed.neighborhood);
+          if (parsed.selectedLocation) setSelectedLocation(parsed.selectedLocation);
+          if (parsed.deliveryDate) setDeliveryDate(parsed.deliveryDate);
+          if (parsed.deliveryTimeSlot) setDeliveryTimeSlot(parsed.deliveryTimeSlot);
+          if (parsed.deliveryNotes) setDeliveryNotes(parsed.deliveryNotes);
+          if (parsed.isGift !== undefined) setIsGift(parsed.isGift);
+          if (parsed.senderName) setSenderName(parsed.senderName);
+          if (parsed.messageCard) setMessageCard(parsed.messageCard);
+          if (parsed.guestEmail) setGuestEmail(parsed.guestEmail);
+          if (parsed.guestPhone) setGuestPhone(parsed.guestPhone);
+        }
+      }
+    } catch (error) {
+      console.error('Form verilerini yüklerken hata:', error);
+    }
+  }, []);
+
+  // Form verilerini localStorage'a kaydet (değiştiğinde)
+  useEffect(() => {
+    // Sadece sepet boş değilse ve success adımında değilse kaydet
+    if (state.items.length === 0 || currentStep === 'success') return;
+
+    try {
+      const formData = {
+        recipientName,
+        recipientPhone,
+        recipientAddress,
+        istanbulSide,
+        district,
+        districtId,
+        neighborhood,
+        selectedLocation,
+        deliveryDate,
+        deliveryTimeSlot,
+        deliveryNotes,
+        isGift,
+        senderName,
+        messageCard,
+        guestEmail,
+        guestPhone,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('vadiler_sepet_form', JSON.stringify(formData));
+    } catch (error) {
+      console.error('Form verilerini kaydederken hata:', error);
+    }
+  }, [
+    recipientName,
+    recipientPhone,
+    recipientAddress,
+    istanbulSide,
+    district,
+    districtId,
+    neighborhood,
+    selectedLocation,
+    deliveryDate,
+    deliveryTimeSlot,
+    deliveryNotes,
+    isGift,
+    senderName,
+    messageCard,
+    guestEmail,
+    guestPhone,
+    state.items.length,
+    currentStep
+  ]);
+
   const normalizeTrMobileDigits = (phone: string): string => {
     let digits = phone.replace(/\D/g, '');
     if (digits.startsWith('90') && digits.length >= 12) {
@@ -1084,6 +1165,13 @@ export default function SepetClient() {
         // Clear cart after successful order creation
         clearCart();
         
+        // Clear localStorage form data after successful order
+        try {
+          localStorage.removeItem('vadiler_sepet_form');
+        } catch (error) {
+          console.error('localStorage temizlenirken hata:', error);
+        }
+        
         // Add to customer orders if logged in
         if (isLoggedIn && customerState.currentCustomer) {
           await addOrderToCustomer(customerState.currentCustomer.id, orderResult.order.id, totalAmount);
@@ -1120,6 +1208,13 @@ export default function SepetClient() {
         // Clear cart before redirecting to 3DS
         // Order is already created, no need to keep items in cart
         clearCart();
+
+        // Clear localStorage form data after successful order
+        try {
+          localStorage.removeItem('vadiler_sepet_form');
+        } catch (error) {
+          console.error('localStorage temizlenirken hata:', error);
+        }
 
         // Redirect to 3DS page (full page, not modal)
         // This is e-commerce standard - callback will return to our site
