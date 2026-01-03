@@ -30,8 +30,21 @@ export async function GET(
       .eq('category', (category as any).slug);
     
     // Convert snake_case to camelCase
+    const fallbackCoverType = (category as any).cover_video ? 'video' : 'image';
+    const fallbackImage = (category as any).image || '';
     const formattedCategory = {
-      ...(category as any),
+      id: (category as any).id,
+      name: (category as any).name,
+      slug: (category as any).slug,
+      description: (category as any).description ?? '',
+      image: fallbackImage,
+      coverType: (category as any).cover_type || fallbackCoverType,
+      coverImage: (category as any).cover_image || fallbackImage,
+      coverVideo: (category as any).cover_video || '',
+      coverMobileImage: (category as any).cover_mobile_image || '',
+      coverOverlay: (category as any).cover_overlay || 'dark',
+      coverCtaText: (category as any).cover_cta_text || 'Keşfet',
+      coverSubtitle: (category as any).cover_subtitle || '',
       productCount: productCount || 0,
       isActive: (category as any).is_active,
       createdAt: (category as any).created_at,

@@ -8,34 +8,36 @@ cloudinary.config({
     secure: true,
 });
 
+export type CloudinaryUploadOptions = {
+    folder?: string;
+    publicId?: string;
+    resourceType?: 'image' | 'video' | 'auto';
+    mimeType?: string;
+};
+
 /**
- * Upload an image to Cloudinary
- * @param file - File buffer or path
- * @param folder - Cloudinary folder name
- * @param publicId - Custom public ID (optional)
- * @returns Upload result with secure_url
+ * Upload an asset to Cloudinary with optional resource configuration
  */
 export async function uploadToCloudinary(
     file: string | Buffer,
-    folder: string = 'vadiler',
-    publicId?: string
+    options: CloudinaryUploadOptions = {}
 ) {
     try {
         const uploadOptions: any = {
-            folder,
-            resource_type: 'auto',
+            folder: options.folder ?? 'vadiler',
+            resource_type: options.resourceType ?? 'auto',
             // Auto-optimize: format and quality
             fetch_format: 'auto',
             quality: 'auto',
         };
 
-        if (publicId) {
-            uploadOptions.public_id = publicId;
+        if (options.publicId) {
+            uploadOptions.public_id = options.publicId;
         }
 
         // Convert Buffer to base64 data URI if needed
         const fileToUpload = Buffer.isBuffer(file)
-            ? `data:image/jpeg;base64,${file.toString('base64')}`
+            ? `data:${options.mimeType ?? 'application/octet-stream'};base64,${file.toString('base64')}`
             : file;
 
         const result = await cloudinary.uploader.upload(fileToUpload, uploadOptions);

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 
+const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+const MAX_VIDEO_SIZE = 25 * 1024 * 1024; // 25MB
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -13,45 +16,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
+    if (!ACCEPTED_VIDEO_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { success: false, error: 'Geçersiz dosya tipi. Sadece JPEG, PNG, GIF ve WebP desteklenir.' },
+        { success: false, error: 'Geçersiz dosya tipi. Sadece MP4, WebM ve MOV desteklenir.' },
         { status: 400 }
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > MAX_VIDEO_SIZE) {
       return NextResponse.json(
-        { success: false, error: 'Dosya boyutu 5MB\'dan büyük olamaz.' },
+        { success: false, error: 'Dosya boyutu 25MB\'ı aşamaz.' },
         { status: 400 }
       );
     }
 
-    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Generate unique public ID
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const originalName = file.name.split('.')[0].toLowerCase().replace(/[^a-z0-9]/g, '-');
     const publicId = `${originalName}-${uniqueId}`;
 
-    // Upload to Cloudinary
     const result = await uploadToCloudinary(buffer, {
-      folder: 'uploads/images',
+      folder: 'uploads/videos',
       publicId,
-      resourceType: 'image',
+      resourceType: 'video',
       mimeType: file.type
     });
 
     if (!result.success) {
-      console.error('Cloudinary upload failed:', result.error);
+      console.error('Cloudinary video upload failed:', result.error);
       return NextResponse.json(
-        { success: false, error: result.error || 'Dosya yüklenirken bir hata oluştu' },
+        { success: false, error: result.error || 'Video yüklenirken bir hata oluştu' },
         { status: 500 }
       );
     }
@@ -69,11 +65,10 @@ export async function POST(request: NextRequest) {
         format: result.format,
       }
     });
-
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error('Video upload error:', error);
     return NextResponse.json(
-      { success: false, error: 'Dosya yüklenirken bir hata oluştu' },
+      { success: false, error: 'Video yüklenirken bir hata oluştu' },
       { status: 500 }
     );
   }

@@ -556,6 +556,28 @@ export function FeaturedBannerGrid() {
 
   const featuredCategories = categories.slice(0, 8);
 
+  const resolveOverlayClass = (value?: string) => {
+    if (!value) {
+      return 'bg-gradient-to-t from-gray-900/60 via-gray-900/20 to-transparent';
+    }
+    const normalized = value.toLowerCase();
+    const presets: Record<string, string> = {
+      dark: 'bg-gradient-to-t from-gray-900/60 via-gray-900/20 to-transparent',
+      light: 'bg-gradient-to-t from-gray-900/40 via-gray-900/10 to-transparent',
+      none: 'bg-gradient-to-t from-transparent via-transparent to-transparent',
+    };
+    if (presets[normalized]) {
+      return presets[normalized];
+    }
+    if (value.includes('bg-')) {
+      return value;
+    }
+    if (value.includes('from-')) {
+      return `bg-gradient-to-t ${value}`;
+    }
+    return presets.dark;
+  };
+
   if (loading) {
     return (
       <section className="py-8 md:py-12 bg-white">
@@ -615,157 +637,90 @@ export function FeaturedBannerGrid() {
           transition={{ duration: 0.8, delay: 0.3 }}
           className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
         >
-          {featuredCategories.map((category, index) => (
-            <motion.div
-              key={category.slug}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ 
-                duration: 0.5, 
-                delay: index * 0.1,
-                ease: "easeOut"
-              }}
-            >
-              <Link 
-                href={`/${category.slug}`}
-                className="group block relative rounded-3xl overflow-hidden bg-gradient-to-br from-white to-gray-50 
-                  backdrop-blur-xl border border-gray-200/60 hover:border-gray-300 
-                  shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1"
+          {featuredCategories.map((category, index) => {
+            const coverType = category.coverType === 'video' && category.coverVideo ? 'video' : 'image';
+            const coverImage = category.coverImage || category.coverMobileImage || category.image;
+            const overlayClass = resolveOverlayClass(category.coverOverlay);
+            const ctaText = category.coverCtaText || 'Keşfet';
+            const subtitle = category.coverSubtitle || '';
+            return (
+              <motion.div
+                key={category.slug}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ 
+                  duration: 0.5, 
+                  delay: index * 0.1,
+                  ease: "easeOut"
+                }}
               >
-              {/* Image/Video Container with Modern Overlay */}
-              <div className="relative aspect-[3/4] overflow-hidden">
-                {/* Use video background for specific categories */}
-                {category.slug === 'guller' ? (
-                  <>
-                    <video
-                      src="https://res.cloudinary.com/dgdl1vdao/video/upload/v1766358300/guller_x8udgg.mp4"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="none"
-                      loading="lazy"
-                      onEnded={(e) => (e.target as HTMLVideoElement).play()}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    {/* Gradient overlay to improve text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t 
-                      from-gray-900/60 via-gray-900/20 to-transparent 
-                      group-hover:from-gray-900/70 transition-all duration-500" />
-                  </>
-                ) : category.slug === 'dogum-gunu-ozel-hediyeler-cicekler' ? (
-                  <>
-                    <video
-                      src="https://res.cloudinary.com/dgdl1vdao/video/upload/v1766360287/dogum_gknrbi.mp4"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="none"
-                      loading="lazy"
-                      onEnded={(e) => (e.target as HTMLVideoElement).play()}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    {/* Gradient overlay to improve text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t 
-                      from-gray-900/60 via-gray-900/20 to-transparent 
-                      group-hover:from-gray-900/70 transition-all duration-500" />
-                  </>
-                ) : category.slug === 'aranjmanlar' ? (
-                  <>
-                    <video
-                      src="https://res.cloudinary.com/dgdl1vdao/video/upload/v1766362485/aranjmanlas_brfu9v.mp4"
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      preload="none"
-                      loading="lazy"
-                      onEnded={(e) => (e.target as HTMLVideoElement).play()}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    {/* Gradient overlay to improve text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-t 
-                      from-gray-900/60 via-gray-900/20 to-transparent 
-                      group-hover:from-gray-900/70 transition-all duration-500" />
-                  </>
-                ) : category.slug === 'lilyumlar' ? (
-                  <>
-                    <Image
-                      src="https://res.cloudinary.com/dgdl1vdao/image/upload/v1766423482/Inspirational_Female_Novel_Poem_Book_Cover_oluwdd.webp"
-                      alt={category.name}
-                      fill
-                      loading="lazy"
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                      quality={75}
-                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    {/* Lighter gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t 
-                      from-gray-900/60 via-gray-900/20 to-transparent 
-                      group-hover:from-gray-900/70 transition-all duration-500" />
-                  </>
-                ) : category.slug === 'papatyalar' ? (
-                  <>
-                    <Image
-                      src="https://res.cloudinary.com/dgdl1vdao/image/upload/v1766424365/Yellow_Red_Modern_Illustrative_Stationery_Shop_Instagram_Reels_Video_Promo_yqhf9b.webp"
-                      alt={category.name}
-                      fill
-                      loading="lazy"
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                      quality={75}
-                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    {/* Lighter gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t 
-                      from-gray-900/60 via-gray-900/20 to-transparent 
-                      group-hover:from-gray-900/70 transition-all duration-500" />
-                  </>
-                ) : category.image ? (
-                  <>
-                    <Image
-                      src={category.image}
-                      alt={category.name}
-                      fill
-                      loading="lazy"
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                      quality={75}
-                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                    />
-                    {/* Lighter gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t 
-                      from-gray-900/60 via-gray-900/20 to-transparent 
-                      group-hover:from-gray-900/70 transition-all duration-500" />
-                  </>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br 
-                    from-gray-100 to-gray-200 text-gray-400 text-6xl">
-                    🌸
-                  </div>
-                )}
+                <Link 
+                  href={`/${category.slug}`}
+                  className="group block relative rounded-3xl overflow-hidden bg-gradient-to-br from-white to-gray-50 
+                    backdrop-blur-xl border border-gray-200/60 hover:border-gray-300 
+                    shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1"
+                >
+                  <div className="relative aspect-[3/4] overflow-hidden">
+                    {coverType === 'video' && category.coverVideo ? (
+                      <>
+                        <video
+                          src={category.coverVideo}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          preload="none"
+                          poster={coverImage || undefined}
+                          loading="lazy"
+                          onEnded={(e) => (e.target as HTMLVideoElement).play()}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        />
+                        <div className={`absolute inset-0 ${overlayClass} group-hover:from-gray-900/70 transition-all duration-500`} />
+                      </>
+                    ) : coverImage ? (
+                      <>
+                        <Image
+                          src={coverImage}
+                          alt={category.name}
+                          fill
+                          loading="lazy"
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                          quality={75}
+                          className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        />
+                        <div className={`absolute inset-0 ${overlayClass} group-hover:from-gray-900/70 transition-all duration-500`} />
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br 
+                        from-gray-100 to-gray-200 text-gray-400 text-6xl">
+                        🌸
+                      </div>
+                    )}
 
-                {/* Glassmorphic Info Card - Bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
-                  {/* Category Name */}
-                  <h3 className="text-white font-bold text-lg md:text-xl mb-3 leading-tight
-                    group-hover:scale-105 transition-transform duration-300 origin-left">
-                    {category.name}
-                  </h3>
-                  
-                  {/* Glassmorphic CTA - Apple Style */}
-                  <div className="inline-flex items-center gap-2 px-4 py-2.5 
-                    bg-white/95 backdrop-blur-md text-gray-900 text-sm font-semibold rounded-full
-                    opacity-0 group-hover:opacity-100 transform translate-y-3 group-hover:translate-y-0 
-                    transition-all duration-500 shadow-xl border border-white/20">
-                    <span>Keşfet</span>
-                    <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
+                    <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
+                      <h3 className="text-white font-bold text-lg md:text-xl leading-tight mb-2
+                        group-hover:scale-105 transition-transform duration-300 origin-left">
+                        {category.name}
+                      </h3>
+                      {subtitle && (
+                        <p className="text-white/85 text-sm md:text-base mb-3 leading-snug line-clamp-2">
+                          {subtitle}
+                        </p>
+                      )}
+                      <div className="inline-flex items-center gap-2 px-4 py-2.5 
+                        bg-white/95 backdrop-blur-md text-gray-900 text-sm font-semibold rounded-full
+                        opacity-0 group-hover:opacity-100 transform translate-y-3 group-hover:translate-y-0 
+                        transition-all duration-500 shadow-xl border border-white/20">
+                        <span>{ctaText}</span>
+                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              </Link>
-            </motion.div>
-          ))}
+                </Link>
+              </motion.div>
+            );
+          })}
         </motion.div>
 
         {/* Apple-style View All Button - High Contrast */}

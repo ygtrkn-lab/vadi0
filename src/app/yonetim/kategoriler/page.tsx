@@ -268,18 +268,31 @@ export default function KategorilerPage() {
               {categoryStats.length} kategori • {totalProducts.toLocaleString('tr-TR')} ürün
             </p>
           </div>
-          <button 
-            onClick={() => router.push('/yonetim/kategoriler/yeni')}
-            className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 
-              rounded-xl font-medium transition-all
-              ${isDark 
-                ? 'bg-white text-black hover:bg-neutral-200' 
-                : 'bg-purple-600 text-white hover:bg-purple-700'
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => router.push('/yonetim/kategoriler/kapaklar')}
+              className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${
+                isDark
+                  ? 'bg-neutral-800 text-white hover:bg-neutral-700'
+                  : 'bg-white text-gray-900 border border-gray-200 hover:border-purple-500'
               }`}
-          >
-            <HiOutlinePlus className="w-5 h-5" />
-            <span>Yeni Kategori</span>
-          </button>
+            >
+              <HiOutlineViewGrid className="w-5 h-5" />
+              <span>Kapakları Yönet</span>
+            </button>
+            <button 
+              onClick={() => router.push('/yonetim/kategoriler/yeni')}
+              className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 
+                rounded-xl font-medium transition-all
+                ${isDark 
+                  ? 'bg-white text-black hover:bg-neutral-200' 
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+                }`}
+            >
+              <HiOutlinePlus className="w-5 h-5" />
+              <span>Yeni Kategori</span>
+            </button>
+          </div>
         </div>
       </FadeContent>
 

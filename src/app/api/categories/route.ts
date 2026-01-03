@@ -73,8 +73,20 @@ async function findUniqueCategorySlug(baseSlug: string) {
 }
 
 function formatCategory(cat: any, productCount: number) {
+  const fallbackCoverType = cat.cover_video ? 'video' : 'image';
   return {
-    ...cat,
+    id: cat.id,
+    name: cat.name,
+    slug: cat.slug,
+    description: cat.description ?? '',
+    image: cat.image ?? '',
+    coverType: cat.cover_type || fallbackCoverType,
+    coverImage: cat.cover_image ?? '',
+    coverVideo: cat.cover_video ?? '',
+    coverMobileImage: cat.cover_mobile_image ?? '',
+    coverOverlay: cat.cover_overlay || 'dark',
+    coverCtaText: cat.cover_cta_text || 'Keşfet',
+    coverSubtitle: cat.cover_subtitle ?? '',
     productCount,
     isActive: cat.is_active,
     createdAt: cat.created_at,
@@ -138,9 +150,17 @@ export async function GET(request: NextRequest) {
     let formattedCategories = (categories ?? []).map((cat: any) => {
       const pc = counts.get(cat.slug) ?? 0;
       const dynamic = formatCategory(cat, pc);
-      // Önce kategorinin kendi görseli, yoksa o kategoriye ait bir ürünün görseli
-      const dynamicImage = cat.image || images.get(cat.slug) || '';
-      return { ...dynamic, image: dynamicImage };
+      const fallbackImage = cat.image || images.get(cat.slug) || '';
+      const resolvedCoverImage = dynamic.coverImage || fallbackImage;
+      const resolvedCoverType = dynamic.coverType === 'video' && !dynamic.coverVideo
+        ? 'image'
+        : dynamic.coverType;
+      return {
+        ...dynamic,
+        image: fallbackImage,
+        coverImage: resolvedCoverImage,
+        coverType: resolvedCoverType,
+      };
     });
 
     // Filter out categories with no products if hasProducts param is true
@@ -233,6 +253,20 @@ export async function POST(request: NextRequest) {
       slug,
       description: typeof input.description === 'string' ? input.description : '',
       image: typeof input.image === 'string' ? input.image : '',
+      cover_type:
+        typeof input.coverType === 'string' && ['image', 'video'].includes(input.coverType)
+          ? input.coverType
+          : 'image',
+      cover_image: typeof input.coverImage === 'string' ? input.coverImage : '',
+      cover_video: typeof input.coverVideo === 'string' ? input.coverVideo : '',
+      cover_mobile_image:
+        typeof input.coverMobileImage === 'string' ? input.coverMobileImage : '',
+      cover_overlay: typeof input.coverOverlay === 'string' ? input.coverOverlay : 'dark',
+      cover_cta_text:
+        typeof input.coverCtaText === 'string' && input.coverCtaText.trim()
+          ? input.coverCtaText
+          : 'Keşfet',
+      cover_subtitle: typeof input.coverSubtitle === 'string' ? input.coverSubtitle : '',
       product_count: 0,
       order: orderValue,
       is_active:
@@ -349,6 +383,17 @@ export async function PUT(request: NextRequest) {
     if (typeof input.name === 'string') updateData.name = input.name;
     if (typeof input.description === 'string') updateData.description = input.description;
     if (typeof input.image === 'string') updateData.image = input.image;
+    if (typeof input.coverType === 'string') {
+      updateData.cover_type = ['image', 'video'].includes(input.coverType)
+        ? input.coverType
+        : 'image';
+    }
+    if (typeof input.coverImage === 'string') updateData.cover_image = input.coverImage;
+    if (typeof input.coverVideo === 'string') updateData.cover_video = input.coverVideo;
+    if (typeof input.coverMobileImage === 'string') updateData.cover_mobile_image = input.coverMobileImage;
+    if (typeof input.coverOverlay === 'string') updateData.cover_overlay = input.coverOverlay;
+    if (typeof input.coverCtaText === 'string') updateData.cover_cta_text = input.coverCtaText;
+    if (typeof input.coverSubtitle === 'string') updateData.cover_subtitle = input.coverSubtitle;
     if (typeof input.order === 'number') updateData.order = input.order;
     if (typeof input.isActive === 'boolean') updateData.is_active = input.isActive;
     if (typeof input.productCount === 'number') updateData.product_count = input.productCount;
@@ -392,9 +437,11 @@ export async function PUT(request: NextRequest) {
       .select('id', { count: 'exact', head: true })
       .contains('occasion_tags', [slug]);
 
+    const totalProductCount = (primaryCount ?? 0) + (secondaryCount ?? 0);
+
     return NextResponse.json({
       success: true,
-      data: formatCategory(data, productCount || 0),
+      data: formatCategory(data, totalProductCount),
       message: 'Kategori başarıyla güncellendi'
     });
   } catch (error) {

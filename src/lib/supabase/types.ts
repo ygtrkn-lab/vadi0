@@ -137,6 +137,13 @@ export interface Database {
           slug: string
           description: string
           image: string
+          cover_type: string
+          cover_image: string
+          cover_video: string
+          cover_mobile_image: string
+          cover_overlay: string
+          cover_cta_text: string
+          cover_subtitle: string
           product_count: number
           order: number
           is_active: boolean
@@ -149,6 +156,13 @@ export interface Database {
           slug: string
           description?: string
           image?: string
+          cover_type?: string
+          cover_image?: string
+          cover_video?: string
+          cover_mobile_image?: string
+          cover_overlay?: string
+          cover_cta_text?: string
+          cover_subtitle?: string
           product_count?: number
           order?: number
           is_active?: boolean
@@ -161,6 +175,13 @@ export interface Database {
           slug?: string
           description?: string
           image?: string
+          cover_type?: string
+          cover_image?: string
+          cover_video?: string
+          cover_mobile_image?: string
+          cover_overlay?: string
+          cover_cta_text?: string
+          cover_subtitle?: string
           product_count?: number
           order?: number
           is_active?: boolean
