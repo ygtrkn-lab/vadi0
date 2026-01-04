@@ -1097,6 +1097,52 @@ export default function SiparislerPage() {
                     </button>
                   </div>
                 )}
+
+                {/* Manual Payment Confirmation (Without iyzico check) */}
+                {selectedOrder.payment?.status !== 'paid' && (
+                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
+                    <p className={`text-xs font-medium mb-2 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>✅ Manuel Ödeme Onayı</p>
+                    <p className={`text-xs mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+                      Ödemenin alındığından eminseniz, iyzico&apos;ya sormadan doğrudan onaylayabilirsiniz.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        const confirmText = prompt('Ödemeyi manuel olarak onaylamak istediğinize emin misiniz?\n\nOnaylamak için "ONAYLA" yazın:');
+                        if (confirmText !== 'ONAYLA') {
+                          if (confirmText !== null) alert('İşlem iptal edildi. "ONAYLA" yazmanız gerekiyor.');
+                          return;
+                        }
+                        try {
+                          const res = await fetch('/api/orders/manual-confirm-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                              orderId: selectedOrder.id,
+                              note: 'Admin panelden manuel onay'
+                            }),
+                          });
+                          const data = await res.json();
+                          if (data.success) {
+                            alert(`✅ Ödeme manuel olarak onaylandı!\n\nSipariş #${data.order?.orderNumber || selectedOrder.orderNumber}`);
+                            window.location.reload();
+                          } else if (data.alreadyPaid) {
+                            alert('ℹ️ Bu ödeme zaten onaylanmış.');
+                            window.location.reload();
+                          } else {
+                            alert(data.error || 'Bir hata oluştu');
+                          }
+                        } catch (err) {
+                          console.error(err);
+                          alert('Bir hata oluştu');
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <HiOutlineCheckCircle className="w-4 h-4" />
+                      Ödemeyi Manuel Onayla
+                    </button>
+                  </div>
+                )}
               </div>
               )}
 
