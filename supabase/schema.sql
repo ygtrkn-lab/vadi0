@@ -54,6 +54,16 @@ CREATE TABLE IF NOT EXISTS categories (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Delivery Off Days Table
+CREATE TABLE IF NOT EXISTS delivery_off_days (
+  id SERIAL PRIMARY KEY,
+  off_date DATE NOT NULL UNIQUE,
+  note TEXT DEFAULT '',
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Customers Table
 CREATE TABLE IF NOT EXISTS customers (
   id TEXT PRIMARY KEY DEFAULT ('cust_' || substring(uuid_generate_v4()::text, 1, 8)),
@@ -140,6 +150,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON reviews(product_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_customer_id ON reviews(customer_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_product_approved ON reviews(product_id, is_approved);
 CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
+CREATE INDEX IF NOT EXISTS idx_delivery_off_days_date ON delivery_off_days(off_date);
 
 -- Row Level Security (RLS) Policies
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
@@ -148,6 +159,7 @@ ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
+ALTER TABLE delivery_off_days ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist (to allow re-running this script)
 DROP POLICY IF EXISTS "Products are viewable by everyone" ON products;
@@ -166,6 +178,8 @@ DROP POLICY IF EXISTS "Service role can do anything with customers" ON customers
 DROP POLICY IF EXISTS "Service role can do anything with orders" ON orders;
 DROP POLICY IF EXISTS "Service role can do anything with reviews" ON reviews;
 DROP POLICY IF EXISTS "Service role can do anything with coupons" ON coupons;
+DROP POLICY IF EXISTS "Delivery off days are viewable by everyone" ON delivery_off_days;
+DROP POLICY IF EXISTS "Service role can do anything with delivery off days" ON delivery_off_days;
 
 -- Public read access for products and categories
 CREATE POLICY "Products are viewable by everyone" ON products
@@ -190,6 +204,9 @@ CREATE POLICY "Anyone can create orders" ON orders
 
 -- Coupons are viewable by everyone
 CREATE POLICY "Coupons are viewable by everyone" ON coupons
+  FOR SELECT USING (true);
+
+CREATE POLICY "Delivery off days are viewable by everyone" ON delivery_off_days
   FOR SELECT USING (true);
 
 -- Reviews policies
@@ -229,6 +246,9 @@ CREATE POLICY "Service role can do anything with reviews" ON reviews
 CREATE POLICY "Service role can do anything with coupons" ON coupons
   USING (auth.jwt()->>'role' = 'service_role');
 
+CREATE POLICY "Service role can do anything with delivery off days" ON delivery_off_days
+  USING (auth.jwt()->>'role' = 'service_role');
+
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -246,6 +266,7 @@ DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
 DROP TRIGGER IF EXISTS update_reviews_updated_at ON reviews;
 DROP TRIGGER IF EXISTS update_coupons_updated_at ON coupons;
 DROP TRIGGER IF EXISTS update_product_rating_on_review_change ON reviews;
+DROP TRIGGER IF EXISTS update_delivery_off_days_updated_at ON delivery_off_days;
 
 -- Apply updated_at triggers
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
@@ -264,6 +285,9 @@ CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_coupons_updated_at BEFORE UPDATE ON coupons
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_delivery_off_days_updated_at BEFORE UPDATE ON delivery_off_days
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Function to update product rating and review count

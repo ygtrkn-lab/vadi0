@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useCustomer, Address } from '@/context/CustomerContext';
@@ -66,6 +66,9 @@ const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
 
 const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts;
 
+const DELIVERY_OFF_DAY_ERROR_MESSAGE = 'Yoğunluk sebebiyle bu tarihte teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.';
+const NO_AVAILABLE_DELIVERY_DATE_ERROR_MESSAGE = 'Seçilen aralıkta uygun teslimat günü bulunamadı. Lütfen daha sonra tekrar deneyin veya bizimle iletişime geçin.';
+
 type CheckoutStep = 'cart' | 'recipient' | 'message' | 'payment' | 'success';
 
 type ValidationResult = {
@@ -104,6 +107,7 @@ export default function SepetClient() {
   const [districtId, setDistrictId] = useState(0);
   const [neighborhood, setNeighborhood] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryDateNotice, setDeliveryDateNotice] = useState<string | null>(null);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [isGift, setIsGift] = useState(true);
@@ -165,6 +169,8 @@ export default function SepetClient() {
   const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
   const neighborhoodInputRef = useRef<HTMLInputElement>(null);
 
+  const [deliveryOffDays, setDeliveryOffDays] = useState<string[]>([]);
+
   const isEmpty = state.items.length === 0;
   const isLoggedIn = !!customerState.currentCustomer;
 
@@ -190,6 +196,42 @@ export default function SepetClient() {
 
   const MIN_DELIVERY_DATE = getTomorrowLocalISODate();
   const MAX_DELIVERY_DATE = getMaxDeliveryDate();
+
+  const deliveryOffDaySet = useMemo(() => new Set(deliveryOffDays), [deliveryOffDays]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    const loadDeliveryOffDays = async () => {
+      try {
+        const response = await fetch('/api/delivery-off-days', { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`Failed to load delivery off days: ${response.status}`);
+        }
+        const payload = await response.json();
+        if (!isMounted) return;
+        const dates = Array.isArray(payload?.offDays)
+          ? payload.offDays
+              .map((item: { offDate?: string | null }) => (typeof item?.offDate === 'string' ? item.offDate : null))
+              .filter((date): date is string => Boolean(date))
+          : [];
+        setDeliveryOffDays(dates);
+      } catch (error) {
+        if ((error as Error)?.name === 'AbortError' || !isMounted) {
+          return;
+        }
+        console.error('Teslimat off günleri alınamadı:', error);
+      }
+    };
+
+    loadDeliveryOffDays();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, []);
 
   // handleSelectSavedAddress - useCallback ile optimize edilmiş
   const handleSelectSavedAddress = useCallback((addr: Address) => {
@@ -352,6 +394,28 @@ export default function SepetClient() {
     return `${yyyy}-${mm}-${dd}`;
   };
 
+  const parseLocalISODate = (iso: string): Date | null => {
+    if (!iso) return null;
+    const parts = iso.split('-').map(Number);
+    if (parts.length !== 3 || parts.some((p) => !Number.isFinite(p))) return null;
+    const [y, m, d] = parts;
+    const date = new Date(y, m - 1, d);
+    return Number.isFinite(date.getTime()) ? date : null;
+  };
+
+  const shiftLocalISODate = (iso: string, days: number): string | null => {
+    const date = parseLocalISODate(iso);
+    if (!date) return null;
+    date.setDate(date.getDate() + days);
+    return formatLocalISODate(date);
+  };
+
+  const clampIsoToDeliveryWindow = (iso: string): string => {
+    if (iso < MIN_DELIVERY_DATE) return MIN_DELIVERY_DATE;
+    if (iso > MAX_DELIVERY_DATE) return MAX_DELIVERY_DATE;
+    return iso;
+  };
+
   // Helper: check if a YYYY-MM-DD local ISO date string is a Sunday (Pazar)
   const isLocalIsoDateSunday = (iso: string): boolean => {
     if (!iso) return false;
@@ -360,6 +424,135 @@ export default function SepetClient() {
     const [y, m, d] = parts;
     return new Date(y, m - 1, d).getDay() === 0;
   };
+
+  const isDeliveryDateBlocked = useCallback(
+    (iso: string): boolean => {
+      if (!iso) return false;
+      return isLocalIsoDateSunday(iso) || deliveryOffDaySet.has(iso);
+    },
+    [deliveryOffDaySet]
+  );
+
+  const getNextAllowedDeliveryDate = useCallback(
+    (preferred?: string | null): string | null => {
+      let candidate = preferred && parseLocalISODate(preferred) ? clampIsoToDeliveryWindow(preferred) : MIN_DELIVERY_DATE;
+      for (let i = 0; i < 10; i += 1) {
+        if (candidate > MAX_DELIVERY_DATE) break;
+        if (!isDeliveryDateBlocked(candidate)) {
+          return candidate;
+        }
+        const next = shiftLocalISODate(candidate, 1);
+        if (!next) break;
+        candidate = next;
+      }
+      return null;
+    },
+    [isDeliveryDateBlocked, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE]
+  );
+
+  const applyManualDeliveryDate = useCallback(
+    (raw: string) => {
+      if (!raw) {
+        setDeliveryDate('');
+        setDeliveryDateNotice(null);
+        setRecipientErrors((prev) => ({ ...prev, date: undefined }));
+        return;
+      }
+
+      if (!parseLocalISODate(raw)) {
+        setRecipientErrors((prev) => ({ ...prev, date: 'Geçersiz tarih seçildi' }));
+        return;
+      }
+
+      let bounded = raw;
+      let notice: string | null = null;
+      if (bounded < MIN_DELIVERY_DATE) {
+        bounded = MIN_DELIVERY_DATE;
+        notice = 'Teslimat tarihi en erken yarın olabilir. Sizi uygun güne yönlendirdik.';
+      } else if (bounded > MAX_DELIVERY_DATE) {
+        bounded = MAX_DELIVERY_DATE;
+        notice = 'Teslimat tarihi en fazla 7 gün sonrası seçilebilir. Sizi uygun güne yönlendirdik.';
+      }
+
+      const fallback = getNextAllowedDeliveryDate(bounded);
+      if (!fallback) {
+        setDeliveryDate('');
+        setDeliveryDateNotice(null);
+        setRecipientErrors((prev) => ({ ...prev, date: NO_AVAILABLE_DELIVERY_DATE_ERROR_MESSAGE }));
+        return;
+      }
+
+      if (!notice && fallback !== raw) {
+        notice = DELIVERY_OFF_DAY_ERROR_MESSAGE;
+      }
+
+      setDeliveryDate(fallback);
+      setDeliveryDateNotice(notice);
+      setRecipientErrors((prev) => ({ ...prev, date: undefined }));
+    },
+    [getNextAllowedDeliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE]
+  );
+
+  useEffect(() => {
+    if (!deliveryDate) {
+      setRecipientErrors((prev) => (prev.date ? { ...prev, date: undefined } : prev));
+      return;
+    }
+
+    if (deliveryDate < MIN_DELIVERY_DATE) {
+      setRecipientErrors((prev) => ({ ...prev, date: 'Teslimat tarihi en erken yarın olabilir' }));
+      return;
+    }
+
+    if (deliveryDate > MAX_DELIVERY_DATE) {
+      setRecipientErrors((prev) => ({ ...prev, date: 'Teslimat tarihi en fazla 7 gün sonrası seçilebilir' }));
+      return;
+    }
+
+    if (isDeliveryDateBlocked(deliveryDate)) {
+      setRecipientErrors((prev) => ({ ...prev, date: DELIVERY_OFF_DAY_ERROR_MESSAGE }));
+    } else {
+      setRecipientErrors((prev) => (prev.date ? { ...prev, date: undefined } : prev));
+    }
+  }, [deliveryDate, isDeliveryDateBlocked, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE]);
+
+  useEffect(() => {
+    if (!deliveryDate) {
+      setDeliveryDateNotice(null);
+      return;
+    }
+
+    let target = deliveryDate;
+    let notice: string | null = null;
+
+    if (deliveryDate < MIN_DELIVERY_DATE) {
+      target = MIN_DELIVERY_DATE;
+      notice = 'Teslimat tarihi en erken yarın olabilir. Sizi uygun güne yönlendirdik.';
+    } else if (deliveryDate > MAX_DELIVERY_DATE) {
+      target = MAX_DELIVERY_DATE;
+      notice = 'Teslimat tarihi en fazla 7 gün sonrası seçilebilir. Sizi uygun güne yönlendirdik.';
+    } else if (isDeliveryDateBlocked(deliveryDate)) {
+      notice = DELIVERY_OFF_DAY_ERROR_MESSAGE;
+    } else {
+      return;
+    }
+
+    const fallback = getNextAllowedDeliveryDate(target);
+    if (!fallback) {
+      if (deliveryDate !== '') {
+        setDeliveryDate('');
+      }
+      setDeliveryDateNotice(null);
+      setRecipientErrors((prev) => ({ ...prev, date: NO_AVAILABLE_DELIVERY_DATE_ERROR_MESSAGE }));
+      return;
+    }
+
+    if (fallback !== deliveryDate) {
+      setDeliveryDate(fallback);
+      setDeliveryDateNotice(notice ?? 'Teslimat tarihi güncellendi.');
+      setRecipientErrors((prev) => ({ ...prev, date: undefined }));
+    }
+  }, [deliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE, getNextAllowedDeliveryDate, isDeliveryDateBlocked]);
 
   // Global delivery info'dan teslimat bilgilerini yükle (ürün detay sayfasından seçilen)
   useEffect(() => {
@@ -385,7 +578,23 @@ export default function SepetClient() {
       if (date) {
         const dateObj = new Date(date);
         const formattedDate = formatLocalISODate(dateObj);
-        setDeliveryDate(formattedDate < MIN_DELIVERY_DATE ? MIN_DELIVERY_DATE : formattedDate);
+        const bounded = formattedDate < MIN_DELIVERY_DATE
+          ? MIN_DELIVERY_DATE
+          : formattedDate > MAX_DELIVERY_DATE
+            ? MAX_DELIVERY_DATE
+            : formattedDate;
+        const fallback = getNextAllowedDeliveryDate(bounded);
+        if (fallback) {
+          setDeliveryDate(fallback);
+          setRecipientErrors((prev) => ({ ...prev, date: undefined }));
+          if (fallback !== bounded) {
+            setDeliveryDateNotice('Seçilen tarih artık uygun değil; en yakın müsait güne yönlendirildiniz.');
+          }
+        } else {
+          setDeliveryDate('');
+          setDeliveryDateNotice(null);
+          setRecipientErrors((prev) => ({ ...prev, date: NO_AVAILABLE_DELIVERY_DATE_ERROR_MESSAGE }));
+        }
       }
       
       // Zaman dilimi bilgisini ayarla
@@ -393,7 +602,7 @@ export default function SepetClient() {
         setDeliveryTimeSlot(normalizeDeliveryTimeSlot(timeSlot));
       }
     }
-  }, [state.globalDeliveryInfo]);
+  }, [state.globalDeliveryInfo, getNextAllowedDeliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE]);
   
   // Kayıtlı müşteri varsayılan adresini yükle (global delivery yoksa)
   useEffect(() => {
@@ -860,7 +1069,7 @@ export default function SepetClient() {
   const isPhoneValid = validatePhoneNumber(recipientPhone);
   const canProceedToRecipient = state.items.length > 0;
   const requiresSenderName = isGift;
-  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && recipientAddress.length >= 10 && district.length > 0 && deliveryDate.length > 0 && !isLocalIsoDateSunday(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
+  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && recipientAddress.length >= 10 && district.length > 0 && deliveryDate.length > 0 && !isDeliveryDateBlocked(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
   const guestEmailTrim = guestEmail.trim();
   const guestPhoneDigits = normalizeTrMobileDigits(guestPhone);
   const isGuestEmailValid = guestEmailTrim.length === 0 ? false : validateEmail(guestEmailTrim);
@@ -952,7 +1161,7 @@ export default function SepetClient() {
     } else if (deliveryDate < MIN_DELIVERY_DATE) {
       setErr('delivery-date', 'date', 'Teslimat tarihi en erken yarın olabilir');
     } else {
-      // Validate Sunday (Pazar) - not deliverable
+      // Validate blocked delivery dates (Sundays or manual off days)
       const [y, m, d] = deliveryDate.split('-').map(Number);
       const dt = new Date(y, m - 1, d);
       if (!Number.isFinite(dt.getTime())) {
@@ -961,11 +1170,11 @@ export default function SepetClient() {
           firstId = 'delivery-date';
           firstMessage = 'Geçersiz tarih seçildi';
         }
-      } else if (dt.getDay() === 0) {
-        setErr('delivery-date', 'date', 'Yoğunluk sebebiyle Pazar günleri teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.');
+      } else if (isDeliveryDateBlocked(deliveryDate)) {
+        setErr('delivery-date', 'date', DELIVERY_OFF_DAY_ERROR_MESSAGE);
         if (!firstId) {
           firstId = 'delivery-date';
-          firstMessage = 'Yoğunluk sebebiyle Pazar günleri teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.';
+          firstMessage = DELIVERY_OFF_DAY_ERROR_MESSAGE;
         }
       }
     }
@@ -2125,39 +2334,17 @@ export default function SepetClient() {
                         value={deliveryDate}
                         onChange={(e) => {
                           const next = e.target.value;
-                          if (!next) {
-                            setDeliveryDate('');
-                            setRecipientErrors((prev) => ({ ...prev, date: undefined }));
-                            return;
-                          }
-                          // Min ve max kontrol
-                          if (next < MIN_DELIVERY_DATE) {
-                            setDeliveryDate(MIN_DELIVERY_DATE);
-                            setRecipientErrors((prev) => ({ ...prev, date: undefined }));
-                            return;
-                          }
-                          if (next > MAX_DELIVERY_DATE) {
-                            setDeliveryDate(MAX_DELIVERY_DATE);
-                            setRecipientErrors((prev) => ({ ...prev, date: undefined }));
-                            return;
-                          }
-
-                          // Pazar kontrolü (local date)
-                          const [y, m, d] = next.split('-').map(Number);
-                          const tmp = new Date(y, m - 1, d);
-                          if (tmp.getDay() === 0) {
-                            setDeliveryDate(next);
-                            setRecipientErrors((prev) => ({ ...prev, date: 'Yoğunluk sebebiyle Pazar günleri teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.' }));
-                            return;
-                          }
-
-                          setDeliveryDate(next);
-                          setRecipientErrors((prev) => ({ ...prev, date: undefined }));
+                          applyManualDeliveryDate(next);
                         }}
                         onBlur={() => {
                           if (!deliveryDate) return;
-                          if (deliveryDate < MIN_DELIVERY_DATE) setDeliveryDate(MIN_DELIVERY_DATE);
-                          if (deliveryDate > MAX_DELIVERY_DATE) setDeliveryDate(MAX_DELIVERY_DATE);
+                          if (
+                            deliveryDate < MIN_DELIVERY_DATE ||
+                            deliveryDate > MAX_DELIVERY_DATE ||
+                            isDeliveryDateBlocked(deliveryDate)
+                          ) {
+                            applyManualDeliveryDate(deliveryDate);
+                          }
                         }}
                         min={MIN_DELIVERY_DATE}
                         max={MAX_DELIVERY_DATE}
@@ -2165,6 +2352,12 @@ export default function SepetClient() {
                       />
                       {recipientErrors.date && (
                         <p className="text-[10px] text-red-500 mt-1">{recipientErrors.date}</p>
+                      )}
+                      {!recipientErrors.date && deliveryDateNotice && (
+                        <p className="text-[11px] text-orange-600 mt-1 flex items-center gap-1">
+                          <AlertCircle size={12} />
+                          <span>{deliveryDateNotice}</span>
+                        </p>
                       )}
                     </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpotlightCard, FadeContent } from '@/components/admin';
 import BulkPriceAdjustment from '@/components/admin/BulkPriceAdjustment';
@@ -21,7 +22,8 @@ import {
   HiOutlineBell,
   HiOutlineColorSwatch,
   HiOutlineRefresh,
-  HiOutlineTag
+  HiOutlineTag,
+  HiOutlineCalendar
 } from 'react-icons/hi';
 
 type SettingsData = Record<string, Record<string, any>>;
@@ -308,6 +310,17 @@ export default function AyarlarPage() {
             <p className={`text-sm mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Site ayarlarını yönetin</p>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              href="/yonetim/ayarlar/off-gunleri"
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                isDark
+                  ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <HiOutlineCalendar className="w-4 h-4" />
+              <span className="hidden sm:inline">Off Günleri</span>
+            </Link>
             <button
               onClick={handleClearCache}
               disabled={clearingCache}

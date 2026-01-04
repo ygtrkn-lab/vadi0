@@ -351,6 +351,32 @@ export interface Database {
           updated_at?: string
         }
       }
+      delivery_off_days: {
+        Row: {
+          id: number
+          off_date: string
+          note: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: number
+          off_date: string
+          note?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: number
+          off_date?: string
+          note?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
       visitor_sessions: {
         Row: {
           id: string

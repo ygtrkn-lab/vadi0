@@ -7,6 +7,8 @@ import type { Database } from '@/lib/supabase/types';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
+const DELIVERY_OFF_DAY_ERROR = 'Yoğunluk sebebiyle bu tarihte teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.';
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
@@ -168,7 +170,24 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Geçersiz teslimat tarihi' }, { status: 400 });
       }
       if (parsed.getUTCDay() === 0) {
-        return NextResponse.json({ error: 'Teslimat günü Pazar olamaz.' }, { status: 400 });
+        return NextResponse.json({ error: DELIVERY_OFF_DAY_ERROR }, { status: 400 });
+      }
+
+      const deliveryDateIso = parsed.toISOString().slice(0, 10);
+      const { data: offDayRows, error: offDayError } = await supabase
+        .from('delivery_off_days')
+        .select('id')
+        .eq('off_date', deliveryDateIso)
+        .eq('is_active', true)
+        .limit(1);
+
+      if (offDayError) {
+        console.error('Error checking delivery off days:', offDayError);
+        return NextResponse.json({ error: 'Teslimat takvimi doğrulanamadı' }, { status: 500 });
+      }
+
+      if (offDayRows && offDayRows.length > 0) {
+        return NextResponse.json({ error: DELIVERY_OFF_DAY_ERROR }, { status: 400 });
       }
     }
 
