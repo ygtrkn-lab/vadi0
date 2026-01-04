@@ -1054,6 +1054,49 @@ export default function SiparislerPage() {
                     )}
                   </div>
                 )}
+
+                {/* Manual Payment Verification for Credit Card */}
+                {selectedOrder.payment?.method === 'credit_card' && selectedOrder.payment?.status !== 'paid' && selectedOrder.payment?.token && (
+                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200'}`}>
+                    <p className={`text-xs font-medium mb-2 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>🔍 Manuel Ödeme Doğrulama</p>
+                    <p className={`text-xs mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+                      Ödeme durumu belirsizse iyzico&apos;dan manuel olarak doğrulayabilirsiniz.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        if (!confirm('iyzico\'dan ödeme durumunu sorgulamak istediğinize emin misiniz?')) return;
+                        try {
+                          const res = await fetch('/api/orders/verify-payment', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ orderId: selectedOrder.id }),
+                          });
+                          const data = await res.json();
+                          if (data.success && data.verified) {
+                            alert(`✅ Ödeme doğrulandı!\n\nÖdeme ID: ${data.iyzicoResult?.paymentId || '-'}\nTutar: ${data.iyzicoResult?.paidPrice || '-'} TL\nKart: **** ${data.iyzicoResult?.cardLast4 || '-'}`);
+                            window.location.reload();
+                          } else if (data.alreadyPaid) {
+                            alert('ℹ️ Bu ödeme zaten onaylanmış.');
+                            window.location.reload();
+                          } else if (data.paymentFailed) {
+                            alert(`❌ iyzico'da ödeme başarısız:\n\n${data.iyzicoResult?.errorMessage || 'Bilinmeyen hata'}`);
+                          } else if (data.pending) {
+                            alert(`⏳ Ödeme henüz tamamlanmamış:\n\nDurum: ${data.iyzicoResult?.paymentStatus || 'Belirsiz'}`);
+                          } else {
+                            alert(data.error || 'Bir hata oluştu');
+                          }
+                        } catch (err) {
+                          console.error(err);
+                          alert('Bir hata oluştu');
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <HiOutlineCurrencyDollar className="w-4 h-4" />
+                      iyzico&apos;dan Ödeme Durumunu Sorgula
+                    </button>
+                  </div>
+                )}
               </div>
               )}
 
