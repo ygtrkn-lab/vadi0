@@ -322,10 +322,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Webhook processing error:', error);
     
-    // Still return 200 to prevent retries on our parsing errors
+    // Return 500 to allow iyzico to retry the webhook
+    // This is important for transient errors (DB connection, network issues)
     return NextResponse.json(
       { error: 'Webhook processing failed', details: getErrorMessage(error) },
-      { status: 200 }
+      { status: 500 }
     );
   }
 }

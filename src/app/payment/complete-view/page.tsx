@@ -104,39 +104,72 @@ function PaymentCompleteContent() {
 
       // If we have token but no success param, call API GET endpoint
       const token = searchParams.get('token');
+      const serverCompleted = searchParams.get('serverCompleted');
+      
       if (token) {
-        try {
-          // Call API via GET to process payment
-          const apiUrl = new URL('/api/payment/complete', window.location.origin);
-          apiUrl.searchParams.set('token', token);
-          
-          const response = await fetch(apiUrl.toString(), {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-            redirect: 'follow',
-          });
+        // If serverCompleted is true, payment was already processed server-side
+        // We still call the API to get the result data, but with retry for resilience
+        const maxRetries = 3;
+        let lastError: Error | null = null;
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          try {
+            // Call API via GET to process/verify payment
+            const apiUrl = new URL('/api/payment/complete', window.location.origin);
+            apiUrl.searchParams.set('token', token);
+            
+            const response = await fetch(apiUrl.toString(), {
+              method: 'GET',
+              headers: { 'Accept': 'application/json' },
+              redirect: 'follow',
+            });
 
-          const data = await response.json().catch(() => null);
+            const data = await response.json().catch(() => null);
 
-          if (!response.ok) {
-            // Extract actual error message from response body
-            const errorMessage = data?.error || data?.message || `Sunucu hatası (${response.status})`;
-            throw new Error(errorMessage);
+            if (!response.ok) {
+              // Extract actual error message from response body
+              const errorMessage = data?.error || data?.message || `Sunucu hatası (${response.status})`;
+              throw new Error(errorMessage);
+            }
+
+            if (data?.success) {
+              setPaymentResult(data);
+              // Clear cart and delivery info immediately after successful payment
+              clearCart();
+              console.log('✅ Sepet ve teslimat bilgileri temizlendi (API token)');
+              lastError = null;
+              break; // Success, exit retry loop
+            } else {
+              setError(data?.error || 'Ödeme tamamlanamadı');
+              lastError = null;
+              break; // Got a response, exit retry loop
+            }
+          } catch (err: any) {
+            lastError = err;
+            console.warn(`⚠️ Payment completion attempt ${attempt}/${maxRetries} failed:`, err.message);
+            
+            // If this was the last attempt, give up
+            if (attempt === maxRetries) {
+              // If server already completed the payment, show success anyway
+              if (serverCompleted === 'true') {
+                console.log('✅ Payment was completed server-side, showing success despite API error');
+                setPaymentResult({
+                  success: true,
+                  message: 'Ödemeniz başarıyla alındı',
+                });
+                clearCart();
+                lastError = null;
+              } else {
+                setError('Bir hata oluştu: ' + err.message);
+              }
+            } else {
+              // Wait before retry (exponential backoff: 1s, 2s, 4s)
+              await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt - 1)));
+            }
           }
-
-          if (data?.success) {
-            setPaymentResult(data);
-            // Clear cart and delivery info immediately after successful payment
-            clearCart();
-            console.log('✅ Sepet ve teslimat bilgileri temizlendi (API token)');
-          } else {
-            setError(data?.error || 'Ödeme tamamlanamadı');
-          }
-        } catch (err: any) {
-          setError('Bir hata oluştu: ' + err.message);
-        } finally {
-          setLoading(false);
         }
+        
+        setLoading(false);
         return;
       }
 

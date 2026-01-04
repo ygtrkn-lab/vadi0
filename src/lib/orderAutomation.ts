@@ -22,6 +22,7 @@
 
 import supabaseAdmin from '@/lib/supabase/admin';
 import { EmailService } from '@/lib/email/emailService';
+import { getIyzicoClient } from '@/lib/payment/iyzico';
 
 const ISTANBUL_TZ = 'Europe/Istanbul';
 
@@ -237,6 +238,158 @@ export async function processAutomatedUpdates(): Promise<{
     const now = new Date();
     const todayKey = getIstanbulDateKey(now);
     const nowIso = now.toISOString();
+
+    // -1) NEW: Verify stuck payments with iyzico
+    // Orders that have payment.token but payment.status is still 'pending'
+    // Query iyzico to check if payment was actually successful
+    {
+      const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      
+      const { data: stuckPayments, error: stuckErr } = await supabaseAdmin
+        .from('orders')
+        .select('id, order_number, status, customer_email, customer_name, customer_phone, delivery, payment, order_time_group, timeline, created_at, updated_at, delivered_at, products, subtotal, discount, delivery_fee, total')
+        .in('status', ['pending', 'pending_payment'])
+        .lt('created_at', tenMinutesAgo)
+        .gte('created_at', twentyFourHoursAgo)
+        .order('created_at', { ascending: true })
+        .limit(100);
+
+      if (stuckErr) {
+        console.error('Automation stuck payments query error:', stuckErr);
+      } else {
+        // Filter orders that have a token but payment.status is not 'paid'
+        const ordersToVerify = (stuckPayments || []).filter((order) => {
+          const payment = isRecord(order.payment) ? order.payment : {};
+          const paymentStatus = getString(payment['status']).toLowerCase();
+          const token = getString(payment['token']);
+          return token && paymentStatus !== 'paid';
+        });
+
+        if (ordersToVerify.length > 0) {
+          console.log(`Automation: Verifying ${ordersToVerify.length} stuck payments with iyzico`);
+          const iyzicoClient = getIyzicoClient();
+
+          for (const order of ordersToVerify as unknown as OrderRow[]) {
+            const payment = isRecord(order.payment) ? order.payment : {};
+            const token = getString(payment['token']);
+            
+            if (!token) continue;
+
+            try {
+              const result = await iyzicoClient.retrieveCheckoutForm({
+                locale: 'tr',
+                conversationId: order.id,
+                token,
+              });
+
+              if (result.status === 'success' && String(result.paymentStatus).toUpperCase() === 'SUCCESS') {
+                // Payment was successful - update order
+                const timelineArr = Array.isArray(order.timeline) ? [...order.timeline] : [];
+                timelineArr.push({
+                  status: 'confirmed',
+                  timestamp: nowIso,
+                  note: 'Ödeme onaylandı (otomatik iyzico doğrulama)',
+                  automated: true,
+                });
+
+                const { error: updateErr } = await supabaseAdmin
+                  .from('orders')
+                  .update({
+                    status: 'confirmed',
+                    payment: {
+                      ...payment,
+                      method: 'credit_card',
+                      status: 'paid',
+                      transactionId: result.paymentId,
+                      cardLast4: result.lastFourDigits,
+                      paidAt: nowIso,
+                      cardType: result.cardType,
+                      cardAssociation: result.cardAssociation,
+                      installment: result.installment,
+                      paidPrice: result.paidPrice,
+                    },
+                    timeline: timelineArr,
+                    updated_at: nowIso,
+                  })
+                  .eq('id', order.id);
+
+                if (updateErr) {
+                  console.error('Automation: Failed to update verified order:', order.id, updateErr);
+                } else {
+                  console.log(`Automation: Fixed stuck order ${order.order_number} via iyzico verification`);
+
+                  // Send confirmation email (non-blocking)
+                  try {
+                    const customerEmail = (order.customer_email || '').toString().trim();
+                    if (customerEmail && order.order_number) {
+                      const deliveryFields = getDeliveryFields(order);
+                      const products = isRecord(order) ? (order as any).products : undefined;
+                      const items = Array.isArray(products)
+                        ? products
+                            .filter((p): p is Record<string, unknown> => isRecord(p))
+                            .map((p) => ({
+                              name: getString(p['name']),
+                              quantity: Number(p['quantity'] ?? 0),
+                              price: Number(p['price'] ?? 0),
+                            }))
+                        : [];
+
+                      await EmailService.sendOrderConfirmation({
+                        orderNumber: String(order.order_number),
+                        customerName: order.customer_name || '',
+                        customerEmail,
+                        customerPhone: order.customer_phone || '',
+                        verificationType: 'email',
+                        verificationValue: customerEmail,
+                        items,
+                        subtotal: Number((order as any).subtotal || 0),
+                        discount: Number((order as any).discount || 0),
+                        deliveryFee: Number((order as any).delivery_fee || 0),
+                        total: Number((order as any).total || 0),
+                        ...deliveryFields,
+                        paymentMethod: 'credit_card',
+                      });
+                      console.log(`Automation: Email sent for recovered order ${order.order_number}`);
+                    }
+                  } catch (emailErr) {
+                    console.error(`Automation: Email failed for order ${order.order_number}:`, emailErr);
+                  }
+                }
+              } else if (result.status === 'failure' || String(result.paymentStatus).toUpperCase() === 'FAILURE') {
+                // Payment actually failed - mark as failed
+                const timelineArr = Array.isArray(order.timeline) ? [...order.timeline] : [];
+                timelineArr.push({
+                  status: 'payment_failed',
+                  timestamp: nowIso,
+                  note: 'Ödeme başarısız (otomatik iyzico doğrulama)',
+                  automated: true,
+                });
+
+                await supabaseAdmin
+                  .from('orders')
+                  .update({
+                    status: 'payment_failed',
+                    payment: {
+                      ...payment,
+                      status: 'failed',
+                      errorMessage: result.errorMessage || 'Payment failed',
+                    },
+                    timeline: timelineArr,
+                    updated_at: nowIso,
+                  })
+                  .eq('id', order.id);
+
+                console.log(`Automation: Marked order ${order.order_number} as payment_failed via iyzico verification`);
+              }
+              // If still pending, leave it alone
+            } catch (iyziErr) {
+              console.error(`Automation: iyzico verification error for order ${order.order_number}:`, iyziErr);
+            }
+          }
+        }
+      }
+    }
 
     // 0) Fully-automatic safety net:
     // If a legacy order is already paid but still stuck in pending/pending_payment,
