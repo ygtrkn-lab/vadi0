@@ -562,7 +562,16 @@ export default function SiparislerPage() {
                               </div>
                             )}
                           </div>
-                          <span className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>{order.products.length} adet</span>
+                          <div className="flex flex-col">
+                            {order.products.slice(0, 2).map((p, idx) => (
+                              <span key={idx} className={`text-xs ${isDark ? 'text-neutral-300' : 'text-gray-700'} truncate max-w-[120px]`}>
+                                {p.name} <span className={`${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>x{p.quantity}</span>
+                              </span>
+                            ))}
+                            {order.products.length > 2 && (
+                              <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>+{order.products.length - 2} ürün daha</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
