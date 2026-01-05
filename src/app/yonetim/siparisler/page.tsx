@@ -38,6 +38,39 @@ const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'i
   cancelled: { label: 'İptal', variant: 'error', icon: <HiOutlineXCircle className="w-4 h-4" /> },
 };
 
+// Türkçe ay ve gün isimleri
+const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+// Tarihi okunabilir formata çevir: "3 Ocak Perşembe"
+function formatDeliveryDateFriendly(dateStr: string, timeSlot?: string): string {
+  if (!dateStr) return '';
+  
+  try {
+    // dateStr: "2026-01-03" veya "2026-01-03T00:00:00.000Z" formatında olabilir
+    const cleanDate = dateStr.split('T')[0];
+    const [year, month, day] = cleanDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    
+    if (isNaN(date.getTime())) return dateStr;
+    
+    const dayName = TURKISH_DAYS[date.getDay()];
+    const monthName = TURKISH_MONTHS[date.getMonth()];
+    const dayOfMonth = date.getDate();
+    
+    let result = `${dayOfMonth} ${monthName} ${dayName}`;
+    
+    // Saat dilimini ekle
+    if (timeSlot) {
+      result += `, ${timeSlot}`;
+    }
+    
+    return result;
+  } catch {
+    return dateStr;
+  }
+}
+
 export default function SiparislerPage() {
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -608,7 +641,7 @@ export default function SiparislerPage() {
                           {order.delivery?.district || '-'}{order.delivery?.district && order.delivery?.province ? '/' : ''}{order.delivery?.province || ''}
                         </p>
                         <p className={`text-xs ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
-                          {order.delivery?.deliveryDate ? `📅 ${order.delivery.deliveryDate} ${order.delivery.deliveryTimeSlot || ''}` : ''}
+                          {order.delivery?.deliveryDate ? `📅 ${formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}` : ''}
                         </p>
                       </div>
                       <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
@@ -646,8 +679,7 @@ export default function SiparislerPage() {
                         <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>No / Teslimat</p>
                         <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>#{order.orderNumber}</p>
                         <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
-                          {order.delivery?.deliveryDate ? `${order.delivery.deliveryDate}` : ''}
-                          {order.delivery?.deliveryTimeSlot ? ` • ${order.delivery.deliveryTimeSlot}` : ''}
+                          {order.delivery?.deliveryDate ? formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot) : ''}
                         </p>
                       </div>
                     </div>
@@ -872,13 +904,8 @@ export default function SiparislerPage() {
                     <div className={`p-3 rounded-lg ${isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-100'}`}>
                       <p className={`text-xs font-medium mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>📅 Teslimat Zamanı</p>
                       <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {selectedOrder.delivery.deliveryDate}
+                        {formatDeliveryDateFriendly(selectedOrder.delivery.deliveryDate, selectedOrder.delivery.deliveryTimeSlot)}
                       </p>
-                      {selectedOrder.delivery.deliveryTimeSlot && (
-                        <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-600'}`}>
-                          🕐 {selectedOrder.delivery.deliveryTimeSlot}
-                        </p>
-                      )}
                     </div>
                   )}
 
