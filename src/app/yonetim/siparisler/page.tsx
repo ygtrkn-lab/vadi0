@@ -114,7 +114,13 @@ export default function SiparislerPage() {
           if (!(isTodayDelivery && isActive)) return false;
         }
 
-        const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
+        // Status filter - processing includes both processing and confirmed
+        let matchesStatus = selectedStatus === 'all';
+        if (selectedStatus === 'processing') {
+          matchesStatus = order.status === 'processing' || order.status === 'confirmed';
+        } else if (selectedStatus !== 'all') {
+          matchesStatus = order.status === selectedStatus;
+        }
         
         const customerName = order.customerName || '';
         const customerEmail = order.customerEmail || '';
