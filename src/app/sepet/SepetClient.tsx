@@ -2257,7 +2257,7 @@ export default function SepetClient() {
                         </AnimatePresence>
                       </div>
 
-                      {/* Mahalle - sadece ilçe seçildiyse göster */}
+                      {/* Mahalle - sadece ilçe seçildiyse göster - SADECE DROPDOWN */}
                       <AnimatePresence>
                         {selectedLocation && (
                           <motion.div
@@ -2269,50 +2269,32 @@ export default function SepetClient() {
                               Mahalle *
                             </label>
                             <div className="relative">
-                              <input
-                                ref={neighborhoodInputRef}
-                                type="text"
-                                id="neighborhood"
-                                value={neighborhoodSearchOpen ? neighborhoodSearch : neighborhood}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setNeighborhoodSearch(val);
-                                  setNeighborhoodSearchOpen(true);
-                                  // Direkt seçim de yapılabilsin
-                                  setNeighborhood(val);
-                                  setRecipientErrors((prev) => ({ ...prev, neighborhood: undefined }));
-                                }}
-                                onFocus={() => {
-                                  setNeighborhoodSearchOpen(true);
-                                  setNeighborhoodSearch(neighborhood);
-                                }}
-                                onBlur={() => {
-                                  // Delay to allow click on suggestion
-                                  setTimeout(() => setNeighborhoodSearchOpen(false), 200);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Escape') {
-                                    setNeighborhoodSearchOpen(false);
-                                    setNeighborhoodSearch('');
-                                  }
-                                }}
-                                placeholder={loadingNeighborhoods ? "Mahalleler yükleniyor..." : "Mahalle ara veya seç..."}
-                                disabled={loadingNeighborhoods}
-                                autoComplete="off"
-                                className="w-full px-4 py-3 bg-white border border-gray-200 rounded-2xl text-base focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                              />
-                              {loadingNeighborhoods && (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                              {/* Seçim Butonu */}
+                              <button
+                                type="button"
+                                onClick={() => setNeighborhoodSearchOpen(!neighborhoodSearchOpen)}
+                                disabled={loadingNeighborhoods || neighborhoodSuggestions.length === 0}
+                                className={`w-full px-4 py-3 bg-white border rounded-2xl text-base text-left focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between ${
+                                  recipientErrors.neighborhood ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                }`}
+                              >
+                                <span className={neighborhood ? 'text-gray-900' : 'text-gray-400'}>
+                                  {loadingNeighborhoods 
+                                    ? 'Mahalleler yükleniyor...' 
+                                    : neighborhood 
+                                      ? neighborhood 
+                                      : neighborhoodSuggestions.length > 0 
+                                        ? 'Mahalle seçin...' 
+                                        : 'Önce ilçe seçin'}
+                                </span>
+                                {loadingNeighborhoods ? (
                                   <Loader2 size={16} className="animate-spin text-[#e05a4c]" />
-                                </div>
-                              )}
-                              {!loadingNeighborhoods && neighborhoodSuggestions.length > 0 && (
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                  <Search size={16} className="text-gray-400" />
-                                </div>
-                              )}
+                                ) : (
+                                  <ChevronRight size={16} className={`text-gray-400 transition-transform ${neighborhoodSearchOpen ? 'rotate-90' : ''}`} />
+                                )}
+                              </button>
                               
-                              {/* Searchable Dropdown */}
+                              {/* Dropdown Liste */}
                               <AnimatePresence>
                                 {neighborhoodSearchOpen && !loadingNeighborhoods && neighborhoodSuggestions.length > 0 && (
                                   <motion.div
@@ -2320,59 +2302,85 @@ export default function SepetClient() {
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                                    className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden"
                                   >
-                                    {neighborhoodSuggestions
-                                      .filter(n => 
-                                        !neighborhoodSearch || 
-                                        n.name.toLowerCase().includes(neighborhoodSearch.toLowerCase())
-                                      )
-                                      .slice(0, 15)
-                                      .map((n) => (
-                                        <button
-                                          key={n.id}
-                                          type="button"
-                                          onMouseDown={(e) => {
-                                            e.preventDefault();
-                                            setNeighborhood(n.name);
-                                            setNeighborhoodSearch('');
-                                            setNeighborhoodSearchOpen(false);
-                                            setRecipientErrors((prev) => ({ ...prev, neighborhood: undefined }));
-                                          }}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                              e.preventDefault();
+                                    {/* Arama Kutusu */}
+                                    <div className="p-2 border-b border-gray-100">
+                                      <div className="relative">
+                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                        <input
+                                          ref={neighborhoodInputRef}
+                                          type="text"
+                                          value={neighborhoodSearch}
+                                          onChange={(e) => setNeighborhoodSearch(e.target.value)}
+                                          placeholder="Mahalle ara..."
+                                          autoComplete="off"
+                                          className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c]"
+                                        />
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Mahalle Listesi */}
+                                    <div className="max-h-48 overflow-y-auto">
+                                      {neighborhoodSuggestions
+                                        .filter(n => 
+                                          !neighborhoodSearch || 
+                                          n.name.toLowerCase().includes(neighborhoodSearch.toLowerCase())
+                                        )
+                                        .map((n) => (
+                                          <button
+                                            key={n.id}
+                                            type="button"
+                                            onClick={() => {
                                               setNeighborhood(n.name);
                                               setNeighborhoodSearch('');
                                               setNeighborhoodSearchOpen(false);
                                               setRecipientErrors((prev) => ({ ...prev, neighborhood: undefined }));
-                                            }
-                                          }}
-                                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#e05a4c]/5 transition-colors flex items-center gap-2 ${
-                                            neighborhood === n.name ? 'bg-[#e05a4c]/10 text-[#e05a4c]' : 'text-gray-700'
-                                          }`}
-                                        >
-                                          {neighborhood === n.name && <Check size={14} className="text-[#e05a4c]" />}
-                                          <span className={neighborhood === n.name ? 'font-medium' : ''}>{n.name}</span>
-                                        </button>
-                                      ))}
-                                    {neighborhoodSuggestions.filter(n => 
-                                      !neighborhoodSearch || 
-                                      n.name.toLowerCase().includes(neighborhoodSearch.toLowerCase())
-                                    ).length === 0 && (
-                                      <div className="px-4 py-3 text-sm text-gray-500 text-center">
-                                        Sonuç bulunamadı. Manuel yazabilirsiniz.
-                                      </div>
-                                    )}
+                                            }}
+                                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-[#e05a4c]/5 transition-colors flex items-center gap-2 ${
+                                              neighborhood === n.name ? 'bg-[#e05a4c]/10 text-[#e05a4c]' : 'text-gray-700'
+                                            }`}
+                                          >
+                                            {neighborhood === n.name && <Check size={14} className="text-[#e05a4c]" />}
+                                            <span className={neighborhood === n.name ? 'font-medium' : ''}>{n.name}</span>
+                                          </button>
+                                        ))}
+                                      {neighborhoodSuggestions.filter(n => 
+                                        !neighborhoodSearch || 
+                                        n.name.toLowerCase().includes(neighborhoodSearch.toLowerCase())
+                                      ).length === 0 && (
+                                        <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                          &quot;{neighborhoodSearch}&quot; bulunamadı
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Alt bilgi */}
+                                    <div className="p-2 border-t border-gray-100 bg-gray-50">
+                                      <p className="text-[10px] text-gray-500 text-center">
+                                        {neighborhoodSuggestions.length} mahalle listeleniyor
+                                      </p>
+                                    </div>
                                   </motion.div>
                                 )}
                               </AnimatePresence>
+                              
+                              {/* Dropdown dışına tıklandığında kapat */}
+                              {neighborhoodSearchOpen && (
+                                <div 
+                                  className="fixed inset-0 z-40" 
+                                  onClick={() => {
+                                    setNeighborhoodSearchOpen(false);
+                                    setNeighborhoodSearch('');
+                                  }}
+                                />
+                              )}
                             </div>
                             {recipientErrors.neighborhood && (
                               <p className="text-[10px] text-red-500 mt-1">{recipientErrors.neighborhood}</p>
                             )}
-                            {!loadingNeighborhoods && neighborhoodSuggestions.length > 0 && !neighborhoodSearchOpen && (
-                              <p className="text-[10px] text-gray-400 mt-1">✨ {neighborhoodSuggestions.length} mahalle mevcut - tıklayarak arayın</p>
+                            {!loadingNeighborhoods && neighborhoodSuggestions.length > 0 && !neighborhood && (
+                              <p className="text-[10px] text-gray-400 mt-1">📍 {neighborhoodSuggestions.length} mahalle mevcut</p>
                             )}
                           </motion.div>
                         )}
