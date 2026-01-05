@@ -60,6 +60,39 @@ const statusIcons: Record<string, React.ComponentType<{ className?: string }>> =
   cancelled: HiOutlineXCircle,
 };
 
+// Türkçe ay ve gün isimleri
+const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+// Tarihi okunabilir formata çevir: "3 Aralık Perşembe, 11:00-17:00 arası"
+function formatDeliveryDateFriendly(dateStr: string, timeSlot?: string): string {
+  if (!dateStr) return '';
+  
+  try {
+    // dateStr: "2026-01-03" formatında
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    
+    if (isNaN(date.getTime())) return dateStr;
+    
+    const dayName = TURKISH_DAYS[date.getDay()];
+    const monthName = TURKISH_MONTHS[date.getMonth()];
+    const dayOfMonth = date.getDate();
+    
+    let result = `${dayOfMonth} ${monthName} ${dayName}`;
+    
+    // Saat dilimini ekle
+    if (timeSlot) {
+      // timeSlot: "11:00-17:00" veya "09:00-12:00" formatında olabilir
+      result += `, ${timeSlot} arası`;
+    }
+    
+    return result;
+  } catch {
+    return dateStr;
+  }
+}
+
 // Timeline adımları
 const timelineSteps = [
   { status: 'pending_payment', label: 'Ödeme Bekleniyor', icon: HiOutlineClock },
@@ -460,7 +493,7 @@ export default function SiparislerimPage() {
                               {order.delivery.deliveryDate && (
                                 <p className="text-xs font-medium text-amber-600 mt-1 flex items-center gap-1">
                                   <HiOutlineCalendar className="w-3.5 h-3.5" />
-                                  <span>{order.delivery.deliveryDate} {order.delivery.deliveryTimeSlot || ''}</span>
+                                  <span>{formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}</span>
                                 </p>
                               )}
                             </div>
@@ -839,7 +872,23 @@ function OrderDetailContent({
           <HiOutlineLocationMarker className="w-5 h-5 text-gray-600" />
           <span>Teslimat Bilgileri</span>
         </h4>
-        <div className="bg-gray-50 rounded-xl p-4">
+        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+          {/* Teslimat Tarihi */}
+          {order.delivery.deliveryDate && (
+            <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                <HiOutlineCalendar className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-amber-600 font-medium">Teslimat Tarihi</p>
+                <p className="font-semibold text-gray-800">
+                  {formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {/* Adres */}
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
               <HiOutlineLocationMarker className="w-5 h-5 text-black" />
