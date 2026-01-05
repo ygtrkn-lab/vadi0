@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { CheckCircle, Loader2, Package, CreditCard } from 'lucide-react';
+import { CheckCircle, Loader2, Package, CreditCard, Truck } from 'lucide-react';
 import { BorderBeam, GlassCard, SpotlightCard } from '@/components/ui-kit/premium';
 import { useCart } from '@/context/CartContext';
 import GoogleCustomerReviewsOptIn from '@/components/checkout/GoogleCustomerReviewsOptIn';
@@ -395,6 +395,22 @@ function PaymentCompleteContent() {
                   ? 'Sipariş detaylarınızı hesabınızdan görüntüleyebilirsiniz.' 
                   : 'Siparişiniz başarıyla kaydedildi. E-posta adresinize sipariş detayları gönderilecektir.'}
               </p>
+
+              {/* Sipariş Takibi Butonu - Dinamik */}
+              <button
+                onClick={() => {
+                  const orderId = paymentResult?.orderId;
+                  if (orderId) {
+                    router.push(`/siparis-takip?siparis=${encodeURIComponent(orderId)}`);
+                  } else {
+                    router.push('/siparis-takip');
+                  }
+                }}
+                className="w-full py-3.5 mb-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all flex items-center justify-center gap-2"
+              >
+                <Truck className="w-5 h-5" />
+                Sipariş Takibi
+              </button>
 
               <button
                 onClick={() => {
