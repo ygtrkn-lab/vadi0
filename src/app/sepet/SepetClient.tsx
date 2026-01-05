@@ -35,8 +35,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { BorderBeam, GlassCard, SpotlightCard } from '@/components/ui-kit/premium';
-import { getNeighborhoods, type Neighborhood } from '@/data/turkiye-api';
-import { ISTANBUL_ILCELERI } from '@/data/istanbul-districts';
+import { getNeighborhoods, getDistricts, type Neighborhood } from '@/data/turkiye-api';
 
 // İstanbul bölgeleri (DeliverySelector'dan)
 const ISTANBUL_REGIONS = [
@@ -826,7 +825,7 @@ export default function SepetClient() {
     setRecipientErrors((prev) => ({ ...prev, location: undefined }));
   };
 
-  const handleDistrictSelect = (districtName: string) => {
+  const handleDistrictSelect = async (districtName: string) => {
     if (DISABLED_DISTRICTS.includes(districtName)) {
       setClosedWarning(districtName);
       setTimeout(() => setClosedWarning(null), 3500);
@@ -840,14 +839,24 @@ export default function SepetClient() {
     setLocationStep('region');
     setRecipientErrors((prev) => ({ ...prev, location: undefined, neighborhood: undefined }));
     
-    // Fetch neighborhoods for autocomplete
-    const districtData = ISTANBUL_ILCELERI.find(d => d.name === districtName);
-    if (districtData) {
-      setLoadingNeighborhoods(true);
-      getNeighborhoods(districtData.id)
-        .then(data => setNeighborhoodSuggestions(data))
-        .catch(() => setNeighborhoodSuggestions([]))
-        .finally(() => setLoadingNeighborhoods(false));
+    // API'den İstanbul ilçelerini çekip, gerçek ilçe ID'sini bul
+    setLoadingNeighborhoods(true);
+    try {
+      // İstanbul il ID'si = 34
+      const istanbulDistricts = await getDistricts(34);
+      const districtData = istanbulDistricts.find(d => d.name === districtName);
+      if (districtData) {
+        setDistrictId(districtData.id);
+        const neighborhoods = await getNeighborhoods(districtData.id);
+        setNeighborhoodSuggestions(neighborhoods);
+      } else {
+        setNeighborhoodSuggestions([]);
+      }
+    } catch (error) {
+      console.error('Mahalle yüklenirken hata:', error);
+      setNeighborhoodSuggestions([]);
+    } finally {
+      setLoadingNeighborhoods(false);
     }
   };
 
