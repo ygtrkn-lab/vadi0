@@ -64,8 +64,12 @@ export async function POST(request: NextRequest) {
     // Get client IP
     const ipAddress = getClientIp(request);
 
-    // Build callback URL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    // Build callback URL - MUST be HTTPS for payment security
+    let appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    // Force HTTPS for production (iyzico requires secure callback)
+    if (appUrl.startsWith('http://') && !appUrl.includes('localhost')) {
+      appUrl = appUrl.replace('http://', 'https://');
+    }
     const callbackUrl = new URL('/api/payment/callback', appUrl).toString();
 
     // Build iyzico basket items directly from order.products (server-verified, latest prices)
