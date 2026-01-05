@@ -2396,9 +2396,6 @@ export default function SepetClient() {
                             {recipientErrors.neighborhood && (
                               <p className="text-[10px] text-red-500 mt-1">{recipientErrors.neighborhood}</p>
                             )}
-                            {!loadingNeighborhoods && neighborhoodSuggestions.length > 0 && !neighborhood && (
-                              <p className="text-[10px] text-gray-400 mt-1">📍 {neighborhoodSuggestions.length} mahalle mevcut</p>
-                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
