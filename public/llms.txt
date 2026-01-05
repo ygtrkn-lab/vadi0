@@ -1,0 +1,100 @@
+# Vadiler Çiçek - Online Çiçek Siparişi
+
+> İstanbul'un en güvenilir online çiçekçisi. Taze çiçekler, aynı gün teslimat garantisi.
+
+## Hakkımızda
+
+Vadiler Çiçek, İstanbul'a online çiçek siparişi ve aynı gün teslimat hizmeti sunan Türkiye'nin yeni nesil e-ticaret platformudur. 1000'den fazla çiçek çeşidi ile sevdiklerinize en taze çiçekleri göndermenizi sağlıyoruz.
+
+## Hizmetlerimiz
+
+- Online çiçek siparişi (7/24)
+- İstanbul'un 39 ilçesine aynı gün teslimat
+- Ekspres teslimat (2 saat içinde)
+- Teslimat fotoğrafı ile bilgilendirme
+- Güvenli ödeme seçenekleri
+
+## Ürün Kategorileri
+
+- Güller (kırmızı gül, beyaz gül, pembe gül buketleri)
+- Orkideler (tek dal, çift dal, özel tasarım)
+- Lilyumlar (kokulu lilyum aranjmanları)
+- Papatyalar (renkli papatya buketleri)
+- Kutuda Çiçekler (özel kutu tasarımları)
+- Aranjmanlar (şık vazo aranjmanları)
+- Balonlu Çiçekler (doğum günü özel)
+- Ayıcıklı Çiçekler (sevimli hediye setleri)
+- Saksı Çiçekleri (uzun ömürlü bitkiler)
+- Bonsai (dekoratif bonsai ağaçları)
+
+## Özel Günler
+
+- Sevgililer Günü Çiçekleri (14 Şubat)
+- Anneler Günü Çiçekleri (Mayıs)
+- Doğum Günü Çiçekleri
+- Yıldönümü Çiçekleri
+- Geçmiş Olsun Çiçekleri
+- Tebrik Çiçekleri
+- Yeni Bebek Çiçekleri
+- Açılış Çiçekleri
+- Taziye Çiçekleri
+
+## Teslimat Bölgeleri
+
+İstanbul'un tüm ilçelerine teslimat yapıyoruz:
+
+### Avrupa Yakası
+Arnavutköy, Avcılar, Bağcılar, Bahçelievler, Bakırköy, Başakşehir, Bayrampaşa, Beşiktaş, Beylikdüzü, Beyoğlu, Büyükçekmece, Çatalca, Esenler, Esenyurt, Eyüpsultan, Fatih, Gaziosmanpaşa, Güngören, Kağıthane, Küçükçekmece, Sarıyer, Silivri, Sultangazi, Şişli, Zeytinburnu
+
+### Anadolu Yakası
+Adalar, Ataşehir, Beykoz, Çekmeköy, Kadıköy, Kartal, Maltepe, Pendik, Sancaktepe, Sultanbeyli, Şile, Tuzla, Ümraniye, Üsküdar
+
+## İletişim Bilgileri
+
+- **Website:** https://vadiler.com
+- **Telefon:** 0850 307 4876
+- **E-posta:** info@vadiler.com
+- **Adres:** Bahçelievler, İstanbul, Türkiye
+- **Çalışma Saatleri:** Her gün 08:00 - 22:00
+
+## Sosyal Medya
+
+- Instagram: @vadilercom
+- Facebook: /vadilercom
+- Twitter: @vadilercom
+
+## Ödeme Yöntemleri
+
+- Kredi Kartı (Visa, Mastercard, American Express)
+- Banka Kartı
+- Havale/EFT
+- Kapıda Ödeme
+
+## Sıkça Sorulan Sorular
+
+### Aynı gün teslimat yapıyor musunuz?
+Evet, saat 16:00'ya kadar verilen siparişler aynı gün içinde teslim edilir.
+
+### Hangi bölgelere teslimat yapıyorsunuz?
+İstanbul'un 39 ilçesine teslimat yapıyoruz.
+
+### Teslimat ücreti ne kadar?
+Teslimat ücreti seçtiğiniz bölgeye göre değişiklik gösterebilir. Sepet sayfasında detaylı bilgi verilir.
+
+### Siparişimi nasıl takip edebilirim?
+Sipariş takip sayfasından sipariş numaranız veya e-posta adresiniz ile siparişinizi takip edebilirsiniz.
+
+### İade ve değişim yapıyor musunuz?
+Çiçeklerin doğası gereği iade kabul edilmemektedir. Ancak hasar veya yanlış teslimat durumunda müşteri hizmetlerimizle iletişime geçebilirsiniz.
+
+## Teknik Bilgiler
+
+- **Platform:** Next.js 16, React, TypeScript
+- **Ödeme Altyapısı:** iyzico
+- **CDN:** Cloudinary
+- **SSL:** Güvenli bağlantı (HTTPS)
+
+---
+
+*Son güncelleme: Aralık 2025*
+*Vadiler Çiçek - Sen de sevindir!*

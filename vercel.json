@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/orders/automation",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/verify-payments",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
