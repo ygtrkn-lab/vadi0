@@ -155,11 +155,6 @@ export default function ProductReviews({
       return;
     }
 
-    if (!formData.orderId) {
-      alert('Lütfen bir sipariş seçin');
-      return;
-    }
-
     try {
       const res = await fetch('/api/reviews', {
         method: 'POST',
@@ -167,7 +162,6 @@ export default function ProductReviews({
         body: JSON.stringify({
           productId,
           customerId: currentCustomerId,
-          orderId: formData.orderId,
           rating: formData.rating,
           title: formData.title,
           comment: formData.comment,
@@ -297,7 +291,7 @@ export default function ProductReviews({
       )}
 
       {/* Write Review Button */}
-      {currentCustomerId && customerOrders.length > 0 && (
+      {currentCustomerId ? (
         <button
           onClick={() => setShowReviewForm(!showReviewForm)}
           className="w-full py-3 px-6 bg-white border-2 border-gray-200 rounded-xl font-medium 
@@ -305,6 +299,14 @@ export default function ProductReviews({
         >
           {showReviewForm ? 'İptal' : 'Değerlendirme Yaz'}
         </button>
+      ) : (
+        <a
+          href="/giris"
+          className="block w-full py-3 px-6 bg-gray-50 border-2 border-gray-200 rounded-xl font-medium 
+            text-center text-gray-600 hover:border-[#e05a4c] hover:text-[#e05a4c] transition-all"
+        >
+          Değerlendirme yazmak için giriş yapın
+        </a>
       )}
 
       {/* Review Form */}
@@ -318,24 +320,6 @@ export default function ProductReviews({
             className="bg-white rounded-2xl p-6 shadow-sm space-y-4"
           >
             <h3 className="text-lg font-semibold">Değerlendirmenizi Paylaşın</h3>
-
-            {/* Order Selection */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Sipariş Seçin</label>
-              <select
-                value={formData.orderId}
-                onChange={(e) => setFormData({ ...formData, orderId: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl"
-                required
-              >
-                <option value="">Sipariş seçin</option>
-                {customerOrders.map((orderId) => (
-                  <option key={orderId} value={orderId}>
-                    Sipariş #{orderId}
-                  </option>
-                ))}
-              </select>
-            </div>
 
             {/* Rating */}
             <div>
