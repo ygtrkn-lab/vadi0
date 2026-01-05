@@ -82,6 +82,10 @@ type RecipientErrors = {
   location?: string;
   neighborhood?: string;
   address?: string;
+  streetName?: string;
+  buildingNo?: string;
+  floor?: string;
+  apartmentNo?: string;
   date?: string;
   time?: string;
   sender?: string;
@@ -106,6 +110,12 @@ export default function SepetClient() {
   const [district, setDistrict] = useState('');
   const [districtId, setDistrictId] = useState(0);
   const [neighborhood, setNeighborhood] = useState('');
+  // Detaylı adres alanları
+  const [streetName, setStreetName] = useState('');
+  const [buildingNo, setBuildingNo] = useState('');
+  const [floor, setFloor] = useState('');
+  const [apartmentNo, setApartmentNo] = useState('');
+  const [buildingName, setBuildingName] = useState(''); // Opsiyonel
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryDateNotice, setDeliveryDateNotice] = useState<string | null>(null);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
@@ -280,7 +290,38 @@ export default function SepetClient() {
     setDistrict(addr.district);
     setDistrictId(addr.districtId);
     setNeighborhood(addr.neighborhood);
-    setRecipientAddress(addr.fullAddress);
+    
+    // Kayıtlı adres seçildiğinde detaylı alanları parse etmeye çalış veya fullAddress'i kullan
+    // Eski formatı desteklemek için: detaylı alanları temizle, fullAddress'ten tahmin et
+    // Format: "Sokak/Cadde No: X (Bina) Kat: Y Daire: Z" veya serbest format
+    const fullAddr = addr.fullAddress || '';
+    
+    // Basit regex ile parse etmeye çalış
+    const noMatch = fullAddr.match(/No:\s*([^,\(]+)/i);
+    const katMatch = fullAddr.match(/Kat:\s*([^,]+)/i);
+    const daireMatch = fullAddr.match(/Daire:\s*([^,]+)/i);
+    const binaMatch = fullAddr.match(/\(([^\)]+)\)/);
+    
+    if (noMatch && katMatch && daireMatch) {
+      // Yeni format - parse edebiliyoruz
+      // Sokak kısmını bul (No: öncesi)
+      const noIndex = fullAddr.toLowerCase().indexOf('no:');
+      const sokak = noIndex > 0 ? fullAddr.substring(0, noIndex).trim().replace(/,\s*$/, '') : '';
+      
+      setStreetName(sokak);
+      setBuildingNo(noMatch[1]?.trim() || '');
+      setBuildingName(binaMatch ? binaMatch[1]?.trim() : '');
+      setFloor(katMatch[1]?.trim() || '');
+      setApartmentNo(daireMatch[1]?.trim() || '');
+    } else {
+      // Eski format - tüm adresi sokak alanına koy, diğerlerini kullanıcı doldursun
+      setStreetName(fullAddr);
+      setBuildingNo('');
+      setBuildingName('');
+      setFloor('');
+      setApartmentNo('');
+    }
+    
     setShowAddressForm(false);
     
     // Hataları temizle, ama desteklenmeyen bölge hatası varsa onu koru
@@ -290,6 +331,10 @@ export default function SepetClient() {
       location: warningMessage || undefined, // Uyarı varsa location hatasını set et
       neighborhood: undefined,
       address: undefined,
+      streetName: undefined,
+      buildingNo: undefined,
+      floor: undefined,
+      apartmentNo: undefined,
       date: undefined,
       time: undefined,
       sender: undefined,
@@ -1094,7 +1139,22 @@ export default function SepetClient() {
   const isPhoneValid = validatePhoneNumber(recipientPhone);
   const canProceedToRecipient = state.items.length > 0;
   const requiresSenderName = isGift;
-  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && recipientAddress.length >= 10 && district.length > 0 && deliveryDate.length > 0 && !isDeliveryDateBlocked(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
+  
+  // Detaylı adres alanlarından tam adresi oluştur
+  const fullAddress = useMemo(() => {
+    const parts = [];
+    if (streetName.trim()) parts.push(streetName.trim());
+    if (buildingNo.trim()) parts.push(`No: ${buildingNo.trim()}`);
+    if (buildingName.trim()) parts.push(`(${buildingName.trim()})`);
+    if (floor.trim()) parts.push(`Kat: ${floor.trim()}`);
+    if (apartmentNo.trim()) parts.push(`Daire: ${apartmentNo.trim()}`);
+    return parts.join(', ');
+  }, [streetName, buildingNo, buildingName, floor, apartmentNo]);
+  
+  // Detaylı adres alanlarının dolu olup olmadığını kontrol et
+  const hasValidAddressDetails = streetName.trim().length >= 3 && buildingNo.trim().length > 0 && floor.trim().length > 0 && apartmentNo.trim().length > 0;
+  
+  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && hasValidAddressDetails && neighborhood.length >= 2 && district.length > 0 && deliveryDate.length > 0 && !isDeliveryDateBlocked(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
   const guestEmailTrim = guestEmail.trim();
   const guestPhoneDigits = normalizeTrMobileDigits(guestPhone);
   const isGuestEmailValid = guestEmailTrim.length === 0 ? false : validateEmail(guestEmailTrim);
@@ -1181,12 +1241,25 @@ export default function SepetClient() {
       setErr('delivery-location', 'location', closedWarning);
     }
     
-    if (selectedLocation && !closedWarning && (!neighborhood || neighborhood.trim().length < 5)) {
-      setErr('neighborhood', 'neighborhood', 'Mahalle en az 5 karakter olmalıdır');
+    // Mahalle kontrolü - API'den seçilmiş olmalı
+    if (selectedLocation && !closedWarning && (!neighborhood || neighborhood.trim().length < 2)) {
+      setErr('neighborhood', 'neighborhood', 'Mahalle seçilmelidir');
     }
-    if (recipientAddress.trim().length < 10) {
-      setErr('recipient-address', 'address', 'Açık adres en az 10 karakter olmalıdır');
+    
+    // Detaylı adres alanları kontrolü
+    if (!streetName || streetName.trim().length < 3) {
+      setErr('street-name', 'streetName', 'Sokak/Cadde adı en az 3 karakter olmalıdır');
     }
+    if (!buildingNo || buildingNo.trim().length === 0) {
+      setErr('building-no', 'buildingNo', 'Bina/Kapı no zorunludur');
+    }
+    if (!floor || floor.trim().length === 0) {
+      setErr('floor', 'floor', 'Kat bilgisi zorunludur');
+    }
+    if (!apartmentNo || apartmentNo.trim().length === 0) {
+      setErr('apartment-no', 'apartmentNo', 'Daire no zorunludur');
+    }
+    
     if (!deliveryDate) {
       setErr('delivery-date', 'date', 'Teslimat tarihi seçilmelidir');
     } else if (deliveryDate < MIN_DELIVERY_DATE) {
@@ -1316,6 +1389,8 @@ export default function SepetClient() {
     try {
       // Adresi defterime kaydet (sadece giriş yapmış kullanıcılar için ve yeni adres ise)
       if (isLoggedIn && customerState.currentCustomer && saveAddressToBook && !selectedSavedAddress) {
+        // Tam adresi oluştur
+        const completeAddress = `${neighborhood} Mah. ${fullAddress}, ${district}/İstanbul`;
         const newAddress: Omit<Address, 'id'> = {
           title: addressTitle || 'Teslimat Adresi',
           type: 'other',
@@ -1326,7 +1401,7 @@ export default function SepetClient() {
           district,
           districtId: districtId || 0,
           neighborhood,
-          fullAddress: recipientAddress,
+          fullAddress: completeAddress,
           isDefault: customerState.currentCustomer.addresses.length === 0, // İlk adres ise varsayılan yap
         };
         
@@ -1355,6 +1430,8 @@ export default function SepetClient() {
       }
 
       // Create order with pending_payment status
+      // Tam adresi oluştur
+      const completeDeliveryAddress = `${neighborhood} Mah. ${fullAddress}, ${district}/İstanbul`;
       const orderResult = await createOrder({
         customerId: customerInfo.id,
         customerName: customerInfo.name,
@@ -1368,7 +1445,7 @@ export default function SepetClient() {
           province: 'İstanbul (Avrupa)',
           district,
           neighborhood,
-          fullAddress: recipientAddress,
+          fullAddress: completeDeliveryAddress,
           deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString() : null,
           deliveryTimeSlot: isValidDeliveryTimeSlot(deliveryTimeSlot) ? normalizeDeliveryTimeSlot(deliveryTimeSlot) : null,
           deliveryNotes,
@@ -1921,7 +1998,12 @@ export default function SepetClient() {
                         setDistrict('');
                         setDistrictId(0);
                         setNeighborhood('');
-                        setRecipientAddress('');
+                        // Detaylı adres alanlarını temizle
+                        setStreetName('');
+                        setBuildingNo('');
+                        setBuildingName('');
+                        setFloor('');
+                        setApartmentNo('');
                         setSelectedLocation(null);
                         setClosedWarning(null);
                         setShowAddressForm(true);
@@ -2296,28 +2378,133 @@ export default function SepetClient() {
                         )}
                       </AnimatePresence>
 
-                      <div>
-                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                          Açık Adres *
-                        </label>
-                        <div className="relative">
-                          <Home size={16} className="absolute left-3 top-3 text-gray-400" />
-                          <textarea
-                            id="recipient-address"
-                            value={recipientAddress}
-                            onChange={(e) => {
-                              setRecipientAddress(e.target.value);
-                              setRecipientErrors((prev) => ({ ...prev, address: undefined }));
-                            }}
-                            placeholder="Sokak, bina no, daire no, kat gibi detayları yazın"
-                            rows={3}
-                            className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all resize-none"
-                          />
-                          {recipientErrors.address && (
-                            <p className="text-[10px] text-red-500 mt-1">{recipientErrors.address}</p>
-                          )}
-                        </div>
-                      </div>
+                      {/* Detaylı Adres Alanları */}
+                      <AnimatePresence>
+                        {selectedLocation && neighborhood && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-3"
+                          >
+                            {/* Sokak/Cadde */}
+                            <div>
+                              <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                Sokak / Cadde *
+                              </label>
+                              <input
+                                id="street-name"
+                                type="text"
+                                value={streetName}
+                                onChange={(e) => {
+                                  setStreetName(e.target.value);
+                                  setRecipientErrors((prev) => ({ ...prev, streetName: undefined }));
+                                }}
+                                placeholder="örn: Atatürk Caddesi, Cumhuriyet Sokak"
+                                className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all ${
+                                  recipientErrors.streetName ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                }`}
+                              />
+                              {recipientErrors.streetName && (
+                                <p className="text-[10px] text-red-500 mt-1">{recipientErrors.streetName}</p>
+                              )}
+                            </div>
+
+                            {/* Bina No ve Bina Adı yan yana */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Bina / Kapı No *
+                                </label>
+                                <input
+                                  id="building-no"
+                                  type="text"
+                                  value={buildingNo}
+                                  onChange={(e) => {
+                                    setBuildingNo(e.target.value);
+                                    setRecipientErrors((prev) => ({ ...prev, buildingNo: undefined }));
+                                  }}
+                                  placeholder="örn: 15, 15A"
+                                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all ${
+                                    recipientErrors.buildingNo ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                  }`}
+                                />
+                                {recipientErrors.buildingNo && (
+                                  <p className="text-[10px] text-red-500 mt-1">{recipientErrors.buildingNo}</p>
+                                )}
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Bina Adı <span className="text-gray-400 font-normal">(opsiyonel)</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  value={buildingName}
+                                  onChange={(e) => setBuildingName(e.target.value)}
+                                  placeholder="örn: Gül Apt."
+                                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Kat ve Daire No yan yana */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Kat *
+                                </label>
+                                <input
+                                  id="floor"
+                                  type="text"
+                                  value={floor}
+                                  onChange={(e) => {
+                                    setFloor(e.target.value);
+                                    setRecipientErrors((prev) => ({ ...prev, floor: undefined }));
+                                  }}
+                                  placeholder="örn: 3, Zemin, Bodrum"
+                                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all ${
+                                    recipientErrors.floor ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                  }`}
+                                />
+                                {recipientErrors.floor && (
+                                  <p className="text-[10px] text-red-500 mt-1">{recipientErrors.floor}</p>
+                                )}
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  Daire No *
+                                </label>
+                                <input
+                                  id="apartment-no"
+                                  type="text"
+                                  value={apartmentNo}
+                                  onChange={(e) => {
+                                    setApartmentNo(e.target.value);
+                                    setRecipientErrors((prev) => ({ ...prev, apartmentNo: undefined }));
+                                  }}
+                                  placeholder="örn: 5, 5A"
+                                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all ${
+                                    recipientErrors.apartmentNo ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                  }`}
+                                />
+                                {recipientErrors.apartmentNo && (
+                                  <p className="text-[10px] text-red-500 mt-1">{recipientErrors.apartmentNo}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Oluşturulan tam adres önizlemesi */}
+                            {fullAddress && (
+                              <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl">
+                                <p className="text-[10px] text-blue-600 font-medium mb-1">📍 Adres Önizleme:</p>
+                                <p className="text-xs text-blue-800">
+                                  {neighborhood} Mah. {fullAddress}, {district}/İstanbul
+                                </p>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
 
                       {/* Bu adresi defterime kaydet - sadece giriş yapmış kullanıcılar için */}
                       {isLoggedIn && (
