@@ -2108,7 +2108,15 @@ export default function SepetClient() {
                         <button
                           id="delivery-location"
                           type="button"
-                          onClick={() => setIsLocationOpen(!isLocationOpen)}
+                          onClick={() => {
+                            if (selectedLocation) {
+                              // Seçili konum varsa, sıfırla ve dropdown'u aç
+                              resetLocationSelection();
+                              setIsLocationOpen(true);
+                            } else {
+                              setIsLocationOpen(!isLocationOpen);
+                            }
+                          }}
                           className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl border-2 transition-all text-left ${
                             selectedLocation 
                               ? 'border-[#549658] bg-[#549658]/5' 
@@ -2146,7 +2154,7 @@ export default function SepetClient() {
 
                         {/* Location Dropdown */}
                         <AnimatePresence>
-                          {isLocationOpen && !selectedLocation && (
+                          {isLocationOpen && (
                             <motion.div
                               id="location-dropdown"
                               initial={{ opacity: 0, y: -10 }}

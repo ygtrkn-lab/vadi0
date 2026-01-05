@@ -12,7 +12,7 @@
  * - Beldeler (Towns)
  */
 
-const API_BASE_URL = 'https://turkiyeapi.dev/api/v1';
+const API_BASE_URL = 'https://api.turkiyeapi.dev/v1';
 
 // TypeScript Interfaces
 export interface Province {
