@@ -3,6 +3,18 @@ import { validate3DSStatus } from '@/lib/payment/helpers';
 import { completePaymentServerSide } from '@/lib/payment/paymentCompletion';
 
 /**
+ * Force HTTPS for redirect URLs in production
+ */
+function getSecureAppUrl(request: NextRequest): string {
+  let appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+  // Force HTTPS for production (payment redirects must be secure)
+  if (appUrl.startsWith('http://') && !appUrl.includes('localhost')) {
+    appUrl = appUrl.replace('http://', 'https://');
+  }
+  return appUrl;
+}
+
+/**
  * POST /api/payment/callback
  *
  * Handles callbacks from:
@@ -15,7 +27,7 @@ import { completePaymentServerSide } from '@/lib/payment/paymentCompletion';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    const appUrl = getSecureAppUrl(request);
 
     // Checkout Form callback
     const token = formData.get('token') as string | null;
@@ -72,7 +84,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('❌ Callback processing error:', error);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+    const appUrl = getSecureAppUrl(request);
     const failureUrl = new URL('/payment/failure', appUrl);
     failureUrl.searchParams.set('error', 'Callback processing failed');
     return NextResponse.redirect(failureUrl);
@@ -85,7 +97,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+  const appUrl = getSecureAppUrl(request);
 
   // Checkout Form callback
   const token = searchParams.get('token');

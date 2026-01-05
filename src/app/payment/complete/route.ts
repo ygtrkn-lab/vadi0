@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { completePaymentServerSide } from '@/lib/payment/paymentCompletion';
 
 /**
+ * Force HTTPS for redirect URLs in production
+ */
+function getSecureOrigin(request: NextRequest): string {
+  let origin = request.nextUrl.origin;
+  // Force HTTPS for production (payment redirects must be secure)
+  if (origin.startsWith('http://') && !origin.includes('localhost')) {
+    origin = origin.replace('http://', 'https://');
+  }
+  return origin;
+}
+
+/**
  * POST /payment/complete
  * 
  * Handles POST redirects from banks/payment providers after 3DS verification.
@@ -46,7 +58,7 @@ export async function POST(request: NextRequest) {
     
     if (!token) {
       // Redirect to view page with error
-      const errorUrl = new URL('/payment/complete-view', request.nextUrl.origin);
+      const errorUrl = new URL('/payment/complete-view', getSecureOrigin(request));
       errorUrl.searchParams.set('error', 'Ödeme bilgileri eksik');
       return NextResponse.redirect(errorUrl, { status: 303 });
     }
@@ -56,7 +68,7 @@ export async function POST(request: NextRequest) {
     
     // Redirect to view page with token
     // The view page will call /api/payment/complete to get result data
-    const viewUrl = new URL('/payment/complete-view', request.nextUrl.origin);
+    const viewUrl = new URL('/payment/complete-view', getSecureOrigin(request));
     viewUrl.searchParams.set('token', token);
     if (conversationId) {
       viewUrl.searchParams.set('conversationId', conversationId);
@@ -69,7 +81,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[payment/complete POST] Error:', error);
     
-    const errorUrl = new URL('/payment/complete-view', request.nextUrl.origin);
+    const errorUrl = new URL('/payment/complete-view', getSecureOrigin(request));
     errorUrl.searchParams.set('error', 'Bir hata oluştu');
     return NextResponse.redirect(errorUrl, { status: 303 });
   }
@@ -93,7 +105,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Preserve all query params and redirect to view page
-  const viewUrl = new URL('/payment/complete-view', request.nextUrl.origin);
+  const viewUrl = new URL('/payment/complete-view', getSecureOrigin(request));
   
   // Copy all search params
   request.nextUrl.searchParams.forEach((value, key) => {
