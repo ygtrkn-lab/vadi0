@@ -234,6 +234,14 @@ export default function SepetClient() {
   }, []);
 
   // handleSelectSavedAddress - useCallback ile optimize edilmiş
+  // Kayıtlı adresin desteklenen bölgede olup olmadığını kontrol et
+  const isAddressSupported = useCallback((addr: Address): boolean => {
+    const isIstanbul = addr.province.toLowerCase().includes('istanbul') || addr.province.toLowerCase().includes('i̇stanbul');
+    if (!isIstanbul) return false; // Şimdilik sadece İstanbul destekleniyor
+    const isSupportedEurope = EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase()) && !DISABLED_DISTRICTS.includes(addr.district);
+    return isSupportedEurope;
+  }, []);
+
   const handleSelectSavedAddress = useCallback((addr: Address) => {
     setSelectedSavedAddress(addr);
     setRecipientName(addr.recipientName);
@@ -241,19 +249,30 @@ export default function SepetClient() {
     setPhoneError('');
     setSaveAddressToBook(false);
     setAddressTitle('');
-    // İstanbul için yaka belirleme (kayıtlı adres İstanbul ise)
-    if (addr.province.toLowerCase().includes('istanbul')) {
-      // Sadece Avrupa yakası desteklenir ve bazı ilçeler geçici kapalı
+    
+    // Kayıtlı adresten location ve ilçe bilgilerini ayarla
+    const isIstanbul = addr.province.toLowerCase().includes('istanbul') || addr.province.toLowerCase().includes('i̇stanbul');
+    
+    if (isIstanbul) {
+      // İstanbul için yaka belirleme
       const isSupportedEurope = EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase()) && !DISABLED_DISTRICTS.includes(addr.district);
       if (isSupportedEurope) {
         setIstanbulSide('avrupa');
         setSelectedLocation(`${addr.district}, İstanbul`);
+        setClosedWarning(null);
       } else {
-        // Destek dışı veya kapalı ilçe: seçimleri sıfırla
+        // Destek dışı veya kapalı ilçe - kullanıcıya uyarı göster
         setIstanbulSide('');
-        setSelectedLocation(null);
+        setSelectedLocation(`${addr.district}, İstanbul`);
+        setClosedWarning(`${addr.district} bölgesine şu an teslimat yapılamamaktadır. Lütfen farklı bir adres girin.`);
       }
+    } else {
+      // İstanbul dışı iller - henüz desteklenmiyor
+      setIstanbulSide('');
+      setSelectedLocation(`${addr.district}, ${addr.province}`);
+      setClosedWarning(`${addr.province} iline şu an teslimat yapılamamaktadır. Şimdilik sadece İstanbul Avrupa Yakası'na hizmet veriyoruz.`);
     }
+    
     setDistrict(addr.district);
     setDistrictId(addr.districtId);
     setNeighborhood(addr.neighborhood);
@@ -1150,7 +1169,13 @@ export default function SepetClient() {
       setErr('delivery-location', 'location', 'Teslimat bölgesi seçilmelidir');
       setIsLocationOpen(true);
     }
-    if (selectedLocation && (!neighborhood || neighborhood.trim().length < 5)) {
+    
+    // Desteklenmeyen bölge kontrolü - closedWarning varsa hata ver
+    if (closedWarning) {
+      setErr('delivery-location', 'location', closedWarning);
+    }
+    
+    if (selectedLocation && !closedWarning && (!neighborhood || neighborhood.trim().length < 5)) {
       setErr('neighborhood', 'neighborhood', 'Mahalle en az 5 karakter olmalıdır');
     }
     if (recipientAddress.trim().length < 10) {
@@ -1838,14 +1863,16 @@ export default function SepetClient() {
                   <div className="space-y-3">
                     <p className="text-xs font-medium text-gray-600">Kayıtlı Adresler</p>
                     <div className="space-y-2">
-                      {customerState.currentCustomer.addresses.map(addr => (
+                      {customerState.currentCustomer.addresses.map(addr => {
+                        const supported = isAddressSupported(addr);
+                        return (
                         <button
                           key={addr.id}
                           onClick={() => handleSelectSavedAddress(addr)}
                           className={`w-full text-left p-4 rounded-xl border-2 transition-all
                             ${selectedSavedAddress?.id === addr.id 
                               ? 'border-[#e05a4c] bg-[#e05a4c]/5 ring-4 ring-[#e05a4c]/10' 
-                              : 'border-gray-200 hover:border-gray-300 bg-white'
+                              : supported ? 'border-gray-200 hover:border-gray-300 bg-white' : 'border-orange-200 bg-orange-50'
                             }`}
                         >
                           <div className="flex items-start gap-3">
@@ -1854,7 +1881,7 @@ export default function SepetClient() {
                               {selectedSavedAddress?.id === addr.id && <Check size={12} className="text-white" />}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span className="font-medium text-sm text-gray-900">
                                   {addr.title || (addr.type === 'home' ? 'Ev' : addr.type === 'work' ? 'İş' : 'Diğer')}
                                 </span>
@@ -1864,6 +1891,11 @@ export default function SepetClient() {
                                     Varsayılan
                                   </span>
                                 )}
+                                {!supported && (
+                                  <span className="flex items-center gap-1 text-[10px] text-orange-600 font-medium bg-orange-100 px-1.5 py-0.5 rounded">
+                                    ⚠️ Bu bölgeye teslimat yapılamamaktadır
+                                  </span>
+                                )}
                               </div>
                               <p className="text-sm text-gray-700">{addr.recipientName}</p>
                               <p className="text-xs text-gray-500 truncate">{addr.fullAddress}</p>
@@ -1871,7 +1903,7 @@ export default function SepetClient() {
                             </div>
                           </div>
                         </button>
-                      ))}
+                      );})}
                     </div>
                     
                     <button
@@ -1885,6 +1917,7 @@ export default function SepetClient() {
                         setNeighborhood('');
                         setRecipientAddress('');
                         setSelectedLocation(null);
+                        setClosedWarning(null);
                         setShowAddressForm(true);
                       }}
                       className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm font-medium text-gray-600 hover:border-[#e05a4c] hover:text-[#e05a4c] transition-colors flex items-center justify-center gap-2"
