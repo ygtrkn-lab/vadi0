@@ -23,7 +23,8 @@ import {
   HiOutlineChevronRight,
   HiOutlinePhone,
   HiOutlineMail,
-  HiOutlineLocationMarker
+  HiOutlineLocationMarker,
+  HiOutlineRefresh
 } from 'react-icons/hi';
 
 const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'info' | 'pending' | 'success' | 'error'; icon: React.ReactNode }> = {
@@ -219,6 +220,15 @@ export default function SiparislerPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.location.reload()}
+              className={`p-2.5 rounded-xl transition-all hover:scale-105 ${
+                isDark ? 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700' : 'bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+              }`}
+              title="Siparişleri Yenile"
+            >
+              <HiOutlineRefresh className="w-5 h-5" />
+            </button>
             <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
               <p className="text-xs text-emerald-400 font-medium">
                 Bugün: {stats.todayOrders} sipariş | {formatPrice(stats.todayRevenue)}
@@ -228,18 +238,26 @@ export default function SiparislerPage() {
         </div>
       </FadeContent>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Tıklanabilir */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {[
-          { label: 'Toplam', value: stats.total, color: 'from-neutral-600 to-neutral-700', textColor: isDark ? 'text-neutral-300' : 'text-gray-700' },
-          { label: 'Beklemede', value: stats.pending, color: 'from-amber-500 to-amber-600', textColor: 'text-amber-400' },
-          { label: 'Hazırlanıyor', value: stats.processing, color: 'from-blue-500 to-blue-600', textColor: 'text-blue-400' },
-          { label: 'Kargoda', value: stats.shipped, color: 'from-purple-500 to-purple-600', textColor: 'text-purple-400' },
-          { label: 'Teslim', value: stats.delivered, color: 'from-emerald-500 to-emerald-600', textColor: 'text-emerald-400' },
-          { label: 'İptal', value: stats.cancelled, color: 'from-red-500 to-red-600', textColor: 'text-red-400' },
+          { label: 'Toplam', value: stats.total, color: 'from-neutral-600 to-neutral-700', textColor: isDark ? 'text-neutral-300' : 'text-gray-700', filterStatus: 'all' },
+          { label: 'Beklemede', value: stats.pending, color: 'from-amber-500 to-amber-600', textColor: 'text-amber-400', filterStatus: 'pending' },
+          { label: 'Hazırlanıyor', value: stats.processing, color: 'from-blue-500 to-blue-600', textColor: 'text-blue-400', filterStatus: 'processing' },
+          { label: 'Kargoda', value: stats.shipped, color: 'from-purple-500 to-purple-600', textColor: 'text-purple-400', filterStatus: 'shipped' },
+          { label: 'Teslim', value: stats.delivered, color: 'from-emerald-500 to-emerald-600', textColor: 'text-emerald-400', filterStatus: 'delivered' },
+          { label: 'İptal', value: stats.cancelled, color: 'from-red-500 to-red-600', textColor: 'text-red-400', filterStatus: 'cancelled' },
         ].map((stat, index) => (
           <FadeContent key={stat.label} direction="up" delay={0.05 + index * 0.05}>
-            <SpotlightCard className="p-4">
+            <SpotlightCard 
+              className={`p-4 cursor-pointer transition-all hover:scale-[1.02] ${
+                selectedStatus === stat.filterStatus ? 'ring-2 ring-offset-2 ' + (isDark ? 'ring-white/30 ring-offset-neutral-900' : 'ring-purple-500/50 ring-offset-white') : ''
+              }`}
+              onClick={() => {
+                setSelectedStatus(stat.filterStatus);
+                setCurrentPage(1);
+              }}
+            >
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center flex-shrink-0`}>
                   <span className="text-white text-lg font-bold">{stat.value}</span>
