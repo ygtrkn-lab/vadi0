@@ -253,6 +253,8 @@ export default function SepetClient() {
     // Kayıtlı adresten location ve ilçe bilgilerini ayarla
     const isIstanbul = addr.province.toLowerCase().includes('istanbul') || addr.province.toLowerCase().includes('i̇stanbul');
     
+    let warningMessage: string | null = null;
+    
     if (isIstanbul) {
       // İstanbul için yaka belirleme
       const isSupportedEurope = EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase()) && !DISABLED_DISTRICTS.includes(addr.district);
@@ -264,13 +266,15 @@ export default function SepetClient() {
         // Destek dışı veya kapalı ilçe - kullanıcıya uyarı göster
         setIstanbulSide('');
         setSelectedLocation(`${addr.district}, İstanbul`);
-        setClosedWarning(`${addr.district} bölgesine şu an teslimat yapılamamaktadır. Lütfen farklı bir adres girin.`);
+        warningMessage = `${addr.district} bölgesine şu an teslimat yapılamamaktadır. Lütfen farklı bir adres girin.`;
+        setClosedWarning(warningMessage);
       }
     } else {
       // İstanbul dışı iller - henüz desteklenmiyor
       setIstanbulSide('');
       setSelectedLocation(`${addr.district}, ${addr.province}`);
-      setClosedWarning(`${addr.province} iline şu an teslimat yapılamamaktadır. Şimdilik sadece İstanbul Avrupa Yakası'na hizmet veriyoruz.`);
+      warningMessage = `${addr.province} iline şu an teslimat yapılamamaktadır. Şimdilik sadece İstanbul Avrupa Yakası'na hizmet veriyoruz.`;
+      setClosedWarning(warningMessage);
     }
     
     setDistrict(addr.district);
@@ -278,10 +282,12 @@ export default function SepetClient() {
     setNeighborhood(addr.neighborhood);
     setRecipientAddress(addr.fullAddress);
     setShowAddressForm(false);
+    
+    // Hataları temizle, ama desteklenmeyen bölge hatası varsa onu koru
     setRecipientErrors((prev) => ({
       ...prev,
       name: undefined,
-      location: undefined,
+      location: warningMessage || undefined, // Uyarı varsa location hatasını set et
       neighborhood: undefined,
       address: undefined,
       date: undefined,
@@ -1925,6 +1931,19 @@ export default function SepetClient() {
                       <Plus size={16} />
                       Farklı Adres Gir
                     </button>
+                    
+                    {/* Desteklenmeyen bölge uyarısı */}
+                    {closedWarning && selectedSavedAddress && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-red-800">{closedWarning}</p>
+                            <p className="text-xs text-red-600 mt-1">Devam etmek için lütfen &quot;Farklı Adres Gir&quot; butonuna tıklayarak desteklenen bir bölge seçin.</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
