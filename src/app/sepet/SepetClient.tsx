@@ -427,6 +427,13 @@ export default function SepetClient() {
     }
   }, [currentStep]);
 
+  // Adım değiştiğinde sayfayı en üste scroll et
+  useEffect(() => {
+    if (currentStep !== 'cart') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [currentStep]);
+
   // Safety: whenever checkout selection error becomes visible, scroll to top
   useEffect(() => {
     if (checkoutModeError) {
