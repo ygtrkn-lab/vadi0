@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getIyzicoClient } from '@/lib/payment/iyzico';
+import { mapIyzicoErrorToTurkish, isTokenExpired } from '@/lib/payment/paymentCompletion';
 
 // Initialize Supabase client (service role)
 const supabase = createClient(
@@ -76,6 +77,16 @@ export async function POST(request: NextRequest) {
         success: false,
         error: 'Bu siparişte iyzico token bilgisi bulunamadı. Ödeme başlatılmamış olabilir.',
         noToken: true,
+      }, { status: 400 });
+    }
+
+    // Check if token has expired
+    const tokenCreatedAt = typeof payment.tokenCreatedAt === 'string' ? payment.tokenCreatedAt : undefined;
+    if (isTokenExpired(tokenCreatedAt)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Ödeme token süresi dolmuş. Bu siparişi "Manuel Onayla" ile onaylayabilir veya iptal edebilirsiniz.',
+        tokenExpired: true,
       }, { status: 400 });
     }
 
@@ -208,11 +219,12 @@ export async function POST(request: NextRequest) {
         },
       });
     } else if (iyzicoResult.status === 'failure' || String(iyzicoResult.paymentStatus).toUpperCase() === 'FAILURE') {
-      // Payment failed
+      // Payment failed - return user-friendly error message
+      const userFriendlyError = mapIyzicoErrorToTurkish(iyzicoResult.errorCode, iyzicoResult.errorMessage);
       return NextResponse.json({
         success: false,
         paymentFailed: true,
-        message: 'iyzico\'da ödeme başarısız olarak görünüyor',
+        message: userFriendlyError,
         iyzicoResult: {
           status: iyzicoResult.status,
           paymentStatus: iyzicoResult.paymentStatus,

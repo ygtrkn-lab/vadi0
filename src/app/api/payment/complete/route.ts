@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getIyzicoClient } from '@/lib/payment/iyzico';
 import { validatePaymentResponse } from '@/lib/payment/helpers';
 import { createClient } from '@supabase/supabase-js';
+import { 
+  completePaymentServerSide, 
+  markOrderPaymentFailed, 
+  mapIyzicoErrorToTurkish,
+  isTokenExpired 
+} from '@/lib/payment/paymentCompletion';
 
 // Initialize Supabase client (service role)
 const supabase = createClient(
@@ -36,66 +42,6 @@ function getErrorMessage(err: unknown): string {
  * - token?: string (checkout form)
  */
 
-async function markOrderPaymentFailed(params: {
-  orderId: string;
-  token?: string;
-  paymentId?: string;
-  errorMessage: string;
-  gatewayResult?: unknown;
-}) {
-  const nowIso = new Date().toISOString();
-
-  const { data: order } = await supabase
-    .from('orders')
-    .select('status, payment, timeline')
-    .eq('id', params.orderId)
-    .single();
-
-  // If order is already paid, do not downgrade
-  const orderPayment = isRecord(order) ? order.payment : undefined;
-  const orderPaymentStatus = getStringProp(orderPayment, 'status');
-  if (String(orderPaymentStatus ?? '').toLowerCase() === 'paid') {
-    return;
-  }
-
-  const timelineRaw = isRecord(order) ? order.timeline : undefined;
-  const timeline = Array.isArray(timelineRaw) ? timelineRaw : [];
-  const nextTimeline = [
-    ...timeline,
-    {
-      status: 'payment_failed',
-      timestamp: nowIso,
-      note: params.errorMessage,
-      automated: true,
-    },
-  ];
-
-  const prevPayment = isRecord(orderPayment) ? orderPayment : {};
-  const gateway = params.gatewayResult;
-
-  await supabase
-    .from('orders')
-    .update({
-      status: 'payment_failed',
-      payment: {
-        ...prevPayment,
-        method: (prevPayment as JsonRecord).method || 'credit_card',
-        status: 'failed',
-        token: params.token || (prevPayment as JsonRecord).token,
-        transactionId:
-          params.paymentId ||
-          (prevPayment as JsonRecord).transactionId ||
-          getStringProp(gateway, 'paymentId'),
-        errorCode: isRecord(gateway) ? gateway.errorCode : undefined,
-        errorMessage: getStringProp(gateway, 'errorMessage') || params.errorMessage,
-        errorGroup: isRecord(gateway) ? gateway.errorGroup : undefined,
-      },
-      timeline: nextTimeline,
-      updated_at: nowIso,
-    })
-    .eq('id', params.orderId);
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -120,15 +66,25 @@ export async function POST(request: NextRequest) {
     if (!conversationId && token) {
       const { data: order, error: findError } = await supabase
         .from('orders')
-        .select('id')
+        .select('id, payment')
         .contains('payment', { token })
         .single();
 
       if (findError || !order) {
         console.error('❌ Order not found for token:', token, findError);
         return NextResponse.json(
-          { success: false, error: 'Order not found for payment token' },
+          { success: false, error: 'Sipariş bulunamadı. Lütfen sepetinize dönüp tekrar deneyin.' },
           { status: 404 }
+        );
+      }
+
+      // Check token expiration before proceeding
+      const tokenCreatedAt = getStringProp(order.payment, 'tokenCreatedAt');
+      if (isTokenExpired(tokenCreatedAt)) {
+        console.log('⚠️ Token expired for order:', order.id);
+        return NextResponse.json(
+          { success: false, error: 'Ödeme süresi doldu. Lütfen sayfayı yenileyip tekrar deneyin.' },
+          { status: 400 }
         );
       }
 
@@ -160,6 +116,9 @@ export async function POST(request: NextRequest) {
     if (!validation.isValid) {
       console.error('❌ Payment failed:', validation.error, result);
 
+      // Map to user-friendly Turkish error message
+      const userFriendlyError = mapIyzicoErrorToTurkish(result.errorCode, result.errorMessage || validation.error);
+
       // Persist failure on the order so it doesn't stay in pending_payment
       if (conversationId) {
         try {
@@ -167,7 +126,8 @@ export async function POST(request: NextRequest) {
             orderId: conversationId,
             token: token || undefined,
             paymentId: paymentId || getStringProp(result, 'paymentId'),
-            errorMessage: validation.error || getStringProp(result, 'errorMessage') || 'Ödeme başarısız',
+            errorMessage: userFriendlyError,
+            errorCode: result.errorCode,
             gatewayResult: result,
           });
         } catch (e) {
@@ -178,7 +138,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           success: false,
-          error: validation.error, 
+          error: userFriendlyError, 
           result 
         },
         { status: 400 }
@@ -187,13 +147,16 @@ export async function POST(request: NextRequest) {
 
     // For Checkout Form retrieval, also require actual paymentStatus success when present.
     if (token && result.paymentStatus && String(result.paymentStatus).toUpperCase() !== 'SUCCESS') {
+      const userFriendlyError = mapIyzicoErrorToTurkish(result.errorCode, result.errorMessage);
+
       if (conversationId) {
         try {
           await markOrderPaymentFailed({
             orderId: conversationId,
             token,
             paymentId: paymentId || getStringProp(result, 'paymentId'),
-            errorMessage: getStringProp(result, 'errorMessage') || 'Ödeme başarısız',
+            errorMessage: userFriendlyError,
+            errorCode: result.errorCode,
             gatewayResult: result,
           });
         } catch (e) {
@@ -203,7 +166,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: result.errorMessage || 'Payment not successful',
+          error: userFriendlyError,
           result,
         },
         { status: 400 }

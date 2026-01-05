@@ -107,6 +107,12 @@ export async function POST(request: NextRequest) {
     // Derive buyerId (guest-safe). iyzico requires a buyer.id even for guests.
     const buyerId = customer.id || `GUEST_${orderId}`;
 
+    // Parse buyer name safely - iyzico requires non-empty name and surname
+    const fullName = (customer.name || '').trim();
+    const nameParts = fullName.split(' ').filter(Boolean);
+    const buyerFirstName = nameParts[0] || 'Müşteri';
+    const buyerSurname = nameParts.slice(1).join(' ') || buyerFirstName; // Use first name as surname if only one word
+
     // Build iyzico checkout form request (hosted payment) using trusted order data and verified basket items
     const paymentRequest = {
       locale: 'tr',
@@ -120,8 +126,8 @@ export async function POST(request: NextRequest) {
       enabledInstallments: [1],
       buyer: {
         id: buyerId,
-        name: customer.name.split(' ')[0],
-        surname: customer.name.split(' ').slice(1).join(' ') || customer.name.split(' ')[0],
+        name: buyerFirstName,
+        surname: buyerSurname,
         gsmNumber: customer.phone.replace(/\s/g, '').startsWith('+')
           ? customer.phone.replace(/\s/g, '')
           : '+90' + (customer.phone.replace(/\s/g, '').startsWith('0')
@@ -160,7 +166,12 @@ export async function POST(request: NextRequest) {
       conversationId: paymentRequest.conversationId,
       amount: paymentRequest.paidPrice,
       environment: iyzicoClient.getEnvironment(),
-      requestKeys: Object.keys(paymentRequest).sort(),
+      buyer: {
+        name: paymentRequest.buyer.name,
+        surname: paymentRequest.buyer.surname,
+        email: paymentRequest.buyer.email,
+      },
+      basketItemsCount: basketItems.length,
     });
 
     // Initialize Checkout Form with our REST client
@@ -184,10 +195,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Persist token on the order so we can resolve orderId later when iyzico callback omits conversationId.
+    // Also store tokenCreatedAt for expiration tracking (tokens expire in ~30 mins).
     // This is critical for payment completion - retry up to 3 times if it fails.
     if (result.token) {
       let tokenPersisted = false;
       let lastError: any = null;
+      const tokenCreatedAt = new Date().toISOString();
       
       for (let attempt = 1; attempt <= 3 && !tokenPersisted; attempt++) {
         try {
@@ -198,6 +211,7 @@ export async function POST(request: NextRequest) {
                 method: 'credit_card',
                 status: 'pending',
                 token: result.token,
+                tokenCreatedAt, // Track token creation time for expiration checks
               },
               updated_at: new Date().toISOString(),
             })

@@ -23,6 +23,7 @@
 import supabaseAdmin from '@/lib/supabase/admin';
 import { EmailService } from '@/lib/email/emailService';
 import { getIyzicoClient } from '@/lib/payment/iyzico';
+import { isTokenExpired, mapIyzicoErrorToTurkish } from '@/lib/payment/paymentCompletion';
 
 const ISTANBUL_TZ = 'Europe/Istanbul';
 
@@ -273,8 +274,38 @@ export async function processAutomatedUpdates(): Promise<{
           for (const order of ordersToVerify as unknown as OrderRow[]) {
             const payment = isRecord(order.payment) ? order.payment : {};
             const token = getString(payment['token']);
+            const tokenCreatedAt = getString(payment['tokenCreatedAt']);
             
             if (!token) continue;
+
+            // Check if token has expired - mark as failed without calling iyzico
+            if (isTokenExpired(tokenCreatedAt)) {
+              console.log(`Automation: Token expired for order ${order.order_number}, marking as failed`);
+              const timelineArr = Array.isArray(order.timeline) ? [...order.timeline] : [];
+              timelineArr.push({
+                status: 'payment_failed',
+                timestamp: nowIso,
+                note: 'Ödeme süresi doldu',
+                automated: true,
+              });
+
+              await supabaseAdmin
+                .from('orders')
+                .update({
+                  status: 'payment_failed',
+                  payment: {
+                    ...payment,
+                    status: 'failed',
+                    errorMessage: 'Ödeme süresi doldu',
+                    errorCode: 'TOKEN_EXPIRED',
+                  },
+                  timeline: timelineArr,
+                  updated_at: nowIso,
+                })
+                .eq('id', order.id);
+
+              continue;
+            }
 
             try {
               const result = await iyzicoClient.retrieveCheckoutForm({
@@ -358,11 +389,12 @@ export async function processAutomatedUpdates(): Promise<{
                 }
               } else if (result.status === 'failure' || String(result.paymentStatus).toUpperCase() === 'FAILURE') {
                 // Payment actually failed - mark as failed
+                const userFriendlyError = mapIyzicoErrorToTurkish(result.errorCode, result.errorMessage);
                 const timelineArr = Array.isArray(order.timeline) ? [...order.timeline] : [];
                 timelineArr.push({
                   status: 'payment_failed',
                   timestamp: nowIso,
-                  note: 'Ödeme başarısız (otomatik iyzico doğrulama)',
+                  note: userFriendlyError,
                   automated: true,
                 });
 
@@ -373,7 +405,8 @@ export async function processAutomatedUpdates(): Promise<{
                     payment: {
                       ...payment,
                       status: 'failed',
-                      errorMessage: result.errorMessage || 'Payment failed',
+                      errorCode: result.errorCode,
+                      errorMessage: userFriendlyError,
                     },
                     timeline: timelineArr,
                     updated_at: nowIso,
