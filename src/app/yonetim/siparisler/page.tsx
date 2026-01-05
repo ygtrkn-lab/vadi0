@@ -209,261 +209,166 @@ export default function SiparislerPage() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
+    <div className="space-y-4 max-w-7xl mx-auto">
+      {/* Compact Header with Stats */}
       <FadeContent direction="up" delay={0}>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Siparişler</h1>
-            <p className={`text-sm mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-              {filteredOrders.length} sipariş bulundu
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => window.location.reload()}
-              className={`p-2.5 rounded-xl transition-all hover:scale-105 ${
-                isDark ? 'bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700' : 'bg-gray-100 text-gray-500 hover:text-gray-900 hover:bg-gray-200'
-              }`}
-              title="Siparişleri Yenile"
-            >
-              <HiOutlineRefresh className="w-5 h-5" />
-            </button>
-            <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-              <p className="text-xs text-emerald-400 font-medium">
-                Bugün: {stats.todayOrders} sipariş | {formatPrice(stats.todayRevenue)}
-              </p>
-            </div>
-          </div>
-        </div>
-      </FadeContent>
-
-      {/* Stats Cards - Tıklanabilir */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        {[
-          { label: 'Toplam', value: stats.total, color: 'from-neutral-600 to-neutral-700', textColor: isDark ? 'text-neutral-300' : 'text-gray-700', filterStatus: 'all' },
-          { label: 'Beklemede', value: stats.pending, color: 'from-amber-500 to-amber-600', textColor: 'text-amber-400', filterStatus: 'pending' },
-          { label: 'Hazırlanıyor', value: stats.processing, color: 'from-blue-500 to-blue-600', textColor: 'text-blue-400', filterStatus: 'processing' },
-          { label: 'Kargoda', value: stats.shipped, color: 'from-purple-500 to-purple-600', textColor: 'text-purple-400', filterStatus: 'shipped' },
-          { label: 'Teslim', value: stats.delivered, color: 'from-emerald-500 to-emerald-600', textColor: 'text-emerald-400', filterStatus: 'delivered' },
-          { label: 'İptal', value: stats.cancelled, color: 'from-red-500 to-red-600', textColor: 'text-red-400', filterStatus: 'cancelled' },
-        ].map((stat, index) => (
-          <FadeContent key={stat.label} direction="up" delay={0.05 + index * 0.05}>
-            <SpotlightCard 
-              className={`p-4 cursor-pointer transition-all hover:scale-[1.02] ${
-                selectedStatus === stat.filterStatus ? 'ring-2 ring-offset-2 ' + (isDark ? 'ring-white/30 ring-offset-neutral-900' : 'ring-purple-500/50 ring-offset-white') : ''
-              }`}
-              onClick={() => {
-                setSelectedStatus(stat.filterStatus);
-                setCurrentPage(1);
-              }}
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-white text-lg font-bold">{stat.value}</span>
-                </div>
-                <div className="min-w-0">
-                  <p className={`text-lg font-bold ${stat.textColor}`}>
-                    <AnimatedCounter value={stat.value} />
-                  </p>
-                  <p className={`text-xs truncate ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{stat.label}</p>
-                </div>
-              </div>
-            </SpotlightCard>
-          </FadeContent>
-        ))}
-      </div>
-
-      {/* Revenue Card */}
-      <FadeContent direction="up" delay={0.25}>
-        <SpotlightCard className="p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
-                <HiOutlineCurrencyDollar className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Toplam Gelir</p>
-                <p className="text-2xl font-bold text-emerald-400">{formatPrice(stats.revenue)}</p>
-              </div>
+        <div className={`rounded-2xl border p-4 ${isDark ? 'bg-neutral-900/80 border-neutral-800' : 'bg-white border-gray-200 shadow-sm'}`}>
+          {/* Top Row: Title + Actions */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Siparişler</h1>
+              <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500'}`}>
+                {filteredOrders.length}
+              </span>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.location.reload()}
+                className={`p-2 rounded-lg transition-all hover:scale-105 ${
+                  isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+                title="Yenile"
+              >
+                <HiOutlineRefresh className="w-4 h-4" />
+              </button>
+              <div className={`text-xs px-3 py-1.5 rounded-lg ${isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+                Bugün: {stats.todayOrders} sipariş • {formatPrice(stats.todayRevenue)}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stats Row */}
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
+            {[
+              { label: 'Toplam', value: stats.total, status: 'all', color: isDark ? 'text-white' : 'text-gray-900', bg: isDark ? 'bg-neutral-800' : 'bg-gray-100' },
+              { label: 'Beklemede', value: stats.pending, status: 'pending', color: 'text-amber-500', bg: isDark ? 'bg-amber-500/10' : 'bg-amber-50' },
+              { label: 'Hazırlanıyor', value: stats.processing, status: 'processing', color: 'text-blue-500', bg: isDark ? 'bg-blue-500/10' : 'bg-blue-50' },
+              { label: 'Kargoda', value: stats.shipped, status: 'shipped', color: 'text-purple-500', bg: isDark ? 'bg-purple-500/10' : 'bg-purple-50' },
+              { label: 'Teslim', value: stats.delivered, status: 'delivered', color: 'text-emerald-500', bg: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50' },
+              { label: 'İptal', value: stats.cancelled, status: 'cancelled', color: 'text-red-500', bg: isDark ? 'bg-red-500/10' : 'bg-red-50' },
+            ].map((stat) => (
+              <button
+                key={stat.status}
+                onClick={() => { setSelectedStatus(stat.status); setCurrentPage(1); }}
+                className={`p-2 rounded-xl text-center transition-all hover:scale-[1.02] ${stat.bg} ${
+                  selectedStatus === stat.status ? 'ring-2 ' + (isDark ? 'ring-white/20' : 'ring-gray-400/30') : ''
+                }`}
+              >
+                <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
+                <p className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{stat.label}</p>
+              </button>
+            ))}
+          </div>
+
+          {/* Total Revenue */}
+          <div className={`flex items-center justify-between p-3 rounded-xl mb-4 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
+                <HiOutlineCurrencyDollar className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div>
+                <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Toplam Gelir</p>
+                <p className="text-lg font-bold text-emerald-500">{formatPrice(stats.revenue)}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
               {['all', 'today', 'week', 'month'].map(filter => (
                 <button
                   key={filter}
-                  onClick={() => {
-                    setDateFilter(filter as typeof dateFilter);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  onClick={() => { setDateFilter(filter as typeof dateFilter); setCurrentPage(1); }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                     dateFilter === filter
-                      ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
-                      : (isDark ? 'bg-neutral-800 text-neutral-400 hover:text-white' : 'bg-gray-100 text-gray-500')
+                      ? (isDark ? 'bg-white text-black' : 'bg-gray-900 text-white')
+                      : (isDark ? 'text-neutral-500 hover:text-white' : 'text-gray-500 hover:text-gray-900')
                   }`}
                 >
-                  {filter === 'all' ? 'Tümü' : filter === 'today' ? 'Bugün' : filter === 'week' ? 'Bu Hafta' : 'Bu Ay'}
+                  {filter === 'all' ? 'Tümü' : filter === 'today' ? 'Bugün' : filter === 'week' ? 'Hafta' : 'Ay'}
                 </button>
               ))}
             </div>
           </div>
-        </SpotlightCard>
-      </FadeContent>
 
-      {/* Filters */}
-      <FadeContent direction="up" delay={0.3}>
-        <SpotlightCard className="p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search & Filters */}
+          <div className="flex flex-col sm:flex-row gap-2">
             {/* Search */}
-            {(() => {
-              const isSearchOpen = searchFocused || searchTerm.length > 0;
-              return (
-                <div
-                  className={`relative flex-1 sm:w-full transition-all duration-300 ${isSearchOpen ? 'sm:max-w-[820px]' : 'sm:max-w-[560px]'} ${isDark ? '' : ''}`}
-                  onClick={() => {
-                    if (!isSearchOpen) searchInputRef.current?.focus();
-                  }}
-                >
-                  <HiOutlineSearch
-                    className={`pointer-events-none absolute w-5 h-5 transition-all duration-200 ${
-                      isSearchOpen
-                        ? 'left-3 top-1/2 -translate-y-1/2'
-                        : 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2'
-                    } ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}
-                  />
-                  <input
-                    ref={searchInputRef}
+            <div className="relative flex-1">
+              <HiOutlineSearch className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`} />
+              <input
+                ref={searchInputRef}
                 type="text"
-                placeholder="Sipariş veya müşteri ara..."
+                placeholder="Sipariş no, müşteri ara..."
                 value={searchTerm}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                    className={`w-full pl-10 pr-10 py-3 border rounded-2xl
-                  focus:outline-none transition-all duration-300
-                  focus:ring-2 ${isDark ? 'focus:ring-purple-500/30' : 'focus:ring-purple-500/20'}
-                  ${isDark 
-                    ? 'bg-neutral-800 border-neutral-700 text-white placeholder-neutral-500 focus:border-neutral-600' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-gray-300'
-                  }`}
-                  />
-                  {searchTerm && (
-                    <button
-                      onClick={() => {
-                        setSearchTerm('');
-                        setCurrentPage(1);
-                        searchInputRef.current?.focus();
-                      }}
-                      className={`absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg ${isDark ? 'hover:bg-neutral-700' : 'hover:bg-gray-200'}`}
-                    >
-                      <HiOutlineX className={`w-4 h-4 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`} />
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className={`w-full pl-9 pr-8 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all ${
+                  isDark 
+                    ? 'bg-neutral-800 border-neutral-700 text-white placeholder-neutral-500 focus:ring-white/10' 
+                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:ring-gray-200'
+                }`}
+              />
+              {searchTerm && (
+                <button onClick={() => { setSearchTerm(''); setCurrentPage(1); }} className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <HiOutlineX className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`} />
+                </button>
+              )}
+            </div>
 
-            {/* Mobile Filter Button */}
+            {/* Mobile Filter Toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`sm:hidden flex items-center justify-center gap-2 px-4 py-2.5 
-                border rounded-xl
-                ${isDark 
-                  ? 'bg-neutral-800 border-neutral-700 text-neutral-300' 
-                  : 'bg-gray-50 border-gray-200 text-gray-600'
-                }`}
+              className={`sm:hidden flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-sm ${
+                isDark ? 'border-neutral-700 text-neutral-400' : 'border-gray-200 text-gray-600'
+              }`}
             >
-              <HiOutlineFilter className="w-5 h-5" />
-              Durum Filtrele
+              <HiOutlineFilter className="w-4 h-4" />
+              Filtrele
             </button>
 
-            {/* Desktop Filters */}
-            <div className="hidden sm:flex items-center gap-2 overflow-x-auto">
-              {/* Tümü */}
+            {/* Quick Filter Pills - Desktop */}
+            <div className="hidden sm:flex items-center gap-1 overflow-x-auto">
               <button
-                onClick={() => {
-                  setSelectedStatus('all');
-                  setCurrentPage(1);
-                }}
-                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedStatus === 'all'
-                    ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
-                    : (isDark ? 'bg-neutral-800 text-neutral-400 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900')
-                }`}
-              >
-                Tümü
-              </button>
-              {/* Bugün Haz. (second right after Tümü) */}
-              <button
-                onClick={() => {
-                  setTodayToPrepare(!todayToPrepare);
-                  setCurrentPage(1);
-                }}
-                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all border ${
+                onClick={() => { setTodayToPrepare(!todayToPrepare); setCurrentPage(1); }}
+                className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
                   todayToPrepare
-                    ? (isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200')
-                    : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white' : 'bg-white text-gray-600 border-gray-200 hover:text-gray-900')
+                    ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
+                    : (isDark ? 'text-neutral-500 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
                 }`}
-                title="Bugün hazırlanması gerekenleri göster (teslimat tarihi bugün)"
               >
-                Bugün hazırlanacak
+                📦 Bugün Haz.
               </button>
-              {/* Other statuses */}
-              {['pending', 'pending_payment', 'payment_failed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
+              <button
+                onClick={() => { setOnlyPaid(!onlyPaid); setCurrentPage(1); }}
+                className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
+                  onlyPaid
+                    ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
+                    : (isDark ? 'text-neutral-500 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
+                }`}
+              >
+                💳 Ödenenler
+              </button>
+              <div className={`w-px h-5 mx-1 ${isDark ? 'bg-neutral-700' : 'bg-gray-200'}`} />
+              {['pending_payment', 'payment_failed', 'confirmed'].map((status) => (
                 <button
                   key={status}
-                  onClick={() => {
-                    setSelectedStatus(status);
-                    setCurrentPage(1);
-                  }}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+                  onClick={() => { setSelectedStatus(status); setCurrentPage(1); }}
+                  className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
                     selectedStatus === status
-                      ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
-                      : (isDark ? 'bg-neutral-800 text-neutral-400 hover:text-white' : 'bg-gray-100 text-gray-600 hover:text-gray-900')
+                      ? (isDark ? 'bg-white text-black' : 'bg-gray-900 text-white')
+                      : (isDark ? 'text-neutral-500 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
                   }`}
                 >
                   {statusConfig[status as OrderStatus].label}
                 </button>
               ))}
-              {/* Only paid toggle */}
-              <button
-                onClick={() => {
-                  setOnlyPaid(!onlyPaid);
-                  setCurrentPage(1);
-                }}
-                className={`ml-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
-                  onlyPaid
-                    ? (isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
-                    : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white' : 'bg-white text-gray-600 border-gray-200 hover:text-gray-900')
-                }`}
-                title="Sadece ödenen siparişleri göster"
-              >
-                {onlyPaid ? 'Sadece ödenenler: Açık' : 'Sadece ödenenler'}
-              </button>
-
-              {/* Clear filters if active */}
-              {(() => {
-                const hasActive = selectedStatus !== 'all' || onlyPaid || todayToPrepare || dateFilter !== 'all' || !!searchTerm;
-                if (!hasActive) return null;
-                return (
-                  <button
-                    onClick={() => {
-                      setSelectedStatus('all');
-                      setOnlyPaid(false);
-                      setTodayToPrepare(false);
-                      setDateFilter('all');
-                      setSearchTerm('');
-                      setCurrentPage(1);
-                    }}
-                    className={`ml-2 px-3 py-2 rounded-xl text-sm font-medium transition-all ${isDark ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    title="Filtreleri temizle"
-                  >
-                    Temizle
-                  </button>
-                );
-              })()}
+              {(selectedStatus !== 'all' || onlyPaid || todayToPrepare || dateFilter !== 'all' || searchTerm) && (
+                <button
+                  onClick={() => { setSelectedStatus('all'); setOnlyPaid(false); setTodayToPrepare(false); setDateFilter('all'); setSearchTerm(''); setCurrentPage(1); }}
+                  className={`px-2 py-2 rounded-lg text-xs ${isDark ? 'text-red-400 hover:bg-red-500/10' : 'text-red-500 hover:bg-red-50'}`}
+                >
+                  <HiOutlineX className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -477,99 +382,64 @@ export default function SiparislerPage() {
                 className="sm:hidden overflow-hidden"
               >
                 <div className={`pt-3 mt-3 border-t flex flex-wrap gap-2 ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
-                  {/* Tümü */}
                   <button
-                    onClick={() => {
-                      setSelectedStatus('all');
-                      setCurrentPage(1);
-                      setShowFilters(false);
-                    }}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                      selectedStatus === 'all'
-                        ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
-                        : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500')
+                    onClick={() => { setTodayToPrepare(!todayToPrepare); setCurrentPage(1); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                      todayToPrepare ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700') : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-600')
                     }`}
                   >
-                    Tümü
+                    📦 Bugün Haz.
                   </button>
-
-                  {/* Bugün Haz. next to All */}
                   <button
-                    onClick={() => {
-                      setTodayToPrepare(!todayToPrepare);
-                      setCurrentPage(1);
-                      setShowFilters(false);
-                    }}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-                      todayToPrepare
-                        ? (isDark ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-amber-50 text-amber-700 border-amber-200')
-                        : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800' : 'bg-white text-gray-600 border-gray-200')
+                    onClick={() => { setOnlyPaid(!onlyPaid); setCurrentPage(1); }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
+                      onlyPaid ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700') : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-600')
                     }`}
                   >
-                    Bugün hazırlanacak
+                    💳 Ödenenler
                   </button>
-
-                  {/* Other statuses */}
                   {['pending', 'pending_payment', 'payment_failed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
                     <button
                       key={status}
-                      onClick={() => {
-                        setSelectedStatus(status);
-                        setCurrentPage(1);
-                        setShowFilters(false);
-                      }}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      onClick={() => { setSelectedStatus(status); setCurrentPage(1); setShowFilters(false); }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
                         selectedStatus === status
-                          ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
-                          : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500')
+                          ? (isDark ? 'bg-white text-black' : 'bg-gray-900 text-white')
+                          : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-600')
                       }`}
                     >
                       {statusConfig[status as OrderStatus].label}
                     </button>
                   ))}
-                  {/* Mobile toggles */}
-                  <button
-                    onClick={() => {
-                      setOnlyPaid(!onlyPaid);
-                      setCurrentPage(1);
-                      setShowFilters(false);
-                    }}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
-                      onlyPaid
-                        ? (isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-emerald-50 text-emerald-700 border-emerald-200')
-                        : (isDark ? 'bg-neutral-900 text-neutral-400 border-neutral-800' : 'bg-white text-gray-600 border-gray-200')
-                    }`}
-                  >
-                    {onlyPaid ? 'Sadece ödenenler: Açık' : 'Sadece ödenenler'}
-                  </button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Active filters summary */}
+          {/* Active Filters Tags */}
           {(() => {
             const chips: { key: string; label: string; onClear: () => void }[] = [];
-            if (searchTerm) chips.push({ key: 'q', label: `Arama: "${searchTerm}"`, onClear: () => { setSearchTerm(''); setCurrentPage(1); } });
+            if (searchTerm) chips.push({ key: 'q', label: `"${searchTerm}"`, onClear: () => { setSearchTerm(''); setCurrentPage(1); } });
             if (selectedStatus !== 'all') chips.push({ key: 'st', label: statusConfig[selectedStatus as OrderStatus]?.label || selectedStatus, onClear: () => { setSelectedStatus('all'); setCurrentPage(1); } });
             if (dateFilter !== 'all') chips.push({ key: 'df', label: dateFilter === 'today' ? 'Bugün' : dateFilter === 'week' ? 'Bu Hafta' : 'Bu Ay', onClear: () => { setDateFilter('all'); setCurrentPage(1); } });
             if (onlyPaid) chips.push({ key: 'paid', label: 'Ödenenler', onClear: () => { setOnlyPaid(false); setCurrentPage(1); } });
-            if (todayToPrepare) chips.push({ key: 'today', label: 'Bugün hazırlanacak', onClear: () => { setTodayToPrepare(false); setCurrentPage(1); } });
+            if (todayToPrepare) chips.push({ key: 'today', label: 'Bugün Haz.', onClear: () => { setTodayToPrepare(false); setCurrentPage(1); } });
             if (chips.length === 0) return null;
             return (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              <div className="mt-3 pt-3 border-t border-dashed flex flex-wrap items-center gap-1.5" style={{ borderColor: isDark ? '#333' : '#e5e7eb' }}>
+                <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Filtreler:</span>
                 {chips.map((c) => (
-                  <span key={c.key} className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs border ${isDark ? 'bg-neutral-900 text-neutral-300 border-neutral-800' : 'bg-white text-gray-700 border-gray-200'}`}>
+                  <span key={c.key} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${isDark ? 'bg-neutral-800 text-neutral-300' : 'bg-gray-100 text-gray-700'}`}>
                     {c.label}
-                    <button onClick={c.onClear} className={`p-0.5 rounded ${isDark ? 'hover:bg-neutral-800' : 'hover:bg-gray-100'}`}>
-                      <HiOutlineX className="w-3.5 h-3.5" />
+                    <button onClick={c.onClear} className="hover:text-red-500">
+                      <HiOutlineX className="w-3 h-3" />
                     </button>
                   </span>
                 ))}
               </div>
             );
           })()}
-        </SpotlightCard>
+        </div>
       </FadeContent>
 
       {/* Orders List */}
