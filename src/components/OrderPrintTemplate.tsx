@@ -242,13 +242,14 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 6, marginBottom: 12 }}>
             <div data-certificate="true" style={{ width: '8.5cm', height: '6.5cm', border: '6px solid #111827', padding: 8, background: '#fff', boxSizing: 'border-box', position: 'relative', overflow: 'visible' }}>
               {/* Inner dashed cut guide (helps with cutting accuracy) */}
-              <div style={{ position: 'absolute', inset: 6, borderRadius: 4, border: '2px dashed #111827', pointerEvents: 'none' }} />
+              {/* Inner decorative frame (dashed) — moved inward to act as visual frame */}
+              <div style={{ position: 'absolute', inset: 14, borderRadius: 6, border: '1.5px dashed #111827', pointerEvents: 'none' }} />
 
               {/* Scissors markers for easy cutting (start marker top-left + middle-left) */}
               <div style={{ position: 'absolute', top: -12, left: -12, fontSize: 14, color: '#111827', pointerEvents: 'none' }}>✂</div>
               <div style={{ position: 'absolute', top: '50%', left: -12, transform: 'translateY(-50%)', fontSize: 14, color: '#111827', pointerEvents: 'none' }}>✂</div>
 
-              <div style={{ width: '100%', height: '100%', border: '1px solid #111827', padding: 10, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'stretch', fontSize: 12 }}>
+              <div style={{ width: '100%', height: '100%', border: '1px solid #111827', padding: 12, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'stretch', fontSize: 12 }}>
 
                 {/* Logo */}
                 <div style={{ display: 'flex', justifyContent: 'center' }}>

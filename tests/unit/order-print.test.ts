@@ -74,6 +74,7 @@ describe('OrderPrintTemplate', () => {
     expect(html).toContain('justify-content:flex-start')
     expect(html).toContain('✂')
     expect(html).toContain('dashed')
+    expect(html).toContain('inset: 14')
     expect(html).toContain('line-height:16px')
     expect(html).toContain('max-height:60px')
     expect(html).toContain('font-size:10px')
