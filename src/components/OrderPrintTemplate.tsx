@@ -83,8 +83,10 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
     <div ref={ref} style={{ width: 800, padding: 24, background: '#fff', color: '#111827', fontFamily: 'Inter, system-ui' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div>
-          <h1 style={{ fontSize: 20, margin: 0, color: '#e05a4c' }}>Vadiler</h1>
-          <div style={{ fontSize: 12, color: '#6b7280' }}>Sipariş #{order.orderNumber} • {formatDate(order.createdAt)}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <img src="/logo.png" alt="Vadiler Çiçek" style={{ height: 34, width: 'auto', objectFit: 'contain' }} />
+            <div style={{ fontSize: 12, color: '#6b7280' }}>Sipariş #{order.orderNumber} • {formatDate(order.createdAt)}</div>
+          </div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ width: 110, height: 110, padding: 6, background: '#f8fafc' }}>
