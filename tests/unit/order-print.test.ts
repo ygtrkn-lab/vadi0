@@ -40,4 +40,26 @@ describe('OrderPrintTemplate', () => {
     expect(html).toContain('Teslimat Tarihi')
     expect(html).toContain('Teslimat Notu')
   })
+
+  it('renders gift message as gift note at the end', () => {
+    const giftOrder = {
+      orderNumber: 99999,
+      createdAt: new Date().toISOString(),
+      customerName: 'Veli Ali',
+      items: [{ name: 'Orkide', quantity: 1, unitPrice: 199 }],
+      subtotal: 199,
+      total: 199,
+      message: {
+        content: 'Sürpriz! Mutlu yıllar!',
+        senderName: 'Sevgilerle',
+        isGift: true
+      }
+    }
+
+    const el = React.createElement(OrderPrintTemplate as any, { order: giftOrder })
+    const html = ReactDOMServer.renderToStaticMarkup(el)
+    expect(html).toContain('🎁 Hediye Notu')
+    expect(html).toContain('Sürpriz! Mutlu yıllar!')
+    expect(html).not.toContain('💌 Mesaj Kartı')
+  })
 })
