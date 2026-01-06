@@ -184,10 +184,58 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
         </div>
       </div>
 
-      <div style={{ marginTop: 18, fontSize: 12, color: '#6b7280' }}>
-        <div style={{ fontWeight: 600, marginBottom: 6 }}>Notlar</div>
-        <div style={{ whiteSpace: 'pre-wrap' }}>{order.note || '—'}</div>
-      </div>
+      {/* Message Card (special template for gift messages) */}
+      {((order.message && order.message.content) || order.note) ? (
+        <div style={{ marginTop: 18 }}>
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontWeight: 600 }}>💌 Mesaj Kartı</div>
+
+          {/* Cuttable card wrapper (slightly rectangular but close to square) */}
+          <div style={{ position: 'relative', width: 360, height: 320, marginTop: 6, marginBottom: 12 }}>
+            {/* Dashed cut guide */}
+            <div style={{ position: 'absolute', inset: 0, border: '2px dashed #9CA3AF', borderRadius: 10 }} />
+
+            {/* Scissors markers */}
+            <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', fontSize: 14 }}>✂</div>
+            <div style={{ position: 'absolute', bottom: -12, left: '50%', transform: 'translateX(-50%)', fontSize: 14 }}>✂</div>
+
+            {/* Corner cut marks */}
+            <div style={{ position: 'absolute', top: -6, left: -6, width: 12, height: 12, borderTop: '2px solid #9CA3AF', borderLeft: '2px solid #9CA3AF' }} />
+            <div style={{ position: 'absolute', top: -6, right: -6, width: 12, height: 12, borderTop: '2px solid #9CA3AF', borderRight: '2px solid #9CA3AF' }} />
+            <div style={{ position: 'absolute', bottom: -6, left: -6, width: 12, height: 12, borderBottom: '2px solid #9CA3AF', borderLeft: '2px solid #9CA3AF' }} />
+            <div style={{ position: 'absolute', bottom: -6, right: -6, width: 12, height: 12, borderBottom: '2px solid #9CA3AF', borderRight: '2px solid #9CA3AF' }} />
+
+            {/* Inner card */}
+            <div style={{ position: 'absolute', inset: 12, background: '#fff', borderRadius: 8, padding: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              {/* Delivery date + notes (small) */}
+              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+                {order.delivery?.deliveryDate && (
+                  <div>Teslimat: {order.delivery.deliveryDate}{order.delivery?.deliveryTimeSlot ? `, ${order.delivery.deliveryTimeSlot}` : ''}</div>
+                )}
+                {order.delivery?.deliveryNotes && (
+                  <div style={{ marginTop: 4, fontStyle: 'italic' }}>Teslimat Notu: {order.delivery.deliveryNotes}</div>
+                )}
+              </div>
+
+              {/* Full-width main message (use message.content pref, fallback to order.note) */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', padding: '8px' }} >
+                <p style={{ fontSize: 16, lineHeight: 1.45, margin: 0, color: '#111827', whiteSpace: 'pre-wrap', textAlign: 'left' }}>{order.message?.content || order.note}</p>
+              </div>
+
+              {/* Sender at bottom-right */}
+              {order.message?.senderName && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+                  <div style={{ fontSize: 12, color: '#6b7280' }}>— {order.message.senderName}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ marginTop: 18, fontSize: 12, color: '#6b7280' }}>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Notlar</div>
+          <div style={{ whiteSpace: 'pre-wrap' }}>{order.note || '—'}</div>
+        </div>
+      )}
 
     </div>
   )
