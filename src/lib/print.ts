@@ -8,6 +8,13 @@ export async function openPrintableWindow(element: HTMLElement) {
   const styles = `
     <meta charset="utf-8" />
     <base href="${origin}/">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      @font-face { font-family: 'Geraldine'; src: url('/geraldine-personal-use/GERALDINE PERSONAL USE.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+      @font-face { font-family: 'TheMunday'; src: url('/geraldine-personal-use/Themundayfreeversion-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+    </style>
     <style>
       @page { size: A4; margin: 12mm }
       body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin: 0; padding: 12mm; color: #111827 }
@@ -56,8 +63,33 @@ export async function openPrintableWindow(element: HTMLElement) {
       new Promise<void>((resolve) => setTimeout(resolve, 3000))
     ])
 
+    // Wait for fonts to be available in this document (prevents layout shift)
+    try {
+      // doc.fonts might be undefined in some contexts; guard for it
+      if ((doc as any).fonts && (doc as any).fonts.ready) {
+        await Promise.race([ (doc as any).fonts.ready, new Promise<void>((r) => setTimeout(r, 250)) ])
+      }
+    } catch (e) {
+      // ignore
+    }
+
     // small delay for rendering
-    await new Promise(resolve => setTimeout(resolve, 80))
+    await new Promise(resolve => setTimeout(resolve, 120))
+
+    // Shrink gift message if it would overflow the certificate area
+    try {
+      const gift = (clone.querySelector('[data-gift-message]') as HTMLElement | null)
+      if (gift) {
+        const compute = () => gift.scrollHeight > gift.clientHeight
+        let fs = parseFloat(win.getComputedStyle(gift).fontSize || '10')
+        while (compute() && fs > 8) {
+          fs = Math.max(8, fs - 0.5)
+          gift.style.fontSize = fs + 'px'
+        }
+      }
+    } catch (e) {
+      /* ignore */
+    }
 
     win.focus()
     win.print()
@@ -149,8 +181,49 @@ async function addImageToPdfPaginated(pdf: any, imgDataUrl: string) {
 
 export async function downloadPdfClientSide(element: HTMLElement, fileName = 'order.pdf') {
   if (!element) return
-  // use html-to-image to get a high fidelity PNG including images
-  const imgDataUrl = await toPng(element, { cacheBust: true, quality: 1 })
+  // Ensure Cinzel Decorative is loaded on the document so rendered text uses it in PNG/PDF
+  try {
+    if (!document.querySelector('link[href*="Montserrat"]') && !document.querySelector('link[href*="Roboto"]')) {
+      const l1 = document.createElement('link')
+      l1.rel = 'preconnect'
+      l1.href = 'https://fonts.googleapis.com'
+      document.head.appendChild(l1)
+
+      const l2 = document.createElement('link')
+      l2.rel = 'preconnect'
+      l2.href = 'https://fonts.gstatic.com'
+      l2.crossOrigin = 'anonymous'
+      document.head.appendChild(l2)
+
+      const ls = document.createElement('link')
+      ls.rel = 'stylesheet'
+      ls.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap'
+      document.head.appendChild(ls)
+    }
+  } catch (e) {
+    /* ignore */
+  }
+
+  // Wait for local fonts to be ready to avoid layout shifts
+  try {
+    if (document.fonts && document.fonts.ready) await Promise.race([ document.fonts.ready, new Promise<void>((r) => setTimeout(r, 500)) ])
+  } catch (e) {}
+
+  // Shrink gift message to fit inside certificate before rendering PNG
+  try {
+    const gift = (element.querySelector('[data-gift-message]') as HTMLElement | null)
+    if (gift) {
+      const compute = () => gift.scrollHeight > gift.clientHeight
+      let fs = parseFloat(window.getComputedStyle(gift).fontSize || '10')
+      while (compute() && fs > 8) {
+        fs = Math.max(8, fs - 0.5)
+        gift.style.fontSize = fs + 'px'
+      }
+    }
+  } catch (e) {}
+
+  // use html-to-image to get a high fidelity PNG including images (render at higher pixel ratio for quality)
+  const imgDataUrl = await toPng(element, { cacheBust: true, quality: 1, pixelRatio: Math.max(3, window.devicePixelRatio || 2), backgroundColor: '#ffffff' })
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
   await addImageToPdfPaginated(pdf, imgDataUrl)
   pdf.save(fileName)

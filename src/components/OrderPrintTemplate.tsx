@@ -85,16 +85,29 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
     ? `${base}/api/maps/redirect?q=${encodeURIComponent(mapsQuery)}`
     : `${base}/api/maps/redirect`
 
+  // Derive a human-friendly host for the footer; prefer vadiler.com when running locally
+  const siteHost = (() => {
+    if (typeof window !== 'undefined') {
+      return window.location.hostname === 'localhost' ? 'vadiler.com' : window.location.hostname
+    }
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      try { return new URL(String(process.env.NEXT_PUBLIC_SITE_URL)).hostname } catch { return String(process.env.NEXT_PUBLIC_SITE_URL).replace(/^https?:\/\//,'').replace(/\/.*$/,'') }
+    }
+    return 'vadiler.com'
+  })()
+
   return (
-    <div ref={ref} style={{ width: 800, padding: 24, background: '#fff', color: '#111827', fontFamily: 'Inter, system-ui' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+    <div ref={ref} lang="tr" style={{ width: 800, padding: 24, background: '#fff', color: '#111827', fontFamily: 'Inter, system-ui' }}>
+      {/* Local font-face for project fonts placed under /public/geraldine-personal-use; font-display: swap to avoid blocking */}
+      <style>{`@font-face { font-family: 'Geraldine'; src: url('/geraldine-personal-use/GERALDINE PERSONAL USE.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'TheMunday'; src: url('/geraldine-personal-use/Themundayfreeversion-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }`}</style>      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <img src="/logo.png" alt="Vadiler Çiçek" style={{ height: 36, width: 'auto', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="Vadiler Çiçek" style={{ height: 36, width: 'auto', objectFit: 'contain', filter: 'grayscale(100%)' }} />
           <div style={{ fontSize: 14, color: '#111827', fontWeight: 600 }}>Sipariş #{order.orderNumber}</div>
           <div style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(order.createdAt)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ width: 110, height: 110, padding: 6, background: '#f8fafc' }}>
+          <div style={{ width: 110, height: 110, padding: 6, background: '#fff', border: '1px solid #e5e7eb' }}>
             <QRCode value={mapsUrl} size={98} />
           </div>
           <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>
@@ -142,7 +155,7 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
                   <td style={{ paddingTop: 8, paddingBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
                     {img && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={img} alt={String(name)} crossOrigin="anonymous" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6 }} />
+                      <img src={img} alt={String(name)} crossOrigin="anonymous" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, filter: 'grayscale(100%)' }} />
                     )}
                     <div>
                       <div style={{ fontWeight: 500 }}>{name}{variant ? ` — ${variant}` : ''}</div>
@@ -190,7 +203,7 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
           <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontWeight: 600 }}>💌 Mesaj Kartı</div>
 
           {/* Card for normal messages or note fallback */}
-          <div style={{ borderRadius: 8, background: '#fff7f9', padding: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }}>
+          <div style={{ borderRadius: 8, background: '#fff', padding: 12, border: '1px solid #e5e7eb' }}>
             <div style={{ fontSize: 16, lineHeight: 1.45, color: '#111827', whiteSpace: 'pre-wrap' }}>{order.message?.content || order.note}</div>
             {order.message?.senderName && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
@@ -225,24 +238,52 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
         <div style={{ marginTop: 18 }}>
           <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8, fontWeight: 600 }}>🎁 Hediye Notu</div>
 
-          <div style={{ position: 'relative', width: 360, height: 320, marginTop: 6, marginBottom: 12 }}>
-            <div style={{ position: 'absolute', inset: 0, border: '2px dashed #9CA3AF', borderRadius: 10 }} />
-            <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', fontSize: 14 }}>✂</div>
-            <div style={{ position: 'absolute', bottom: -12, left: '50%', transform: 'translateX(-50%)', fontSize: 14 }}>✂</div>
-            <div style={{ position: 'absolute', top: -6, left: -6, width: 12, height: 12, borderTop: '2px solid #9CA3AF', borderLeft: '2px solid #9CA3AF' }} />
-            <div style={{ position: 'absolute', top: -6, right: -6, width: 12, height: 12, borderTop: '2px solid #9CA3AF', borderRight: '2px solid #9CA3AF' }} />
-            <div style={{ position: 'absolute', bottom: -6, left: -6, width: 12, height: 12, borderBottom: '2px solid #9CA3AF', borderLeft: '2px solid #9CA3AF' }} />
-            <div style={{ position: 'absolute', bottom: -6, right: -6, width: 12, height: 12, borderBottom: '2px solid #9CA3AF', borderRight: '2px solid #9CA3AF' }} />
+          {/* Certificate-style square gift box (auto-filled, logo, message) */}
+          <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 6, marginBottom: 12 }}>
+            <div data-certificate="true" style={{ width: '8.5cm', height: '6.5cm', border: '6px solid #111827', padding: 8, background: '#fff', boxSizing: 'border-box', position: 'relative', overflow: 'visible' }}>
+              {/* Inner dashed cut guide (helps with cutting accuracy) */}
+              <div style={{ position: 'absolute', inset: 6, borderRadius: 4, border: '2px dashed #111827', pointerEvents: 'none' }} />
 
-            <div style={{ position: 'absolute', inset: 12, background: '#fff', borderRadius: 8, padding: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', padding: '8px' }}>
-                <p style={{ fontSize: 16, lineHeight: 1.45, margin: 0, color: '#111827', whiteSpace: 'pre-wrap', textAlign: 'left' }}>{order.message.content}</p>
-              </div>
-              {order.message.senderName && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
-                  <div style={{ fontSize: 12, color: '#6b7280' }}>— {order.message.senderName}</div>
+              {/* Scissors markers for easy cutting (start marker top-left + middle-left) */}
+              <div style={{ position: 'absolute', top: -12, left: -12, fontSize: 14, color: '#111827', pointerEvents: 'none' }}>✂</div>
+              <div style={{ position: 'absolute', top: '50%', left: -12, transform: 'translateY(-50%)', fontSize: 14, color: '#111827', pointerEvents: 'none' }}>✂</div>
+
+              <div style={{ width: '100%', height: '100%', border: '1px solid #111827', padding: 10, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'stretch', fontSize: 12 }}>
+
+                {/* Logo */}
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <img src="/logo.png" alt="Logo" style={{ height: 28, filter: 'grayscale(100%)' }} />
                 </div>
-              )}
+
+                {/* Title intentionally removed per design — keep layout spacing */}
+                <div style={{ height: 6 }} />
+
+                {/* Message content (placed under logo per request) */}
+                <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 6, marginTop: 6, fontSize: 10, color: '#111827', minHeight: 56, maxHeight: 110, overflow: 'hidden', whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', fontFamily: "'Roboto','Montserrat','TheMunday', sans-serif", textTransform: 'none', letterSpacing: '0.2px', fontWeight: 500 }}>
+                  <div data-gift-message="true" style={{ display: 'block' }}>{order.message.content}</div>
+                </div>
+
+                {/* Fields (compact) */}
+                <div style={{ display: 'grid', gap: 4 }}>
+                  <div style={{ border: '1px solid #111827', padding: '4px 6px', height: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 8, color: '#111827', fontWeight: 700 }}>KİME</div>
+                    <div style={{ height: 16, display: 'flex', alignItems: 'center', lineHeight: '16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{order.delivery?.recipientName || order.customerName || '—'}</div>
+                  </div>
+
+                  <div style={{ border: '1px solid #111827', padding: '4px 6px', height: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <div style={{ fontSize: 8, color: '#111827', fontWeight: 700 }}>KİMDEN</div>
+                    <div style={{ height: 16, display: 'flex', alignItems: 'center', lineHeight: '16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{order.message?.senderName || order.customerName || '—'}</div>
+                  </div>
+                </div>
+
+
+
+                {/* Footer (single-line slogan in handwriting) */}
+                <div style={{ textAlign: 'center', fontSize: 11, color: '#111827' }}>
+                  <div style={{ marginTop: 8, fontSize: 9, fontFamily: "'Montserrat', 'Inter', system-ui, sans-serif", color: '#111827', fontWeight: 500 }}>Mutlu anlar için vadiler.com</div>
+                </div>
+
+              </div>
             </div>
           </div>
         </div>

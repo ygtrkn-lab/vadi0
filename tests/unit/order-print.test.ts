@@ -41,11 +41,12 @@ describe('OrderPrintTemplate', () => {
     expect(html).toContain('Teslimat Notu')
   })
 
-  it('renders gift message as gift note at the end', () => {
+  it('renders gift message as gift note at the end and auto-fills fields', () => {
     const giftOrder = {
       orderNumber: 99999,
       createdAt: new Date().toISOString(),
       customerName: 'Veli Ali',
+      delivery: { recipientName: 'Alıcı İsim', deliveryDate: '2026-01-08' },
       items: [{ name: 'Orkide', quantity: 1, unitPrice: 199 }],
       subtotal: 199,
       total: 199,
@@ -59,7 +60,50 @@ describe('OrderPrintTemplate', () => {
     const el = React.createElement(OrderPrintTemplate as any, { order: giftOrder })
     const html = ReactDOMServer.renderToStaticMarkup(el)
     expect(html).toContain('🎁 Hediye Notu')
-    expect(html).toContain('Sürpriz! Mutlu yıllar!')
+    expect(html).not.toContain('Hediye Sertifikası')
+    expect(html).toContain('KİME')
+    expect(html).toContain('Alıcı İsim')
+    expect(html).toContain('KİMDEN')
+    expect(html).toContain('Sevgilerle')
+    expect(html).not.toContain('AMOUNT')
+    expect(html).not.toContain('EXP')
+    expect(html).not.toContain('199')
+    expect(html).toContain('/logo.png')
+    expect(html).toContain('8.5cm')
+    expect(html).toContain('6.5cm')
+    expect(html).toContain('justify-content:flex-start')
+    expect(html).toContain('✂')
+    expect(html).toContain('dashed')
+    expect(html).toContain('line-height:16px')
+    expect(html).toContain('max-height:60px')
+    expect(html).toContain('font-size:10px')
+    expect(html).toContain('Mutlu anlar için vadiler.com')
+    expect(html).toContain('TheMunday')
+    expect(html).toContain('text-transform:uppercase')
+    expect(html).toContain('letter-spacing:1px')
+    // Turkish support: container lang and Montserrat/Roboto fallback present
+    expect(html).toContain('lang="tr"')
+    expect(html).toContain('Montserrat')
+    expect(html).toContain('Roboto')
+    expect(html).toContain('font-display: swap')
+    // Slogan smaller
+    expect(html).toContain('font-size:9px')
+    // Gift message uses TheMunday fallback and Roboto primary
+    expect(html).toContain('TheMunday')
+    expect(html).toContain('Roboto')
+    expect(html).toContain('text-transform:none')
+    expect(html).toContain('letter-spacing:0.2px')
+    // Certificate markers present
+    expect(html).toContain('data-certificate="true"')
+    expect(html).toContain('data-gift-message="true"')
+
+    // ordering: logo -> message -> fields
+    const msgPos = html.indexOf('Sürpriz! Mutlu yıllar!')
+    const kimePos = html.indexOf('KİME')
+    const logoPos = html.indexOf('/logo.png')
+    expect(logoPos).toBeLessThan(msgPos)
+    expect(msgPos).toBeLessThan(kimePos)
+
     expect(html).not.toContain('💌 Mesaj Kartı')
   })
 })
