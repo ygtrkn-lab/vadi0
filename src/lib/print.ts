@@ -4,7 +4,6 @@ import { toPng } from 'html-to-image'
 export async function openPrintableWindow(element: HTMLElement) {
   if (!element) return
 
-  const printWindow = window.open('', '_blank', 'noopener,noreferrer')
   const origin = window.location.origin
   const styles = `
     <meta charset="utf-8" />
@@ -64,16 +63,7 @@ export async function openPrintableWindow(element: HTMLElement) {
     win.print()
   }
 
-  if (printWindow) {
-    try {
-      await writeAndPrint(printWindow.document, printWindow)
-      return
-    } catch (err) {
-      console.warn('Popup opened but printing failed, will fallback to iframe', err)
-    }
-  }
-
-  // Fallback: popup blocked or failed — use an off-screen iframe to print inside the current window
+  // Preferred: use an off-screen iframe (same-tab) so pop-up blockers are not triggered
   try {
     const iframe = document.createElement('iframe')
     iframe.style.position = 'fixed'
@@ -95,9 +85,21 @@ export async function openPrintableWindow(element: HTMLElement) {
 
     return
   } catch (err) {
-    console.error('Iframe fallback print failed', err)
-    alert('Yazdırma başarısız oldu. Lütfen tarayıcı ayarlarınızı kontrol edin veya PDF indir seçeneğini kullanın.')
+    console.warn('Iframe print failed, falling back to opening a new window', err)
   }
+
+  // Final fallback: try to open a new window (may be blocked by popup blockers)
+  try {
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer')
+    if (printWindow) {
+      await writeAndPrint(printWindow.document, printWindow)
+      return
+    }
+  } catch (err) {
+    console.error('Popup fallback also failed', err)
+  }
+
+  alert('Yazdırma başarısız oldu. Lütfen tarayıcı ayarlarınızı kontrol edin veya PDF indir seçeneğini kullanın.')
 }
 
 // Slices a large image into page-sized chunks and adds to PDF
