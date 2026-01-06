@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { Building2, Camera, ChevronRight, Clock, Flower, Map, MapPin, Rocket, Truck } from 'lucide-react'
-import { Footer, Header } from '@/components'
+import { Footer, Header, MobileNavBar } from '@/components'
 import { AVRUPA_ILCELERI, ANADOLU_ILCELERI } from '@/data/istanbul-districts'
 import { createCitySlug } from '@/data/city-content'
 
@@ -236,6 +236,7 @@ export default function CitiesIndexPage() {
       </main>
 
       <Footer />
+      <MobileNavBar />
     </>
   )
 }

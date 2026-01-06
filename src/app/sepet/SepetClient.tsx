@@ -6,7 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useCustomer, Address } from '@/context/CustomerContext';
 import { useOrder } from '@/context/OrderContext';
 import { useAnalytics } from '@/context/AnalyticsContext';
-import { Header, Footer } from '@/components';
+import { Header, Footer, MobileNavBar } from '@/components';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -1719,6 +1719,7 @@ export default function SepetClient() {
           </div>
         </main>
         <Footer />
+        <MobileNavBar />
       </>
     );
   }
@@ -3844,6 +3845,7 @@ export default function SepetClient() {
       )}
       
       <Footer />
+      <MobileNavBar />
       {/* Checkout Step Nav - Bottom Mobile */}
       {!isEmpty && currentStep !== 'success' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 lg:hidden">

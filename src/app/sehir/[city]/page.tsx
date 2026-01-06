@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Flower, Star, Truck } from 'lucide-react'
-import { Footer, Header } from '@/components'
+import { Footer, Header, MobileNavBar } from '@/components'
 import { DISTRICT_CONTENTS, getDistrictContentBySlug, createCitySlug } from '@/data/city-content'
 import { ISTANBUL_ILCELERI } from '@/data/istanbul-districts'
 import ProductCard from '@/components/ProductCard'
@@ -350,6 +350,7 @@ export default async function CityPage({ params }: PageProps) {
       </main>
 
       <Footer />
+      <MobileNavBar />
     </>
   )
 }

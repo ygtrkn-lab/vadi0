@@ -104,10 +104,9 @@ export default function Home() {
 
         {/* Third Marquee */}
         <Marquee 
-          text="✿ %30 İndirim  ✿  ✿ Taze Çiçekler  ✿  ✿ Hızlı Teslimat  ✿  ✿ Güvenli Ödeme  ✿" 
-          variant="primary" 
+          text="✿ %30 İndirim  ✿  ✿ Taze Çiçekler  ✿  ✿ Hızlı Teslimat  ✿  ✿ Güvenli Ödeme  ✿"
+          variant="primary"
         />
-
         {/* SEO content block */}
         <SeoContentSection />
       </main>

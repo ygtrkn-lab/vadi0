@@ -7,7 +7,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle, X } from "lucide-react";
 import type { Product } from "@/data/products";
-import { Header, Footer } from "@/components";
+import { Header, Footer, MobileNavBar } from "@/components";
 import ProductReviews from "@/components/ProductReviews";
 import ProductDetailDesktop from "@/components/ProductDetailDesktop";
 import ProductGalleryDesktop from "@/components/ProductGalleryDesktop";
@@ -802,21 +802,22 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: -100, opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-            className="fixed left-0 right-0 z-[9999]"
-            style={{ top: 'var(--top-info-band-height, 0px)' }}
+            className="fixed left-0 right-0 z-[30000]"
+            style={{ top: 'var(--top-info-band-height, 0px)', pointerEvents: 'auto' }}
           >
             {/* Glassmorphism background */}
             <div className="absolute inset-0 bg-white/80 backdrop-blur-xl" />
             <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
             
-            <div className="container-custom py-3 relative">
+            <div className="container-custom py-3 relative" style={{ pointerEvents: 'auto' }}>
               <div className="flex items-center gap-4">
                 {/* Back Button - Modern pill style */}
                 <motion.button 
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => window.history.back()}
-                  className="p-2.5 bg-gray-100/80 hover:bg-gray-200/80 rounded-2xl transition-all duration-200 flex-shrink-0 backdrop-blur-sm"
+                  className="p-2.5 bg-gray-100/80 hover:bg-gray-200/80 rounded-2xl transition-all duration-200 flex-shrink-0 backdrop-blur-sm relative z-[9999]"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   <ArrowLeft size={20} className="text-gray-700" />
                 </motion.button>
@@ -865,10 +866,11 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                   whileTap={{ scale: 0.98 }}
                   onClick={handleAddToCart}
                   aria-disabled={!canAddToCart}
+                  style={{ pointerEvents: 'auto' }}
                   className={`
                     relative overflow-hidden inline-flex items-center justify-center gap-2 
                     rounded-2xl px-5 py-3 text-sm font-semibold text-white 
-                    shadow-lg transition-all duration-300 flex-shrink-0
+                    shadow-lg transition-all duration-300 flex-shrink-0 z-[9999]
                     ${canAddToCart
                       ? isAddedToCart
                         ? "bg-emerald-500 shadow-emerald-200/50"
@@ -1009,6 +1011,8 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
           z-index: 9999 !important;
         }
       `}</style>
+      
+      <MobileNavBar />
     </>
   );
 }

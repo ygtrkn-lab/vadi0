@@ -263,7 +263,7 @@ export default function WhatsAppButton() {
           stiffness: 260,
           damping: 20,
         }}
-        className={`fixed z-[15000] ${isMobile ? 'right-4' : 'bottom-8 right-8'}`}
+        className={`fixed z-[15000] ${isMobile ? 'right-4' : 'bottom-6 right-6'}`}
         style={{
           ...(isMobile && {
             bottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px + var(--mobile-bottom-nav-offset, 0px))',

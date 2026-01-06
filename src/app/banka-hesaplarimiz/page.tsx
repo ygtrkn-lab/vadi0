@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import { Header, Footer, MobileNavBar } from '@/components';
 import BankAccountCard from '@/components/BankAccountCard';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
@@ -51,6 +50,7 @@ export default function BankAccountsPage() {
         </section>
       </main>
       <Footer />
+      <MobileNavBar />
     </>
   );
 }

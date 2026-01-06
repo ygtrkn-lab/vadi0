@@ -16,4 +16,5 @@ export { default as ProductGalleryDesktop } from './ProductGalleryDesktop';
 export { default as ProductSidebarDesktop } from './ProductSidebarDesktop';
 export { default as SeoContentSection } from './SeoContentSection';
 export { default as DeliverySelectorV2 } from './DeliverySelectorV2';
+export { default as ScrollToTop } from './ScrollToTop';
 export { default as HomeCategoryProducts, StoryBannerCarousel, HomeAllCategoriesProducts, FeaturedBannerGrid, QuickCategoryPills } from './HomeCategoryProducts';

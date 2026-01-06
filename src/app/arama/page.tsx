@@ -1,5 +1,4 @@
-import Footer from '@/components/Footer';
-import Header from '@/components/Header';
+import { Footer, Header, MobileNavBar } from '@/components';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -198,6 +197,7 @@ export default async function AramaPage({ searchParams }: Props) {
       </main>
 
       <Footer />
+      <MobileNavBar />
     </div>
   );
 }
