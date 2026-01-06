@@ -79,9 +79,11 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
     return parts.join(', ')
   })()
 
+  // Use a redirect endpoint so QR opens the best map service for the device (Apple Maps on iOS, Google Maps otherwise)
+  const base = (typeof window !== 'undefined' && window.location.origin) ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL || '')
   const mapsUrl = mapsQuery
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
-    : 'https://www.google.com/maps'
+    ? `${base}/api/maps/redirect?q=${encodeURIComponent(mapsQuery)}`
+    : `${base}/api/maps/redirect`
 
   return (
     <div ref={ref} style={{ width: 800, padding: 24, background: '#fff', color: '#111827', fontFamily: 'Inter, system-ui' }}>
