@@ -206,16 +206,6 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
 
             {/* Inner card */}
             <div style={{ position: 'absolute', inset: 12, background: '#fff', borderRadius: 8, padding: 12, boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              {/* Delivery date + notes (small) */}
-              <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
-                {order.delivery?.deliveryDate && (
-                  <div>Teslimat: {order.delivery.deliveryDate}{order.delivery?.deliveryTimeSlot ? `, ${order.delivery.deliveryTimeSlot}` : ''}</div>
-                )}
-                {order.delivery?.deliveryNotes && (
-                  <div style={{ marginTop: 4, fontStyle: 'italic' }}>Teslimat Notu: {order.delivery.deliveryNotes}</div>
-                )}
-              </div>
-
               {/* Full-width main message (use message.content pref, fallback to order.note) */}
               <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', padding: '8px' }} >
                 <p style={{ fontSize: 16, lineHeight: 1.45, margin: 0, color: '#111827', whiteSpace: 'pre-wrap', textAlign: 'left' }}>{order.message?.content || order.note}</p>
@@ -236,6 +226,20 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
           <div style={{ whiteSpace: 'pre-wrap' }}>{order.note || '—'}</div>
         </div>
       )}
+
+      {/* Add delivery details into Order Summary section (for invoice visibility) */}
+      <div style={{ marginTop: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+          <div className={''}>Teslimat Tarihi</div>
+          <div className={''}>{order.delivery?.deliveryDate ? `${order.delivery.deliveryDate}${order.delivery?.deliveryTimeSlot ? `, ${order.delivery.deliveryTimeSlot}` : ''}` : '—'}</div>
+        </div>
+        {order.delivery?.deliveryNotes && (
+          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+            <div className={''}>Teslimat Notu</div>
+            <div style={{ color: '#6b7280' }}>{order.delivery.deliveryNotes}</div>
+          </div>
+        )}
+      </div>
 
     </div>
   )
