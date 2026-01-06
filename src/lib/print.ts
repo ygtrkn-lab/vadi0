@@ -237,6 +237,7 @@ export async function downloadPdfClientSide(element: HTMLElement, fileName = 'or
   } catch (e) {}
 
   // Ensure KİME/KİMDEN fields are populated — some hidden templates may miss values when exported
+  const overlays: HTMLElement[] = []
   try {
     const cert = element.querySelector('[data-certificate]') as HTMLElement | null
     if (cert) {
@@ -245,6 +246,42 @@ export async function downloadPdfClientSide(element: HTMLElement, fileName = 'or
       // If fields are empty, use dataset fallbacks set on the certificate root
       if (recipient && (!recipient.textContent || !recipient.textContent.trim())) recipient.textContent = cert.dataset.recipientName || '—'
       if (sender && (!sender.textContent || !sender.textContent.trim())) sender.textContent = cert.dataset.senderName || '—'
+
+      // Make a fail-safe overlay if a field is still empty after DOM writes (some rendering paths strip text)
+      const createOverlay = (fieldEl: HTMLElement | null, text: string | undefined) => {
+        if (!fieldEl) return
+        const txt = (text || '').trim()
+        if (fieldEl.textContent && fieldEl.textContent.trim()) return
+        if (!txt) return
+        try {
+          const elRect = element.getBoundingClientRect()
+          const fRect = fieldEl.getBoundingClientRect()
+          const ov = document.createElement('div')
+          ov.className = 'pdf-name-overlay'
+          ov.textContent = txt
+          ov.style.position = 'absolute'
+          ov.style.left = (fRect.left - elRect.left) + 'px'
+          ov.style.top = (fRect.top - elRect.top) + 'px'
+          ov.style.width = (fRect.width) + 'px'
+          ov.style.height = (fRect.height) + 'px'
+          ov.style.overflow = 'hidden'
+          ov.style.whiteSpace = 'nowrap'
+          ov.style.textOverflow = 'ellipsis'
+          ov.style.fontFamily = window.getComputedStyle(fieldEl).fontFamily || 'sans-serif'
+          ov.style.fontSize = window.getComputedStyle(fieldEl).fontSize || '10px'
+          ov.style.lineHeight = window.getComputedStyle(fieldEl).lineHeight || '16px'
+          ov.style.color = window.getComputedStyle(fieldEl).color || '#111827'
+          ov.style.display = 'block'
+          ov.style.pointerEvents = 'none'
+          element.appendChild(ov)
+          overlays.push(ov)
+        } catch (e) {
+          // ignore overlay failures
+        }
+      }
+
+      createOverlay(recipient, cert.dataset.recipientName)
+      createOverlay(sender, cert.dataset.senderName)
 
       // Shrink gift message to fit inside certificate before rendering PNG
       const gift = element.querySelector('[data-gift-message]') as HTMLElement | null
@@ -258,6 +295,7 @@ export async function downloadPdfClientSide(element: HTMLElement, fileName = 'or
       }
     }
   } catch (e) {}
+
   // use html-to-image to get a high fidelity PNG including images (render at higher pixel ratio for quality)
   let imgDataUrl = await toPng(element, { cacheBust: true, quality: 1, pixelRatio: Math.max(2, window.devicePixelRatio || 2), backgroundColor: '#ffffff' })
 
@@ -275,4 +313,9 @@ export async function downloadPdfClientSide(element: HTMLElement, fileName = 'or
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
   await addImageToPdfPaginated(pdf, imgDataUrl)
   pdf.save(fileName)
+
+  // cleanup overlays if any were added
+  try {
+    overlays.forEach(o => { try { element.removeChild(o) } catch (e) {} })
+  } catch (e) {}
 }

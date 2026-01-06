@@ -79,6 +79,11 @@ describe('OrderPrintTemplate', () => {
     // QR container and size
     expect(html).toContain('data-qr')
     expect(html).toContain('102')
+    // Overlays and dataset fallback present
+    expect(html).toContain('data-recipient-name')
+    expect(html).toContain('data-sender-name')
+    expect(html).toContain('data-recipient-field')
+    expect(html).toContain('data-sender-field')
     expect(html).toContain('max-height:60px')
     expect(html).toContain('font-size:10px')
     expect(html).toContain('Mutlu anlar için vadiler.com')
