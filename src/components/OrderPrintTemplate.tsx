@@ -77,13 +77,11 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
   const formatDeliveryHuman = (d?: string, timeslot?: string) => {
     if (!d) return '—'
     try {
-      let dt = new Date(d)
-      // If there is a timeslot and the stored date is midnight UTC, some systems store the day before local delivery;
-      // shift one day forward to reflect local human date if needed.
-      if (timeslot) {
-        const utcHours = dt.getUTCHours()
-        if (utcHours === 0) dt = new Date(dt.getTime() + 24 * 60 * 60 * 1000)
-      }
+      // Normalize to date-only (ignore time and timezone) to avoid off-by-one errors when date is stored as midnight UTC
+      const cleanDate = String(d).split('T')[0]
+      const [year, month, day] = cleanDate.split('-').map(Number)
+      const dt = new Date(year, (month || 1) - 1, day || 1)
+      if (isNaN(dt.getTime())) return d
       const dateStr = dt.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })
       return timeslot ? `${dateStr}, ${timeslot}` : dateStr
     } catch { return d }
@@ -257,7 +255,7 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
 
           {/* Certificate-style square gift box (auto-filled, logo, message) */}
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 6, marginBottom: 12 }}>
-            <div data-certificate="true" data-recipient-name={recipientName} data-sender-name={senderName} style={{ width: '8.5cm', height: '6.5cm', border: '6px solid #111827', padding: 8, background: '#fff', boxSizing: 'border-box', position: 'relative', overflow: 'visible' }}>
+            <div data-certificate="true" data-sender-name={senderName} style={{ width: '11.5cm', height: '9.5cm', border: '6px solid #111827', padding: 8, background: '#fff', boxSizing: 'border-box', position: 'relative', overflow: 'visible' }}>
               {/* Inner dashed cut guide (helps with cutting accuracy) */}
               {/* Inner decorative frame (dashed) — moved inward to act as visual frame */}
               <div style={{ position: 'absolute', inset: 14, borderRadius: 6, border: '1.5px dashed #111827', pointerEvents: 'none' }} />
@@ -277,20 +275,15 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
                 <div style={{ height: 6 }} />
 
                 {/* Message content (placed under logo per request) */}
-                <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 6, marginTop: 6, fontSize: 10, color: '#111827', minHeight: 56, maxHeight: 110, overflow: 'hidden', whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', fontFamily: "'Roboto','Montserrat','TheMunday', sans-serif", textTransform: 'none', letterSpacing: '0.2px', fontWeight: 500 }}>
+                <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 8, marginTop: 8, fontSize: 14, lineHeight: '20px', color: '#111827', minHeight: 80, maxHeight: 150, overflow: 'hidden', whiteSpace: 'pre-wrap', wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 6, WebkitBoxOrient: 'vertical', fontFamily: "'TheMunday','Geraldine','Roboto','Montserrat', sans-serif", textTransform: 'none', letterSpacing: '0.3px', fontWeight: 600 }}>
                   <div data-gift-message="true" style={{ display: 'block' }}>{order.message.content}</div>
                 </div>
 
-                {/* Fields (compact) */}
-                <div style={{ display: 'grid', gap: 4 }}>
-                  <div style={{ border: '1px solid #111827', padding: '4px 6px', height: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: 8, color: '#111827', fontWeight: 700 }}>KİME</div>
-                    <div data-recipient-field style={{ height: 16, display: 'flex', alignItems: 'center', lineHeight: '16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{recipientName}</div>
-                  </div>
-
-                  <div style={{ border: '1px solid #111827', padding: '4px 6px', height: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                    <div style={{ fontSize: 8, color: '#111827', fontWeight: 700 }}>KİMDEN</div>
-                    <div data-sender-field style={{ height: 16, display: 'flex', alignItems: 'center', lineHeight: '16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{senderName}</div>
+                {/* Fields (only sender - KİMDEN) */}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ border: '1px solid #111827', padding: '8px 10px', height: 34, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                    <div style={{ fontSize: 12, color: '#111827', fontWeight: 800, letterSpacing: '0.4px' }}>KİMDEN</div>
+                    <div data-sender-field style={{ height: 24, display: 'flex', alignItems: 'center', lineHeight: '24px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontSize: 13, fontWeight: 600 }}>{senderName}</div>
                   </div>
                 </div>
 
