@@ -1,0 +1,31 @@
+import React from 'react'
+import { describe, it, expect } from 'vitest'
+import ReactDOMServer from 'react-dom/server'
+import OrderPrintTemplate from '@/components/OrderPrintTemplate'
+
+describe('OrderPrintTemplate', () => {
+  it('renders minimal order without crashing', () => {
+    const sampleOrder = {
+      orderNumber: 12345,
+      createdAt: new Date().toISOString(),
+      customerName: 'Ali Veli',
+      customerPhone: '+905551112233',
+      customerEmail: 'ali@example.com',
+      delivery: {
+        fullAddress: 'Acısu Mah. Örnek Cad. No:1, Istanbul',
+        notes: 'Kapi zilini çalmayın'
+      },
+      products: [
+        { name: 'Gül Buketi', quantity: 1, price: 149.9, image: 'https://picsum.photos/200' }
+      ],
+      subtotal: 149.9,
+      total: 149.9,
+      note: 'Hızlı teslimat lütfen'
+    }
+
+    const html = ReactDOMServer.renderToStaticMarkup(<OrderPrintTemplate order={sampleOrder} />)
+    expect(html).toContain('Sipariş #')
+    expect(html).toContain('Gül Buketi')
+    expect(html).toContain('img')
+  })
+})

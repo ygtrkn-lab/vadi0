@@ -4,10 +4,12 @@ import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { SpotlightCard, FadeContent, StatusBadge, AnimatedCounter } from '@/components/admin';
+import { SpotlightCard, FadeContent, StatusBadge } from '@/components/admin';
 import { useTheme } from '../ThemeContext';
 import { useOrder, Order, OrderStatus } from '@/context/OrderContext';
 import { useCustomer } from '@/context/CustomerContext';
+import OrderPrintTemplate from '@/components/OrderPrintTemplate';
+import { openPrintableWindow, downloadPdfClientSide } from '@/lib/print';
 import { 
   HiOutlineSearch, 
   HiOutlineCurrencyDollar,
@@ -24,7 +26,9 @@ import {
   HiOutlinePhone,
   HiOutlineMail,
   HiOutlineLocationMarker,
-  HiOutlineRefresh
+  HiOutlineRefresh,
+  HiOutlinePrinter,
+  HiOutlineDownload
 } from 'react-icons/hi';
 
 const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'info' | 'pending' | 'success' | 'error'; icon: React.ReactNode }> = {
@@ -78,6 +82,7 @@ export default function SiparislerPage() {
   const [searchFocused, setSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const printRef = useRef<HTMLDivElement | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
@@ -711,16 +716,43 @@ export default function SiparislerPage() {
                     {formatDate(selectedOrder.createdAt)}
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedOrder(null)}
-                  className={`p-2 rounded-xl transition-colors
-                    ${isDark 
-                      ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-                      : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                >
-                  <HiOutlineX className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { if (printRef.current) openPrintableWindow(printRef.current) }}
+                    className={`p-2 rounded-xl transition-colors
+                      ${isDark 
+                        ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
+                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                    title="Yazdır"
+                  >
+                    <HiOutlinePrinter className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    onClick={() => { if (printRef.current) downloadPdfClientSide(printRef.current, `siparis-${selectedOrder?.orderNumber || 'order'}.pdf`) }}
+                    className={`p-2 rounded-xl transition-colors
+                      ${isDark 
+                        ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
+                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                    title="PDF indir"
+                  >
+                    <HiOutlineDownload className="w-5 h-5" />
+                  </button>
+
+                  <button
+                    onClick={() => setSelectedOrder(null)}
+                    className={`p-2 rounded-xl transition-colors
+                      ${isDark 
+                        ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
+                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+                      }`}
+                    title="Kapat"
+                  >
+                    <HiOutlineX className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Customer Info */}
@@ -1194,6 +1226,11 @@ export default function SiparislerPage() {
                   <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>{selectedOrder.notes}</p>
                 </div>
               )}
+
+              {/* Hidden printable template (off-screen) */}
+              <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 800 }} aria-hidden>
+                <OrderPrintTemplate ref={printRef} order={selectedOrder} />
+              </div>
             </motion.div>
           </motion.div>
         )}
