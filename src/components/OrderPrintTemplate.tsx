@@ -71,13 +71,17 @@ const formatDate = (d?: string) => {
 const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>(({ order }, ref) => {
   if (!order) return null
 
-  const address = (() => {
+  // Build a robust maps query. Prefer the saved `fullAddress` if available — otherwise fall back to assembled parts.
+  const mapsQuery = (() => {
     const d = order.delivery || ({} as DeliveryInfo)
-    const parts = [d.recipientName, d.street, d.addressLine2, d.neighborhood, d.city, d.postalCode].filter(Boolean)
+    if (d.fullAddress && String(d.fullAddress).trim()) return String(d.fullAddress).trim()
+    const parts = [d.street, d.addressLine2, d.neighborhood, d.district, d.city, d.postalCode].filter(Boolean)
     return parts.join(', ')
   })()
 
-  const mapsUrl = `https://maps.google.com?q=${encodeURIComponent(address || (order.delivery?.fullAddress || ''))}`
+  const mapsUrl = mapsQuery
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+    : 'https://www.google.com/maps'
 
   return (
     <div ref={ref} style={{ width: 800, padding: 24, background: '#fff', color: '#111827', fontFamily: 'Inter, system-ui' }}>
