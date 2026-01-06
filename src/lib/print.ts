@@ -5,11 +5,6 @@ export async function openPrintableWindow(element: HTMLElement) {
   if (!element) return
 
   const printWindow = window.open('', '_blank', 'noopener,noreferrer')
-  if (!printWindow) {
-    alert('Yeni pencere açılmadı. Tarayıcı pop-up engelleyicisini kontrol edin.');
-    return
-  }
-
   const origin = window.location.origin
   const styles = `
     <meta charset="utf-8" />
@@ -21,59 +16,87 @@ export async function openPrintableWindow(element: HTMLElement) {
     </style>
   `
 
-  printWindow.document.open()
-  printWindow.document.write(`<!doctype html><html><head>${styles}</head><body></body></html>`)
-  printWindow.document.close()
+  // Helper to write content and print in a given document context
+  const writeAndPrint = async (doc: Document | null, win: Window | null) => {
+    if (!doc || !win) throw new Error('Invalid doc/window')
+    doc.open()
+    doc.write(`<!doctype html><html><head>${styles}</head><body></body></html>`)
+    doc.close()
 
-  // Clone the element into the new window's body so relative assets resolve with the base href
-  const clone = element.cloneNode(true) as HTMLElement
+    const clone = element.cloneNode(true) as HTMLElement
+    // Make relative images absolute and set crossorigin
+    const imgs = Array.from(clone.querySelectorAll('img')) as HTMLImageElement[]
+    imgs.forEach(img => {
+      try {
+        const srcAttr = img.getAttribute('src') || ''
+        if (srcAttr.startsWith('/')) img.src = origin + srcAttr
+        if (!img.getAttribute('crossOrigin')) img.setAttribute('crossOrigin', 'anonymous')
+      } catch (e) {}
+    })
 
-  // Convert any image src that is protocol-relative or root-relative to absolute using origin
-  const imgs = Array.from(clone.querySelectorAll('img')) as HTMLImageElement[]
-  imgs.forEach(img => {
-    try {
-      if (img.src && (img.getAttribute('src') || '').startsWith('/')) {
-        img.src = origin + img.getAttribute('src')
-      }
-      // Force crossorigin for external images to improve html-to-image/pdf capture
-      if (!img.getAttribute('crossOrigin')) img.setAttribute('crossOrigin', 'anonymous')
-    } catch (e) {
-      // ignore
-    }
-  })
+    doc.body.appendChild(clone)
 
-  // Append cloned content
-  printWindow.document.body.appendChild(clone)
-
-  // Wait for all images in the print window to load (or timeout)
-  const imagesInWindow = Array.from(printWindow.document.images) as HTMLImageElement[]
-  await Promise.race([
-    new Promise<void>((resolve) => {
-      if (imagesInWindow.length === 0) return resolve()
-      let remaining = imagesInWindow.length
-      const onLoadOrError = () => {
-        remaining -= 1
-        if (remaining <= 0) resolve()
-      }
-      imagesInWindow.forEach(img => {
-        if (img.complete) onLoadOrError()
-        else {
-          img.addEventListener('load', onLoadOrError)
-          img.addEventListener('error', onLoadOrError)
+    // Wait for images to load (or timeout)
+    const imagesInDoc = Array.from(doc.images) as HTMLImageElement[]
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        if (imagesInDoc.length === 0) return resolve()
+        let remaining = imagesInDoc.length
+        const onLoadOrError = () => {
+          remaining -= 1
+          if (remaining <= 0) resolve()
         }
-      })
-    }),
-    new Promise<void>((resolve) => setTimeout(resolve, 3000)) // 3s fallback
-  ])
+        imagesInDoc.forEach(img => {
+          if (img.complete) onLoadOrError()
+          else {
+            img.addEventListener('load', onLoadOrError)
+            img.addEventListener('error', onLoadOrError)
+          }
+        })
+      }),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000))
+    ])
 
-  // Small delay to allow fonts to render
-  await new Promise(resolve => setTimeout(resolve, 80))
+    // small delay for rendering
+    await new Promise(resolve => setTimeout(resolve, 80))
 
+    win.focus()
+    win.print()
+  }
+
+  if (printWindow) {
+    try {
+      await writeAndPrint(printWindow.document, printWindow)
+      return
+    } catch (err) {
+      console.warn('Popup opened but printing failed, will fallback to iframe', err)
+    }
+  }
+
+  // Fallback: popup blocked or failed — use an off-screen iframe to print inside the current window
   try {
-    printWindow.focus()
-    printWindow.print()
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.left = '-9999px'
+    iframe.style.top = '-9999px'
+    iframe.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(iframe)
+
+    const iframeWin = iframe.contentWindow
+    const iframeDoc = iframe.contentDocument
+    if (!iframeWin || !iframeDoc) throw new Error('Iframe not available')
+
+    await writeAndPrint(iframeDoc, iframeWin)
+
+    // remove iframe after short delay
+    setTimeout(() => {
+      try { document.body.removeChild(iframe) } catch (e) {}
+    }, 500)
+
+    return
   } catch (err) {
-    console.error('Print failed', err)
+    console.error('Iframe fallback print failed', err)
+    alert('Yazdırma başarısız oldu. Lütfen tarayıcı ayarlarınızı kontrol edin veya PDF indir seçeneğini kullanın.')
   }
 }
 
