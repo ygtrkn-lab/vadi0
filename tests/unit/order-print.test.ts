@@ -76,6 +76,9 @@ describe('OrderPrintTemplate', () => {
     expect(html).toContain('dashed')
     expect(html).toContain('inset: 14')
     expect(html).toContain('line-height:16px')
+    // QR container and size
+    expect(html).toContain('data-qr')
+    expect(html).toContain('102')
     expect(html).toContain('max-height:60px')
     expect(html).toContain('font-size:10px')
     expect(html).toContain('Mutlu anlar için vadiler.com')
@@ -97,6 +100,8 @@ describe('OrderPrintTemplate', () => {
     // Certificate markers present
     expect(html).toContain('data-certificate="true"')
     expect(html).toContain('data-gift-message="true"')
+    expect(html).toContain('data-recipient-name')
+    expect(html).toContain('data-sender-name')
 
     // ordering: logo -> message -> fields
     const msgPos = html.indexOf('Sürpriz! Mutlu yıllar!')
@@ -104,6 +109,10 @@ describe('OrderPrintTemplate', () => {
     const logoPos = html.indexOf('/logo.png')
     expect(logoPos).toBeLessThan(msgPos)
     expect(msgPos).toBeLessThan(kimePos)
+
+    // Delivery date formatting
+    expect(html).toContain('2026')
+    expect(html).toContain('11:00-17:00')
 
     expect(html).not.toContain('💌 Mesaj Kartı')
   })

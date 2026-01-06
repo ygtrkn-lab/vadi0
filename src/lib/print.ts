@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import { toPng } from 'html-to-image'
+import { toPng, toJpeg } from 'html-to-image'
 
 export async function openPrintableWindow(element: HTMLElement) {
   if (!element) return
@@ -41,6 +41,33 @@ export async function openPrintableWindow(element: HTMLElement) {
     })
 
     doc.body.appendChild(clone)
+
+    // --- Prepare cloned content: ensure recipient/sender fields and adjust QR size in the clone ---
+    try {
+      const cert = clone.querySelector('[data-certificate]') as HTMLElement | null
+      if (cert) {
+        const recipient = clone.querySelector('[data-recipient-field]') as HTMLElement | null
+        const sender = clone.querySelector('[data-sender-field]') as HTMLElement | null
+        if (recipient && (!recipient.textContent || !recipient.textContent.trim())) recipient.textContent = cert.dataset.recipientName || '—'
+        if (sender && (!sender.textContent || !sender.textContent.trim())) sender.textContent = cert.dataset.senderName || '—'
+      }
+
+      // Adjust QR svg size to fill its container better (in the cloned document)
+      const qr = clone.querySelector('[data-qr]') as HTMLElement | null
+      if (qr) {
+        const svg = qr.querySelector('svg') as SVGElement | null
+        if (svg) {
+          // measure padding and inner size
+          const style = win.getComputedStyle ? win.getComputedStyle(qr as Element) : undefined
+          const pad = style ? (parseFloat(style.paddingTop || '4') || 4) : 4
+          const inner = Math.floor((qr.clientWidth || 110) - pad * 2)
+          svg.setAttribute('width', String(Math.max(72, inner)))
+          svg.setAttribute('height', String(Math.max(72, inner)))
+        }
+      }
+    } catch (e) {
+      // ignore preparation errors and proceed
+    }
 
     // Wait for images to load (or timeout)
     const imagesInDoc = Array.from(doc.images) as HTMLImageElement[]
@@ -209,21 +236,42 @@ export async function downloadPdfClientSide(element: HTMLElement, fileName = 'or
     if (document.fonts && document.fonts.ready) await Promise.race([ document.fonts.ready, new Promise<void>((r) => setTimeout(r, 500)) ])
   } catch (e) {}
 
-  // Shrink gift message to fit inside certificate before rendering PNG
+  // Ensure KİME/KİMDEN fields are populated — some hidden templates may miss values when exported
   try {
-    const gift = (element.querySelector('[data-gift-message]') as HTMLElement | null)
-    if (gift) {
-      const compute = () => gift.scrollHeight > gift.clientHeight
-      let fs = parseFloat(window.getComputedStyle(gift).fontSize || '10')
-      while (compute() && fs > 8) {
-        fs = Math.max(8, fs - 0.5)
-        gift.style.fontSize = fs + 'px'
+    const cert = element.querySelector('[data-certificate]') as HTMLElement | null
+    if (cert) {
+      const recipient = element.querySelector('[data-recipient-field]') as HTMLElement | null
+      const sender = element.querySelector('[data-sender-field]') as HTMLElement | null
+      // If fields are empty, use dataset fallbacks set on the certificate root
+      if (recipient && (!recipient.textContent || !recipient.textContent.trim())) recipient.textContent = cert.dataset.recipientName || '—'
+      if (sender && (!sender.textContent || !sender.textContent.trim())) sender.textContent = cert.dataset.senderName || '—'
+
+      // Shrink gift message to fit inside certificate before rendering PNG
+      const gift = element.querySelector('[data-gift-message]') as HTMLElement | null
+      if (gift) {
+        const compute = () => gift.scrollHeight > gift.clientHeight
+        let fs = parseFloat(window.getComputedStyle(gift).fontSize || '10')
+        while (compute() && fs > 8) {
+          fs = Math.max(8, fs - 0.5)
+          gift.style.fontSize = fs + 'px'
+        }
       }
     }
   } catch (e) {}
-
   // use html-to-image to get a high fidelity PNG including images (render at higher pixel ratio for quality)
-  const imgDataUrl = await toPng(element, { cacheBust: true, quality: 1, pixelRatio: Math.max(3, window.devicePixelRatio || 2), backgroundColor: '#ffffff' })
+  let imgDataUrl = await toPng(element, { cacheBust: true, quality: 1, pixelRatio: Math.max(2, window.devicePixelRatio || 2), backgroundColor: '#ffffff' })
+
+  // If PNG is too large, fallback to JPEG with compression to reduce file size
+  try {
+    const approxSizeMb = (imgDataUrl.length * (3/4)) / (1024*1024)
+    if (approxSizeMb > 1.5) {
+      // try a JPEG at lower pixel ratio/quality
+      imgDataUrl = await toJpeg(element, { quality: 0.8, pixelRatio: Math.max(1.25, (window.devicePixelRatio || 2)), backgroundColor: '#ffffff' })
+    }
+  } catch (e) {
+    // ignore and use png
+  }
+
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' })
   await addImageToPdfPaginated(pdf, imgDataUrl)
   pdf.save(fileName)

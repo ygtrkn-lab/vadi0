@@ -71,6 +71,23 @@ const formatDate = (d?: string) => {
 const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>(({ order }, ref) => {
   if (!order) return null
 
+  const recipientName = (order.delivery?.recipientName && String(order.delivery.recipientName).trim()) || (order.customerName && String(order.customerName).trim()) || order.customerEmail || '—'
+  const senderName = (order.message?.senderName && String(order.message.senderName).trim()) || (order.customerName && String(order.customerName).trim()) || '—'
+
+  const formatDeliveryHuman = (d?: string, timeslot?: string) => {
+    if (!d) return '—'
+    try {
+      let dt = new Date(d)
+      // If there is a timeslot and the stored date is midnight UTC, some systems store the day before local delivery;
+      // shift one day forward to reflect local human date if needed.
+      if (timeslot) {
+        const utcHours = dt.getUTCHours()
+        if (utcHours === 0) dt = new Date(dt.getTime() + 24 * 60 * 60 * 1000)
+      }
+      const dateStr = dt.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' })
+      return timeslot ? `${dateStr}, ${timeslot}` : dateStr
+    } catch { return d }
+  }
   // Build a robust maps query. Prefer the saved `fullAddress` if available — otherwise fall back to assembled parts.
   const mapsQuery = (() => {
     const d = order.delivery || ({} as DeliveryInfo)
@@ -107,8 +124,8 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
           <div style={{ fontSize: 12, color: '#6b7280' }}>{formatDate(order.createdAt)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ width: 110, height: 110, padding: 6, background: '#fff', border: '1px solid #e5e7eb' }}>
-            <QRCode value={mapsUrl} size={98} />
+          <div data-qr style={{ width: 110, height: 110, padding: 4, background: '#fff', border: '1px solid #e5e7eb' }}>
+            <QRCode value={mapsUrl} size={102} />
           </div>
           <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>
             Haritada aç
@@ -223,7 +240,7 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
       <div style={{ marginTop: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
           <div className={''}>Teslimat Tarihi</div>
-          <div className={''}>{order.delivery?.deliveryDate ? `${order.delivery.deliveryDate}${order.delivery?.deliveryTimeSlot ? `, ${order.delivery.deliveryTimeSlot}` : ''}` : '—'}</div>
+          <div className={''}>{order.delivery?.deliveryDate ? formatDeliveryHuman(order.delivery.deliveryDate, order.delivery?.deliveryTimeSlot) : '—'}</div>
         </div>
         {order.delivery?.deliveryNotes && (
           <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
@@ -240,7 +257,7 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
 
           {/* Certificate-style square gift box (auto-filled, logo, message) */}
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: 6, marginBottom: 12 }}>
-            <div data-certificate="true" style={{ width: '8.5cm', height: '6.5cm', border: '6px solid #111827', padding: 8, background: '#fff', boxSizing: 'border-box', position: 'relative', overflow: 'visible' }}>
+            <div data-certificate="true" data-recipient-name={recipientName} data-sender-name={senderName} style={{ width: '8.5cm', height: '6.5cm', border: '6px solid #111827', padding: 8, background: '#fff', boxSizing: 'border-box', position: 'relative', overflow: 'visible' }}>
               {/* Inner dashed cut guide (helps with cutting accuracy) */}
               {/* Inner decorative frame (dashed) — moved inward to act as visual frame */}
               <div style={{ position: 'absolute', inset: 14, borderRadius: 6, border: '1.5px dashed #111827', pointerEvents: 'none' }} />
@@ -268,12 +285,12 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
                 <div style={{ display: 'grid', gap: 4 }}>
                   <div style={{ border: '1px solid #111827', padding: '4px 6px', height: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <div style={{ fontSize: 8, color: '#111827', fontWeight: 700 }}>KİME</div>
-                    <div style={{ height: 16, display: 'flex', alignItems: 'center', lineHeight: '16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{order.delivery?.recipientName || order.customerName || '—'}</div>
+                    <div data-recipient-field style={{ height: 16, display: 'flex', alignItems: 'center', lineHeight: '16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{recipientName}</div>
                   </div>
 
                   <div style={{ border: '1px solid #111827', padding: '4px 6px', height: 22, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <div style={{ fontSize: 8, color: '#111827', fontWeight: 700 }}>KİMDEN</div>
-                    <div style={{ height: 16, display: 'flex', alignItems: 'center', lineHeight: '16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{order.message?.senderName || order.customerName || '—'}</div>
+                    <div data-sender-field style={{ height: 16, display: 'flex', alignItems: 'center', lineHeight: '16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{senderName}</div>
                   </div>
                 </div>
 
@@ -281,7 +298,7 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
 
                 {/* Footer (single-line slogan in handwriting) */}
                 <div style={{ textAlign: 'center', fontSize: 11, color: '#111827' }}>
-                  <div style={{ marginTop: 8, fontSize: 9, fontFamily: "'Montserrat', 'Inter', system-ui, sans-serif", color: '#111827', fontWeight: 500 }}>Mutlu anlar için vadiler.com</div>
+                  <div style={{ marginTop: 8, fontSize: 8.5, fontFamily: "'Montserrat', 'Inter', system-ui, sans-serif", color: '#111827', fontWeight: 500 }}>Mutlu anlar için vadiler.com</div>
                 </div>
 
               </div>
