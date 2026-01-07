@@ -53,47 +53,59 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const colors = useThemeColors();
   const { orderState } = useOrder();
 
-  // Dinamik sipariş sayısı - bekleyen siparişler
+  // Dinamik sipariş sayısı - bekleyen siparişler (havale dahil)
   const pendingOrdersCount = useMemo(() => {
     if (!orderState?.orders) {
       console.log('📦 Bildirimler: orderState.orders yok');
       return 0;
     }
     const pending = orderState.orders.filter(o => 
-      o.status === 'pending' || o.status === 'confirmed' || o.status === 'processing'
+      o.status === 'pending' || 
+      o.status === 'pending_payment' ||
+      o.status === 'awaiting_payment' ||
+      o.status === 'confirmed' || 
+      o.status === 'processing'
     );
     console.log('📦 Bildirimler:', {
       toplamSiparis: orderState.orders.length,
       bekleyenSiparis: pending.length,
-      statüler: orderState.orders.map(o => o.status)
+      statüler: orderState.orders.map(o => `${o.orderNumber}:${o.status}`)
     });
     return pending.length;
   }, [orderState?.orders]);
 
   // Yeni sipariş bildirimi - ses çal
   useEffect(() => {
-    if (!isAuthenticated || !orderState?.orders) return;
+    if (!isAuthenticated || !orderState?.orders) {
+      console.log('🔔 Ses bildirimi: Auth veya orders yok', { isAuthenticated, ordersLength: orderState?.orders?.length });
+      return;
+    }
 
     const currentOrderCount = orderState.orders.length;
     
     // İlk yüklemede ses çalma, sadece sayıyı kaydet
     if (previousOrderCount === 0) {
+      console.log('🔔 İlk yükleme, sipariş sayısı kaydedildi:', currentOrderCount);
       setPreviousOrderCount(currentOrderCount);
       return;
     }
     
     // Yeni sipariş geldiğinde ses çal
     if (currentOrderCount > previousOrderCount) {
+      console.log('🔔 YENİ SİPARİŞ! Ses çalınıyor...', { önceki: previousOrderCount, şimdi: currentOrderCount });
       const audio = new Audio('/siparis-bildirim.wav');
-      audio.play().catch(err => console.error('Bildirim sesi çalınamadı:', err));
+      audio.play()
+        .then(() => console.log('✅ Ses başarıyla çaldı'))
+        .catch(err => console.error('❌ Bildirim sesi çalınamadı:', err));
       setPreviousOrderCount(currentOrderCount);
     } else if (currentOrderCount !== previousOrderCount) {
+      console.log('🔔 Sipariş sayısı değişti:', { önceki: previousOrderCount, şimdi: currentOrderCount });
       // Sipariş sayısı değiştiyse sayıyı güncelle
       setPreviousOrderCount(currentOrderCount);
     }
   }, [orderState?.orders?.length, previousOrderCount, isAuthenticated]);
 
-  // Menu items with dynamic badge
+  // Menu items with dynamic badge (havale siparişleri dahil)
   const menuItems = useMemo(() => [
     { href: '/yonetim', label: 'Dashboard', icon: HiOutlineViewGrid },
     { href: '/yonetim/urunler', label: 'Ürünler', icon: HiOutlineCube },
@@ -546,7 +558,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                         {pendingOrdersCount > 0 && orderState?.orders ? (
                           <>
                             {orderState.orders
-                              .filter(o => o.status === 'pending' || o.status === 'confirmed' || o.status === 'processing')
+                              .filter(o => 
+                                o.status === 'pending' || 
+                                o.status === 'pending_payment' ||
+                                o.status === 'awaiting_payment' ||
+                                o.status === 'confirmed' || 
+                                o.status === 'processing'
+                              )
                               .slice(0, 10)
                               .map((order) => (
                                 <Link
@@ -562,6 +580,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                                   <div className="flex items-start gap-3">
                                     <div className={`w-2 h-2 rounded-full mt-1.5 ${
                                       order.status === 'pending' ? 'bg-amber-500' :
+                                      order.status === 'pending_payment' ? 'bg-orange-500' :
+                                      order.status === 'awaiting_payment' ? 'bg-yellow-500' :
                                       order.status === 'confirmed' ? 'bg-blue-500' :
                                       'bg-purple-500'
                                     }`} />

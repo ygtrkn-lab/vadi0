@@ -473,10 +473,13 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const loadOrders = async () => {
       try {
+        console.log('📦 OrderContext: Siparişler yükleniyor...');
         dispatch({ type: 'SET_LOADING', payload: true });
         const response = await fetch('/api/orders');
+        console.log('📦 OrderContext: API yanıtı:', response.status);
         if (response.ok) {
           const data = await response.json();
+          console.log('📦 OrderContext: Yüklenen siparişler:', data.orders?.length || 0);
           dispatch({ type: 'LOAD_ORDERS', payload: data.orders || [] });
           
           // Set last order number
@@ -484,9 +487,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
             const maxOrderNumber = Math.max(...data.orders.map((o: Order) => o.orderNumber));
             dispatch({ type: 'SET_LAST_ORDER_NUMBER', payload: maxOrderNumber });
           }
+        } else {
+          console.error('📦 OrderContext: API hatası:', response.status);
         }
       } catch (error) {
-        console.error('Error loading orders:', error);
+        console.error('📦 OrderContext: Yükleme hatası:', error);
         dispatch({ type: 'SET_ERROR', payload: 'Siparişler yüklenemedi' });
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
