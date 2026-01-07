@@ -77,6 +77,69 @@ function formatDeliveryDateFriendly(dateStr: string, timeSlot?: string): string 
   }
 }
 
+// Sipariş tarihini formatlama: "Bugün, 15:30" veya "3 Ocak Perşembe, 14:20"
+function formatOrderDate(dateStr: string): string {
+  if (!dateStr) return '';
+  
+  try {
+    const orderDate = new Date(dateStr);
+    if (isNaN(orderDate.getTime())) return dateStr;
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const orderDay = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+    const diffDays = Math.floor((today.getTime() - orderDay.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const hours = orderDate.getHours().toString().padStart(2, '0');
+    const minutes = orderDate.getMinutes().toString().padStart(2, '0');
+    const timeStr = `${hours}:${minutes}`;
+    
+    if (diffDays === 0) {
+      return `Bugün, ${timeStr}`;
+    } else if (diffDays === 1) {
+      return `Dün, ${timeStr}`;
+    } else {
+      const dayName = TURKISH_DAYS[orderDate.getDay()];
+      const monthName = TURKISH_MONTHS[orderDate.getMonth()];
+      const dayOfMonth = orderDate.getDate();
+      return `${dayOfMonth} ${monthName} ${dayName}, ${timeStr}`;
+    }
+  } catch {
+    return dateStr;
+  }
+}
+
+// Tarih grup başlığı: "Bugün (7 Ocak 2026)" veya "3 Ocak Perşembe"
+function getDateGroupLabel(dateStr: string): string {
+  try {
+    const orderDate = new Date(dateStr);
+    if (isNaN(orderDate.getTime())) return '';
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const orderDay = new Date(orderDate.getFullYear(), orderDate.getMonth(), orderDate.getDate());
+    const diffDays = Math.floor((today.getTime() - orderDay.getTime()) / (1000 * 60 * 60 * 24));
+    
+    const dayName = TURKISH_DAYS[orderDate.getDay()];
+    const monthName = TURKISH_MONTHS[orderDate.getMonth()];
+    const dayOfMonth = orderDate.getDate();
+    const year = orderDate.getFullYear();
+    const fullDate = `${dayOfMonth} ${monthName} ${year}`;
+    
+    if (diffDays === 0) {
+      return `Bugün (${fullDate})`;
+    } else if (diffDays === 1) {
+      return `Dün (${fullDate})`;
+    } else if (diffDays === 2) {
+      return `Önceki Gün (${fullDate})`;
+    } else {
+      return `${dayOfMonth} ${monthName} ${dayName}`;
+    }
+  } catch {
+    return '';
+  }
+}
+
 export default function SiparislerPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -86,12 +149,34 @@ export default function SiparislerPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+  const [previousOrderCount, setPreviousOrderCount] = useState(0);
   
   const { isDark } = useTheme();
   const { state: orderState, updateOrderStatus } = useOrder();
   const { getCustomerById } = useCustomer();
 
   const itemsPerPage = 10;
+
+  // Yeni sipariş bildirim sesi
+  useEffect(() => {
+    const currentOrderCount = orderState.orders.length;
+    
+    // İlk yüklemede ses çalma
+    if (previousOrderCount === 0) {
+      setPreviousOrderCount(currentOrderCount);
+      return;
+    }
+    
+    // Yeni sipariş geldiğinde ses çal
+    if (currentOrderCount > previousOrderCount) {
+      const audio = new Audio('/tests/siparis-bildirim.wav');
+      audio.play().catch(err => console.error('Bildirim sesi çalınamadı:', err));
+      setPreviousOrderCount(currentOrderCount);
+    } else if (currentOrderCount < previousOrderCount) {
+      // Sipariş sayısı azaldıysa (silme durumu), sadece sayıyı güncelle
+      setPreviousOrderCount(currentOrderCount);
+    }
+  }, [orderState.orders.length, previousOrderCount]);
 
   // Filtreleme mantığı - Takvimsel gün seçimi ile
   const filteredOrders = useMemo(() => {
@@ -134,6 +219,23 @@ export default function SiparislerPage() {
       currentPage * itemsPerPage
     );
   }, [filteredOrders, currentPage, itemsPerPage]);
+
+  // Siparişleri tarihe göre grupla
+  const groupedOrders = useMemo(() => {
+    const groups: { [key: string]: Order[] } = {};
+    
+    paginatedOrders.forEach(order => {
+      const dateKey = new Date(order.createdAt).toISOString().split('T')[0];
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(order);
+    });
+    
+    return Object.entries(groups).sort(([a], [b]) => 
+      new Date(b).getTime() - new Date(a).getTime()
+    );
+  }, [paginatedOrders]);
 
   const stats = useMemo(() => {
     const orders = orderState.orders;
@@ -514,7 +616,7 @@ export default function SiparislerPage() {
         </div>
       </FadeContent>
 
-      {/* Modern Orders Grid */}
+      {/* Modern Orders Grid with Date Groups */}
       {orderState.isLoading ? (
         <FadeContent direction="up" delay={0.2}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -528,156 +630,216 @@ export default function SiparislerPage() {
         </FadeContent>
       ) : paginatedOrders.length > 0 ? (
         <FadeContent direction="up" delay={0.2}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
-            {paginatedOrders.map((order, index) => {
-              const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
+          <div className="space-y-8">
+            {groupedOrders.map(([dateKey, orders], groupIndex) => (
+              <div key={dateKey}>
+                {/* Date Group Header */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: groupIndex * 0.05, duration: 0.4 }}
+                  className={`mb-5 pb-3 border-b-2 ${
+                    isDark 
+                      ? 'border-white/10' 
+                      : 'border-black/5'
+                  }`}
+                >
+                  <h3 className={`text-xl font-bold tracking-tight flex items-center gap-2 ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      isDark ? 'bg-purple-400' : 'bg-purple-600'
+                    }`} />
+                    {getDateGroupLabel(dateKey)}
+                    <span className={`text-sm font-medium ${
+                      isDark ? 'text-neutral-500' : 'text-gray-400'
+                    }`}>
+                      ({orders.length} sipariş)
+                    </span>
+                  </h3>
+                </motion.div>
+
+                {/* Orders Grid for this date */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 grid-auto-rows-fr">
+                  {orders.map((order, index) => {
+                    const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
               const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
               const paymentStatus = order.payment?.status?.toLowerCase();
 
               return (
                 <motion.div
                   key={order.id}
-                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                  initial={{ opacity: 0, y: 20, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: index * 0.03, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                  transition={{ delay: index * 0.025, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   onClick={() => setSelectedOrder(order)}
-                  className="cursor-pointer group"
+                  className="cursor-pointer group h-full"
                 >
-                  {/* Glassmorphism Card - Apple/Dribbble Style */}
-                  <div className={`relative overflow-hidden rounded-3xl transition-all duration-500 backdrop-blur-xl ${
+                  {/* Premium Card - Modern Design System */}
+                  <div className={`relative overflow-hidden rounded-[24px] transition-all duration-700 ease-out backdrop-blur-2xl group-hover:-translate-y-1 h-full flex flex-col ${
                     isDark 
-                      ? 'bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-white/[0.15] shadow-[0_8px_32px_rgba(0,0,0,0.3)]' 
-                      : 'bg-white/70 hover:bg-white/90 border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.12)]'
+                      ? 'bg-gradient-to-br from-white/[0.07] to-white/[0.02] hover:from-white/[0.12] hover:to-white/[0.04] border border-white/[0.12] hover:border-white/[0.2] shadow-[0_4px_24px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.4)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_4px_12px_rgba(0,0,0,0.3)]' 
+                      : 'bg-gradient-to-br from-white via-white/95 to-white/80 hover:from-white hover:to-white/95 border border-black/[0.06] hover:border-black/[0.12] shadow-[0_2px_16px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]'
                   }`}>
                     
-                    {/* Glow Effect on Hover */}
-                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
-                      order.status === 'delivered' ? 'bg-linear-to-br from-emerald-500/10 to-transparent' :
-                      order.status === 'shipped' ? 'bg-linear-to-br from-blue-500/10 to-transparent' :
-                      order.status === 'processing' || order.status === 'confirmed' ? 'bg-linear-to-br from-purple-500/10 to-transparent' :
-                      order.status === 'pending' ? 'bg-linear-to-br from-amber-500/10 to-transparent' :
-                      order.status === 'cancelled' ? 'bg-linear-to-br from-red-500/10 to-transparent' :
-                      'bg-linear-to-br from-gray-500/10 to-transparent'
+                    {/* Subtle Gradient Overlay */}
+                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none ${
+                      order.status === 'delivered' ? 'bg-gradient-to-br from-emerald-500/[0.08] via-emerald-400/[0.04] to-transparent' :
+                      order.status === 'shipped' ? 'bg-gradient-to-br from-blue-500/[0.08] via-blue-400/[0.04] to-transparent' :
+                      order.status === 'processing' || order.status === 'confirmed' ? 'bg-gradient-to-br from-purple-500/[0.08] via-purple-400/[0.04] to-transparent' :
+                      order.status === 'pending' ? 'bg-gradient-to-br from-amber-500/[0.08] via-amber-400/[0.04] to-transparent' :
+                      order.status === 'cancelled' ? 'bg-gradient-to-br from-red-500/[0.08] via-red-400/[0.04] to-transparent' :
+                      'bg-gradient-to-br from-gray-500/[0.08] via-gray-400/[0.04] to-transparent'
+                    }`} />
+                    
+                    {/* Ambient Border Glow */}
+                    <div className={`absolute inset-0 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none ${
+                      order.status === 'delivered' ? 'shadow-[inset_0_0_20px_rgba(16,185,129,0.15)]' :
+                      order.status === 'shipped' ? 'shadow-[inset_0_0_20px_rgba(59,130,246,0.15)]' :
+                      order.status === 'processing' || order.status === 'confirmed' ? 'shadow-[inset_0_0_20px_rgba(168,85,247,0.15)]' :
+                      order.status === 'pending' ? 'shadow-[inset_0_0_20px_rgba(245,158,11,0.15)]' :
+                      order.status === 'cancelled' ? 'shadow-[inset_0_0_20px_rgba(239,68,68,0.15)]' :
+                      'shadow-[inset_0_0_20px_rgba(156,163,175,0.15)]'
                     }`} />
 
-                    <div className="relative p-5">
-                      {/* Header: Status Badge + Price */}
-                      <div className="flex items-start justify-between mb-5">
-                        <div className="flex flex-col gap-2">
-                          <span className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                            #{order.orderNumber}
-                          </span>
-                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider backdrop-blur-md ${
-                            order.status === 'delivered' ? (isDark ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/30' : 'bg-emerald-100/80 text-emerald-700 ring-1 ring-emerald-200') :
-                            order.status === 'shipped' ? (isDark ? 'bg-blue-500/20 text-blue-300 ring-1 ring-blue-500/30' : 'bg-blue-100/80 text-blue-700 ring-1 ring-blue-200') :
-                            order.status === 'processing' || order.status === 'confirmed' ? (isDark ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30' : 'bg-purple-100/80 text-purple-700 ring-1 ring-purple-200') :
-                            order.status === 'pending' ? (isDark ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30' : 'bg-amber-100/80 text-amber-700 ring-1 ring-amber-200') :
-                            order.status === 'cancelled' ? (isDark ? 'bg-red-500/20 text-red-300 ring-1 ring-red-500/30' : 'bg-red-100/80 text-red-700 ring-1 ring-red-200') :
-                            (isDark ? 'bg-neutral-500/20 text-neutral-300 ring-1 ring-neutral-500/30' : 'bg-gray-100/80 text-gray-700 ring-1 ring-gray-200')
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${
-                              order.status === 'delivered' ? 'bg-emerald-400' :
-                              order.status === 'shipped' ? 'bg-blue-400' :
-                              order.status === 'processing' || order.status === 'confirmed' ? 'bg-purple-400' :
-                              order.status === 'pending' ? 'bg-amber-400' :
-                              order.status === 'cancelled' ? 'bg-red-400' :
-                              'bg-gray-400'
-                            }`} />
-                            {statusConfig[order.status]?.label || 'Bilinmiyor'}
+                    <div className="relative p-6 flex-1 flex flex-col">
+                      {/* Header: Order Number + Status + Order Date */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex flex-col gap-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[22px] font-semibold tracking-[-0.02em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                              #{order.orderNumber}
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10.5px] font-semibold uppercase tracking-[0.08em] backdrop-blur-xl transition-all duration-300 ${
+                              order.status === 'delivered' ? (isDark ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-300 ring-1 ring-emerald-400/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'bg-gradient-to-r from-emerald-50 to-emerald-100/80 text-emerald-700 ring-1 ring-emerald-200/50 shadow-sm') :
+                              order.status === 'shipped' ? (isDark ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-300 ring-1 ring-blue-400/30 shadow-[0_0_12px_rgba(59,130,246,0.15)]' : 'bg-gradient-to-r from-blue-50 to-blue-100/80 text-blue-700 ring-1 ring-blue-200/50 shadow-sm') :
+                              order.status === 'processing' || order.status === 'confirmed' ? (isDark ? 'bg-gradient-to-r from-purple-500/20 to-purple-600/20 text-purple-300 ring-1 ring-purple-400/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' : 'bg-gradient-to-r from-purple-50 to-purple-100/80 text-purple-700 ring-1 ring-purple-200/50 shadow-sm') :
+                              order.status === 'pending' ? (isDark ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/30 shadow-[0_0_12px_rgba(245,158,11,0.15)]' : 'bg-gradient-to-r from-amber-50 to-amber-100/80 text-amber-700 ring-1 ring-amber-200/50 shadow-sm') :
+                              order.status === 'cancelled' ? (isDark ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-300 ring-1 ring-red-400/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]' : 'bg-gradient-to-r from-red-50 to-red-100/80 text-red-700 ring-1 ring-red-200/50 shadow-sm') :
+                              (isDark ? 'bg-gradient-to-r from-neutral-500/20 to-neutral-600/20 text-neutral-300 ring-1 ring-neutral-400/30' : 'bg-gradient-to-r from-gray-50 to-gray-100/80 text-gray-700 ring-1 ring-gray-200/50 shadow-sm')
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                                order.status === 'delivered' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]' :
+                                order.status === 'shipped' ? 'bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.6)]' :
+                                order.status === 'processing' || order.status === 'confirmed' ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]' :
+                                order.status === 'pending' ? 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]' :
+                                order.status === 'cancelled' ? 'bg-red-400 shadow-[0_0_8px_rgba(239,68,68,0.6)]' :
+                                'bg-gray-400'
+                              }`} />
+                              {statusConfig[order.status]?.label || 'Bilinmiyor'}
+                            </div>
+                            <p className={`text-[11px] font-medium flex items-center gap-1.5 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              {formatOrderDate(order.createdAt)}
+                            </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className={`text-2xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        <div className="text-right flex flex-col items-end gap-1.5">
+                          <span className={`text-[26px] font-bold tabular-nums tracking-[-0.02em] ${
+                            isDark ? 'bg-gradient-to-br from-white to-white/80 bg-clip-text text-transparent' : 'text-gray-900'
+                          }`}>
                             {formatPrice(order.total)}
                           </span>
                           {paymentStatus === 'paid' && (
-                            <p className={`text-[10px] font-medium uppercase tracking-wider mt-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                              ✓ Ödendi
-                            </p>
+                            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide ${
+                              isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
+                            }`}>
+                              <span className="text-[8px]">✓</span> Ödendi
+                            </div>
                           )}
                         </div>
                       </div>
 
                       {/* Customer Info */}
-                      <div className={`flex items-center gap-3 p-3 rounded-2xl mb-4 ${
-                        isDark ? 'bg-white/[0.03]' : 'bg-black/[0.02]'
+                      <div className={`flex items-center gap-3.5 p-4 rounded-[18px] mb-4 backdrop-blur-sm transition-all duration-300 ${
+                        isDark ? 'bg-white/[0.04] hover:bg-white/[0.06] ring-1 ring-white/[0.06]' : 'bg-black/[0.02] hover:bg-black/[0.03] ring-1 ring-black/[0.04]'
                       }`}>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold bg-linear-to-br ${
-                          isDark ? 'from-purple-500/30 to-pink-500/30 text-white' : 'from-purple-100 to-pink-100 text-purple-700'
+                        <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center text-[15px] font-bold bg-gradient-to-br shadow-lg transition-transform group-hover:scale-105 ${
+                          isDark ? 'from-purple-500/40 via-purple-400/30 to-pink-500/40 text-white shadow-purple-500/20' : 'from-purple-100 via-purple-50 to-pink-100 text-purple-700 shadow-purple-200/50'
                         }`}>
                           {displayCustomerName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          <p className={`text-[14px] font-semibold truncate tracking-[-0.01em] mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {displayCustomerName}
                           </p>
                           {order.delivery?.deliveryDate && (
-                            <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                              📅 {formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}
+                            <p className={`text-[11.5px] font-medium flex items-center gap-1.5 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                              <span className="text-[13px]">📅</span>
+                              {formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}
                             </p>
                           )}
                         </div>
                       </div>
 
                       {/* Products Preview */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex -space-x-3">
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className="flex -space-x-4">
                           {order.products.slice(0, 3).map((p, idx) => (
-                            <div
+                            <motion.div
                               key={idx}
-                              className={`relative w-12 h-12 rounded-2xl overflow-hidden ring-2 shadow-lg transition-transform group-hover:scale-105 ${
-                                isDark ? 'ring-white/10' : 'ring-white'
+                              whileHover={{ scale: 1.15, zIndex: 10 }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                              className={`relative w-16 h-16 rounded-[16px] overflow-hidden ring-[3px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300 ${
+                                isDark ? 'ring-black/40 hover:ring-white/20' : 'ring-white hover:ring-black/10'
                               }`}
                               style={{ zIndex: 3 - idx }}
                             >
                               {p.image ? (
-                                <Image src={p.image} alt={p.name} fill className="object-cover" unoptimized />
+                                <Image src={p.image} alt={p.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" unoptimized />
                               ) : (
-                                <div className={`w-full h-full flex items-center justify-center text-lg ${
-                                  isDark ? 'bg-neutral-800 text-neutral-500' : 'bg-gray-100 text-gray-400'
+                                <div className={`w-full h-full flex items-center justify-center text-2xl backdrop-blur-sm ${
+                                  isDark ? 'bg-gradient-to-br from-neutral-800 to-neutral-900 text-neutral-500' : 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-400'
                                 }`}>
                                   🌸
                                 </div>
                               )}
-                            </div>
+                            </motion.div>
                           ))}
                           {order.products.length > 3 && (
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-bold ring-2 backdrop-blur-md ${
-                              isDark ? 'bg-white/10 text-white ring-white/10' : 'bg-black/5 text-gray-700 ring-white'
+                            <div className={`w-16 h-16 rounded-[16px] flex items-center justify-center text-[12px] font-bold ring-[3px] backdrop-blur-xl shadow-lg transition-all duration-300 ${
+                              isDark ? 'bg-gradient-to-br from-white/15 to-white/5 text-white ring-white/15 hover:ring-white/25' : 'bg-gradient-to-br from-black/8 to-black/4 text-gray-700 ring-white hover:ring-black/15'
                             }`}>
                               +{order.products.length - 3}
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium truncate ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>
+                          <p className={`text-[15px] font-semibold truncate tracking-[-0.01em] mb-1 ${isDark ? 'text-white/90' : 'text-gray-800'}`}>
                             {order.products[0]?.name}
                           </p>
                           {order.products.length > 1 && (
-                            <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                            <p className={`text-[12px] font-medium ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
                               +{order.products.length - 1} ürün daha
                             </p>
                           )}
                         </div>
                       </div>
 
-                      {/* Quick Action Button - Hover'da görünür */}
+                      {/* Quick Action Button - Premium Style */}
                       {getNextStatus(order.status) && (
                         <motion.button
-                          initial={{ opacity: 0, y: 8 }}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          initial={{ opacity: 0, y: 10 }}
+                          whileHover={{ scale: 1.015 }}
+                          whileTap={{ scale: 0.985 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleUpdateStatus(order.id, getNextStatus(order.status)!.status);
                           }}
-                          className={`w-full mt-4 py-2.5 rounded-xl text-sm font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-md ${
+                          className={`w-full mt-5 py-3 rounded-[14px] text-[13px] font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-500 backdrop-blur-2xl shadow-lg hover:shadow-xl flex items-center justify-center gap-2 ${
                             isDark 
-                              ? 'bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/20' 
-                              : 'bg-black/5 hover:bg-black/10 text-gray-900 ring-1 ring-black/10'
+                              ? 'bg-gradient-to-r from-white/[0.15] to-white/[0.08] hover:from-white/[0.22] hover:to-white/[0.15] text-white ring-1 ring-white/[0.25] hover:ring-white/[0.35] shadow-black/20' 
+                              : 'bg-gradient-to-r from-black/[0.06] to-black/[0.03] hover:from-black/[0.10] hover:to-black/[0.06] text-gray-900 ring-1 ring-black/[0.12] hover:ring-black/[0.18] shadow-black/10'
                           }`}
                         >
-                          {getNextStatus(order.status)!.label} →
+                          <span>{getNextStatus(order.status)!.label}</span>
+                          <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
                         </motion.button>
                       )}
                     </div>
@@ -686,7 +848,10 @@ export default function SiparislerPage() {
               );
             })}
           </div>
-        </FadeContent>
+        </div>
+      ))}
+    </div>
+  </FadeContent>
       ) : null}
 
       {/* Empty State */}
