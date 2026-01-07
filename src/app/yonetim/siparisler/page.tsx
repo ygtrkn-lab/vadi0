@@ -169,7 +169,7 @@ export default function SiparislerPage() {
     
     // Yeni sipariş geldiğinde ses çal
     if (currentOrderCount > previousOrderCount) {
-      const audio = new Audio('/tests/siparis-bildirim.wav');
+      const audio = new Audio('/siparis-bildirim.wav');
       audio.play().catch(err => console.error('Bildirim sesi çalınamadı:', err));
       setPreviousOrderCount(currentOrderCount);
     } else if (currentOrderCount < previousOrderCount) {
