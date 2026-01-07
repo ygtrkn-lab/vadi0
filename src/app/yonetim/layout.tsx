@@ -302,7 +302,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setSidebarOpen(false)}
-            className={`fixed inset-0 backdrop-blur-sm z-40 lg:hidden ${isDark ? 'bg-black/60' : 'bg-black/30'}`}
+            className={`fixed inset-0 backdrop-blur-sm z-[30] lg:hidden ${isDark ? 'bg-black/60' : 'bg-black/30'}`}
           />
         )}
       </AnimatePresence>
@@ -315,7 +315,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             animate={{ x: 0 }}
             exit={{ x: -300 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed top-0 left-0 z-50 h-full w-[280px] border-r flex flex-col will-change-transform overflow-hidden ${
+            className={`fixed top-0 left-0 z-[40] h-full w-[280px] border-r flex flex-col will-change-transform overflow-hidden ${
               isDark ? 'bg-transparent border-neutral-800/30' : 'bg-white/60 backdrop-blur-md border-gray-200/50'
             }`}
           >
@@ -442,7 +442,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <div className={`min-h-screen flex flex-col transition-all duration-300 ${!isMobile ? 'lg:pl-[280px]' : ''}`}>
         {/* Top Header */}
-        <header className={`sticky top-0 z-30 h-16 border-b flex items-center justify-between px-4 lg:px-6 ${
+        <header className={`sticky top-0 z-[20] h-16 border-b flex items-center justify-between px-4 lg:px-6 ${
           isDark ? 'bg-transparent border-neutral-800/30' : 'bg-white/60 backdrop-blur-md border-gray-200/50'
         }`}>
           <div className="flex items-center gap-3">
@@ -692,7 +692,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Bottom Navigation */}
       {isMobile && (
-        <nav className={`fixed bottom-0 left-0 right-0 z-40 backdrop-blur-xl border-t px-2 py-2 pb-safe ${
+        <nav className={`fixed bottom-0 left-0 right-0 z-[30] backdrop-blur-xl border-t px-2 py-2 pb-safe ${
           isDark ? 'bg-neutral-950/95 border-neutral-800/50' : 'bg-white/95 border-gray-200'
         }`}>
           <div className="flex items-center justify-around">

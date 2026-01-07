@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -144,6 +145,7 @@ export default function SiparislerPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const printRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -155,6 +157,11 @@ export default function SiparislerPage() {
   const { getCustomerById } = useCustomer();
 
   const itemsPerPage = 10;
+
+  // Portal için mount check
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Filtreleme mantığı - Takvimsel gün seçimi ile
   const filteredOrders = useMemo(() => {
@@ -931,562 +938,512 @@ export default function SiparislerPage() {
           </div>
         </FadeContent>
       )}
-
-      {/* Order Detail Modal */}
-      <AnimatePresence>
-        {selectedOrder && (
+      
+      {/* Fullscreen order detail - Portal ile body'ye render et */}
+      {isMounted && selectedOrder && createPortal(
+        <AnimatePresence>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-100 flex items-center justify-center p-4"
-            onClick={() => setSelectedOrder(null)}
+            className="fixed inset-0 z-[99999]"
           >
-            <div className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-black/80' : 'bg-black/50'}`} />
+            <div
+              className={`absolute inset-0 ${isDark ? 'bg-black/80' : 'bg-black/60'} backdrop-blur-xl`}
+              onClick={() => setSelectedOrder(null)}
+              style={{
+                background: isDark 
+                  ? 'radial-gradient(circle at center, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.9) 100%)'
+                  : 'radial-gradient(circle at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.7) 100%)'
+              }}
+            />
+
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={e => e.stopPropagation()}
-              className={`relative w-full max-w-2xl max-h-[90vh] overflow-auto rounded-2xl border p-6
-                ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-200'}`}
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 34 }}
+              className={`absolute inset-4 lg:inset-10 rounded-3xl overflow-hidden flex flex-col backdrop-blur-2xl ${
+                isDark 
+                  ? 'bg-neutral-950/95 border border-neutral-800/50 shadow-2xl shadow-purple-500/10' 
+                  : 'bg-white/95 border border-gray-200/50 shadow-2xl shadow-gray-900/20'
+              }`}
+              style={{
+                boxShadow: isDark 
+                  ? '0 0 80px rgba(168, 85, 247, 0.15), 0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                  : '0 0 60px rgba(0, 0, 0, 0.1), 0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+              }}
             >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-6">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      Sipariş #{selectedOrder.orderNumber}
-                    </h3>
-                    <StatusBadge 
-                      status={statusConfig[selectedOrder.status]?.variant || 'info'}
-                      text={statusConfig[selectedOrder.status]?.label || selectedOrder.status || 'Bilinmiyor'}
-                      pulse={selectedOrder.status === 'pending'}
-                    />
+              {/* Header bar */}
+              <div className={`flex items-center justify-between px-6 py-4 border-b backdrop-blur-sm relative ${
+                isDark ? 'border-neutral-800/50 bg-gradient-to-r from-neutral-950/50 via-neutral-900/30 to-neutral-950/50' : 'border-gray-200/50 bg-gradient-to-r from-white/50 via-gray-50/30 to-white/50'
+              }`}
+              style={{
+                boxShadow: isDark ? '0 1px 20px rgba(168, 85, 247, 0.1)' : '0 1px 15px rgba(0, 0, 0, 0.05)'
+              }}>
+                <div className="flex items-center gap-4">
+                  <div className="min-w-12 h-12 px-3 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#e05a4c] to-[#f5a524] text-white font-bold text-lg whitespace-nowrap relative overflow-hidden group"
+                    style={{
+                      boxShadow: '0 4px 20px rgba(224, 90, 76, 0.4), 0 0 40px rgba(245, 165, 36, 0.2)'
+                    }}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <span className="relative z-10">#{selectedOrder.orderNumber}</span>
                   </div>
-                  <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                    {formatDate(selectedOrder.createdAt)}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Sipariş Detayı</h3>
+                      <StatusBadge
+                        status={statusConfig[selectedOrder.status]?.variant || 'info'}
+                        text={statusConfig[selectedOrder.status]?.label || selectedOrder.status || 'Bilinmiyor'}
+                        pulse={selectedOrder.status === 'pending'}
+                      />
+                    </div>
+                    <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Oluşturulma: {formatDate(selectedOrder.createdAt)}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => { if (printRef.current) openPrintableWindow(printRef.current) }}
-                    className={`p-2 rounded-xl transition-colors
-                      ${isDark 
-                        ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    title="Yazdır"
+                    onClick={() => { if (printRef.current) openPrintableWindow(printRef.current); }}
+                    className={`px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 ${
+                      isDark 
+                        ? 'bg-neutral-900/80 text-neutral-200 hover:bg-neutral-800 hover:shadow-lg hover:shadow-neutral-700/20 hover:-translate-y-0.5' 
+                        : 'bg-gray-100/80 text-gray-800 hover:bg-gray-200 hover:shadow-lg hover:shadow-gray-400/20 hover:-translate-y-0.5'
+                    }`}
                   >
-                    <HiOutlinePrinter className="w-5 h-5" />
+                    <HiOutlinePrinter className="w-4 h-4" /> Yazdır
                   </button>
-
                   <button
-                    onClick={() => { if (printRef.current) downloadPdfClientSide(printRef.current, `siparis-${selectedOrder?.orderNumber || 'order'}.pdf`) }}
-                    className={`p-2 rounded-xl transition-colors
-                      ${isDark 
-                        ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    title="PDF indir"
+                    onClick={() => { if (printRef.current) downloadPdfClientSide(printRef.current, `siparis-${selectedOrder?.orderNumber || 'order'}.pdf`); }}
+                    className={`px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 ${
+                      isDark 
+                        ? 'bg-neutral-900/80 text-neutral-200 hover:bg-neutral-800 hover:shadow-lg hover:shadow-neutral-700/20 hover:-translate-y-0.5' 
+                        : 'bg-gray-100/80 text-gray-800 hover:bg-gray-200 hover:shadow-lg hover:shadow-gray-400/20 hover:-translate-y-0.5'
+                    }`}
                   >
-                    <HiOutlineDownload className="w-5 h-5" />
+                    <HiOutlineDownload className="w-4 h-4" /> PDF
                   </button>
-
                   <button
                     onClick={() => setSelectedOrder(null)}
-                    className={`p-2 rounded-xl transition-colors
-                      ${isDark 
-                        ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-                        : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
-                    title="Kapat"
+                    className={`p-2 rounded-xl transition-all duration-300 ${
+                      isDark 
+                        ? 'text-neutral-400 hover:text-white hover:bg-red-500/10 hover:shadow-lg hover:shadow-red-500/20' 
+                        : 'text-gray-500 hover:text-red-600 hover:bg-red-50 hover:shadow-lg hover:shadow-red-500/10'
+                    }`}
                   >
                     <HiOutlineX className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              {/* Customer Info */}
-              <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Müşteri Bilgileri</p>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                    selectedOrder.isGuest === true
-                      ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
-                      : selectedOrder.customerId 
-                      ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
-                      : (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
-                  }`}>
-                    {selectedOrder.isGuest === true ? '👁 Misafir' : (selectedOrder.customerId ? '👤 Üye' : '👁 Misafir')}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {(() => {
-                    const customer = selectedOrder.customerId ? getCustomerById(selectedOrder.customerId) : undefined;
-                    const displayCustomerName = (selectedOrder.customerName || '').trim() || customer?.name || 'Misafir Müşteri';
-                    return (
-                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{displayCustomerName}</p>
-                    );
-                  })()}
-                  {selectedOrder.customerEmail && (
-                    <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                      <HiOutlineMail className="w-4 h-4" />
-                      <a href={`mailto:${selectedOrder.customerEmail}`} className="hover:underline">{selectedOrder.customerEmail}</a>
-                    </div>
-                  )}
-                  {selectedOrder.customerPhone && (
-                    <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                      <HiOutlinePhone className="w-4 h-4" />
-                      <a href={`tel:${selectedOrder.customerPhone}`} className="hover:underline">{selectedOrder.customerPhone}</a>
-                    </div>
-                  )}
-                  {selectedOrder.customerId && (
-                    <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
-                      Müşteri ID: {selectedOrder.customerId}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Delivery Info */}
-              {selectedOrder.delivery && (
-              <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-                <p className={`text-sm font-medium mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Teslimat Bilgileri</p>
-                <div className="space-y-3">
-                  {/* Recipient Info */}
-                  <div className={`p-3 rounded-lg ${isDark ? 'bg-neutral-900/50' : 'bg-white'}`}>
-                    <p className={`text-xs font-medium mb-1 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Alıcı</p>
-                    <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {selectedOrder.delivery.recipientName || '-'}
-                    </p>
-                    {selectedOrder.delivery.recipientPhone && (
-                      <a href={`tel:${selectedOrder.delivery.recipientPhone}`} className={`flex items-center gap-2 text-sm mt-1 hover:underline ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                        <HiOutlinePhone className="w-4 h-4" />
-                        {selectedOrder.delivery.recipientPhone}
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Full Address */}
-                  <div className={`p-3 rounded-lg ${isDark ? 'bg-neutral-900/50' : 'bg-white'}`}>
-                    <p className={`text-xs font-medium mb-1 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Teslimat Adresi</p>
-                    <div className={`flex items-start gap-2 text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-                      <HiOutlineLocationMarker className="w-4 h-4 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="font-medium">{selectedOrder.delivery.fullAddress || '-'}</p>
-                        <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                          {[
-                            selectedOrder.delivery.neighborhood,
-                            selectedOrder.delivery.district,
-                            selectedOrder.delivery.province
-                          ].filter(Boolean).join(', ')}
-                        </p>
+              {/* Content grid */}
+              <div className="flex-1 overflow-auto">
+                <div className="grid lg:grid-cols-3 h-full divide-y lg:divide-y-0 lg:divide-x divide-neutral-800/40">
+                  {/* Left column: customer + delivery + payment */}
+                  <div className={`p-6 space-y-4 ${isDark ? 'bg-neutral-950' : 'bg-gray-50'}`}>
+                    <div className={`p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
+                      isDark 
+                        ? 'bg-neutral-900/60 backdrop-blur-sm border border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
+                        : 'bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'
+                    }`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className={`text-sm font-semibold ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Müşteri</p>
+                        <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${selectedOrder.isGuest ? (isDark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-700') : (isDark ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700')}`}>
+                          {selectedOrder.isGuest ? 'Misafir' : 'Üye'}
+                        </span>
                       </div>
+                      {(() => {
+                        const customer = selectedOrder.customerId ? getCustomerById(selectedOrder.customerId) : undefined;
+                        const displayCustomerName = (selectedOrder.customerName || '').trim() || customer?.name || 'Misafir Müşteri';
+                        return <p className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{displayCustomerName}</p>;
+                      })()}
+                      {selectedOrder.customerEmail && (
+                        <a href={`mailto:${selectedOrder.customerEmail}`} className={`mt-1 flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
+                          <HiOutlineMail className="w-4 h-4" /> {selectedOrder.customerEmail}
+                        </a>
+                      )}
+                      {selectedOrder.customerPhone && (
+                        <a href={`tel:${selectedOrder.customerPhone}`} className={`flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
+                          <HiOutlinePhone className="w-4 h-4" /> {selectedOrder.customerPhone}
+                        </a>
+                      )}
+                      {selectedOrder.customerId && (
+                        <p className={`text-xs mt-2 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Müşteri ID: {selectedOrder.customerId}</p>
+                      )}
                     </div>
-                  </div>
 
-                  {/* Delivery Date & Time */}
-                  {selectedOrder.delivery.deliveryDate && (
-                    <div className={`p-3 rounded-lg ${isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-100'}`}>
-                      <p className={`text-xs font-medium mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>📅 Teslimat Zamanı</p>
-                      <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {formatDeliveryDateFriendly(selectedOrder.delivery.deliveryDate, selectedOrder.delivery.deliveryTimeSlot)}
-                      </p>
-                    </div>
-                  )}
+                    {selectedOrder.delivery && (
+                      <div className={`p-4 rounded-2xl space-y-3 transition-all duration-300 hover:scale-[1.02] ${
+                        isDark 
+                          ? 'bg-neutral-900/60 backdrop-blur-sm border border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
+                          : 'bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <p className={`text-sm font-semibold ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Teslimat</p>
+                          {selectedOrder.delivery.deliveryDate && (
+                            <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${isDark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-700'}`}>
+                              {formatDeliveryDateFriendly(selectedOrder.delivery.deliveryDate, selectedOrder.delivery.deliveryTimeSlot)}
+                            </span>
+                          )}
+                        </div>
 
-                  {/* Delivery Notes */}
-                  {selectedOrder.delivery.deliveryNotes && (
-                    <div className={`p-3 rounded-lg ${isDark ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-blue-50 border border-blue-100'}`}>
-                      <p className={`text-xs font-medium mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>📝 Teslimat Notu</p>
-                      <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-                        {selectedOrder.delivery.deliveryNotes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              )}
+                        <div>
+                          <p className={`text-xs uppercase tracking-wide mb-1 ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Alıcı</p>
+                          <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedOrder.delivery.recipientName || '-'}</p>
+                          {selectedOrder.delivery.recipientPhone && (
+                            <a href={`tel:${selectedOrder.delivery.recipientPhone}`} className={`flex items-center gap-2 text-sm mt-1 ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
+                              <HiOutlinePhone className="w-4 h-4" /> {selectedOrder.delivery.recipientPhone}
+                            </a>
+                          )}
+                        </div>
 
-              {/* Message Card */}
-              {selectedOrder.message && selectedOrder.message.content && (
-                <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-pink-500/10 border border-pink-500/20' : 'bg-pink-50 border border-pink-100'}`}>
-                  <p className={`text-sm font-medium mb-2 ${isDark ? 'text-pink-400' : 'text-pink-600'}`}>
-                    💌 Mesaj Kartı {selectedOrder.message.isGift && '(Hediye Olarak Gönderilsin)'}
-                  </p>
-                  <div className={`p-3 rounded-lg ${isDark ? 'bg-pink-500/5' : 'bg-white'}`}>
-                    <p className={`text-sm whitespace-pre-wrap ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-                      {selectedOrder.message.content}
-                    </p>
-                  </div>
-                  {selectedOrder.message.senderName && (
-                    <p className={`text-sm mt-2 text-right ${isDark ? 'text-pink-300' : 'text-pink-600'}`}>
-                      — {selectedOrder.message.senderName}
-                    </p>
-                  )}
-                </div>
-              )}
+                        <div className={`p-3 rounded-xl ${isDark ? 'bg-neutral-950 border border-neutral-800' : 'bg-gray-50 border border-gray-200'}`}>
+                          <p className={`text-xs font-semibold mb-1 ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Adres</p>
+                          <p className={`text-sm leading-relaxed ${isDark ? 'text-neutral-200' : 'text-gray-800'}`}>{selectedOrder.delivery.fullAddress || '-'}</p>
+                          <p className={`text-xs mt-1 ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
+                            {[selectedOrder.delivery.neighborhood, selectedOrder.delivery.district, selectedOrder.delivery.province].filter(Boolean).join(', ')}
+                          </p>
+                        </div>
 
-              {/* Products */}
-              <div className="mb-4">
-                <p className={`text-sm font-medium mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                  Ürünler ({selectedOrder.products.length} adet)
-                </p>
-                <div className="space-y-3">
-                  {selectedOrder.products.map((product, index) => (
-                    <div key={index} className={`flex items-center gap-4 p-4 rounded-xl border transition-all
-                      ${isDark 
-                        ? 'bg-neutral-800/50 border-neutral-700 hover:border-neutral-600' 
-                        : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      {/* Product Image */}
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-linear-to-br from-gray-100 to-gray-200">
-                        {product.image ? (
-                          <Image 
-                            src={product.image} 
-                            alt={product.name}
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            🌸
+                        {selectedOrder.delivery.deliveryNotes && (
+                          <div className={`p-3 rounded-xl ${isDark ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-blue-50 border border-blue-100'}`}>
+                            <p className={`text-xs font-semibold mb-1 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>Teslimat Notu</p>
+                            <p className={`text-sm ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>{selectedOrder.delivery.deliveryNotes}</p>
                           </div>
                         )}
-                        {product.quantity > 1 && (
-                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#e05a4c] text-white text-xs font-bold rounded-full flex items-center justify-center">
-                            {product.quantity}
-                          </span>
-                        )}
                       </div>
-                      
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {product.name}
-                        </h4>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                            {product.quantity} adet × {formatPrice(product.price)}
-                          </span>
+                    )}
+
+                    {selectedOrder.payment && (
+                      <div className={`p-4 rounded-2xl space-y-3 transition-all duration-300 hover:scale-[1.02] ${
+                        isDark 
+                          ? 'bg-neutral-900/60 backdrop-blur-sm border border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
+                          : 'bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <p className={`text-sm font-semibold ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Ödeme</p>
+                          <StatusBadge
+                            status={
+                              selectedOrder.payment.status === 'paid' ? 'success' :
+                              selectedOrder.payment.status === 'refunded' ? 'warning' :
+                              selectedOrder.payment.status === 'failed' ? 'error' : 'pending'
+                            }
+                            text={
+                              selectedOrder.payment.status === 'paid' ? 'Ödendi' :
+                              selectedOrder.payment.status === 'refunded' ? 'İade Edildi' :
+                              selectedOrder.payment.status === 'failed' ? 'Başarısız' : 'Bekliyor'
+                            }
+                          />
+                        </div>
+                        <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+                          {selectedOrder.payment.method === 'credit_card' ? '💳 Kredi Kartı' : selectedOrder.payment.method === 'bank_transfer' ? '🏦 Havale/EFT' : '💵 Kapıda Ödeme'}
+                          {selectedOrder.payment.cardLast4 && ` (**** ${selectedOrder.payment.cardLast4})`}
+                        </p>
+                        {selectedOrder.payment.transactionId && (
+                          <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>İşlem: {selectedOrder.payment.transactionId}</p>
+                        )}
+                        <div className={`p-3 rounded-xl ${isDark ? 'bg-neutral-950 border border-neutral-800' : 'bg-gray-50 border border-gray-200'}`}>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className={isDark ? 'text-neutral-400' : 'text-gray-500'}>Ara Toplam</span>
+                            <span className={isDark ? 'text-neutral-200' : 'text-gray-800'}>{formatPrice(selectedOrder.subtotal)}</span>
+                          </div>
+                          {selectedOrder.discount > 0 && (
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className={isDark ? 'text-neutral-400' : 'text-gray-500'}>İndirim</span>
+                              <span className="text-red-400">-{formatPrice(selectedOrder.discount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm">
+                            <span className={isDark ? 'text-neutral-400' : 'text-gray-500'}>Teslimat</span>
+                            <span className="text-emerald-400">Ücretsiz</span>
+                          </div>
+                          <div className={`mt-3 pt-2 border-t flex justify-between items-center ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
+                            <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Toplam</span>
+                            <span className="text-xl font-bold text-emerald-400">{formatPrice(selectedOrder.total)}</span>
+                          </div>
+                        </div>
+
+                        {(selectedOrder.payment.status === 'failed' || selectedOrder.status === 'payment_failed') && (selectedOrder.payment.errorMessage || selectedOrder.payment.errorCode || selectedOrder.payment.errorGroup) && (
+                          <div className={`p-3 rounded-xl border ${isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-200'}`}>
+                            <p className={`text-xs font-semibold ${isDark ? 'text-red-200' : 'text-red-700'}`}>Ödeme Hatası</p>
+                            {selectedOrder.payment.errorMessage && (
+                              <p className={`text-sm mt-1 ${isDark ? 'text-neutral-100' : 'text-red-700'}`}>{selectedOrder.payment.errorMessage}</p>
+                            )}
+                            {(selectedOrder.payment.errorCode || selectedOrder.payment.errorGroup) && (
+                              <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-red-600'}`}>
+                                {selectedOrder.payment.errorCode ? `Kod: ${String(selectedOrder.payment.errorCode)}` : ''}
+                                {selectedOrder.payment.errorCode && selectedOrder.payment.errorGroup ? ' • ' : ''}
+                                {selectedOrder.payment.errorGroup ? `Grup: ${String(selectedOrder.payment.errorGroup)}` : ''}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Quick payment actions */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {selectedOrder.payment?.method === 'credit_card' && selectedOrder.payment?.status !== 'paid' && selectedOrder.payment?.token && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm('iyzico ödeme durumunu sorgula?')) return;
+                                try {
+                                  const res = await fetch('/api/orders/verify-payment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ orderId: selectedOrder.id }),
+                                  });
+                                  const data = await res.json();
+                                  if (data.success && data.verified) {
+                                    alert('Ödeme doğrulandı. Sayfa yenilenecek.');
+                                    window.location.reload();
+                                  } else if (data.alreadyPaid) {
+                                    alert('Bu ödeme zaten onaylı.');
+                                    window.location.reload();
+                                  } else if (data.paymentFailed) {
+                                    alert(data.iyzicoResult?.errorMessage || 'Ödeme başarısız');
+                                  } else if (data.pending) {
+                                    alert(`Ödeme bekliyor: ${data.iyzicoResult?.paymentStatus || 'Bilinmiyor'}`);
+                                  } else {
+                                    alert(data.error || 'Bir hata oluştu');
+                                  }
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('Bir hata oluştu');
+                                }
+                              }}
+                              className="px-3 py-2 rounded-xl text-xs font-semibold bg-blue-500/15 text-blue-200 hover:bg-blue-500/25 transition"
+                            >
+                              iyzico Kontrol
+                            </button>
+                          )}
+                          {selectedOrder.payment?.status !== 'paid' && (
+                            <button
+                              onClick={async () => {
+                                const confirmText = prompt('Ödemeyi manuel onayla? ONAYLA yazın:');
+                                if (confirmText !== 'ONAYLA') return;
+                                try {
+                                  const res = await fetch('/api/orders/manual-confirm-payment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ orderId: selectedOrder.id, note: 'Admin panelden manuel onay' }),
+                                  });
+                                  const data = await res.json();
+                                  if (data.success) {
+                                    alert('Ödeme onaylandı.');
+                                    window.location.reload();
+                                  } else if (data.alreadyPaid) {
+                                    alert('Bu ödeme zaten onaylı.');
+                                    window.location.reload();
+                                  } else {
+                                    alert(data.error || 'Bir hata oluştu');
+                                  }
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('Bir hata oluştu');
+                                }
+                              }}
+                              className="px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25 transition"
+                            >
+                              Manuel Onay
+                            </button>
+                          )}
+                          {selectedOrder.payment?.method === 'bank_transfer' && selectedOrder.payment?.status !== 'paid' && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch('/api/orders/confirm-bank-payment', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ orderId: selectedOrder.id }),
+                                  });
+                                  const data = await res.json();
+                                  if (data.success) {
+                                    alert('Havale ödemesi onaylandı.');
+                                    window.location.reload();
+                                  } else {
+                                    alert(data.error || 'Bir hata oluştu');
+                                  }
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('Bir hata oluştu');
+                                }
+                              }}
+                              className="px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/15 text-amber-200 hover:bg-amber-500/25 transition col-span-2"
+                            >
+                              Havale Ödemesini Onayla
+                            </button>
+                          )}
                         </div>
                       </div>
-                      
-                      {/* Price & Action */}
-                      <div className="text-right">
-                        <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {formatPrice(product.price * product.quantity)}
+                    )}
+                  </div>
+
+                  {/* Middle column: products & message */}
+                  <div className="p-6 space-y-4">
+                    {selectedOrder.message?.content && (
+                      <div className={`p-4 rounded-2xl transition-all duration-300 hover:scale-[1.01] ${
+                        isDark 
+                          ? 'bg-pink-500/10 backdrop-blur-sm border border-pink-500/30 hover:border-pink-500/50 hover:shadow-xl hover:shadow-pink-500/10' 
+                          : 'bg-pink-50/80 backdrop-blur-sm border border-pink-100 hover:border-pink-200 hover:shadow-xl hover:shadow-pink-500/10'
+                      }`}>
+                        <p className={`text-sm font-semibold mb-2 ${isDark ? 'text-pink-200' : 'text-pink-700'}`}>
+                          Mesaj Kartı {selectedOrder.message.isGift && '(Hediye)'}
                         </p>
-                        {(product.slug || product.productId) && (
-                          <Link 
-                            href={`/${product.category || 'cicek'}/${product.slug || product.productId}`}
-                            target="_blank"
-                            className="inline-flex items-center gap-1 text-xs font-medium text-[#e05a4c] hover:text-[#cd3f31] mt-1"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            Ürüne Git →
-                          </Link>
+                        <p className={`text-sm whitespace-pre-wrap leading-relaxed ${isDark ? 'text-neutral-100' : 'text-gray-800'}`}>
+                          {selectedOrder.message.content}
+                        </p>
+                        {selectedOrder.message.senderName && (
+                          <p className={`text-xs mt-2 text-right ${isDark ? 'text-pink-300' : 'text-pink-600'}`}>— {selectedOrder.message.senderName}</p>
                         )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Order Summary */}
-              <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className={isDark ? 'text-neutral-400' : 'text-gray-500'}>Ara Toplam</span>
-                    <span className={isDark ? 'text-neutral-300' : 'text-gray-700'}>{formatPrice(selectedOrder.subtotal)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className={isDark ? 'text-neutral-400' : 'text-gray-500'}>Teslimat</span>
-                    <span className="text-emerald-400">Ücretsiz</span>
-                  </div>
-                  {selectedOrder.discount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className={isDark ? 'text-neutral-400' : 'text-gray-500'}>İndirim</span>
-                      <span className="text-red-400">-{formatPrice(selectedOrder.discount)}</span>
-                    </div>
-                  )}
-                  <div className="pt-2 border-t border-neutral-700 flex justify-between">
-                    <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Toplam</span>
-                    <span className="text-xl font-bold text-emerald-400">{formatPrice(selectedOrder.total)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Info */}
-              {selectedOrder.payment && (
-              <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-                <p className={`text-sm font-medium mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Ödeme Bilgileri</p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-                      {selectedOrder.payment.method === 'credit_card' ? '💳 Kredi Kartı' :
-                       selectedOrder.payment.method === 'bank_transfer' ? '🏦 Havale/EFT' : '💵 Kapıda Ödeme'}
-                      {selectedOrder.payment.cardLast4 && ` (**** ${selectedOrder.payment.cardLast4})`}
-                    </p>
-                    {selectedOrder.payment.transactionId && (
-                      <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
-                        İşlem: {selectedOrder.payment.transactionId}
-                      </p>
                     )}
-                  </div>
-                  <StatusBadge 
-                    status={
-                      selectedOrder.payment.status === 'paid' ? 'success' :
-                      selectedOrder.payment.status === 'refunded' ? 'warning' :
-                      selectedOrder.payment.status === 'failed' ? 'error' : 'pending'
-                    }
-                    text={
-                      selectedOrder.payment.status === 'paid' ? 'Ödendi' :
-                      selectedOrder.payment.status === 'refunded' ? 'İade Edildi' :
-                      selectedOrder.payment.status === 'failed' ? 'Başarısız' : 'Bekliyor'
-                    }
-                  />
-                </div>
 
-                {(selectedOrder.payment.status === 'failed' || selectedOrder.status === 'payment_failed') && (selectedOrder.payment.errorMessage || selectedOrder.payment.errorCode || selectedOrder.payment.errorGroup) && (
-                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
-                    <p className={`text-xs font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>Ödeme Hatası</p>
-                    {selectedOrder.payment.errorMessage && (
-                      <p className={`text-sm mt-1 wrap-break-word ${isDark ? 'text-neutral-200' : 'text-red-700'}`}>
-                        {selectedOrder.payment.errorMessage}
-                      </p>
-                    )}
-                    {(selectedOrder.payment.errorCode || selectedOrder.payment.errorGroup) && (
-                      <p className={`text-xs mt-1 wrap-break-word ${isDark ? 'text-neutral-400' : 'text-red-600'}`}>
-                        {selectedOrder.payment.errorCode ? `Kod: ${String(selectedOrder.payment.errorCode)}` : ''}
-                        {selectedOrder.payment.errorCode && selectedOrder.payment.errorGroup ? ' • ' : ''}
-                        {selectedOrder.payment.errorGroup ? `Grup: ${String(selectedOrder.payment.errorGroup)}` : ''}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Manual Payment Verification for Credit Card */}
-                {selectedOrder.payment?.method === 'credit_card' && selectedOrder.payment?.status !== 'paid' && selectedOrder.payment?.token && (
-                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-200'}`}>
-                    <p className={`text-xs font-medium mb-2 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>🔍 Manuel Ödeme Doğrulama</p>
-                    <p className={`text-xs mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
-                      Ödeme durumu belirsizse iyzico&apos;dan manuel olarak doğrulayabilirsiniz.
-                    </p>
-                    <button
-                      onClick={async () => {
-                        if (!confirm('iyzico\'dan ödeme durumunu sorgulamak istediğinize emin misiniz?')) return;
-                        try {
-                          const res = await fetch('/api/orders/verify-payment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ orderId: selectedOrder.id }),
-                          });
-                          const data = await res.json();
-                          if (data.success && data.verified) {
-                            alert(`✅ Ödeme doğrulandı!\n\nÖdeme ID: ${data.iyzicoResult?.paymentId || '-'}\nTutar: ${data.iyzicoResult?.paidPrice || '-'} TL\nKart: **** ${data.iyzicoResult?.cardLast4 || '-'}`);
-                            window.location.reload();
-                          } else if (data.alreadyPaid) {
-                            alert('ℹ️ Bu ödeme zaten onaylanmış.');
-                            window.location.reload();
-                          } else if (data.paymentFailed) {
-                            alert(`❌ iyzico'da ödeme başarısız:\n\n${data.iyzicoResult?.errorMessage || 'Bilinmeyen hata'}`);
-                          } else if (data.pending) {
-                            alert(`⏳ Ödeme henüz tamamlanmamış:\n\nDurum: ${data.iyzicoResult?.paymentStatus || 'Belirsiz'}`);
-                          } else {
-                            alert(data.error || 'Bir hata oluştu');
-                          }
-                        } catch (err) {
-                          console.error(err);
-                          alert('Bir hata oluştu');
-                        }
-                      }}
-                      className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <HiOutlineCurrencyDollar className="w-4 h-4" />
-                      iyzico&apos;dan Ödeme Durumunu Sorgula
-                    </button>
-                  </div>
-                )}
-
-                {/* Manual Payment Confirmation (Without iyzico check) */}
-                {selectedOrder.payment?.status !== 'paid' && (
-                  <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
-                    <p className={`text-xs font-medium mb-2 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>✅ Manuel Ödeme Onayı</p>
-                    <p className={`text-xs mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
-                      Ödemenin alındığından eminseniz, iyzico&apos;ya sormadan doğrudan onaylayabilirsiniz.
-                    </p>
-                    <button
-                      onClick={async () => {
-                        const confirmText = prompt('Ödemeyi manuel olarak onaylamak istediğinize emin misiniz?\n\nOnaylamak için "ONAYLA" yazın:');
-                        if (confirmText !== 'ONAYLA') {
-                          if (confirmText !== null) alert('İşlem iptal edildi. "ONAYLA" yazmanız gerekiyor.');
-                          return;
-                        }
-                        try {
-                          const res = await fetch('/api/orders/manual-confirm-payment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                              orderId: selectedOrder.id,
-                              note: 'Admin panelden manuel onay'
-                            }),
-                          });
-                          const data = await res.json();
-                          if (data.success) {
-                            alert(`✅ Ödeme manuel olarak onaylandı!\n\nSipariş #${data.order?.orderNumber || selectedOrder.orderNumber}`);
-                            window.location.reload();
-                          } else if (data.alreadyPaid) {
-                            alert('ℹ️ Bu ödeme zaten onaylanmış.');
-                            window.location.reload();
-                          } else {
-                            alert(data.error || 'Bir hata oluştu');
-                          }
-                        } catch (err) {
-                          console.error(err);
-                          alert('Bir hata oluştu');
-                        }
-                      }}
-                      className="w-full px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <HiOutlineCheckCircle className="w-4 h-4" />
-                      Ödemeyi Manuel Onayla
-                    </button>
-                  </div>
-                )}
-              </div>
-              )}
-
-              {/* Bank Transfer Payment Confirmation */}
-              {selectedOrder.payment?.method === 'bank_transfer' && selectedOrder.payment?.status !== 'paid' && (
-                <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-amber-500/10 border border-amber-500/20' : 'bg-amber-50 border border-amber-200'}`}>
-                  <p className={`text-sm font-medium mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>🏦 Havale Ödeme Onayı</p>
-                  <p className={`text-xs mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
-                    Müşteriden havale ödemesi alındıysa aşağıdaki butona tıklayarak onaylayın. Onay sonrası müşteriye sipariş onay e-postası gönderilecektir.
-                  </p>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch('/api/orders/confirm-bank-payment', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ orderId: selectedOrder.id }),
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                          setSelectedOrder(prev => prev ? {
-                            ...prev,
-                            status: 'confirmed',
-                            payment: { ...prev.payment!, status: 'paid', paidAt: new Date().toISOString() },
-                            timeline: [
-                              ...prev.timeline,
-                              { status: 'confirmed', timestamp: new Date().toISOString(), note: 'Havale ödemesi onaylandı' }
-                            ]
-                          } : null);
-                          alert('Ödeme onaylandı ve müşteriye bildirim gönderildi!');
-                          window.location.reload();
-                        } else {
-                          alert(data.error || 'Bir hata oluştu');
-                        }
-                      } catch (err) {
-                        console.error(err);
-                        alert('Bir hata oluştu');
-                      }
-                    }}
-                    className="w-full px-4 py-3 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <HiOutlineCheckCircle className="w-5 h-5" />
-                    Havale Ödemesini Onayla
-                  </button>
-                </div>
-              )}
-
-              {/* Timeline */}
-              {selectedOrder.timeline && selectedOrder.timeline.length > 0 && (
-              <div className={`p-4 rounded-xl mb-4 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-                <p className={`text-sm font-medium mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Sipariş Geçmişi</p>
-                <div className="space-y-3">
-                  {selectedOrder.timeline.map((entry, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 ${
-                        entry.status === 'delivered' ? 'bg-emerald-400' :
-                        entry.status === 'cancelled' ? 'bg-red-400' :
-                        entry.status === 'shipped' ? 'bg-purple-400' :
-                        entry.status === 'awaiting_payment' ? 'bg-amber-400' :
-                        entry.status === 'confirmed' ? 'bg-emerald-400' :
-                        'bg-blue-400'
-                      }`} />
+                    <div className="flex items-center justify-between">
                       <div>
-                        <p className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-                          {statusConfig[entry.status]?.label || entry.status || 'Bilinmiyor'}
-                        </p>
-                        <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
-                          {formatDate(entry.timestamp)}
-                        </p>
-                        {entry.note && (
-                          <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                            {entry.note}
-                          </p>
-                        )}
+                        <p className={`text-sm font-semibold ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Ürünler</p>
+                        <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{selectedOrder.products.length} adet</p>
+                      </div>
+                      <div className={`px-3 py-1 rounded-lg text-xs font-semibold ${isDark ? 'bg-neutral-900 text-neutral-200' : 'bg-gray-100 text-gray-700'}`}>
+                        {formatPrice(selectedOrder.total)}
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-              )}
 
-              {/* Status Update Buttons */}
-              {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
-                <div>
-                  <p className={`text-sm font-medium mb-3 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Durum Güncelle</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {getNextStatus(selectedOrder.status) && (
-                      <button
-                        onClick={() => {
-                          const next = getNextStatus(selectedOrder.status);
-                          if (next) {
-                            handleUpdateStatus(selectedOrder.id, next.status, next.label);
-                          }
-                        }}
-                        className={`px-4 py-2.5 rounded-xl font-medium transition-colors ${
-                          selectedOrder.status === 'pending' ? 'bg-emerald-500 text-white hover:bg-emerald-600' :
-                          selectedOrder.status === 'confirmed' ? 'bg-blue-500 text-white hover:bg-blue-600' :
-                          selectedOrder.status === 'processing' ? 'bg-purple-500 text-white hover:bg-purple-600' :
-                          'bg-emerald-500 text-white hover:bg-emerald-600'
-                        }`}
-                      >
-                        {getNextStatus(selectedOrder.status)?.label}
-                      </button>
+                    <div className="space-y-3">
+                      {selectedOrder.products.map((product, index) => (
+                        <div key={index} className={`flex items-center gap-4 p-4 rounded-2xl border transition-all duration-300 hover:scale-[1.01] group ${
+                          isDark 
+                            ? 'bg-neutral-900/60 backdrop-blur-sm border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
+                            : 'bg-white/80 backdrop-blur-sm border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'
+                        }`}>
+                          <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-gray-100 to-gray-200">
+                            {product.image ? (
+                              <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400">🌸</div>
+                            )}
+                            {product.quantity > 1 && (
+                              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#e05a4c] text-white text-xs font-bold rounded-full flex items-center justify-center">{product.quantity}</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className={`font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{product.name}</h4>
+                            <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>{product.quantity} × {formatPrice(product.price)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{formatPrice(product.price * product.quantity)}</p>
+                            {(product.slug || product.productId) && (
+                              <Link
+                                href={`/${product.category || 'cicek'}/${product.slug || product.productId}`}
+                                target="_blank"
+                                className="text-xs font-semibold text-[#e05a4c] hover:text-[#cd3f31]"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                Ürüne Git →
+                              </Link>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right column: status, timeline, actions */}
+                  <div className={`p-6 space-y-4 ${isDark ? 'bg-neutral-950' : 'bg-gray-50'}`}>
+                    <div className={`p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
+                      isDark 
+                        ? 'bg-neutral-900/60 backdrop-blur-sm border border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
+                        : 'bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'
+                    }`}>
+                      <p className={`text-sm font-semibold mb-3 ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Durum Güncelle</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {getNextStatus(selectedOrder.status) && (
+                          <button
+                            onClick={() => {
+                              const next = getNextStatus(selectedOrder.status);
+                              if (next) handleUpdateStatus(selectedOrder.id, next.status, next.label);
+                            }}
+                            className="px-4 py-2.5 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-emerald-400 text-white hover:brightness-110 hover:scale-105 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300"
+                          >
+                            {getNextStatus(selectedOrder.status)?.label}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleUpdateStatus(selectedOrder.id, 'cancelled', 'Admin tarafından iptal edildi')}
+                          className="px-4 py-2.5 rounded-xl font-semibold bg-red-500/15 text-red-300 hover:bg-red-500/25 hover:scale-105 hover:shadow-xl hover:shadow-red-500/20 transition-all duration-300"
+                        >
+                          İptal Et
+                        </button>
+                      </div>
+                    </div>
+
+                    {selectedOrder.notes && (
+                      <div className={`p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
+                        isDark 
+                          ? 'bg-neutral-900/60 backdrop-blur-sm border border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
+                          : 'bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'
+                      }`}>
+                        <p className={`text-sm font-semibold mb-2 ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Notlar</p>
+                        <p className={`text-sm leading-relaxed ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>{selectedOrder.notes}</p>
+                      </div>
                     )}
-                    <button
-                      onClick={() => handleUpdateStatus(selectedOrder.id, 'cancelled', 'Admin tarafından iptal edildi')}
-                      className="px-4 py-2.5 bg-red-500/20 text-red-400 rounded-xl font-medium hover:bg-red-500/30 transition-colors"
-                    >
-                      İptal Et
-                    </button>
+
+                    {selectedOrder.timeline && selectedOrder.timeline.length > 0 && (
+                      <div className={`p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
+                        isDark 
+                          ? 'bg-neutral-900/60 backdrop-blur-sm border border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
+                          : 'bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'
+                      }`}>
+                        <p className={`text-sm font-semibold mb-3 ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Zaman Çizelgesi</p>
+                        <div className="space-y-3 max-h-[320px] overflow-auto pr-1 custom-scroll">
+                          {selectedOrder.timeline.map((entry, index) => (
+                            <div key={index} className="flex items-start gap-3">
+                              <div className={`w-2 h-2 rounded-full mt-1.5 ${
+                                entry.status === 'delivered' ? 'bg-emerald-400' :
+                                entry.status === 'cancelled' ? 'bg-red-400' :
+                                entry.status === 'shipped' ? 'bg-purple-400' :
+                                entry.status === 'awaiting_payment' ? 'bg-amber-400' :
+                                entry.status === 'confirmed' ? 'bg-emerald-400' :
+                                'bg-blue-400'
+                              }`} />
+                              <div>
+                                <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                  {statusConfig[entry.status]?.label || entry.status || 'Bilinmiyor'}
+                                </p>
+                                <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>{formatDate(entry.timestamp)}</p>
+                                {entry.note && (
+                                  <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>{entry.note}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={`p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
+                      isDark 
+                        ? 'bg-neutral-900/60 backdrop-blur-sm border border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
+                        : 'bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'
+                    }`}>
+                      <p className={`text-sm font-semibold mb-3 ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Hızlı Eylemler</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
+                        <button onClick={() => navigator.clipboard.writeText(selectedOrder.customerPhone || '')} className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-neutral-800/60 text-neutral-200 hover:bg-neutral-700 hover:shadow-lg' : 'bg-gray-100/60 text-gray-800 hover:bg-gray-200 hover:shadow-lg'}`}>Tel Kopyala</button>
+                        <button onClick={() => navigator.clipboard.writeText(String(selectedOrder.orderNumber))} className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-neutral-800/60 text-neutral-200 hover:bg-neutral-700 hover:shadow-lg' : 'bg-gray-100/60 text-gray-800 hover:bg-gray-200 hover:shadow-lg'}`}>No Kopyala</button>
+                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-neutral-800/60 text-neutral-200 hover:bg-neutral-700 hover:shadow-lg' : 'bg-gray-100/60 text-gray-800 hover:bg-gray-200 hover:shadow-lg'}`}>Başa Git</button>
+                        <button onClick={() => setSelectedOrder(null)} className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-red-500/15 text-red-200 hover:bg-red-500/25 hover:shadow-lg hover:shadow-red-500/20' : 'bg-red-50 text-red-700 hover:bg-red-100 hover:shadow-lg hover:shadow-red-500/10'}`}>Kapat</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {/* Notes */}
-              {selectedOrder.notes && (
-                <div className={`mt-4 pt-4 border-t ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
-                  <p className={`text-sm font-medium mb-2 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Notlar</p>
-                  <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>{selectedOrder.notes}</p>
-                </div>
-              )}
-
-              {/* Hidden printable template (off-screen) */}
+              {/* Hidden printable template */}
               <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 800 }} aria-hidden>
                 <OrderPrintTemplate ref={printRef} order={selectedOrder} />
               </div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
