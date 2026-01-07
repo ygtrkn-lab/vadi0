@@ -174,6 +174,11 @@ export default function SiparislerPage() {
         let matchesStatus = selectedStatus === 'all';
         if (selectedStatus === 'processing') {
           matchesStatus = order.status === 'processing' || order.status === 'confirmed';
+        } else if (selectedStatus === 'payment_failed') {
+          // Başarısız ödemeleri filtrele
+          matchesStatus = order.status === 'payment_failed' || 
+                          order.status === 'cancelled' || 
+                          order.payment?.status === 'failed';
         } else if (selectedStatus !== 'all') {
           matchesStatus = order.status === selectedStatus;
         }
@@ -323,15 +328,20 @@ export default function SiparislerPage() {
               </div>
               
               {stats.totalFailed > 0 && (
-                <div className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl backdrop-blur-md ${
-                  isDark ? 'bg-red-500/10 ring-1 ring-red-500/20' : 'bg-red-50/80 ring-1 ring-red-200/50'
-                }`}>
-                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                <button
+                  onClick={() => { setSelectedStatus('payment_failed'); setCurrentPage(1); }}
+                  className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl backdrop-blur-md transition-all cursor-pointer hover:scale-105 ${
+                    selectedStatus === 'payment_failed'
+                      ? (isDark ? 'bg-red-500/20 ring-2 ring-red-500/40' : 'bg-red-100 ring-2 ring-red-300')
+                      : (isDark ? 'bg-red-500/10 ring-1 ring-red-500/20 hover:bg-red-500/15' : 'bg-red-50/80 ring-1 ring-red-200/50 hover:bg-red-100')
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                   <span className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-red-400/70' : 'text-red-600/70'}`}>Başarısız</span>
                   <span className={`text-base font-bold tabular-nums ${isDark ? 'text-red-300' : 'text-red-700'}`}>
                     {stats.totalFailed}
                   </span>
-                </div>
+                </button>
               )}
 
               <button
