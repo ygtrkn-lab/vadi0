@@ -35,6 +35,7 @@ import {
   HiOutlineCheckCircle,
   HiOutlineInformationCircle,
   HiOutlineFilter,
+  HiOutlineCog,
 } from 'react-icons/hi';
 import { 
   FaFacebook, 
@@ -2017,6 +2018,24 @@ export default function AnalizlerPage() {
   const [period, setPeriod] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showAllVisitors, setShowAllVisitors] = useState(false);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
+
+  // Check analytics status
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const res = await fetch('/api/admin/settings');
+        if (res.ok) {
+          const data = await res.json();
+          const enabled = data.settings?.analytics?.enabled !== false;
+          setAnalyticsEnabled(enabled);
+        }
+      } catch (error) {
+        console.error('Failed to check analytics status:', error);
+      }
+    };
+    checkStatus();
+  }, []);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -2109,6 +2128,37 @@ export default function AnalizlerPage() {
   return (
     <FadeContent>
       <div className="space-y-6">
+        {/* Analytics Disabled Warning */}
+        {!analyticsEnabled && (
+          <SpotlightCard className="p-5 bg-amber-500/10 border-2 border-amber-500/30">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <HiOutlineExclamationCircle className="w-6 h-6 text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-amber-400 mb-2">
+                  Analiz Toplama Kapalı
+                </h3>
+                <p className={`text-sm mb-4 ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+                  Analitik veri toplama şu anda devre dışı. Yeni veriler toplanmayacak, ancak mevcut verileri görüntüleyebilirsiniz.
+                  Supabase kullanımını azaltmak için bu özellik kapatılmış.
+                </p>
+                <a
+                  href="/yonetim/ayarlar"
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                    isDark
+                      ? 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/30'
+                      : 'bg-amber-500 text-white hover:bg-amber-600'
+                  }`}
+                >
+                  <HiOutlineCog className="w-4 h-4" />
+                  Ayarlardan Aç
+                </a>
+              </div>
+            </div>
+          </SpotlightCard>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

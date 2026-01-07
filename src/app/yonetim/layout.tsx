@@ -28,6 +28,7 @@ import DarkVeil from '@/components/DarkVeil';
 import SplashCursor from '@/components/SplashCursor';
 import { ThemeProvider, useTheme, useThemeColors } from './ThemeContext';
 import { useOrder } from '@/context/OrderContext';
+import '@/styles/admin-modern.css';
 
 interface User {
   email: string;

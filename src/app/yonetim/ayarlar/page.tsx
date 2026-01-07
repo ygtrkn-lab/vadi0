@@ -23,7 +23,8 @@ import {
   HiOutlineColorSwatch,
   HiOutlineRefresh,
   HiOutlineTag,
-  HiOutlineCalendar
+  HiOutlineCalendar,
+  HiOutlineChartBar
 } from 'react-icons/hi';
 
 type SettingsData = Record<string, Record<string, any>>;
@@ -33,7 +34,7 @@ export default function AyarlarPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('security');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [testingEmail, setTestingEmail] = useState(false);
@@ -66,6 +67,7 @@ export default function AyarlarPage() {
     smsNotifications: false,
     orderNotifications: true,
     marketingEmails: false,
+    analyticsEnabled: true,
   });
 
   // Load settings from API
@@ -87,6 +89,7 @@ export default function AyarlarPage() {
         const site = data.settings?.site || {};
         const delivery = data.settings?.delivery || {};
         const social = data.settings?.social || {};
+        const analytics = data.settings?.analytics || {};
         
         setSettings(prev => ({
           ...prev,
@@ -101,6 +104,7 @@ export default function AyarlarPage() {
           instagram: social.instagram || '',
           facebook: social.facebook || '',
           twitter: social.twitter || '',
+          analyticsEnabled: analytics.enabled !== false,
         }));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Bir hata oluştu');
@@ -195,6 +199,18 @@ export default function AyarlarPage() {
         });
       }
 
+      // Save analytics settings
+      await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({
+          category: 'analytics',
+          updates: {
+            enabled: settings.analyticsEnabled,
+          }
+        })
+      });
+
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
@@ -265,10 +281,6 @@ export default function AyarlarPage() {
   };
 
   const tabs = [
-    { id: 'general', label: 'Genel', icon: <HiOutlineCog className="w-5 h-5" /> },
-    { id: 'shipping', label: 'Kargo', icon: <HiOutlineTruck className="w-5 h-5" /> },
-    { id: 'social', label: 'Sosyal Medya', icon: <HiOutlineGlobe className="w-5 h-5" /> },
-    { id: 'notifications', label: 'Bildirimler', icon: <HiOutlineBell className="w-5 h-5" /> },
     { id: 'security', label: 'Güvenlik', icon: <HiOutlineLockClosed className="w-5 h-5" /> },
     { id: 'pricing', label: 'Fiyatlandırma', icon: <HiOutlineTag className="w-5 h-5" /> },
   ];
@@ -1000,6 +1012,84 @@ export default function AyarlarPage() {
                   </motion.div>
                 )}
               </SpotlightCard>
+            </FadeContent>
+
+            <FadeContent direction="up" delay={0.25}>
+              <SpotlightCard className="p-5 sm:p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                    <HiOutlineChartBar className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Analiz Toplama</h3>
+                    <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Ziyaretçi analizlerini ve istatistikleri yönetin</p>
+                  </div>
+                </div>
+
+                <div className={`flex items-center justify-between p-4 rounded-xl ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
+                  <div>
+                    <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Analitik Veri Toplama</p>
+                    <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Ziyaretçi davranışları, sayfa görüntülemeleri, click verileri</p>
+                  </div>
+                  <button
+                    onClick={() => handleChange('analyticsEnabled', !settings.analyticsEnabled)}
+                    className={`relative w-12 h-7 rounded-full transition-colors
+                      ${settings.analyticsEnabled ? 'bg-emerald-500' : isDark ? 'bg-neutral-700' : 'bg-gray-300'}`}
+                  >
+                    <motion.div
+                      className="absolute top-1 w-5 h-5 bg-white rounded-full shadow-sm"
+                      animate={{ left: settings.analyticsEnabled ? '1.5rem' : '0.25rem' }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    />
+                  </button>
+                </div>
+
+                {!settings.analyticsEnabled && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl"
+                  >
+                    <p className="text-amber-400 text-sm">
+                      ⚠️ Analiz toplama kapalı. Analizler sayfası yeni veri toplamayacak ve Supabase kullanımı azalacak.
+                    </p>
+                  </motion.div>
+                )}
+
+                {settings.analyticsEnabled && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-4 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl"
+                  >
+                    <p className="text-emerald-400 text-sm">
+                      ✓ Analiz toplama aktif. Tüm ziyaretçi hareketleri kaydediliyor.
+                    </p>
+                  </motion.div>
+                )}
+              </SpotlightCard>
+            </FadeContent>
+
+            <FadeContent direction="up" delay={0.3}>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className={`w-full sm:w-auto px-8 py-3 rounded-xl font-medium transition-all 
+                  disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2
+                  ${isDark ? 'bg-white text-black hover:bg-neutral-200' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
+              >
+                {saving ? (
+                  <>
+                    <div className={`w-5 h-5 border-2 rounded-full animate-spin ${isDark ? 'border-black/20 border-t-black' : 'border-white/30 border-t-white'}`} />
+                    Kaydediliyor...
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineCheck className="w-5 h-5" />
+                    Değişiklikleri Kaydet
+                  </>
+                )}
+              </button>
             </FadeContent>
           </motion.div>
         )}

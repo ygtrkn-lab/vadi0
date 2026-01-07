@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
+import { analyticsDb, getAnalyticsStatus } from '@/lib/supabase/analytics-client';
 
 /**
  * POST /api/analytics/leave
@@ -7,7 +7,8 @@ import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client
  */
 export async function POST(request: NextRequest) {
   try {
-    if (!isAnalyticsEnabled || !analyticsDb) {
+    const analyticsEnabled = await getAnalyticsStatus();
+    if (!analyticsEnabled || !analyticsDb) {
       return new NextResponse(null, { status: 200 }); // Beacon için sessizce başarılı dön
     }
 

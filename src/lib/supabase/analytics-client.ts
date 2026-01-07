@@ -19,6 +19,39 @@ export const analyticsDb = hasCredentials
     })
   : null;
 
-export const isAnalyticsEnabled = hasCredentials;
+// Base analytics status (credentials check)
+const baseAnalyticsEnabled = hasCredentials;
+
+/**
+ * Check if analytics is enabled from settings
+ */
+export async function getAnalyticsStatus(): Promise<boolean> {
+  if (!baseAnalyticsEnabled || !analyticsDb) {
+    return false;
+  }
+
+  try {
+    const { data, error } = await analyticsDb
+      .from('settings')
+      .select('value')
+      .eq('category', 'analytics')
+      .eq('key', 'enabled')
+      .single();
+
+    if (error || !data) {
+      // Default to true if setting not found (backwards compatibility)
+      return true;
+    }
+
+    return data.value === true || data.value === 'true';
+  } catch (error) {
+    console.error('Error checking analytics status:', error);
+    // Default to true on error (backwards compatibility)
+    return true;
+  }
+}
+
+// Legacy export for backwards compatibility
+export const isAnalyticsEnabled = baseAnalyticsEnabled;
 
 export default analyticsDb;

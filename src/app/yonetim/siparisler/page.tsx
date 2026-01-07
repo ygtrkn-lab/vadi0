@@ -649,7 +649,7 @@ export default function SiparislerPage() {
                       : 'border-black/5'
                   }`}
                 >
-                  <h3 className={`text-xl font-bold tracking-tight flex items-center gap-2 ${
+                  <h3 className={`text-xl font-bold tracking-tight flex items-center gap-2 flex-wrap ${
                     isDark ? 'text-white' : 'text-gray-900'
                   }`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${
@@ -661,6 +661,21 @@ export default function SiparislerPage() {
                     }`}>
                       ({orders.length} sipariş)
                     </span>
+                    {(() => {
+                      const dailyTotal = orders
+                        .filter(o => o.payment?.status === 'paid')
+                        .reduce((sum, o) => sum + (o.total || 0), 0);
+                      if (dailyTotal > 0) {
+                        return (
+                          <span className={`ml-auto text-base font-bold tabular-nums ${
+                            isDark ? 'text-emerald-400' : 'text-emerald-600'
+                          }`}>
+                            {formatPrice(dailyTotal)}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </h3>
                 </motion.div>
 

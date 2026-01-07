@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
+import { analyticsDb, getAnalyticsStatus } from '@/lib/supabase/analytics-client';
 import crypto from 'crypto';
 
 /**
@@ -8,7 +8,8 @@ import crypto from 'crypto';
  */
 export async function POST(request: NextRequest) {
   try {
-    if (!isAnalyticsEnabled || !analyticsDb) {
+    const analyticsEnabled = await getAnalyticsStatus();
+    if (!analyticsEnabled || !analyticsDb) {
       return NextResponse.json({ success: false, error: 'Analytics disabled' }, { status: 503 });
     }
 
