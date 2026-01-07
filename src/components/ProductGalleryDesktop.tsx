@@ -155,7 +155,7 @@ export default function ProductGalleryDesktop({
             sizes="(max-width: 1280px) 50vw, (max-width: 1536px) 40vw, 600px"
             className="object-cover will-change-transform z-10"
             priority
-            quality={95}
+            quality={80}
           />
         </motion.div>
 

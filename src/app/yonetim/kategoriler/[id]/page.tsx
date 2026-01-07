@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpotlightCard, FadeContent } from '@/components/admin';
 import { useTheme } from '../../ThemeContext';
+import { resizeImageBeforeUpload } from '@/lib/image-resize';
 import {
   HiOutlineArrowLeft,
   HiOutlineTag,
@@ -113,8 +114,11 @@ export default function KategoriDuzenlePage({ params }: { params: Promise<{ id: 
 
     setUploading(true);
     try {
+      // Client-side resize - Cloudinary kredisi tasarrufu
+      const resizedFile = await resizeImageBeforeUpload(file);
+      
       const uploadData = new FormData();
-      uploadData.append('file', file);
+      uploadData.append('file', resizedFile);
 
       const response = await fetch('/api/upload', {
         method: 'POST',

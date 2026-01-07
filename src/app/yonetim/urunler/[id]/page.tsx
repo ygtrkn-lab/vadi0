@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Product } from '@/data/products';
 import { useTheme } from '@/app/yonetim/ThemeContext';
 import ImageUpload from '@/components/admin/ImageUpload';
+import { resizeImageBeforeUpload } from '@/lib/image-resize';
 
 type CategoryOption = {
   id?: string | number;
@@ -215,8 +216,11 @@ export default function UrunDuzenlePage() {
 
     setGalleryUploading(true);
     try {
+      // Client-side resize - Cloudinary kredisi tasarrufu
+      const resizedFile = await resizeImageBeforeUpload(file);
+      
       const formDataUpload = new FormData();
-      formDataUpload.append('file', file);
+      formDataUpload.append('file', resizedFile);
 
       const res = await fetch('/api/upload', {
         method: 'POST',

@@ -95,6 +95,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             src={imageError ? '/placeholder-flower.jpg' : product.image}
             alt={product.name}
             fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
             className="product-image object-cover rounded-xl"
             onError={() => setImageError(true)}
           />
@@ -105,6 +106,8 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               src={product.hoverImage}
               alt={`${product.name} - hover`}
               fill
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              loading="lazy"
               className="product-image-hover object-cover rounded-xl"
             />
           )}
