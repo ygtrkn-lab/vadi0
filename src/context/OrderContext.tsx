@@ -499,6 +499,18 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
 
     loadOrders();
+    
+    // Polling: Her 10 saniyede bir siparişleri güncelle (WhatsApp Web gibi)
+    const pollInterval = setInterval(() => {
+      console.log('🔄 OrderContext: Siparişler güncelleniyor (polling)...');
+      loadOrders();
+    }, 10000); // 10 saniye
+
+    // Cleanup
+    return () => {
+      console.log('🛑 OrderContext: Polling durduruldu');
+      clearInterval(pollInterval);
+    };
   }, []);
 
   const createOrder = async (data: CreateOrderData): Promise<{ success: boolean; order?: Order; error?: string }> => {
