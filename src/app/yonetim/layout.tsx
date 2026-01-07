@@ -44,6 +44,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -453,12 +454,130 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </Link>
             
             {/* Notifications */}
-            <button className={`relative p-2.5 rounded-xl transition-colors ${
-              isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-            }`}>
-              <HiOutlineBell className="w-5 h-5" />
-              <span className={`absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ${isDark ? 'ring-black' : 'ring-white'}`} />
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                className={`relative p-2.5 rounded-xl transition-colors ${
+                  isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <HiOutlineBell className="w-5 h-5" />
+                {pendingOrdersCount > 0 && (
+                  <span className={`absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full ring-2 ${isDark ? 'ring-black' : 'ring-white'} animate-pulse`} />
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              <AnimatePresence>
+                {notificationsOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setNotificationsOpen(false)}
+                      className="fixed inset-0 z-[90]"
+                      style={{ background: 'transparent' }}
+                    />
+                    
+                    {/* Dropdown Panel */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                      className={`absolute right-0 top-full mt-2 w-80 rounded-2xl border backdrop-blur-xl shadow-2xl z-[100] overflow-hidden ${
+                        isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-gray-200 shadow-[0_16px_48px_rgba(0,0,0,0.15)]'
+                      }`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Header */}
+                      <div className={`px-4 py-3 border-b ${isDark ? 'border-white/10' : 'border-gray-100'}`}>
+                        <div className="flex items-center justify-between">
+                          <h3 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            Bildirimler
+                          </h3>
+                          {pendingOrdersCount > 0 && (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                              isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700'
+                            }`}>
+                              {pendingOrdersCount} yeni
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Notifications List */}
+                      <div className="max-h-[400px] overflow-y-auto">
+                        {pendingOrdersCount > 0 ? (
+                          <>
+                            {orderState.orders
+                              .filter(o => o.status === 'pending' || o.status === 'confirmed' || o.status === 'processing')
+                              .slice(0, 10)
+                              .map((order, index) => (
+                                <Link
+                                  key={order.id}
+                                  href="/yonetim/siparisler"
+                                  onClick={() => setNotificationsOpen(false)}
+                                  className={`block px-4 py-3 border-b transition-colors ${
+                                    isDark 
+                                      ? 'border-white/5 hover:bg-white/5' 
+                                      : 'border-gray-100 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-3">
+                                    <div className={`w-2 h-2 rounded-full mt-1.5 ${
+                                      order.status === 'pending' ? 'bg-amber-500' :
+                                      order.status === 'confirmed' ? 'bg-blue-500' :
+                                      'bg-purple-500'
+                                    }`} />
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-sm font-medium mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                        Yeni Sipariş #{order.orderNumber}
+                                      </p>
+                                      <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                                        {order.customerName || 'Misafir'} • {order.total.toFixed(2)} ₺
+                                      </p>
+                                      <p className={`text-[10px] mt-1 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                                        {new Date(order.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </Link>
+                              ))}
+                          </>
+                        ) : (
+                          <div className="px-4 py-8 text-center">
+                            <HiOutlineBell className={`w-12 h-12 mx-auto mb-3 ${
+                              isDark ? 'text-neutral-700' : 'text-gray-300'
+                            }`} />
+                            <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
+                              Yeni bildirim yok
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Footer */}
+                      {pendingOrdersCount > 0 && (
+                        <div className={`px-4 py-2 border-t ${isDark ? 'border-white/10' : 'border-gray-100'}`}>
+                          <Link
+                            href="/yonetim/siparisler"
+                            onClick={() => setNotificationsOpen(false)}
+                            className={`block text-center text-xs font-medium py-1 ${
+                              isDark ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700'
+                            }`}
+                          >
+                            Tüm Siparişleri Gör
+                          </Link>
+                        </div>
+                      )}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Mobile User Avatar */}
             {isMobile && (
