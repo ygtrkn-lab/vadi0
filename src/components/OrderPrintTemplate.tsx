@@ -279,12 +279,9 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
                   <div data-gift-message="true" style={{ display: 'block' }}>{order.message.content}</div>
                 </div>
 
-                {/* Fields (only sender - KİMDEN) */}
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <div style={{ border: '1px solid #111827', padding: '8px 10px', height: 34, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    <div style={{ fontSize: 12, color: '#111827', fontWeight: 800, letterSpacing: '0.4px' }}>KİMDEN</div>
-                    <div data-sender-field style={{ height: 24, display: 'flex', alignItems: 'center', lineHeight: '24px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontSize: 13, fontWeight: 600 }}>{senderName}</div>
-                  </div>
+                {/* Sender name only (no label) */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <div data-sender-field style={{ fontSize: 15, fontWeight: 700, fontStyle: 'italic', color: '#111827', letterSpacing: '0.3px' }}>— {senderName}</div>
                 </div>
 
 

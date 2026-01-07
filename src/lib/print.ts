@@ -1,6 +1,119 @@
 import { jsPDF } from 'jspdf'
 import { toPng, toJpeg } from 'html-to-image'
 
+export async function preparePrintableElement(el: HTMLElement, doc?: Document, win?: Window) {
+  const docToUse = doc || document
+  const winToUse = win || window
+
+  // Wait for fonts in the provided document if possible
+  try {
+    if ((docToUse as any).fonts && (docToUse as any).fonts.ready) await Promise.race([ (docToUse as any).fonts.ready, new Promise<void>((r) => setTimeout(r, 300)) ])
+  } catch (e) {}
+
+  // If the element is not attached to the target document or is hidden, clone it into a visible off-screen wrapper in that document
+  let target: HTMLElement = el
+  let tempWrapper: HTMLElement | null = null
+  try {
+    const needsClone = el.ownerDocument !== docToUse || el.offsetWidth === 0 || el.offsetHeight === 0
+    if (needsClone) {
+      tempWrapper = docToUse.createElement('div')
+      tempWrapper.style.position = 'fixed'
+      tempWrapper.style.left = '-9999px'
+      tempWrapper.style.top = '0'
+      tempWrapper.style.width = 'auto'
+      tempWrapper.style.height = 'auto'
+      tempWrapper.style.overflow = 'visible'
+      tempWrapper.style.visibility = 'visible'
+      tempWrapper.style.zIndex = '2147483647'
+      docToUse.body.appendChild(tempWrapper)
+      const cloned = el.cloneNode(true) as HTMLElement
+      tempWrapper.appendChild(cloned)
+      target = cloned
+    }
+  } catch (e) {
+    target = el
+    tempWrapper = null
+  }
+
+  const overlays: HTMLElement[] = []
+
+  try {
+    const cert = target.querySelector('[data-certificate]') as HTMLElement | null
+    if (cert) {
+      const recipient = target.querySelector('[data-recipient-field]') as HTMLElement | null
+      const sender = target.querySelector('[data-sender-field]') as HTMLElement | null
+      if (recipient && (!recipient.textContent || !recipient.textContent.trim())) recipient.textContent = cert.dataset.recipientName || '—'
+      if (sender && (!sender.textContent || !sender.textContent.trim())) sender.textContent = cert.dataset.senderName || '—'
+
+      const createOverlay = (fieldEl: HTMLElement | null, text: string | undefined) => {
+        if (!fieldEl) return
+        const txt = (text || '').trim()
+        if (fieldEl.textContent && fieldEl.textContent.trim()) return
+        if (!txt) return
+        try {
+          const elRect = target.getBoundingClientRect()
+          const fRect = fieldEl.getBoundingClientRect()
+          const ov = docToUse.createElement('div')
+          ov.className = 'pdf-name-overlay'
+          ov.textContent = txt
+          ov.style.position = 'absolute'
+          ov.style.left = (fRect.left - elRect.left) + 'px'
+          ov.style.top = (fRect.top - elRect.top) + 'px'
+          ov.style.width = (fRect.width) + 'px'
+          ov.style.height = (fRect.height) + 'px'
+          ov.style.overflow = 'hidden'
+          ov.style.whiteSpace = 'nowrap'
+          ov.style.textOverflow = 'ellipsis'
+          const comp = (winToUse.getComputedStyle && winToUse.getComputedStyle(fieldEl)) || (window.getComputedStyle && window.getComputedStyle(fieldEl))
+          ov.style.fontFamily = comp?.fontFamily || 'sans-serif'
+          ov.style.fontSize = comp?.fontSize || '10px'
+          ov.style.lineHeight = comp?.lineHeight || '16px'
+          ov.style.color = comp?.color || '#111827'
+          ov.style.display = 'block'
+          ov.style.pointerEvents = 'none'
+          target.appendChild(ov)
+          overlays.push(ov)
+        } catch (e) {
+          // ignore overlay failures
+        }
+      }
+
+      createOverlay(recipient, cert.dataset.recipientName)
+      createOverlay(sender, cert.dataset.senderName)
+
+      // Adjust QR svg size to fill its container better
+      try {
+        const qr = target.querySelector('[data-qr]') as HTMLElement | null
+        if (qr) {
+          const svg = qr.querySelector('svg') as SVGElement | null
+          if (svg) {
+            const style = (winToUse.getComputedStyle && winToUse.getComputedStyle(qr as Element)) || undefined
+            const pad = style ? (parseFloat(style.paddingTop || '4') || 4) : 4
+            const inner = Math.floor((qr.clientWidth || 110) - pad * 2)
+            svg.setAttribute('width', String(Math.max(72, inner)))
+            svg.setAttribute('height', String(Math.max(72, inner)))
+          }
+        }
+      } catch (e) {}
+
+      // Shrink gift message to fit inside certificate
+      try {
+        const gift = target.querySelector('[data-gift-message]') as HTMLElement | null
+        if (gift) {
+          const compute = () => gift.scrollHeight > gift.clientHeight
+          let fs = parseFloat(winToUse.getComputedStyle(gift).fontSize || '10')
+          while (compute() && fs > 8) {
+            fs = Math.max(8, fs - 0.5)
+            gift.style.fontSize = fs + 'px'
+          }
+        }
+      } catch (e) {}
+    }
+  } catch (e) {}
+
+  return { overlays, tempWrapper, target }
+}
+
 export async function openPrintableWindow(element: HTMLElement) {
   if (!element) return
 
@@ -22,118 +135,7 @@ export async function openPrintableWindow(element: HTMLElement) {
     </style>
   `
 
-  async function preparePrintableElement(el: HTMLElement, doc?: Document, win?: Window) {
-    const docToUse = doc || document
-    const winToUse = win || window
-
-    // Wait for fonts in the provided document if possible
-    try {
-      if ((docToUse as any).fonts && (docToUse as any).fonts.ready) await Promise.race([ (docToUse as any).fonts.ready, new Promise<void>((r) => setTimeout(r, 300)) ])
-    } catch (e) {}
-
-    // If the element is not attached to the target document or is hidden, clone it into a visible off-screen wrapper in that document
-    let target: HTMLElement = el
-    let tempWrapper: HTMLElement | null = null
-    try {
-      const needsClone = el.ownerDocument !== docToUse || el.offsetWidth === 0 || el.offsetHeight === 0
-      if (needsClone) {
-        tempWrapper = docToUse.createElement('div')
-        tempWrapper.style.position = 'fixed'
-        tempWrapper.style.left = '-9999px'
-        tempWrapper.style.top = '0'
-        tempWrapper.style.width = 'auto'
-        tempWrapper.style.height = 'auto'
-        tempWrapper.style.overflow = 'visible'
-        tempWrapper.style.visibility = 'visible'
-        tempWrapper.style.zIndex = '2147483647'
-        docToUse.body.appendChild(tempWrapper)
-        const cloned = el.cloneNode(true) as HTMLElement
-        tempWrapper.appendChild(cloned)
-        target = cloned
-      }
-    } catch (e) {
-      target = el
-      tempWrapper = null
-    }
-
-    const overlays: HTMLElement[] = []
-
-    try {
-      const cert = target.querySelector('[data-certificate]') as HTMLElement | null
-      if (cert) {
-        const recipient = target.querySelector('[data-recipient-field]') as HTMLElement | null
-        const sender = target.querySelector('[data-sender-field]') as HTMLElement | null
-        if (recipient && (!recipient.textContent || !recipient.textContent.trim())) recipient.textContent = cert.dataset.recipientName || '—'
-        if (sender && (!sender.textContent || !sender.textContent.trim())) sender.textContent = cert.dataset.senderName || '—'
-
-        const createOverlay = (fieldEl: HTMLElement | null, text: string | undefined) => {
-          if (!fieldEl) return
-          const txt = (text || '').trim()
-          if (fieldEl.textContent && fieldEl.textContent.trim()) return
-          if (!txt) return
-          try {
-            const elRect = target.getBoundingClientRect()
-            const fRect = fieldEl.getBoundingClientRect()
-            const ov = docToUse.createElement('div')
-            ov.className = 'pdf-name-overlay'
-            ov.textContent = txt
-            ov.style.position = 'absolute'
-            ov.style.left = (fRect.left - elRect.left) + 'px'
-            ov.style.top = (fRect.top - elRect.top) + 'px'
-            ov.style.width = (fRect.width) + 'px'
-            ov.style.height = (fRect.height) + 'px'
-            ov.style.overflow = 'hidden'
-            ov.style.whiteSpace = 'nowrap'
-            ov.style.textOverflow = 'ellipsis'
-            const comp = (winToUse.getComputedStyle && winToUse.getComputedStyle(fieldEl)) || (window.getComputedStyle && window.getComputedStyle(fieldEl))
-            ov.style.fontFamily = comp?.fontFamily || 'sans-serif'
-            ov.style.fontSize = comp?.fontSize || '10px'
-            ov.style.lineHeight = comp?.lineHeight || '16px'
-            ov.style.color = comp?.color || '#111827'
-            ov.style.display = 'block'
-            ov.style.pointerEvents = 'none'
-            target.appendChild(ov)
-            overlays.push(ov)
-          } catch (e) {
-            // ignore overlay failures
-          }
-        }
-
-        createOverlay(recipient, cert.dataset.recipientName)
-        createOverlay(sender, cert.dataset.senderName)
-
-        // Adjust QR svg size to fill its container better
-        try {
-          const qr = target.querySelector('[data-qr]') as HTMLElement | null
-          if (qr) {
-            const svg = qr.querySelector('svg') as SVGElement | null
-            if (svg) {
-              const style = (winToUse.getComputedStyle && winToUse.getComputedStyle(qr as Element)) || undefined
-              const pad = style ? (parseFloat(style.paddingTop || '4') || 4) : 4
-              const inner = Math.floor((qr.clientWidth || 110) - pad * 2)
-              svg.setAttribute('width', String(Math.max(72, inner)))
-              svg.setAttribute('height', String(Math.max(72, inner)))
-            }
-          }
-        } catch (e) {}
-
-        // Shrink gift message to fit inside certificate
-        try {
-          const gift = target.querySelector('[data-gift-message]') as HTMLElement | null
-          if (gift) {
-            const compute = () => gift.scrollHeight > gift.clientHeight
-            let fs = parseFloat(winToUse.getComputedStyle(gift).fontSize || '10')
-            while (compute() && fs > 8) {
-              fs = Math.max(8, fs - 0.5)
-              gift.style.fontSize = fs + 'px'
-            }
-          }
-        } catch (e) {}
-      }
-    } catch (e) {}
-
-    return { overlays, tempWrapper, target }
-  }
+  // preparePrintableElement moved to module scope
 
   // Helper to write content and print in a given document context
   const writeAndPrint = async (doc: Document | null, win: Window | null) => {
