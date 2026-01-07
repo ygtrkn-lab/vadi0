@@ -146,6 +146,30 @@ export default function AyarlarPage() {
     setSettings(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleAnalyticsToggle = async (newValue: boolean) => {
+    setSettings(prev => ({ ...prev, analyticsEnabled: newValue }));
+    setSaving(true);
+    try {
+      await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: 'analytics',
+          updates: { enabled: newValue }
+        })
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (error) {
+      console.error('Analytics toggle error:', error);
+      alert('Ayar kaydedilemedi!');
+      // Revert on error
+      setSettings(prev => ({ ...prev, analyticsEnabled: !newValue }));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -1032,8 +1056,9 @@ export default function AyarlarPage() {
                     <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Ziyaretçi davranışları, sayfa görüntülemeleri, click verileri</p>
                   </div>
                   <button
-                    onClick={() => handleChange('analyticsEnabled', !settings.analyticsEnabled)}
-                    className={`relative w-12 h-7 rounded-full transition-colors
+                    onClick={() => handleAnalyticsToggle(!settings.analyticsEnabled)}
+                    disabled={saving}
+                    className={`relative w-12 h-7 rounded-full transition-colors disabled:opacity-50
                       ${settings.analyticsEnabled ? 'bg-emerald-500' : isDark ? 'bg-neutral-700' : 'bg-gray-300'}`}
                   >
                     <motion.div
