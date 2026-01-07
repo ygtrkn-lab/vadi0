@@ -1,7 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { CartItem } from './CartContext';
+
+// Supabase client for realtime
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 /**
  * Yeni sipariş için zaman grubunu hesapla
@@ -502,16 +509,32 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
     loadOrders(); // İlk yükleme (loading göster)
     
-    // Polling: Her 10 saniyede bir siparişleri güncelle (sessiz - loading gösterme)
-    const pollInterval = setInterval(() => {
-      console.log('🔄 Arka plan güncelleme...');
-      loadOrders(true); // silent=true, loading state değişmez
-    }, 10000); // 10 saniye
+    // Supabase Realtime: Sadece yeni/güncellenmiş siparişler için WebSocket
+    console.log('🔌 Supabase Realtime: orders tablosuna abone oluyor...');
+    
+    const channel = supabase
+      .channel('orders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'orders'
+        },
+        (payload) => {
+          console.log('📬 Realtime: Sipariş değişikliği algılandı!', payload.eventType);
+          // Sessiz güncelleme - sadece yeni data çek
+          loadOrders(true);
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔌 Realtime bağlantı durumu:', status);
+      });
 
     // Cleanup
     return () => {
-      console.log('🛑 OrderContext: Polling durduruldu');
-      clearInterval(pollInterval);
+      console.log('🛑 OrderContext: Realtime channel kapatılıyor');
+      supabase.removeChannel(channel);
     };
   }, []);
 

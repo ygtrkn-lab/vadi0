@@ -76,8 +76,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Yeni sipariş bildirimi - ses çal
   useEffect(() => {
-    if (!isAuthenticated || !orderState?.orders) {
-      console.log('🔔 Ses bildirimi: Auth veya orders yok', { isAuthenticated, ordersLength: orderState?.orders?.length });
+    if (isChecking || !isAuthenticated || !orderState?.orders) {
+      console.log('🔔 Ses bildirimi: Auth check veya orders bekleniyor', { isChecking, isAuthenticated, ordersLength: orderState?.orders?.length });
       return;
     }
 
@@ -93,7 +93,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     // Yeni sipariş geldiğinde ses çal
     if (currentOrderCount > previousOrderCount) {
       console.log('🔔 YENİ SİPARİŞ! Ses çalınıyor...', { önceki: previousOrderCount, şimdi: currentOrderCount });
-      const audio = new Audio('/siparis-bildirim.wav');
+      const soundUrl = process.env.NEXT_PUBLIC_NOTIFICATION_SOUND_URL || '/siparis-bildirim.wav';
+      const audio = new Audio(soundUrl);
       audio.play()
         .then(() => console.log('✅ Ses başarıyla çaldı'))
         .catch(err => console.error('❌ Bildirim sesi çalınamadı:', err));
@@ -103,7 +104,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       // Sipariş sayısı değiştiyse sayıyı güncelle
       setPreviousOrderCount(currentOrderCount);
     }
-  }, [orderState?.orders?.length, previousOrderCount, isAuthenticated]);
+  }, [orderState?.orders?.length, previousOrderCount, isAuthenticated, isChecking]);
 
   // Menu items with dynamic badge (havale siparişleri dahil)
   const menuItems = useMemo(() => [
