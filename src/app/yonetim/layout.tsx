@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   HiOutlineViewGrid, 
@@ -22,8 +23,11 @@ import {
   HiOutlineUsers,
   HiOutlineChartBar
 } from 'react-icons/hi';
-import { GradientText, ShinyText, Squares } from '@/components/ui-kit';
+import { ShinyText } from '@/components/ui-kit';
+import DarkVeil from '@/components/DarkVeil';
+import SplashCursor from '@/components/SplashCursor';
 import { ThemeProvider, useTheme, useThemeColors } from './ThemeContext';
+import { useOrder } from '@/context/OrderContext';
 
 interface User {
   email: string;
@@ -33,16 +37,6 @@ interface User {
 }
 
 const ADMIN_SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
-
-const menuItems = [
-  { href: '/yonetim', label: 'Dashboard', icon: HiOutlineViewGrid },
-  { href: '/yonetim/urunler', label: 'Ürünler', icon: HiOutlineCube },
-  { href: '/yonetim/kategoriler', label: 'Kategoriler', icon: HiOutlineTag },
-  { href: '/yonetim/siparisler', label: 'Siparişler', icon: HiOutlineClipboardList, badge: 3 },
-  { href: '/yonetim/musteriler', label: 'Müşteriler', icon: HiOutlineUsers },
-  { href: '/yonetim/analizler', label: 'Analizler', icon: HiOutlineChartBar },
-  { href: '/yonetim/ayarlar', label: 'Ayarlar', icon: HiOutlineCog },
-];
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -55,6 +49,26 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { theme, toggleTheme, isDark } = useTheme();
   const colors = useThemeColors();
+  const { orderState } = useOrder();
+
+  // Dinamik sipariş sayısı - bekleyen siparişler
+  const pendingOrdersCount = useMemo(() => {
+    if (!orderState?.orders) return 0;
+    return orderState.orders.filter(o => 
+      o.status === 'pending' || o.status === 'confirmed' || o.status === 'processing'
+    ).length;
+  }, [orderState?.orders]);
+
+  // Menu items with dynamic badge
+  const menuItems = useMemo(() => [
+    { href: '/yonetim', label: 'Dashboard', icon: HiOutlineViewGrid },
+    { href: '/yonetim/urunler', label: 'Ürünler', icon: HiOutlineCube },
+    { href: '/yonetim/kategoriler', label: 'Kategoriler', icon: HiOutlineTag },
+    { href: '/yonetim/siparisler', label: 'Siparişler', icon: HiOutlineClipboardList, badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined },
+    { href: '/yonetim/musteriler', label: 'Müşteriler', icon: HiOutlineUsers },
+    { href: '/yonetim/analizler', label: 'Analizler', icon: HiOutlineChartBar },
+    { href: '/yonetim/ayarlar', label: 'Ayarlar', icon: HiOutlineCog },
+  ], [pendingOrdersCount]);
 
   const checkAuth = useCallback(() => {
     const goLogin = () => router.replace('/giris?redirect=/yonetim');
@@ -142,28 +156,28 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   if (isChecking) {
     return (
       <div className={`min-h-screen flex items-center justify-center relative overflow-hidden ${isDark ? 'bg-neutral-950' : 'bg-gray-50'}`}>
-        {/* Squares Background */}
+        {/* DarkVeil Background */}
         <div className="absolute inset-0 pointer-events-none">
-          <Squares
-            direction="diagonal"
-            speed={0.3}
-            squareSize={50}
-            borderColor={isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.1)'}
-            hoverFillColor={isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.15)'}
-            vignetteColor={isDark ? 'rgba(10, 10, 10, 0.85)' : 'transparent'}
-            backgroundColor={isDark ? 'transparent' : '#ffffff'}
-            className="w-full h-full"
+          <DarkVeil
+            hueShift={0}
+            noiseIntensity={0}
+            scanlineIntensity={0}
+            speed={0.5}
+            scanlineFrequency={0}
+            warpAmount={0}
+            resolutionScale={1}
           />
         </div>
         
         <div className="flex flex-col items-center gap-6 relative z-10">
-          <GradientText 
-            colors={['#a855f7', '#ec4899', '#a855f7']} 
-            animationSpeed={3}
-            className="font-bold text-3xl"
-          >
-            Vadiler
-          </GradientText>
+          <Image
+            src="/logo.png"
+            alt="Vadiler"
+            width={150}
+            height={50}
+            className={`object-contain ${isDark ? 'brightness-0 invert' : ''}`}
+            priority
+          />
           <div className="relative w-12 h-12">
             <div className={`absolute inset-0 border-2 rounded-full ${isDark ? 'border-neutral-800' : 'border-gray-300'}`} />
             <div className="absolute inset-0 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -178,18 +192,16 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-neutral-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      {/* Subtle Background Pattern */}
+      {/* DarkVeil Background */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        {/* Squares Background from UI-Kit */}
-        <Squares
-          direction="diagonal"
-          speed={0.3}
-          squareSize={50}
-          borderColor={isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.1)'}
-          hoverFillColor={isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.15)'}
-          vignetteColor={isDark ? 'rgba(10, 10, 10, 0.85)' : 'transparent'}
-          backgroundColor={isDark ? 'transparent' : '#ffffff'}
-          className="w-full h-full"
+        <DarkVeil
+          hueShift={0}
+          noiseIntensity={0}
+          scanlineIntensity={0}
+          speed={0.5}
+          scanlineFrequency={0}
+          warpAmount={0}
+          resolutionScale={1}
         />
       </div>
       
@@ -200,7 +212,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4"
+            className="fixed inset-0 z-100 flex items-start justify-center pt-[15vh] px-4"
             onClick={() => setSearchOpen(false)}
           >
             <div className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-black/80' : 'bg-white/80'}`} />
@@ -255,30 +267,36 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             animate={{ x: 0 }}
             exit={{ x: -300 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className={`fixed top-0 left-0 z-50 h-full w-[280px] border-r flex flex-col will-change-transform backdrop-blur-xl ${
-              isDark ? 'bg-neutral-950/90 border-neutral-800/50' : 'bg-white/90 border-gray-200'
+            className={`fixed top-0 left-0 z-50 h-full w-[280px] border-r flex flex-col will-change-transform overflow-hidden ${
+              isDark ? 'bg-transparent border-neutral-800/30' : 'bg-white/60 backdrop-blur-md border-gray-200/50'
             }`}
           >
+            {/* SplashCursor Effect - Sidebar Only */}
+            <div className="absolute inset-0 pointer-events-none z-0">
+              <SplashCursor
+                SIM_RESOLUTION={128}
+                DYE_RESOLUTION={1440}
+                DENSITY_DISSIPATION={3.5}
+                VELOCITY_DISSIPATION={2}
+                PRESSURE={0.1}
+                CURL={3}
+                SPLAT_RADIUS={0.2}
+                SPLAT_FORCE={6000}
+                COLOR_UPDATE_SPEED={10}
+              />
+            </div>
+
             {/* Logo */}
-            <div className={`h-16 flex items-center justify-between px-5 border-b ${isDark ? 'border-neutral-800/50' : 'border-gray-200'}`}>
+            <div className={`relative z-10 h-16 flex items-center justify-between px-5 border-b ${isDark ? 'border-neutral-800/30' : 'border-gray-200/50'}`}>
               <Link href="/yonetim" className="flex items-center gap-3 group">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform ${
-                  isDark ? 'bg-white' : 'bg-purple-600'
-                }`}>
-                  <span className={`font-bold ${isDark ? 'text-black' : 'text-white'}`}>V</span>
-                </div>
-                <div className="flex flex-col">
-                  <GradientText 
-                    colors={['#a855f7', '#ec4899', '#a855f7']} 
-                    animationSpeed={5}
-                    className="font-semibold text-sm"
-                  >
-                    Vadiler
-                  </GradientText>
-                  <span className={`text-[10px] uppercase tracking-wider ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
-                    Admin Panel
-                  </span>
-                </div>
+                <Image
+                  src="/logo.png"
+                  alt="Vadiler"
+                  width={120}
+                  height={40}
+                  className={`object-contain transition-transform group-hover:scale-105 ${isDark ? 'brightness-0 invert' : ''}`}
+                  priority
+                />
               </Link>
               {isMobile && (
                 <button
@@ -291,7 +309,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 p-3 overflow-y-auto">
+            <nav className="relative z-10 flex-1 p-3 overflow-y-auto">
               <div className="space-y-1">
                 {menuItems.map((item) => {
                   const isActive = pathname === item.href || 
@@ -330,11 +348,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </nav>
 
             {/* User Section */}
-            <div className={`p-3 border-t ${isDark ? 'border-neutral-800/50' : 'border-gray-200'}`}>
+            <div className={`relative z-10 p-3 border-t ${isDark ? 'border-neutral-800/50' : 'border-gray-200'}`}>
               <div className={`flex items-center gap-3 p-3 rounded-xl transition-colors cursor-pointer group ${
                 isDark ? 'bg-neutral-900/50 hover:bg-neutral-900' : 'bg-gray-50 hover:bg-gray-100'
               }`}>
-                <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 
+                <div className="relative w-10 h-10 rounded-full bg-linear-to-br from-purple-500 to-pink-500 
                   flex items-center justify-center ring-2 transition-all ${
                     isDark ? 'ring-neutral-800 group-hover:ring-neutral-700' : 'ring-gray-200 group-hover:ring-gray-300'
                   }">
@@ -376,8 +394,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <div className={`min-h-screen flex flex-col transition-all duration-300 ${!isMobile ? 'lg:pl-[280px]' : ''}`}>
         {/* Top Header */}
-        <header className={`sticky top-0 z-30 h-16 backdrop-blur-xl border-b flex items-center justify-between px-4 lg:px-6 ${
-          isDark ? 'bg-neutral-950/80 border-neutral-800/50' : 'bg-white/80 border-gray-200'
+        <header className={`sticky top-0 z-30 h-16 border-b flex items-center justify-between px-4 lg:px-6 ${
+          isDark ? 'bg-transparent border-neutral-800/30' : 'bg-white/60 backdrop-blur-md border-gray-200/50'
         }`}>
           <div className="flex items-center gap-3">
             {isMobile && (
@@ -446,7 +464,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             {isMobile && (
               <button 
                 onClick={() => setSidebarOpen(true)}
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 
+                className="w-9 h-9 rounded-full bg-linear-to-br from-purple-500 to-pink-500 
                   flex items-center justify-center ring-2 ring-neutral-800"
               >
                 <span className="text-white font-bold text-sm">

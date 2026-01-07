@@ -10,13 +10,13 @@ import { useOrder, Order, OrderStatus } from '@/context/OrderContext';
 import { useCustomer } from '@/context/CustomerContext';
 import OrderPrintTemplate from '@/components/OrderPrintTemplate';
 import { openPrintableWindow, downloadPdfClientSide } from '@/lib/print';
+
 import { 
   HiOutlineSearch, 
   HiOutlineCurrencyDollar,
   HiOutlineEye,
   HiOutlineX,
   HiOutlineClipboardList,
-  HiOutlineFilter,
   HiOutlineTruck,
   HiOutlineCheckCircle,
   HiOutlineClock,
@@ -28,7 +28,8 @@ import {
   HiOutlineLocationMarker,
   HiOutlineRefresh,
   HiOutlinePrinter,
-  HiOutlineDownload
+  HiOutlineDownload,
+  HiOutlineCalendar
 } from 'react-icons/hi';
 
 const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'info' | 'pending' | 'success' | 'error'; icon: React.ReactNode }> = {
@@ -77,17 +78,14 @@ function formatDeliveryDateFriendly(dateStr: string, timeSlot?: string): string 
 }
 
 export default function SiparislerPage() {
-    const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const printRef = useRef<HTMLDivElement | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
-  const [onlyPaid, setOnlyPaid] = useState(false);
-  const [todayToPrepare, setTodayToPrepare] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
   
   const { isDark } = useTheme();
   const { state: orderState, updateOrderStatus } = useOrder();
@@ -95,31 +93,11 @@ export default function SiparislerPage() {
 
   const itemsPerPage = 10;
 
+  // Filtreleme mantığı - Takvimsel gün seçimi ile
   const filteredOrders = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
-
     return orderState.orders
       .filter(order => {
-        // Optional: only show paid orders when toggled
-        if (onlyPaid) {
-          const paymentStatus = order.payment?.status?.toLowerCase();
-          if (paymentStatus !== 'paid') return false;
-        }
-
-        // Optional: show only orders that should be prepared/delivered today
-        if (todayToPrepare) {
-          const d = order.delivery?.deliveryDate || '';
-          const isTodayDelivery = d === todayStr;
-          const isActive = order.status !== 'delivered' && order.status !== 'cancelled';
-          if (!(isTodayDelivery && isActive)) return false;
-        }
-
-        // Status filter - processing includes both processing and confirmed
+        // Durum filtresi
         let matchesStatus = selectedStatus === 'all';
         if (selectedStatus === 'processing') {
           matchesStatus = order.status === 'processing' || order.status === 'confirmed';
@@ -127,6 +105,7 @@ export default function SiparislerPage() {
           matchesStatus = order.status === selectedStatus;
         }
         
+        // Arama filtresi
         const customerName = order.customerName || '';
         const customerEmail = order.customerEmail || '';
         const matchesSearch = 
@@ -134,20 +113,19 @@ export default function SiparislerPage() {
           order.orderNumber.toString().includes(searchTerm) ||
           customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
         
-        const orderDate = new Date(order.createdAt);
+        // Takvimsel tarih filtresi - Seçilen güne ait siparişleri göster
         let matchesDate = true;
-        if (dateFilter === 'today') {
-          matchesDate = orderDate >= today;
-        } else if (dateFilter === 'week') {
-          matchesDate = orderDate >= weekAgo;
-        } else if (dateFilter === 'month') {
-          matchesDate = orderDate >= monthAgo;
+        if (selectedDate) {
+          const orderDate = new Date(order.createdAt);
+          const selectedDateStr = selectedDate.toISOString().split('T')[0];
+          const orderDateStr = orderDate.toISOString().split('T')[0];
+          matchesDate = orderDateStr === selectedDateStr;
         }
         
         return matchesStatus && matchesSearch && matchesDate;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [orderState.orders, selectedStatus, searchTerm, dateFilter, onlyPaid, todayToPrepare]);
+  }, [orderState.orders, selectedStatus, searchTerm, selectedDate]);
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = useMemo(() => {
@@ -159,21 +137,25 @@ export default function SiparislerPage() {
 
   const stats = useMemo(() => {
     const orders = orderState.orders;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     
-    const todayOrders = orders.filter(o => new Date(o.createdAt) >= today);
+    // Ar-Ge için önemli metrikler
+    const paidOrders = orders.filter(o => o.payment?.status === 'paid');
+    const failedOrders = orders.filter(o => 
+      o.status === 'payment_failed' || 
+      o.status === 'cancelled' || 
+      o.payment?.status === 'failed'
+    );
     
     return {
       total: orders.length,
       pending: orders.filter(o => o.status === 'pending').length,
       processing: orders.filter(o => o.status === 'processing' || o.status === 'confirmed').length,
-      shipped: orders.filter(o => o.status === 'shipped').length,
       delivered: orders.filter(o => o.status === 'delivered').length,
       cancelled: orders.filter(o => o.status === 'cancelled').length,
-      revenue: orders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + o.total, 0),
-      todayOrders: todayOrders.length,
-      todayRevenue: todayOrders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + o.total, 0),
+      
+      // Ar-Ge Metrikleri
+      totalSales: paidOrders.reduce((sum, o) => sum + o.total, 0),
+      totalFailed: failedOrders.length,
     };
   }, [orderState.orders]);
 
@@ -220,416 +202,543 @@ export default function SiparislerPage() {
   };
 
   return (
-    <div className="space-y-4 max-w-7xl mx-auto">
-      {/* Compact Header with Stats */}
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Glassmorphism Header */}
       <FadeContent direction="up" delay={0}>
-        <div className={`rounded-2xl border p-4 ${isDark ? 'bg-neutral-900/80 border-neutral-800' : 'bg-white border-gray-200 shadow-sm'}`}>
-          {/* Top Row: Title + Actions */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Siparişler</h1>
-              <span className={`text-xs px-2 py-1 rounded-full ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500'}`}>
+        <div className={`p-6 rounded-3xl backdrop-blur-xl ${
+          isDark 
+            ? 'bg-white/[0.03] border border-white/[0.08]' 
+            : 'bg-white/60 border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.06)]'
+        }`}>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-baseline gap-4">
+              <h1 className={`text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Siparişler
+              </h1>
+              <span className={`text-lg font-medium tabular-nums ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
                 {filteredOrders.length}
               </span>
             </div>
-            <div className="flex items-center gap-2">
+            
+            {/* Ar-Ge Stats - Glassmorphism Pills */}
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl backdrop-blur-md ${
+                isDark ? 'bg-emerald-500/10 ring-1 ring-emerald-500/20' : 'bg-emerald-50/80 ring-1 ring-emerald-200/50'
+              }`}>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-emerald-400/70' : 'text-emerald-600/70'}`}>Satış</span>
+                <span className={`text-base font-bold tabular-nums ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                  {formatPrice(stats.totalSales)}
+                </span>
+              </div>
+              
+              {stats.totalFailed > 0 && (
+                <div className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl backdrop-blur-md ${
+                  isDark ? 'bg-red-500/10 ring-1 ring-red-500/20' : 'bg-red-50/80 ring-1 ring-red-200/50'
+                }`}>
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-red-400/70' : 'text-red-600/70'}`}>Başarısız</span>
+                  <span className={`text-base font-bold tabular-nums ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                    {stats.totalFailed}
+                  </span>
+                </div>
+              )}
+
               <button
                 onClick={() => window.location.reload()}
-                className={`p-2 rounded-lg transition-all hover:scale-105 ${
-                  isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                className={`p-2.5 rounded-xl backdrop-blur-md transition-all ${
+                  isDark 
+                    ? 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 ring-1 ring-white/10' 
+                    : 'bg-black/5 text-gray-400 hover:text-gray-900 hover:bg-black/10 ring-1 ring-black/5'
                 }`}
                 title="Yenile"
               >
-                <HiOutlineRefresh className="w-4 h-4" />
+                <HiOutlineRefresh className="w-5 h-5" />
               </button>
-              <div className={`text-xs px-3 py-1.5 rounded-lg ${isDark ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
-                Bugün: {stats.todayOrders} sipariş • {formatPrice(stats.todayRevenue)}
-              </div>
             </div>
           </div>
-
-          {/* Quick Stats Row */}
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
-            {[
-              { label: 'Toplam', value: stats.total, status: 'all', color: isDark ? 'text-white' : 'text-gray-900', bg: isDark ? 'bg-neutral-800' : 'bg-gray-100' },
-              { label: 'Beklemede', value: stats.pending, status: 'pending', color: 'text-amber-500', bg: isDark ? 'bg-amber-500/10' : 'bg-amber-50' },
-              { label: 'Hazırlanıyor', value: stats.processing, status: 'processing', color: 'text-blue-500', bg: isDark ? 'bg-blue-500/10' : 'bg-blue-50' },
-              { label: 'Kargoda', value: stats.shipped, status: 'shipped', color: 'text-purple-500', bg: isDark ? 'bg-purple-500/10' : 'bg-purple-50' },
-              { label: 'Teslim', value: stats.delivered, status: 'delivered', color: 'text-emerald-500', bg: isDark ? 'bg-emerald-500/10' : 'bg-emerald-50' },
-              { label: 'İptal', value: stats.cancelled, status: 'cancelled', color: 'text-red-500', bg: isDark ? 'bg-red-500/10' : 'bg-red-50' },
-            ].map((stat) => (
-              <button
-                key={stat.status}
-                onClick={() => { setSelectedStatus(stat.status); setCurrentPage(1); }}
-                className={`p-2 rounded-xl text-center transition-all hover:scale-[1.02] ${stat.bg} ${
-                  selectedStatus === stat.status ? 'ring-2 ' + (isDark ? 'ring-white/20' : 'ring-gray-400/30') : ''
-                }`}
-              >
-                <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
-                <p className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{stat.label}</p>
-              </button>
-            ))}
-          </div>
-
-          {/* Total Revenue */}
-          <div className={`flex items-center justify-between p-3 rounded-xl mb-4 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
-            <div className="flex items-center gap-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-100'}`}>
-                <HiOutlineCurrencyDollar className="w-4 h-4 text-emerald-500" />
-              </div>
-              <div>
-                <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Toplam Gelir</p>
-                <p className="text-lg font-bold text-emerald-500">{formatPrice(stats.revenue)}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              {['all', 'today', 'week', 'month'].map(filter => (
-                <button
-                  key={filter}
-                  onClick={() => { setDateFilter(filter as typeof dateFilter); setCurrentPage(1); }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                    dateFilter === filter
-                      ? (isDark ? 'bg-white text-black' : 'bg-gray-900 text-white')
-                      : (isDark ? 'text-neutral-500 hover:text-white' : 'text-gray-500 hover:text-gray-900')
-                  }`}
-                >
-                  {filter === 'all' ? 'Tümü' : filter === 'today' ? 'Bugün' : filter === 'week' ? 'Hafta' : 'Ay'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Search & Filters */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            {/* Search */}
-            <div className="relative flex-1">
-              <HiOutlineSearch className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Sipariş no, müşteri ara..."
-                value={searchTerm}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className={`w-full pl-9 pr-8 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 transition-all ${
-                  isDark 
-                    ? 'bg-neutral-800 border-neutral-700 text-white placeholder-neutral-500 focus:ring-white/10' 
-                    : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:ring-gray-200'
-                }`}
-              />
-              {searchTerm && (
-                <button onClick={() => { setSearchTerm(''); setCurrentPage(1); }} className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <HiOutlineX className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`} />
-                </button>
-              )}
-            </div>
-
-            {/* Mobile Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`sm:hidden flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-sm ${
-                isDark ? 'border-neutral-700 text-neutral-400' : 'border-gray-200 text-gray-600'
-              }`}
-            >
-              <HiOutlineFilter className="w-4 h-4" />
-              Filtrele
-            </button>
-
-            {/* Quick Filter Pills - Desktop */}
-            <div className="hidden sm:flex items-center gap-1 overflow-x-auto">
-              <button
-                onClick={() => { setTodayToPrepare(!todayToPrepare); setCurrentPage(1); }}
-                className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                  todayToPrepare
-                    ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
-                    : (isDark ? 'text-neutral-500 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
-                }`}
-              >
-                📦 Bugün Haz.
-              </button>
-              <button
-                onClick={() => { setOnlyPaid(!onlyPaid); setCurrentPage(1); }}
-                className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                  onlyPaid
-                    ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
-                    : (isDark ? 'text-neutral-500 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
-                }`}
-              >
-                💳 Ödenenler
-              </button>
-              <div className={`w-px h-5 mx-1 ${isDark ? 'bg-neutral-700' : 'bg-gray-200'}`} />
-              {['pending_payment', 'payment_failed', 'confirmed'].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => { setSelectedStatus(status); setCurrentPage(1); }}
-                  className={`px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition-all ${
-                    selectedStatus === status
-                      ? (isDark ? 'bg-white text-black' : 'bg-gray-900 text-white')
-                      : (isDark ? 'text-neutral-500 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
-                  }`}
-                >
-                  {statusConfig[status as OrderStatus].label}
-                </button>
-              ))}
-              {(selectedStatus !== 'all' || onlyPaid || todayToPrepare || dateFilter !== 'all' || searchTerm) && (
-                <button
-                  onClick={() => { setSelectedStatus('all'); setOnlyPaid(false); setTodayToPrepare(false); setDateFilter('all'); setSearchTerm(''); setCurrentPage(1); }}
-                  className={`px-2 py-2 rounded-lg text-xs ${isDark ? 'text-red-400 hover:bg-red-500/10' : 'text-red-500 hover:bg-red-50'}`}
-                >
-                  <HiOutlineX className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile Filters Expanded */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="sm:hidden overflow-hidden"
-              >
-                <div className={`pt-3 mt-3 border-t flex flex-wrap gap-2 ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
-                  <button
-                    onClick={() => { setTodayToPrepare(!todayToPrepare); setCurrentPage(1); }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                      todayToPrepare ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700') : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-600')
-                    }`}
-                  >
-                    📦 Bugün Haz.
-                  </button>
-                  <button
-                    onClick={() => { setOnlyPaid(!onlyPaid); setCurrentPage(1); }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                      onlyPaid ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700') : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-600')
-                    }`}
-                  >
-                    💳 Ödenenler
-                  </button>
-                  {['pending', 'pending_payment', 'payment_failed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => { setSelectedStatus(status); setCurrentPage(1); setShowFilters(false); }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
-                        selectedStatus === status
-                          ? (isDark ? 'bg-white text-black' : 'bg-gray-900 text-white')
-                          : (isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-600')
-                      }`}
-                    >
-                      {statusConfig[status as OrderStatus].label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Active Filters Tags */}
-          {(() => {
-            const chips: { key: string; label: string; onClear: () => void }[] = [];
-            if (searchTerm) chips.push({ key: 'q', label: `"${searchTerm}"`, onClear: () => { setSearchTerm(''); setCurrentPage(1); } });
-            if (selectedStatus !== 'all') chips.push({ key: 'st', label: statusConfig[selectedStatus as OrderStatus]?.label || selectedStatus, onClear: () => { setSelectedStatus('all'); setCurrentPage(1); } });
-            if (dateFilter !== 'all') chips.push({ key: 'df', label: dateFilter === 'today' ? 'Bugün' : dateFilter === 'week' ? 'Bu Hafta' : 'Bu Ay', onClear: () => { setDateFilter('all'); setCurrentPage(1); } });
-            if (onlyPaid) chips.push({ key: 'paid', label: 'Ödenenler', onClear: () => { setOnlyPaid(false); setCurrentPage(1); } });
-            if (todayToPrepare) chips.push({ key: 'today', label: 'Bugün Haz.', onClear: () => { setTodayToPrepare(false); setCurrentPage(1); } });
-            if (chips.length === 0) return null;
-            return (
-              <div className="mt-3 pt-3 border-t border-dashed flex flex-wrap items-center gap-1.5" style={{ borderColor: isDark ? '#333' : '#e5e7eb' }}>
-                <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Filtreler:</span>
-                {chips.map((c) => (
-                  <span key={c.key} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs ${isDark ? 'bg-neutral-800 text-neutral-300' : 'bg-gray-100 text-gray-700'}`}>
-                    {c.label}
-                    <button onClick={c.onClear} className="hover:text-red-500">
-                      <HiOutlineX className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            );
-          })()}
         </div>
       </FadeContent>
 
-      {/* Orders List */}
-      {orderState.isLoading ? (
-        <FadeContent direction="up" delay={0.35}>
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className={`p-5 rounded-2xl border animate-pulse ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-200'}`}>
-                <div className={`h-5 w-40 rounded mb-3 ${isDark ? 'bg-neutral-800' : 'bg-gray-200'}`}></div>
-                <div className={`h-4 w-2/3 rounded ${isDark ? 'bg-neutral-800' : 'bg-gray-200'}`}></div>
-              </div>
-            ))}
-          </div>
-        </FadeContent>
-      ) : (
-        paginatedOrders.length > 0 && (
-          <FadeContent direction="up" delay={0.35}>
-            <div className="space-y-3">
-              {paginatedOrders.map((order, index) => {
-            const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
-            const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
-            const displayCustomerPhone = (order.customerPhone || '').trim() || customer?.phone || '-';
+      {/* Glassmorphism Filter Bar */}
+      <FadeContent direction="up" delay={0.1}>
+        <div className={`p-4 rounded-2xl backdrop-blur-xl ${
+          isDark 
+            ? 'bg-white/[0.02] border border-white/[0.06]' 
+            : 'bg-white/50 border border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
+        }`}>
+          <div className="flex flex-col lg:flex-row gap-3">
+          {/* Takvimsel Gün Seçici */}
+          <div className="relative">
+            <button
+              onClick={() => setShowCalendar(!showCalendar)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all backdrop-blur-md ${
+                selectedDate
+                  ? (isDark ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30' : 'bg-purple-100/80 text-purple-700 ring-1 ring-purple-200')
+                  : (isDark ? 'bg-white/5 text-neutral-300 hover:bg-white/10 ring-1 ring-white/10' : 'bg-black/5 text-gray-700 hover:bg-black/10 ring-1 ring-black/5')
+              }`}
+            >
+              <HiOutlineCalendar className="w-4 h-4" />
+              <span className="font-medium">
+                {selectedDate 
+                  ? `${selectedDate.getDate()} ${TURKISH_MONTHS[selectedDate.getMonth()]}` 
+                  : 'Tüm Günler'
+                }
+              </span>
+              {selectedDate && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDate(null);
+                    setCurrentPage(1);
+                  }}
+                  className={`ml-1 rounded-lg p-1 ${isDark ? 'hover:bg-purple-500/30' : 'hover:bg-purple-200'}`}
+                >
+                  <HiOutlineX className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </button>
 
-            const paymentStatus = order.payment?.status?.toLowerCase();
-            const paymentBadge = (
-              <StatusBadge
-                status={paymentStatus === 'paid' ? 'success' : paymentStatus === 'failed' ? 'error' : paymentStatus === 'refunded' ? 'warning' : 'pending'}
-                text={paymentStatus === 'paid' ? 'Ödendi' : paymentStatus === 'failed' ? 'Başarısız' : paymentStatus === 'refunded' ? 'İade' : 'Bekliyor'}
-              />
-            );
-
-            return (
-              <motion.div
-                key={order.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.04 }}
-              >
-                <SpotlightCard className="p-3 sm:p-4">
-                  <div className="flex flex-col gap-3">
-                    {/* Top Row: Order + Status + Actions */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>#{order.orderNumber}</span>
-                        <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{formatDate(order.createdAt)}</span>
-                        {paymentBadge}
-                        <StatusBadge
-                          status={statusConfig[order.status]?.variant || 'info'}
-                          text={statusConfig[order.status]?.label || order.status || 'Bilinmiyor'}
-                          pulse={order.status === 'pending'}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {getNextStatus(order.status) && (
-                          <button
-                            onClick={() => handleUpdateStatus(order.id, getNextStatus(order.status)!.status)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              order.status === 'pending' ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30' :
-                              order.status === 'confirmed' ? 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30' :
-                              order.status === 'processing' ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' :
-                              'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                            }`}
-                          >
-                            {getNextStatus(order.status)!.label}
-                          </button>
-                        )}
+            {/* Mini Calendar Dropdown - Glassmorphism */}
+            <AnimatePresence>
+              {showCalendar && (
+                <>
+                  {/* Backdrop */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => setShowCalendar(false)}
+                    className="fixed inset-0 z-40"
+                    style={{ background: 'transparent' }}
+                  />
+                  
+                  {/* Calendar - Glassmorphism */}
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                    className={`absolute top-full left-0 mt-2 rounded-2xl border backdrop-blur-xl shadow-2xl z-50 w-72 ${
+                      isDark ? 'bg-neutral-900/90 border-white/10' : 'bg-white/90 border-white/50 shadow-[0_16px_48px_rgba(0,0,0,0.15)]'
+                    }`}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Calendar Header */}
+                    <div className={`px-4 py-3 border-b ${isDark ? 'border-white/10' : 'border-gray-100'}`}>
+                      <div className="flex items-center justify-between">
                         <button
-                          onClick={() => setSelectedOrder(order)}
-                          className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
-                          title="Detayı görüntüle"
+                          onClick={() => {
+                            const prev = new Date(calendarMonth);
+                            prev.setMonth(prev.getMonth() - 1);
+                            setCalendarMonth(prev);
+                          }}
+                          className={`p-1.5 rounded-md transition-colors ${
+                            isDark ? 'hover:bg-neutral-800 text-neutral-500 hover:text-white' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-700'
+                          }`}
                         >
-                          <HiOutlineEye className="w-5 h-5" />
+                          <HiOutlineChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          {TURKISH_MONTHS[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
+                        </span>
+                        <button
+                          onClick={() => {
+                            const next = new Date(calendarMonth);
+                            next.setMonth(next.getMonth() + 1);
+                            setCalendarMonth(next);
+                          }}
+                          className={`p-1.5 rounded-md transition-colors ${
+                            isDark ? 'hover:bg-neutral-800 text-neutral-500 hover:text-white' : 'hover:bg-gray-100 text-gray-400 hover:text-gray-700'
+                          }`}
+                        >
+                          <HiOutlineChevronRight className="w-5 h-5" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Compact Info Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-3">
-                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
-                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Müşteri</p>
-                        <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{displayCustomerName}</p>
-                        <p className={`text-xs truncate ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>{displayCustomerPhone}</p>
-                      </div>
-                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
-                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Teslimat</p>
-                        <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {order.delivery?.district || '-'}{order.delivery?.district && order.delivery?.province ? '/' : ''}{order.delivery?.province || ''}
-                        </p>
-                        <p className={`text-xs ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
-                          {order.delivery?.deliveryDate ? `📅 ${formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}` : ''}
-                        </p>
-                      </div>
-                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
-                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Ürün</p>
-                        <div className="flex items-center gap-3">
-                          <div className="flex -space-x-3">
-                            {order.products.slice(0, 4).map((p, idx) => (
-                              <div key={idx} className={`relative w-14 h-14 rounded-md overflow-hidden border ${isDark ? 'border-neutral-700' : 'border-gray-200'}`}>
-                                {p.image ? (
-                                  <Image src={p.image} alt={p.name} fill className="object-cover" unoptimized />
-                                ) : (
-                                  <div className={`w-full h-full flex items-center justify-center text-xs ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500'}`}>🌸</div>
-                                )}
-                                {p.quantity > 1 && (
-                                  <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-[#e05a4c] text-white text-[11px] font-bold rounded-full flex items-center justify-center">
-                                    {p.quantity}
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                            {order.products.length > 4 && (
-                              <div className={`w-14 h-14 rounded-md flex items-center justify-center text-xs font-medium ${isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-gray-100 text-gray-500'}`}>
-                                +{order.products.length - 4}
-                              </div>
-                            )}
+                    {/* Calendar Grid - Compact */}
+                    <div className="p-3">
+                      {/* Day Headers */}
+                      <div className="grid grid-cols-7 gap-0 mb-1">
+                        {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cts', 'Paz'].map(day => (
+                          <div key={day} className={`text-center text-[10px] font-medium py-1.5 ${isDark ? 'text-neutral-600' : 'text-gray-400'}`}>
+                            {day}
                           </div>
-                          <div className="flex flex-col">
-                            {order.products.slice(0, 2).map((p, idx) => (
-                              <span key={idx} className={`text-xs ${isDark ? 'text-neutral-300' : 'text-gray-700'} truncate max-w-[120px]`}>
-                                {p.name} <span className={`${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>x{p.quantity}</span>
-                              </span>
-                            ))}
-                            {order.products.length > 2 && (
-                              <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>+{order.products.length - 2} ürün daha</span>
-                            )}
-                          </div>
-                        </div>
+                        ))}
                       </div>
-                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
-                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Tutar</p>
-                        <p className={`text-sm font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatPrice(order.total)}</p>
+
+                      {/* Days Grid */}
+                      <div className="grid grid-cols-7 gap-0">
+                        {(() => {
+                          const year = calendarMonth.getFullYear();
+                          const month = calendarMonth.getMonth();
+                          const firstDay = new Date(year, month, 1).getDay();
+                          const daysInMonth = new Date(year, month + 1, 0).getDate();
+                          const days = [];
+                          const adjustedFirstDay = firstDay === 0 ? 6 : firstDay - 1;
+                          
+                          // Empty cells for days before month starts
+                          for (let i = 0; i < adjustedFirstDay; i++) {
+                            days.push(<div key={`empty-${i}`} />);
+                          }
+                          
+                          // Days of month
+                          const today = new Date();
+                          for (let day = 1; day <= daysInMonth; day++) {
+                            const date = new Date(year, month, day);
+                            const isSelected = selectedDate && 
+                              date.toISOString().split('T')[0] === selectedDate.toISOString().split('T')[0];
+                            const isToday = date.toISOString().split('T')[0] === today.toISOString().split('T')[0];
+                            
+                            days.push(
+                              <button
+                                key={day}
+                                onClick={() => {
+                                  setSelectedDate(date);
+                                  setShowCalendar(false);
+                                  setCurrentPage(1);
+                                }}
+                                className={`aspect-square rounded-lg text-xs font-medium transition-colors ${
+                                  isSelected
+                                    ? (isDark ? 'bg-white text-black' : 'bg-gray-900 text-white')
+                                    : isToday
+                                    ? (isDark ? 'bg-neutral-800 text-white ring-1 ring-neutral-700' : 'bg-gray-100 text-gray-900 ring-1 ring-gray-300')
+                                    : (isDark ? 'text-neutral-400 hover:bg-neutral-800 hover:text-white' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900')
+                                }`}
+                              >
+                                {day}
+                              </button>
+                            );
+                          }
+                          
+                          return days;
+                        })()}
                       </div>
-                      <div className={`p-2 rounded-lg ${isDark ? 'bg-neutral-900' : 'bg-white'} border ${isDark ? 'border-neutral-800' : 'border-gray-200'} md:text-right`}> 
-                        <p className={`text-[11px] uppercase tracking-wide ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>No / Teslimat</p>
-                        <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>#{order.orderNumber}</p>
-                        <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
-                          {order.delivery?.deliveryDate ? formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot) : ''}
-                        </p>
+                      
+                      {/* Quick Actions - Minimal */}
+                      <div className={`flex items-center gap-1.5 mt-2 pt-2 border-t ${isDark ? 'border-neutral-800' : 'border-gray-100'}`}>
+                        <button
+                          onClick={() => {
+                            const today = new Date();
+                            setSelectedDate(today);
+                            setCalendarMonth(today);
+                            setShowCalendar(false);
+                            setCurrentPage(1);
+                          }}
+                          className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                            isDark ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-gray-600 hover:text-gray-900 hover:bg-black/5'
+                          }`}
+                        >
+                          Bugün
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedDate(null);
+                            setShowCalendar(false);
+                            setCurrentPage(1);
+                          }}
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            isDark ? 'text-neutral-400 hover:text-white hover:bg-white/10' : 'text-gray-600 hover:text-gray-900 hover:bg-black/5'
+                          }`}
+                        >
+                          Temizle
+                        </button>
                       </div>
                     </div>
-                  </div>
-                </SpotlightCard>
-              </motion.div>
-            );
-          })}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Ayırıcı */}
+          <div className={`hidden lg:block w-px h-8 self-center ${isDark ? 'bg-white/10' : 'bg-black/10'}`} />
+
+          {/* Durum Filtreleri - Glassmorphism Pills */}
+          <div className="flex items-center gap-2 flex-1 flex-wrap">
+            {[
+              { status: 'all', label: 'Tümü', count: stats.total },
+              { status: 'pending', label: 'Beklemede', count: stats.pending },
+              { status: 'processing', label: 'Hazırlanıyor', count: stats.processing },
+              { status: 'delivered', label: 'Teslim', count: stats.delivered },
+              { status: 'cancelled', label: 'İptal', count: stats.cancelled },
+            ].map((item) => (
+              <button
+                key={item.status}
+                onClick={() => { setSelectedStatus(item.status); setCurrentPage(1); }}
+                className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-all backdrop-blur-md ${
+                  selectedStatus === item.status
+                    ? (isDark ? 'bg-white/15 text-white ring-1 ring-white/20' : 'bg-black/10 text-gray-900 ring-1 ring-black/10')
+                    : (isDark ? 'text-neutral-400 hover:text-white hover:bg-white/5' : 'text-gray-500 hover:text-gray-900 hover:bg-black/5')
+                }`}
+              >
+                {item.label}
+                {item.count > 0 && (
+                  <span className={`ml-1.5 text-xs tabular-nums ${
+                    selectedStatus === item.status 
+                      ? (isDark ? 'text-white/60' : 'text-gray-500') 
+                      : (isDark ? 'text-neutral-600' : 'text-gray-400')
+                  }`}>
+                    {item.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Arama - Glassmorphism */}
+          <div className="relative w-72">
+            <HiOutlineSearch className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${isDark ? 'text-neutral-400' : 'text-gray-400'}`} />
+            <input
+              type="text"
+              placeholder="Sipariş ara..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-xl transition-all focus:outline-none backdrop-blur-md ${
+                isDark 
+                  ? 'bg-white/5 text-white placeholder-neutral-500 focus:bg-white/10 ring-1 ring-white/10 focus:ring-white/20' 
+                  : 'bg-black/5 text-gray-900 placeholder-gray-400 focus:bg-black/10 ring-1 ring-black/5 focus:ring-black/10'
+              }`}
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => { setSearchTerm(''); setCurrentPage(1); }} 
+                className={`absolute right-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-neutral-500 hover:text-white' : 'text-gray-400 hover:text-gray-700'}`}
+              >
+                <HiOutlineX className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
         </div>
       </FadeContent>
-        )
-      )}
+
+      {/* Modern Orders Grid */}
+      {orderState.isLoading ? (
+        <FadeContent direction="up" delay={0.2}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className={`p-5 rounded-2xl border animate-pulse ${isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-gray-200'}`}>
+                <div className={`h-4 w-32 rounded mb-3 ${isDark ? 'bg-neutral-800' : 'bg-gray-200'}`} />
+                <div className={`h-3 w-2/3 rounded ${isDark ? 'bg-neutral-800' : 'bg-gray-200'}`} />
+              </div>
+            ))}
+          </div>
+        </FadeContent>
+      ) : paginatedOrders.length > 0 ? (
+        <FadeContent direction="up" delay={0.2}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+            {paginatedOrders.map((order, index) => {
+              const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
+              const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
+              const paymentStatus = order.payment?.status?.toLowerCase();
+
+              return (
+                <motion.div
+                  key={order.id}
+                  initial={{ opacity: 0, y: 16, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: index * 0.03, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                  onClick={() => setSelectedOrder(order)}
+                  className="cursor-pointer group"
+                >
+                  {/* Glassmorphism Card - Apple/Dribbble Style */}
+                  <div className={`relative overflow-hidden rounded-3xl transition-all duration-500 backdrop-blur-xl ${
+                    isDark 
+                      ? 'bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-white/[0.15] shadow-[0_8px_32px_rgba(0,0,0,0.3)]' 
+                      : 'bg-white/70 hover:bg-white/90 border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.08)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.12)]'
+                  }`}>
+                    
+                    {/* Glow Effect on Hover */}
+                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none ${
+                      order.status === 'delivered' ? 'bg-linear-to-br from-emerald-500/10 to-transparent' :
+                      order.status === 'shipped' ? 'bg-linear-to-br from-blue-500/10 to-transparent' :
+                      order.status === 'processing' || order.status === 'confirmed' ? 'bg-linear-to-br from-purple-500/10 to-transparent' :
+                      order.status === 'pending' ? 'bg-linear-to-br from-amber-500/10 to-transparent' :
+                      order.status === 'cancelled' ? 'bg-linear-to-br from-red-500/10 to-transparent' :
+                      'bg-linear-to-br from-gray-500/10 to-transparent'
+                    }`} />
+
+                    <div className="relative p-5">
+                      {/* Header: Status Badge + Price */}
+                      <div className="flex items-start justify-between mb-5">
+                        <div className="flex flex-col gap-2">
+                          <span className={`text-xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            #{order.orderNumber}
+                          </span>
+                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider backdrop-blur-md ${
+                            order.status === 'delivered' ? (isDark ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/30' : 'bg-emerald-100/80 text-emerald-700 ring-1 ring-emerald-200') :
+                            order.status === 'shipped' ? (isDark ? 'bg-blue-500/20 text-blue-300 ring-1 ring-blue-500/30' : 'bg-blue-100/80 text-blue-700 ring-1 ring-blue-200') :
+                            order.status === 'processing' || order.status === 'confirmed' ? (isDark ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30' : 'bg-purple-100/80 text-purple-700 ring-1 ring-purple-200') :
+                            order.status === 'pending' ? (isDark ? 'bg-amber-500/20 text-amber-300 ring-1 ring-amber-500/30' : 'bg-amber-100/80 text-amber-700 ring-1 ring-amber-200') :
+                            order.status === 'cancelled' ? (isDark ? 'bg-red-500/20 text-red-300 ring-1 ring-red-500/30' : 'bg-red-100/80 text-red-700 ring-1 ring-red-200') :
+                            (isDark ? 'bg-neutral-500/20 text-neutral-300 ring-1 ring-neutral-500/30' : 'bg-gray-100/80 text-gray-700 ring-1 ring-gray-200')
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              order.status === 'delivered' ? 'bg-emerald-400' :
+                              order.status === 'shipped' ? 'bg-blue-400' :
+                              order.status === 'processing' || order.status === 'confirmed' ? 'bg-purple-400' :
+                              order.status === 'pending' ? 'bg-amber-400' :
+                              order.status === 'cancelled' ? 'bg-red-400' :
+                              'bg-gray-400'
+                            }`} />
+                            {statusConfig[order.status]?.label || 'Bilinmiyor'}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-2xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {formatPrice(order.total)}
+                          </span>
+                          {paymentStatus === 'paid' && (
+                            <p className={`text-[10px] font-medium uppercase tracking-wider mt-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                              ✓ Ödendi
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Customer Info */}
+                      <div className={`flex items-center gap-3 p-3 rounded-2xl mb-4 ${
+                        isDark ? 'bg-white/[0.03]' : 'bg-black/[0.02]'
+                      }`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold bg-linear-to-br ${
+                          isDark ? 'from-purple-500/30 to-pink-500/30 text-white' : 'from-purple-100 to-pink-100 text-purple-700'
+                        }`}>
+                          {displayCustomerName.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            {displayCustomerName}
+                          </p>
+                          {order.delivery?.deliveryDate && (
+                            <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                              📅 {formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Products Preview */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex -space-x-3">
+                          {order.products.slice(0, 3).map((p, idx) => (
+                            <div
+                              key={idx}
+                              className={`relative w-12 h-12 rounded-2xl overflow-hidden ring-2 shadow-lg transition-transform group-hover:scale-105 ${
+                                isDark ? 'ring-white/10' : 'ring-white'
+                              }`}
+                              style={{ zIndex: 3 - idx }}
+                            >
+                              {p.image ? (
+                                <Image src={p.image} alt={p.name} fill className="object-cover" unoptimized />
+                              ) : (
+                                <div className={`w-full h-full flex items-center justify-center text-lg ${
+                                  isDark ? 'bg-neutral-800 text-neutral-500' : 'bg-gray-100 text-gray-400'
+                                }`}>
+                                  🌸
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {order.products.length > 3 && (
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-bold ring-2 backdrop-blur-md ${
+                              isDark ? 'bg-white/10 text-white ring-white/10' : 'bg-black/5 text-gray-700 ring-white'
+                            }`}>
+                              +{order.products.length - 3}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium truncate ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>
+                            {order.products[0]?.name}
+                          </p>
+                          {order.products.length > 1 && (
+                            <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                              +{order.products.length - 1} ürün daha
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Quick Action Button - Hover'da görünür */}
+                      {getNextStatus(order.status) && (
+                        <motion.button
+                          initial={{ opacity: 0, y: 8 }}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUpdateStatus(order.id, getNextStatus(order.status)!.status);
+                          }}
+                          className={`w-full mt-4 py-2.5 rounded-xl text-sm font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-md ${
+                            isDark 
+                              ? 'bg-white/10 hover:bg-white/20 text-white ring-1 ring-white/20' 
+                              : 'bg-black/5 hover:bg-black/10 text-gray-900 ring-1 ring-black/10'
+                          }`}
+                        >
+                          {getNextStatus(order.status)!.label} →
+                        </motion.button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </FadeContent>
+      ) : null}
 
       {/* Empty State */}
       {!orderState.isLoading && filteredOrders.length === 0 && (
-        <FadeContent direction="up" delay={0.35}>
-          <div className="text-center py-12">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4
-              ${isDark ? 'bg-neutral-800' : 'bg-gray-100'}`}>
-              <HiOutlineClipboardList className={`w-8 h-8 ${isDark ? 'text-neutral-600' : 'text-gray-400'}`} />
+        <FadeContent direction="up" delay={0.2}>
+          <div className="text-center py-16">
+            <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4
+              ${isDark ? 'bg-neutral-800/50' : 'bg-gray-100'}`}>
+              <HiOutlineClipboardList className={`w-10 h-10 ${isDark ? 'text-neutral-600' : 'text-gray-400'}`} />
             </div>
-            <h3 className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Sipariş bulunamadı</h3>
+            <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Sipariş bulunamadı
+            </h3>
             <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-              Arama/filtre kriterlerinize uygun sipariş yok
-              {onlyPaid ? ' (Sadece ödenenler açık)' : ''}
+              Arama veya filtre kriterlerinize uygun sipariş yok
             </p>
+            {(searchTerm || selectedDate || selectedStatus !== 'all') && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedDate(null);
+                  setSelectedStatus('all');
+                  setCurrentPage(1);
+                }}
+                className={`mt-4 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  isDark ? 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/30' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                }`}
+              >
+                Filtreleri Temizle
+              </button>
+            )}
           </div>
         </FadeContent>
       )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <FadeContent direction="up" delay={0.4}>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
-              Sayfa {currentPage} / {totalPages} ({filteredOrders.length} sipariş)
+        <FadeContent direction="up" delay={0.3}>
+          <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl ${
+            isDark ? 'bg-neutral-900/50 border border-neutral-800' : 'bg-white border border-gray-200 shadow-sm'
+          }`}>
+            <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+              Sayfa <span className="font-semibold">{currentPage}</span> / <span className="font-semibold">{totalPages}</span>
+              <span className={`ml-2 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                ({filteredOrders.length} sipariş)
+              </span>
             </p>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                className={`p-2.5 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105
                   ${isDark 
                     ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
                     : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
@@ -653,10 +762,10 @@ export default function SiparislerPage() {
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`w-10 h-10 rounded-xl font-medium transition-colors
+                    className={`min-w-11 h-11 px-3 rounded-xl font-semibold transition-all hover:scale-105
                       ${currentPage === page 
-                        ? (isDark ? 'bg-white text-black' : 'bg-purple-600 text-white')
-                        : (isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100')
+                        ? (isDark ? 'bg-purple-500 text-white' : 'bg-purple-600 text-white shadow-lg shadow-purple-500/30')
+                        : (isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100')
                       }`}
                   >
                     {page}
@@ -667,7 +776,7 @@ export default function SiparislerPage() {
               <button
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className={`p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+                className={`p-2.5 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105
                   ${isDark 
                     ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
                     : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
@@ -687,7 +796,7 @@ export default function SiparislerPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+            className="fixed inset-0 z-100 flex items-center justify-center p-4"
             onClick={() => setSelectedOrder(null)}
           >
             <div className={`absolute inset-0 backdrop-blur-sm ${isDark ? 'bg-black/80' : 'bg-black/50'}`} />
@@ -820,7 +929,7 @@ export default function SiparislerPage() {
                   <div className={`p-3 rounded-lg ${isDark ? 'bg-neutral-900/50' : 'bg-white'}`}>
                     <p className={`text-xs font-medium mb-1 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Teslimat Adresi</p>
                     <div className={`flex items-start gap-2 text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-                      <HiOutlineLocationMarker className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <HiOutlineLocationMarker className="w-4 h-4 mt-0.5 shrink-0" />
                       <div>
                         <p className="font-medium">{selectedOrder.delivery.fullAddress || '-'}</p>
                         <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
@@ -890,7 +999,7 @@ export default function SiparislerPage() {
                       }`}
                     >
                       {/* Product Image */}
-                      <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-gray-100 to-gray-200">
+                      <div className="relative w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-linear-to-br from-gray-100 to-gray-200">
                         {product.image ? (
                           <Image 
                             src={product.image} 
@@ -1003,12 +1112,12 @@ export default function SiparislerPage() {
                   <div className={`mt-3 p-3 rounded-lg border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
                     <p className={`text-xs font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>Ödeme Hatası</p>
                     {selectedOrder.payment.errorMessage && (
-                      <p className={`text-sm mt-1 break-words ${isDark ? 'text-neutral-200' : 'text-red-700'}`}>
+                      <p className={`text-sm mt-1 wrap-break-word ${isDark ? 'text-neutral-200' : 'text-red-700'}`}>
                         {selectedOrder.payment.errorMessage}
                       </p>
                     )}
                     {(selectedOrder.payment.errorCode || selectedOrder.payment.errorGroup) && (
-                      <p className={`text-xs mt-1 break-words ${isDark ? 'text-neutral-400' : 'text-red-600'}`}>
+                      <p className={`text-xs mt-1 wrap-break-word ${isDark ? 'text-neutral-400' : 'text-red-600'}`}>
                         {selectedOrder.payment.errorCode ? `Kod: ${String(selectedOrder.payment.errorCode)}` : ''}
                         {selectedOrder.payment.errorCode && selectedOrder.payment.errorGroup ? ' • ' : ''}
                         {selectedOrder.payment.errorGroup ? `Grup: ${String(selectedOrder.payment.errorGroup)}` : ''}
