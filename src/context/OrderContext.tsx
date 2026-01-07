@@ -1,34 +1,23 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { CartItem } from './CartContext';
 
-// Supabase client for realtime
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-/**
- * Yeni sipariş için zaman grubunu hesapla
- */
 function getOrderTimeGroupForNewOrder(): 'noon' | 'evening' | 'overnight' {
   const now = new Date();
   const hour = now.getHours();
-  
-  if (hour >= 11 && hour < 17) {
-    return 'noon';
-  }
-  
-  if (hour >= 17 && hour < 22) {
-    return 'evening';
-  }
-  
+  if (hour >= 11 && hour < 17) return 'noon';
+  if (hour >= 17 && hour < 22) return 'evening';
   return 'overnight';
 }
 
-// Order Types
 export type OrderStatus =
   | 'pending'
   | 'pending_payment'
@@ -44,7 +33,7 @@ export type PaymentMethod = 'credit_card' | 'bank_transfer' | 'cash_on_delivery'
 
 export interface OrderProduct {
   id: number;
-  productId?: string; // Product slug for linking
+  productId?: string;
   name: string;
   slug: string;
   image: string;
@@ -148,38 +137,30 @@ function orderReducer(state: OrderState, action: OrderAction): OrderState {
   switch (action.type) {
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
-    
     case 'SET_ERROR':
       return { ...state, error: action.payload };
-    
     case 'LOAD_ORDERS':
       return { ...state, orders: action.payload };
-    
     case 'CREATE_ORDER':
       return {
         ...state,
         orders: [action.payload, ...state.orders],
         lastOrderNumber: action.payload.orderNumber,
       };
-    
     case 'UPDATE_ORDER':
       return {
         ...state,
-        orders: state.orders.map(o => 
-          o.id === action.payload.id ? action.payload : o
-        ),
+        orders: state.orders.map(o => (o.id === action.payload.id ? action.payload : o)),
       };
-    
     case 'UPDATE_ORDER_STATUS': {
       const timelineEntry: OrderTimeline = {
         status: action.payload.status,
         timestamp: new Date().toISOString(),
         note: action.payload.note,
       };
-      
       return {
         ...state,
-        orders: state.orders.map(o => 
+        orders: state.orders.map(o =>
           o.id === action.payload.orderId
             ? {
                 ...o,
@@ -191,16 +172,10 @@ function orderReducer(state: OrderState, action: OrderAction): OrderState {
         ),
       };
     }
-    
     case 'DELETE_ORDER':
-      return {
-        ...state,
-        orders: state.orders.filter(o => o.id !== action.payload),
-      };
-    
+      return { ...state, orders: state.orders.filter(o => o.id !== action.payload) };
     case 'SET_LAST_ORDER_NUMBER':
       return { ...state, lastOrderNumber: action.payload };
-    
     default:
       return state;
   }
@@ -239,7 +214,6 @@ interface OrderContextType {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-// Demo orders with new structure
 const createDemoOrders = (): Order[] => [
   {
     id: 'ord_1001',
@@ -475,72 +449,119 @@ const createDemoOrders = (): Order[] => [
 
 export function OrderProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(orderReducer, initialState);
+  const pathname = usePathname();
+  const prevCountRef = useRef<number>(0);
+  const lastOrderNumberRef = useRef<number | null>(null);
+  const notificationSoundUrl = process.env.NEXT_PUBLIC_NOTIFICATION_SOUND_URL || '/siparis-bildirim.wav';
 
-  // Load orders from API on mount
   useEffect(() => {
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    let realtimeSilentCheck: ReturnType<typeof setInterval> | null = null;
+    let pingInterval: ReturnType<typeof setInterval> | null = null;
+    let lastRealtimeEvent = Date.now();
+
+    const startPolling = () => {
+      if (pollInterval) return;
+      pollInterval = setInterval(() => {
+        loadOrders(true);
+      }, 15000);
+    };
+
+    const stopPolling = () => {
+      if (!pollInterval) return;
+      clearInterval(pollInterval);
+      pollInterval = null;
+    };
+
     const loadOrders = async (silent = false) => {
       try {
-        if (!silent) {
-          console.log('📦 OrderContext: Siparişler yükleniyor...');
-          dispatch({ type: 'SET_LOADING', payload: true });
-        }
-        const response = await fetch('/api/orders');
-        if (!silent) console.log('📦 OrderContext: API yanıtı:', response.status);
+        if (!silent) dispatch({ type: 'SET_LOADING', payload: true });
+        const response = await fetch('/api/orders', { cache: 'no-store' });
         if (response.ok) {
           const data = await response.json();
-          if (!silent) console.log('📦 OrderContext: Yüklenen siparişler:', data.orders?.length || 0);
-          dispatch({ type: 'LOAD_ORDERS', payload: data.orders || [] });
-          
-          // Set last order number
-          if (data.orders && data.orders.length > 0) {
-            const maxOrderNumber = Math.max(...data.orders.map((o: Order) => o.orderNumber));
+          const orders: Order[] = data.orders || [];
+          dispatch({ type: 'LOAD_ORDERS', payload: orders });
+          if (orders.length > 0) {
+            const maxOrderNumber = Math.max(...orders.map(o => o.orderNumber));
+            lastOrderNumberRef.current = maxOrderNumber;
             dispatch({ type: 'SET_LAST_ORDER_NUMBER', payload: maxOrderNumber });
           }
-        } else {
-          console.error('📦 OrderContext: API hatası:', response.status);
+          lastRealtimeEvent = Date.now();
         }
       } catch (error) {
-        console.error('📦 OrderContext: Yükleme hatası:', error);
+        console.error('OrderContext: loadOrders failed', error);
         if (!silent) dispatch({ type: 'SET_ERROR', payload: 'Siparişler yüklenemedi' });
       } finally {
         if (!silent) dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
 
-    loadOrders(); // İlk yükleme (loading göster)
-    
-    // Supabase Realtime: Sadece yeni/güncellenmiş siparişler için WebSocket
-    console.log('🔌 Supabase Realtime: orders tablosuna abone oluyor...');
-    
+    loadOrders();
+
     const channel = supabase
       .channel('orders-changes')
       .on(
         'postgres_changes',
-        {
-          event: '*', // INSERT, UPDATE, DELETE
-          schema: 'public',
-          table: 'orders'
-        },
-        (payload) => {
-          console.log('📬 Realtime: Sipariş değişikliği algılandı!', payload.eventType);
-          // Sessiz güncelleme - sadece yeni data çek
+        { event: '*', schema: 'public', table: 'orders' },
+        () => {
+          lastRealtimeEvent = Date.now();
+          stopPolling();
           loadOrders(true);
         }
       )
-      .subscribe((status) => {
-        console.log('🔌 Realtime bağlantı durumu:', status);
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') stopPolling();
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') startPolling();
       });
 
-    // Cleanup
+    realtimeSilentCheck = setInterval(() => {
+      const silenceMs = Date.now() - lastRealtimeEvent;
+      if (silenceMs > 30000) startPolling();
+    }, 10000);
+
+    pingInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/orders/ping', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const latest = data.lastOrderNumber as number | undefined;
+        if (latest && (!lastOrderNumberRef.current || latest > lastOrderNumberRef.current)) {
+          lastOrderNumberRef.current = latest;
+          loadOrders(true);
+        }
+      } catch (err) {
+        console.error('OrderContext: ping failed', err);
+      }
+    }, 20000);
+
     return () => {
-      console.log('🛑 OrderContext: Realtime channel kapatılıyor');
       supabase.removeChannel(channel);
+      if (pollInterval) clearInterval(pollInterval);
+      if (realtimeSilentCheck) clearInterval(realtimeSilentCheck);
+      if (pingInterval) clearInterval(pingInterval);
     };
   }, []);
 
+  useEffect(() => {
+    const isAdminRoute = pathname?.startsWith('/yonetim');
+    if (!isAdminRoute) return;
+
+    const currentCount = state.orders.length;
+    if (prevCountRef.current === 0) {
+      prevCountRef.current = currentCount;
+      return;
+    }
+
+    if (currentCount > prevCountRef.current) {
+      const audio = new Audio(notificationSoundUrl);
+      audio.play().catch(err => console.error('Bildirim sesi çalınamadı:', err));
+    }
+    prevCountRef.current = currentCount;
+  }, [pathname, state.orders.length, notificationSoundUrl]);
+
   const createOrder = async (data: CreateOrderData): Promise<{ success: boolean; order?: Order; error?: string }> => {
     dispatch({ type: 'SET_LOADING', payload: true });
-    
+
     const now = new Date().toISOString();
 
     const products: OrderProduct[] = data.items.map(item => ({
@@ -553,8 +574,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       category: item.product.category,
     }));
 
-    const subtotal = products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
-    const deliveryFee = 0; // Free delivery
+    const subtotal = products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+    const deliveryFee = 0;
     const discount = data.discount || 0;
     const total = subtotal + deliveryFee - discount;
 
@@ -577,6 +598,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       total,
       status: data.status || 'pending',
       notes: '',
+      order_time_group: getOrderTimeGroupForNewOrder(),
     };
 
     try {
@@ -591,11 +613,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'CREATE_ORDER', payload: newOrder });
         dispatch({ type: 'SET_LOADING', payload: false });
         return { success: true, order: newOrder };
-      } else {
-        const errorData = await response.json();
-        dispatch({ type: 'SET_LOADING', payload: false });
-        return { success: false, error: errorData.error || 'Sipariş oluşturulamadı' };
       }
+
+      const errorData = await response.json();
+      dispatch({ type: 'SET_LOADING', payload: false });
+      return { success: false, error: errorData.error || 'Sipariş oluşturulamadı' };
     } catch (error) {
       console.error('Error creating order:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
@@ -640,7 +662,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const order = state.orders.find(o => o.id === orderId);
     if (!order) return { success: false, error: 'Sipariş bulunamadı' };
 
-    // Siparişi iptal et
     const timelineEntry: OrderTimeline = {
       status: 'cancelled',
       timestamp: new Date().toISOString(),
@@ -656,7 +677,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      // Siparişi güncelle
       const orderResponse = await fetch('/api/orders', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -670,7 +690,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       const result = await orderResponse.json();
       dispatch({ type: 'UPDATE_ORDER', payload: result });
 
-      // Eğer müşteri kredisi eklenecekse ve ödeme yapılmışsa
       if (addCredit && !order.isGuest && order.payment.status === 'paid') {
         const creditResponse = await fetch('/api/customers/credit', {
           method: 'POST',
@@ -696,7 +715,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const updateOrder = async (order: Order) => {
     const updatedOrder = { ...order, updatedAt: new Date().toISOString() };
-    
+
     try {
       const response = await fetch('/api/orders', {
         method: 'PUT',
@@ -715,37 +734,21 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      const response = await fetch(`/api/orders?id=${orderId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        dispatch({ type: 'DELETE_ORDER', payload: orderId });
-      }
+      const response = await fetch(`/api/orders?id=${orderId}`, { method: 'DELETE' });
+      if (response.ok) dispatch({ type: 'DELETE_ORDER', payload: orderId });
     } catch (error) {
       console.error('Error deleting order:', error);
     }
   };
 
-  const getOrderById = (orderId: string): Order | undefined => {
-    return state.orders.find(o => o.id === orderId);
-  };
-
-  const getOrdersByCustomer = (customerId: string): Order[] => {
-    return state.orders.filter(o => o.customerId === customerId);
-  };
-
-  const getOrdersByStatus = (status: OrderStatus): Order[] => {
-    return state.orders.filter(o => o.status === status);
-  };
+  const getOrderById = (orderId: string): Order | undefined => state.orders.find(o => o.id === orderId);
+  const getOrdersByCustomer = (customerId: string): Order[] => state.orders.filter(o => o.customerId === customerId);
+  const getOrdersByStatus = (status: OrderStatus): Order[] => state.orders.filter(o => o.status === status);
 
   const simulatePayment = async (orderId: string): Promise<boolean> => {
-    // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // 95% success rate
     const isSuccess = Math.random() > 0.05;
-    
+
     if (isSuccess) {
       const order = state.orders.find(o => o.id === orderId);
       if (order) {
@@ -764,7 +767,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
           ],
           updatedAt: new Date().toISOString(),
         };
-        
+
         try {
           const response = await fetch('/api/orders', {
             method: 'PUT',
@@ -781,7 +784,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         }
       }
     }
-    
+
     return isSuccess;
   };
 

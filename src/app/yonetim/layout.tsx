@@ -82,6 +82,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
 
     const currentOrderCount = orderState.orders.length;
+    console.log('🔔 Bildirim kontrolü:', { currentOrderCount, previousOrderCount });
     
     // İlk yüklemede ses çalma, sadece sayıyı kaydet
     if (previousOrderCount === 0) {
@@ -474,6 +475,19 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Enable Sound */}
+            <button
+              onClick={() => {
+                window.dispatchEvent(new Event('vadiler-unlock-audio'));
+              }}
+              className={`p-2.5 rounded-xl transition-colors ${
+                isDark ? 'hover:bg-neutral-800 text-neutral-400 hover:text-white' : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+              }`}
+              title="Bildirim sesini aç"
+            >
+              <HiOutlineBell className="w-5 h-5" />
+            </button>
+
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
