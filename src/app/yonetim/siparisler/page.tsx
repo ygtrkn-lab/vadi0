@@ -11,6 +11,7 @@ import { useOrder, Order, OrderStatus } from '@/context/OrderContext';
 import { useCustomer } from '@/context/CustomerContext';
 import OrderPrintTemplate from '@/components/OrderPrintTemplate';
 import { openPrintableWindow, downloadPdfClientSide } from '@/lib/print';
+import '@/styles/admin-modern.css';
 
 import { 
   HiOutlineSearch, 
@@ -151,6 +152,8 @@ export default function SiparislerPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+  const calendarButtonRef = useRef<HTMLButtonElement>(null);
+  const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0 });
   
   const { isDark } = useTheme();
   const { state: orderState, updateOrderStatus } = useOrder();
@@ -356,9 +359,16 @@ export default function SiparislerPage() {
         }`}>
           <div className="flex flex-col lg:flex-row gap-3">
           {/* Takvimsel Gün Seçici */}
-          <div className="relative z-50">
+          <div className={`relative ${showCalendar ? 'z-[1000000]' : 'z-50'}`}>
             <button
-              onClick={() => setShowCalendar(!showCalendar)}
+              ref={calendarButtonRef}
+              onClick={() => {
+                if (calendarButtonRef.current) {
+                  const rect = calendarButtonRef.current.getBoundingClientRect();
+                  setCalendarPosition({ top: rect.bottom + 8, left: rect.left });
+                }
+                setShowCalendar(!showCalendar);
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all backdrop-blur-md ${
                 selectedDate
                   ? (isDark ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30' : 'bg-purple-100/80 text-purple-700 ring-1 ring-purple-200')
@@ -386,31 +396,31 @@ export default function SiparislerPage() {
               )}
             </button>
 
-            {/* Mini Calendar Dropdown - Glassmorphism */}
-            <AnimatePresence>
-              {showCalendar && (
-                <>
-                  {/* Backdrop */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setShowCalendar(false)}
-                    className="fixed inset-0 z-[90]"
-                    style={{ background: 'transparent' }}
-                  />
-                  
-                  {/* Calendar - Glassmorphism */}
-                  <motion.div
-                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                    transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
-                    className={`absolute top-full left-0 mt-2 rounded-2xl border backdrop-blur-xl shadow-2xl z-[100] w-72 ${
-                      isDark ? 'bg-neutral-900/90 border-white/10' : 'bg-white/90 border-white/50 shadow-[0_16px_48px_rgba(0,0,0,0.15)]'
-                    }`}
-                    onClick={(e) => e.stopPropagation()}
-                  >
+            {/* Mini Calendar Dropdown - Portal ile body'ye render */}
+            {isMounted && showCalendar && createPortal(
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowCalendar(false)}
+                  className="fixed inset-0 z-[999998]"
+                  style={{ background: 'rgba(0,0,0,0.3)' }}
+                />
+                
+                {/* Calendar - Fixed position at button */}
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  style={{ top: calendarPosition.top, left: calendarPosition.left }}
+                  className={`fixed rounded-2xl border backdrop-blur-xl shadow-2xl z-[999999] w-72 ${
+                    isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-white/50 shadow-[0_16px_48px_rgba(0,0,0,0.15)]'
+                  }`}
+                  onClick={(e) => e.stopPropagation()}
+                >
                     {/* Calendar Header */}
                     <div className={`px-4 py-3 border-b ${isDark ? 'border-white/10' : 'border-gray-100'}`}>
                       <div className="flex items-center justify-between">
@@ -534,9 +544,9 @@ export default function SiparislerPage() {
                       </div>
                     </div>
                   </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+              </>,
+              document.body
+            )}
           </div>
 
           {/* Ayırıcı */}
