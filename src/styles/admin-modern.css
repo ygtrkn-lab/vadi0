@@ -1,6 +1,6 @@
 /* Ultra-Modern Admin Panel Enhancements - Apple/Tesla/Linear Inspired */
 
-/* Smooth scrollbar - macOS style */
+/* Smooth scrollbar - Neon purple/blue style */
 .custom-scroll::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -11,22 +11,50 @@
 }
 
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.3);
+  background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
   border-radius: 10px;
   transition: background 0.2s;
 }
 
 .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.5);
+  background: linear-gradient(180deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
 }
 
-/* Dark mode scrollbar */
+/* Dark mode scrollbar - Neon glow */
 .dark .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, #a855f7 0%, #8b5cf6 50%, #6366f1 100%);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
 }
 
 .dark .custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, #c084fc 0%, #a78bfa 50%, #818cf8 100%);
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+}
+
+/* Global scrollbar override for admin */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a78bfa 0%, #818cf8 50%, #60a5fa 100%);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* Ripple effect on click */
