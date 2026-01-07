@@ -46,6 +46,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(true);
+  const [previousOrderCount, setPreviousOrderCount] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
   const { theme, toggleTheme, isDark } = useTheme();
@@ -54,11 +55,43 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   // Dinamik sipariş sayısı - bekleyen siparişler
   const pendingOrdersCount = useMemo(() => {
-    if (!orderState?.orders) return 0;
-    return orderState.orders.filter(o => 
+    if (!orderState?.orders) {
+      console.log('📦 Bildirimler: orderState.orders yok');
+      return 0;
+    }
+    const pending = orderState.orders.filter(o => 
       o.status === 'pending' || o.status === 'confirmed' || o.status === 'processing'
-    ).length;
+    );
+    console.log('📦 Bildirimler:', {
+      toplamSiparis: orderState.orders.length,
+      bekleyenSiparis: pending.length,
+      statüler: orderState.orders.map(o => o.status)
+    });
+    return pending.length;
   }, [orderState?.orders]);
+
+  // Yeni sipariş bildirimi - ses çal
+  useEffect(() => {
+    if (!isAuthenticated || !orderState?.orders) return;
+
+    const currentOrderCount = orderState.orders.length;
+    
+    // İlk yüklemede ses çalma, sadece sayıyı kaydet
+    if (previousOrderCount === 0) {
+      setPreviousOrderCount(currentOrderCount);
+      return;
+    }
+    
+    // Yeni sipariş geldiğinde ses çal
+    if (currentOrderCount > previousOrderCount) {
+      const audio = new Audio('/siparis-bildirim.wav');
+      audio.play().catch(err => console.error('Bildirim sesi çalınamadı:', err));
+      setPreviousOrderCount(currentOrderCount);
+    } else if (currentOrderCount !== previousOrderCount) {
+      // Sipariş sayısı değiştiyse sayıyı güncelle
+      setPreviousOrderCount(currentOrderCount);
+    }
+  }, [orderState?.orders?.length, previousOrderCount, isAuthenticated]);
 
   // Menu items with dynamic badge
   const menuItems = useMemo(() => [
@@ -510,12 +543,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
                       {/* Notifications List */}
                       <div className="max-h-[400px] overflow-y-auto">
-                        {pendingOrdersCount > 0 ? (
+                        {pendingOrdersCount > 0 && orderState?.orders ? (
                           <>
                             {orderState.orders
                               .filter(o => o.status === 'pending' || o.status === 'confirmed' || o.status === 'processing')
                               .slice(0, 10)
-                              .map((order, index) => (
+                              .map((order) => (
                                 <Link
                                   key={order.id}
                                   href="/yonetim/siparisler"

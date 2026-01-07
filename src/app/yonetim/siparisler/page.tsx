@@ -149,34 +149,12 @@ export default function SiparislerPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
-  const [previousOrderCount, setPreviousOrderCount] = useState(0);
   
   const { isDark } = useTheme();
   const { state: orderState, updateOrderStatus } = useOrder();
   const { getCustomerById } = useCustomer();
 
   const itemsPerPage = 10;
-
-  // Yeni sipariş bildirim sesi
-  useEffect(() => {
-    const currentOrderCount = orderState.orders.length;
-    
-    // İlk yüklemede ses çalma
-    if (previousOrderCount === 0) {
-      setPreviousOrderCount(currentOrderCount);
-      return;
-    }
-    
-    // Yeni sipariş geldiğinde ses çal
-    if (currentOrderCount > previousOrderCount) {
-      const audio = new Audio('/siparis-bildirim.wav');
-      audio.play().catch(err => console.error('Bildirim sesi çalınamadı:', err));
-      setPreviousOrderCount(currentOrderCount);
-    } else if (currentOrderCount < previousOrderCount) {
-      // Sipariş sayısı azaldıysa (silme durumu), sadece sayıyı güncelle
-      setPreviousOrderCount(currentOrderCount);
-    }
-  }, [orderState.orders.length, previousOrderCount]);
 
   // Filtreleme mantığı - Takvimsel gün seçimi ile
   const filteredOrders = useMemo(() => {
