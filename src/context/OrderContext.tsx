@@ -471,15 +471,17 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   // Load orders from API on mount
   useEffect(() => {
-    const loadOrders = async () => {
+    const loadOrders = async (silent = false) => {
       try {
-        console.log('📦 OrderContext: Siparişler yükleniyor...');
-        dispatch({ type: 'SET_LOADING', payload: true });
+        if (!silent) {
+          console.log('📦 OrderContext: Siparişler yükleniyor...');
+          dispatch({ type: 'SET_LOADING', payload: true });
+        }
         const response = await fetch('/api/orders');
-        console.log('📦 OrderContext: API yanıtı:', response.status);
+        if (!silent) console.log('📦 OrderContext: API yanıtı:', response.status);
         if (response.ok) {
           const data = await response.json();
-          console.log('📦 OrderContext: Yüklenen siparişler:', data.orders?.length || 0);
+          if (!silent) console.log('📦 OrderContext: Yüklenen siparişler:', data.orders?.length || 0);
           dispatch({ type: 'LOAD_ORDERS', payload: data.orders || [] });
           
           // Set last order number
@@ -492,18 +494,18 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('📦 OrderContext: Yükleme hatası:', error);
-        dispatch({ type: 'SET_ERROR', payload: 'Siparişler yüklenemedi' });
+        if (!silent) dispatch({ type: 'SET_ERROR', payload: 'Siparişler yüklenemedi' });
       } finally {
-        dispatch({ type: 'SET_LOADING', payload: false });
+        if (!silent) dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
 
-    loadOrders();
+    loadOrders(); // İlk yükleme (loading göster)
     
-    // Polling: Her 10 saniyede bir siparişleri güncelle (WhatsApp Web gibi)
+    // Polling: Her 10 saniyede bir siparişleri güncelle (sessiz - loading gösterme)
     const pollInterval = setInterval(() => {
-      console.log('🔄 OrderContext: Siparişler güncelleniyor (polling)...');
-      loadOrders();
+      console.log('🔄 Arka plan güncelleme...');
+      loadOrders(true); // silent=true, loading state değişmez
     }, 10000); // 10 saniye
 
     // Cleanup
