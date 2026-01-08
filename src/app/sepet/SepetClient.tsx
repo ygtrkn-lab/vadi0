@@ -6,7 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useCustomer, Address } from '@/context/CustomerContext';
 import { useOrder } from '@/context/OrderContext';
 import { useAnalytics } from '@/context/AnalyticsContext';
-import { Header, Footer } from '@/components';
+import { Header, Footer, MobileNavBar } from '@/components';
 import { getMediaType } from '@/components/admin/MediaUpload';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -2053,7 +2053,6 @@ export default function SepetClient() {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-5"
               >
-                {console.log('Recipient adımı render ediliyor')}
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-[#e05a4c] to-[#ff7961] bg-clip-text text-transparent mb-2">Çiçekler Nereye Gitsin?</h2>
                   <p className="text-sm text-gray-500">Sevdiklerinize özel anlar yaratmak için sadece bir adım kaldı</p>
@@ -2388,6 +2387,7 @@ export default function SepetClient() {
                       <AnimatePresence>
                         {selectedLocation && (
                           <motion.div
+                            id="neighborhood"
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}

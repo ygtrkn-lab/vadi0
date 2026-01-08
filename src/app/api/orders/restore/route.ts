@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
+import supabaseAdmin from '@/lib/supabase/admin';
 
 // POST - Restore a deleted order
 export async function POST(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the deleted order
-    const { data: deletedOrder, error: fetchError } = await supabase
+    const { data: deletedOrder, error: fetchError } = await supabaseAdmin
       .from('deleted_orders')
       .select('*')
       .eq('id', deletedOrderId)
@@ -20,17 +20,21 @@ export async function POST(request: NextRequest) {
 
     if (fetchError || !deletedOrder) {
       console.error('Error fetching deleted order:', fetchError);
-      return NextResponse.json({ error: 'Deleted order not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Deleted order not found', details: fetchError?.message }, { status: 404 });
     }
 
     // Restore the order to orders table
     const orderData = deletedOrder.order_data;
     
-    // Insert back to orders table
-    const { data: restoredOrder, error: insertError } = await supabase
+    if (!orderData) {
+      return NextResponse.json({ error: 'Order data is missing' }, { status: 400 });
+    }
+
+    // Insert back to orders table with proper data structure
+    const { data: restoredOrder, error: insertError } = await supabaseAdmin
       .from('orders')
       .insert({
-        ...orderData,
+        ...(typeof orderData === 'string' ? JSON.parse(orderData) : orderData),
         updated_at: new Date().toISOString(),
       })
       .select()
@@ -38,11 +42,14 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error('Error restoring order:', insertError);
-      return NextResponse.json({ error: 'Failed to restore order' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Failed to restore order', 
+        details: insertError.message 
+      }, { status: 500 });
     }
 
     // Mark the deleted_orders record as restored
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
       .from('deleted_orders')
       .update({
         is_restored: true,
@@ -62,6 +69,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error in POST /api/orders/restore:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal server error', 
+      details: error instanceof Error ? error.message : String(error)
+    }, { status: 500 });
   }
 }
