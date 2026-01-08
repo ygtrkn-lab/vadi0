@@ -444,7 +444,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE - Delete order (admin only)
+// DELETE - Delete order (admin only) - with backup
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -457,6 +457,34 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
+    // First, fetch the order to backup
+    const { data: orderToDelete, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (fetchError || !orderToDelete) {
+      console.error('Error fetching order for backup:', fetchError);
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    
+    // Backup to deleted_orders table
+    const { error: backupError } = await supabase
+      .from('deleted_orders')
+      .insert({
+        original_id: orderToDelete.id,
+        order_number: orderToDelete.order_number,
+        order_data: orderToDelete, // Store entire order as JSON
+        deleted_at: new Date().toISOString(),
+      });
+    
+    if (backupError) {
+      console.error('Error backing up order:', backupError);
+      // Continue with deletion even if backup fails, but log it
+    }
+    
+    // Now delete the order
     const { error } = await supabase
       .from('orders')
       .delete()
@@ -467,7 +495,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to delete order' }, { status: 500 });
     }
     
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, backedUp: !backupError });
   } catch (error) {
     console.error('Error in DELETE /api/orders:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
