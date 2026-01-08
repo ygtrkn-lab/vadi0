@@ -70,6 +70,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Geçersiz tarih formatı' }, { status: 400 });
     }
 
+    // Önce aynı tarihte active kayıt olup olmadığını kontrol et
+    const { data: existingData, error: existingError } = await supabaseAdmin
+      .from('delivery_off_days')
+      .select('id, is_active')
+      .eq('off_date', offDate)
+      .eq('is_active', true);
+
+    if (!existingError && existingData && existingData.length > 0) {
+      return NextResponse.json(
+        { error: 'Bu tarih için zaten bir off günü kaydı mevcut' },
+        { status: 409 }
+      );
+    }
+
+    // Aynı tarihte inactive kayıt varsa sil
+    await supabaseAdmin
+      .from('delivery_off_days')
+      .delete()
+      .eq('off_date', offDate)
+      .eq('is_active', false);
+
     const { data, error } = await supabaseAdmin
       .from('delivery_off_days')
       .insert([
@@ -84,9 +105,18 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error inserting delivery off day:', error);
+      
+      // Unique constraint error'ü daha açık yap
+      if (error.code === '23505') {
+        return NextResponse.json(
+          { error: 'Bu tarih için zaten bir off günü kaydı mevcut. Lütfen başka bir tarih seçin.' },
+          { status: 409 }
+        );
+      }
+      
       return NextResponse.json(
         { error: 'Off günü eklenemedi', details: error.message },
-        { status: error.code === '23505' ? 409 : 500 }
+        { status: 500 }
       );
     }
 

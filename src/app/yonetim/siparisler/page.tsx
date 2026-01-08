@@ -318,32 +318,31 @@ export default function SiparislerPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Glassmorphism Header */}
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-4 lg:px-0">{/* Glassmorphism Header */}
       <FadeContent direction="up" delay={0}>
-        <div className={`p-6 rounded-3xl backdrop-blur-xl ${
+        <div className={`p-3 sm:p-6 rounded-2xl sm:rounded-3xl backdrop-blur-xl ${
           isDark 
             ? 'bg-white/[0.03] border border-white/[0.08]' 
             : 'bg-white/60 border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.06)]'
         }`}>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-baseline gap-4">
-              <h1 className={`text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-baseline gap-3">
+              <h1 className={`text-xl sm:text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 Siparişler
               </h1>
-              <span className={`text-lg font-medium tabular-nums ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+              <span className={`text-sm sm:text-lg font-medium tabular-nums ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
                 {filteredOrders.length}
               </span>
             </div>
             
             {/* Ar-Ge Stats - Glassmorphism Pills */}
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl backdrop-blur-md ${
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+              <div className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl backdrop-blur-md flex-shrink-0 ${
                 isDark ? 'bg-emerald-500/10 ring-1 ring-emerald-500/20' : 'bg-emerald-50/80 ring-1 ring-emerald-200/50'
               }`}>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-emerald-400/70' : 'text-emerald-600/70'}`}>Satış</span>
-                <span className={`text-base font-bold tabular-nums ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className={`text-[10px] sm:text-xs font-medium uppercase tracking-wider ${isDark ? 'text-emerald-400/70' : 'text-emerald-600/70'}`}>Satış</span>
+                <span className={`text-xs sm:text-base font-bold tabular-nums ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
                   {formatPrice(stats.totalSales)}
                 </span>
               </div>
@@ -351,15 +350,15 @@ export default function SiparislerPage() {
               {stats.totalFailed > 0 && (
                 <button
                   onClick={() => { setSelectedStatus('payment_failed'); setCurrentPage(1); }}
-                  className={`flex items-center gap-2.5 px-4 py-2 rounded-2xl backdrop-blur-md transition-all cursor-pointer hover:scale-105 ${
+                  className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl backdrop-blur-md transition-all cursor-pointer active:scale-95 flex-shrink-0 ${
                     selectedStatus === 'payment_failed'
                       ? (isDark ? 'bg-red-500/20 ring-2 ring-red-500/40' : 'bg-red-100 ring-2 ring-red-300')
                       : (isDark ? 'bg-red-500/10 ring-1 ring-red-500/20 hover:bg-red-500/15' : 'bg-red-50/80 ring-1 ring-red-200/50 hover:bg-red-100')
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-red-400/70' : 'text-red-600/70'}`}>Başarısız</span>
-                  <span className={`text-base font-bold tabular-nums ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className={`text-[10px] sm:text-xs font-medium uppercase tracking-wider ${isDark ? 'text-red-400/70' : 'text-red-600/70'}`}>Başarısız</span>
+                  <span className={`text-xs sm:text-base font-bold tabular-nums ${isDark ? 'text-red-300' : 'text-red-700'}`}>
                     {stats.totalFailed}
                   </span>
                 </button>
@@ -367,27 +366,27 @@ export default function SiparislerPage() {
 
               <Link
                 href="/yonetim/siparisler/silinen"
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl backdrop-blur-md transition-all ${
+                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl backdrop-blur-md transition-all flex-shrink-0 ${
                   isDark 
                     ? 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 ring-1 ring-white/10' 
                     : 'bg-black/5 text-gray-400 hover:text-gray-900 hover:bg-black/10 ring-1 ring-black/5'
                 }`}
                 title="Silinen Siparişler"
               >
-                <HiOutlineTrash className="w-5 h-5" />
-                <span className="text-xs font-medium hidden sm:inline">Silinen</span>
+                <HiOutlineTrash className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-[10px] sm:text-xs font-medium hidden sm:inline">Silinen</span>
               </Link>
 
               <button
                 onClick={() => window.location.reload()}
-                className={`p-2.5 rounded-xl backdrop-blur-md transition-all ${
+                className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl backdrop-blur-md transition-all flex-shrink-0 ${
                   isDark 
                     ? 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 ring-1 ring-white/10' 
                     : 'bg-black/5 text-gray-400 hover:text-gray-900 hover:bg-black/10 ring-1 ring-black/5'
                 }`}
                 title="Yenile"
               >
-                <HiOutlineRefresh className="w-5 h-5" />
+                <HiOutlineRefresh className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
@@ -396,12 +395,12 @@ export default function SiparislerPage() {
 
       {/* Glassmorphism Filter Bar */}
       <FadeContent direction="up" delay={0.1}>
-        <div className={`p-4 rounded-2xl backdrop-blur-xl ${
+        <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl backdrop-blur-xl ${
           isDark 
             ? 'bg-white/[0.02] border border-white/[0.06]' 
             : 'bg-white/50 border border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
         }`}>
-          <div className="flex flex-col lg:flex-row gap-3">
+          <div className="flex flex-col gap-2.5">
           {/* Takvimsel Gün Seçici */}
           <div className={`relative ${showCalendar ? 'z-[1000000]' : 'z-50'}`}>
             <button
@@ -413,14 +412,14 @@ export default function SiparislerPage() {
                 }
                 setShowCalendar(!showCalendar);
               }}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all backdrop-blur-md ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm transition-all backdrop-blur-md ${
                 selectedDate
                   ? (isDark ? 'bg-purple-500/20 text-purple-300 ring-1 ring-purple-500/30' : 'bg-purple-100/80 text-purple-700 ring-1 ring-purple-200')
                   : (isDark ? 'bg-white/5 text-neutral-300 hover:bg-white/10 ring-1 ring-white/10' : 'bg-black/5 text-gray-700 hover:bg-black/10 ring-1 ring-black/5')
               }`}
             >
-              <HiOutlineCalendar className="w-4 h-4" />
-              <span className="font-medium">
+              <HiOutlineCalendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="font-medium text-xs sm:text-sm">
                 {selectedDate 
                   ? `${selectedDate.getDate()} ${TURKISH_MONTHS[selectedDate.getMonth()]}` 
                   : 'Tüm Günler'
@@ -714,7 +713,7 @@ export default function SiparislerPage() {
                 </motion.div>
 
                 {/* Orders Grid for this date */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 grid-auto-rows-fr">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5 grid-auto-rows-fr">
                   {orders.map((order, index) => {
                     const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
               const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
@@ -730,7 +729,7 @@ export default function SiparislerPage() {
                   className="cursor-pointer group h-full"
                 >
                   {/* Premium Card - Modern Design System */}
-                  <div className={`relative overflow-hidden rounded-[24px] transition-all duration-700 ease-out backdrop-blur-2xl group-hover:-translate-y-1 h-full flex flex-col ${
+                  <div className={`relative overflow-hidden rounded-2xl sm:rounded-[24px] transition-all duration-700 ease-out backdrop-blur-2xl active:scale-[0.98] sm:group-hover:-translate-y-1 h-full flex flex-col ${
                     isDark 
                       ? 'bg-gradient-to-br from-white/[0.07] to-white/[0.02] hover:from-white/[0.12] hover:to-white/[0.04] border border-white/[0.12] hover:border-white/[0.2] shadow-[0_4px_24px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.4)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_4px_12px_rgba(0,0,0,0.3)]' 
                       : 'bg-gradient-to-br from-white via-white/95 to-white/80 hover:from-white hover:to-white/95 border border-black/[0.06] hover:border-black/[0.12] shadow-[0_2px_16px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]'
@@ -756,33 +755,33 @@ export default function SiparislerPage() {
                       'shadow-[inset_0_0_20px_rgba(156,163,175,0.15)]'
                     }`} />
 
-                    <div className="relative p-6 flex-1 flex flex-col">
+                    <div className="relative p-3 sm:p-6 flex-1 flex flex-col">
                       {/* Delete Button - Top Right Corner */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setDeleteConfirmOrder(order);
                         }}
-                        className={`absolute top-3 right-3 p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 ${
+                        className={`absolute top-2 right-2 sm:top-3 sm:right-3 p-1.5 sm:p-2 rounded-lg sm:rounded-xl opacity-0 sm:group-hover:opacity-100 transition-all duration-300 z-10 ${
                           isDark 
                             ? 'bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300' 
                             : 'bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-600'
                         }`}
                         title="Siparişi Sil"
                       >
-                        <HiOutlineTrash className="w-4 h-4" />
+                        <HiOutlineTrash className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
 
                       {/* Header: Order Number + Status + Order Date */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex flex-col gap-2.5">
+                      <div className="flex items-start justify-between mb-3 sm:mb-4">
+                        <div className="flex flex-col gap-1.5 sm:gap-2.5">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[22px] font-semibold tracking-[-0.02em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            <span className={`text-base sm:text-[22px] font-semibold tracking-[-0.02em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
                               #{order.orderNumber}
                             </span>
                           </div>
-                          <div className="flex flex-col gap-1.5">
-                            <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10.5px] font-semibold uppercase tracking-[0.08em] backdrop-blur-xl transition-all duration-300 ${
+                          <div className="flex flex-col gap-1 sm:gap-1.5">
+                            <div className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10.5px] font-semibold uppercase tracking-[0.08em] backdrop-blur-xl transition-all duration-300 ${
                               order.status === 'delivered' ? (isDark ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-300 ring-1 ring-emerald-400/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'bg-gradient-to-r from-emerald-50 to-emerald-100/80 text-emerald-700 ring-1 ring-emerald-200/50 shadow-sm') :
                               order.status === 'shipped' ? (isDark ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-300 ring-1 ring-blue-400/30 shadow-[0_0_12px_rgba(59,130,246,0.15)]' : 'bg-gradient-to-r from-blue-50 to-blue-100/80 text-blue-700 ring-1 ring-blue-200/50 shadow-sm') :
                               order.status === 'processing' || order.status === 'confirmed' ? (isDark ? 'bg-gradient-to-r from-purple-500/20 to-purple-600/20 text-purple-300 ring-1 ring-purple-400/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' : 'bg-gradient-to-r from-purple-50 to-purple-100/80 text-purple-700 ring-1 ring-purple-200/50 shadow-sm') :
@@ -800,22 +799,22 @@ export default function SiparislerPage() {
                               }`} />
                               {statusConfig[order.status]?.label || 'Bilinmiyor'}
                             </div>
-                            <p className={`text-[11px] font-medium flex items-center gap-1.5 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
-                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <p className={`text-[10px] sm:text-[11px] font-medium flex items-center gap-1 sm:gap-1.5 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
                               {formatOrderDate(order.createdAt)}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right flex flex-col items-end gap-1.5">
-                          <span className={`text-[26px] font-bold tabular-nums tracking-[-0.02em] ${
+                        <div className="text-right flex flex-col items-end gap-1">
+                          <span className={`text-lg sm:text-[26px] font-bold tabular-nums tracking-[-0.02em] ${
                             isDark ? 'bg-gradient-to-br from-white to-white/80 bg-clip-text text-transparent' : 'text-gray-900'
                           }`}>
                             {formatPrice(order.total)}
                           </span>
                           {paymentStatus === 'paid' && (
-                            <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide ${
+                            <div className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[8px] sm:text-[10px] font-semibold uppercase tracking-wide ${
                               isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
                             }`}>
                               <span className="text-[8px]">✓</span> Ödendi
@@ -825,21 +824,21 @@ export default function SiparislerPage() {
                       </div>
 
                       {/* Customer Info */}
-                      <div className={`flex items-center gap-3.5 p-4 rounded-[18px] mb-4 backdrop-blur-sm transition-all duration-300 ${
+                      <div className={`flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-4 rounded-xl sm:rounded-[18px] mb-3 sm:mb-4 backdrop-blur-sm transition-all duration-300 ${
                         isDark ? 'bg-white/[0.04] hover:bg-white/[0.06] ring-1 ring-white/[0.06]' : 'bg-black/[0.02] hover:bg-black/[0.03] ring-1 ring-black/[0.04]'
                       }`}>
-                        <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center text-[15px] font-bold bg-gradient-to-br shadow-lg transition-transform group-hover:scale-105 ${
+                        <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-[14px] flex items-center justify-center text-xs sm:text-[15px] font-bold bg-gradient-to-br shadow-lg transition-transform group-hover:scale-105 ${
                           isDark ? 'from-purple-500/40 via-purple-400/30 to-pink-500/40 text-white shadow-purple-500/20' : 'from-purple-100 via-purple-50 to-pink-100 text-purple-700 shadow-purple-200/50'
                         }`}>
                           {displayCustomerName.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-[14px] font-semibold truncate tracking-[-0.01em] mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          <p className={`text-xs sm:text-[14px] font-semibold truncate tracking-[-0.01em] mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                             {displayCustomerName}
                           </p>
                           {order.delivery?.deliveryDate && (
-                            <p className={`text-[11.5px] font-medium flex items-center gap-1.5 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
-                              <span className="text-[13px]">📅</span>
+                            <p className={`text-[10px] sm:text-[11.5px] font-medium flex items-center gap-1 sm:gap-1.5 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                              <span className="text-xs sm:text-[13px]">📅</span>
                               {formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}
                             </p>
                           )}
@@ -847,14 +846,14 @@ export default function SiparislerPage() {
                       </div>
 
                       {/* Products Preview */}
-                      <div className="flex items-center gap-4 flex-1">
-                        <div className="flex -space-x-4">
+                      <div className="flex items-center gap-2.5 sm:gap-4 flex-1">
+                        <div className="flex -space-x-3 sm:-space-x-4">
                           {order.products.slice(0, 3).map((p, idx) => (
                             <motion.div
                               key={idx}
                               whileHover={{ scale: 1.15, zIndex: 10 }}
                               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                              className={`relative w-16 h-16 rounded-[16px] overflow-hidden ring-[3px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300 ${
+                              className={`relative w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[16px] overflow-hidden ring-2 sm:ring-[3px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300 ${
                                 isDark ? 'ring-black/40 hover:ring-white/20' : 'ring-white hover:ring-black/10'
                               }`}
                               style={{ zIndex: 3 - idx }}
@@ -882,7 +881,7 @@ export default function SiparislerPage() {
                             </motion.div>
                           ))}
                           {order.products.length > 3 && (
-                            <div className={`w-16 h-16 rounded-[16px] flex items-center justify-center text-[12px] font-bold ring-[3px] backdrop-blur-xl shadow-lg transition-all duration-300 ${
+                            <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[16px] flex items-center justify-center text-[10px] sm:text-[12px] font-bold ring-2 sm:ring-[3px] backdrop-blur-xl shadow-lg transition-all duration-300 ${
                               isDark ? 'bg-gradient-to-br from-white/15 to-white/5 text-white ring-white/15 hover:ring-white/25' : 'bg-gradient-to-br from-black/8 to-black/4 text-gray-700 ring-white hover:ring-black/15'
                             }`}>
                               +{order.products.length - 3}
@@ -890,11 +889,11 @@ export default function SiparislerPage() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-[15px] font-semibold truncate tracking-[-0.01em] mb-1 ${isDark ? 'text-white/90' : 'text-gray-800'}`}>
+                          <p className={`text-xs sm:text-[15px] font-semibold truncate tracking-[-0.01em] mb-0.5 sm:mb-1 ${isDark ? 'text-white/90' : 'text-gray-800'}`}>
                             {order.products[0]?.name}
                           </p>
                           {order.products.length > 1 && (
-                            <p className={`text-[12px] font-medium ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                            <p className={`text-[10px] sm:text-[12px] font-medium ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
                               +{order.products.length - 1} ürün daha
                             </p>
                           )}
@@ -1036,7 +1035,7 @@ export default function SiparislerPage() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 40, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 320, damping: 34 }}
-              className={`absolute inset-4 lg:inset-10 rounded-3xl overflow-hidden flex flex-col backdrop-blur-2xl ${
+              className={`absolute inset-2 sm:inset-4 lg:inset-10 rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col backdrop-blur-2xl ${
                 isDark 
                   ? 'bg-neutral-950/95 border border-neutral-800/50 shadow-2xl shadow-purple-500/10' 
                   : 'bg-white/95 border border-gray-200/50 shadow-2xl shadow-gray-900/20'
@@ -1048,14 +1047,14 @@ export default function SiparislerPage() {
               }}
             >
               {/* Header bar */}
-              <div className={`flex items-center justify-between px-6 py-4 border-b backdrop-blur-sm relative ${
+              <div className={`flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b backdrop-blur-sm relative ${
                 isDark ? 'border-neutral-800/50 bg-gradient-to-r from-neutral-950/50 via-neutral-900/30 to-neutral-950/50' : 'border-gray-200/50 bg-gradient-to-r from-white/50 via-gray-50/30 to-white/50'
               }`}
               style={{
                 boxShadow: isDark ? '0 1px 20px rgba(168, 85, 247, 0.1)' : '0 1px 15px rgba(0, 0, 0, 0.05)'
               }}>
-                <div className="flex items-center gap-4">
-                  <div className="min-w-12 h-12 px-3 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#e05a4c] to-[#f5a524] text-white font-bold text-lg whitespace-nowrap relative overflow-hidden group"
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="min-w-10 sm:min-w-12 h-10 sm:h-12 px-2 sm:px-3 rounded-xl sm:rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#e05a4c] to-[#f5a524] text-white font-bold text-base sm:text-lg whitespace-nowrap relative overflow-hidden group"
                     style={{
                       boxShadow: '0 4px 20px rgba(224, 90, 76, 0.4), 0 0 40px rgba(245, 165, 36, 0.2)'
                     }}>
@@ -1063,31 +1062,31 @@ export default function SiparislerPage() {
                     <span className="relative z-10">#{selectedOrder.orderNumber}</span>
                   </div>
                   <div>
-                    <div className="flex items-center gap-3">
-                      <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Sipariş Detayı</h3>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <h3 className={`text-lg sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Sipariş Detayı</h3>
                       <StatusBadge
                         status={statusConfig[selectedOrder.status]?.variant || 'info'}
                         text={statusConfig[selectedOrder.status]?.label || selectedOrder.status || 'Bilinmiyor'}
                         pulse={selectedOrder.status === 'pending'}
                       />
                     </div>
-                    <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Oluşturulma: {formatDate(selectedOrder.createdAt)}</p>
+                    <p className={`text-xs sm:text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Oluşturulma: {formatDate(selectedOrder.createdAt)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <button
                     onClick={() => { if (printRef.current) openPrintableWindow(printRef.current); }}
-                    className={`px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 ${
+                    className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2 transition-all duration-300 ${
                       isDark 
                         ? 'bg-neutral-900/80 text-neutral-200 hover:bg-neutral-800 hover:shadow-lg hover:shadow-neutral-700/20 hover:-translate-y-0.5' 
                         : 'bg-gray-100/80 text-gray-800 hover:bg-gray-200 hover:shadow-lg hover:shadow-gray-400/20 hover:-translate-y-0.5'
                     }`}
                   >
-                    <HiOutlinePrinter className="w-4 h-4" /> Yazdır
+                    <HiOutlinePrinter className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Yazdır</span>
                   </button>
                   <button
                     onClick={() => { if (printRef.current) downloadPdfClientSide(printRef.current, `siparis-${selectedOrder?.orderNumber || 'order'}.pdf`); }}
-                    className={`px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all duration-300 ${
+                    className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1 sm:gap-2 transition-all duration-300 ${
                       isDark 
                         ? 'bg-neutral-900/80 text-neutral-200 hover:bg-neutral-800 hover:shadow-lg hover:shadow-neutral-700/20 hover:-translate-y-0.5' 
                         : 'bg-gray-100/80 text-gray-800 hover:bg-gray-200 hover:shadow-lg hover:shadow-gray-400/20 hover:-translate-y-0.5'
@@ -1112,8 +1111,8 @@ export default function SiparislerPage() {
               <div className="flex-1 overflow-auto">
                 <div className="grid lg:grid-cols-3 h-full divide-y lg:divide-y-0 lg:divide-x divide-neutral-800/40">
                   {/* Left column: customer + delivery + payment */}
-                  <div className={`p-6 space-y-4 ${isDark ? 'bg-neutral-950' : 'bg-gray-50'}`}>
-                    <div className={`p-4 rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
+                  <div className={`p-3 sm:p-6 space-y-3 sm:space-y-4 ${isDark ? 'bg-neutral-950' : 'bg-gray-50'}`}>
+                    <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl transition-all duration-300 hover:scale-[1.02] ${
                       isDark 
                         ? 'bg-neutral-900/60 backdrop-blur-sm border border-neutral-800/50 hover:border-neutral-700 hover:shadow-xl hover:shadow-purple-500/5' 
                         : 'bg-white/80 backdrop-blur-sm border border-gray-200/50 hover:border-gray-300 hover:shadow-xl hover:shadow-gray-400/10'

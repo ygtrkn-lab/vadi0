@@ -169,6 +169,58 @@ export default function DeliveryOffDaysPage() {
     }
   };
 
+  const cleanupDuplicates = async () => {
+    const confirm = window.confirm(
+      'Veritabanında bozuk/duplicate kayıtlar var mı diye kontrol edilecek ve temizlenecek. Devam etmek istiyor musunuz?'
+    );
+    if (!confirm) return;
+
+    setCreating(true);
+    try {
+      // Tüm kayıtları al (inactive dahil)
+      const response = await fetch('/api/delivery-off-days?all=true&includePast=true', { cache: 'no-store' });
+      const data = await response.json();
+      const allDays = Array.isArray(data?.offDays) ? data.offDays : [];
+
+      // Aynı tarihte birden fazla kayıt var mı kontrol et
+      const dateMap = new Map();
+      let deletedCount = 0;
+
+      for (const day of allDays) {
+        if (!dateMap.has(day.offDate)) {
+          dateMap.set(day.offDate, []);
+        }
+        dateMap.get(day.offDate).push(day);
+      }
+
+      // Duplicate'leri sil
+      for (const [date, daysForDate] of dateMap) {
+        if (daysForDate.length > 1) {
+          console.log(`Duplicate tarih: ${date}, ${daysForDate.length} kayıt`);
+          // Active olmayan olanları sil (en yeni active olanı koru)
+          const inactive = daysForDate.filter(d => !d.isActive);
+          for (const day of inactive) {
+            await fetch(`/api/delivery-off-days/${day.id}`, { method: 'DELETE' });
+            deletedCount++;
+          }
+        }
+      }
+
+      if (deletedCount > 0) {
+        showToast(`${deletedCount} bozuk kayıt temizlendi`, 'success');
+      } else {
+        showToast('Temizlenecek kayıt yok', 'success');
+      }
+      
+      loadOffDays();
+    } catch (error) {
+      console.error(error);
+      showToast('Temizleme işlemi başarısız oldu', 'error');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <FadeContent direction="up" delay={0}>
@@ -266,6 +318,21 @@ export default function DeliveryOffDaysPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={cleanupDuplicates}
+                disabled={creating}
+                className={`inline-flex items-center gap-1.5 text-xs sm:text-sm px-3 py-1.5 rounded-xl border font-medium transition-colors ${
+                  creating
+                    ? 'opacity-60 cursor-not-allowed'
+                    : isDark
+                    ? 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
+                    : 'border-amber-300 text-amber-700 hover:bg-amber-50'
+                }`}
+                title="Duplicate kayıtları temizle"
+              >
+                <HiOutlineRefresh className="w-4 h-4" />
+                <span className="hidden sm:inline">Temizle</span>
+              </button>
               <label className={`flex items-center gap-2 text-xs sm:text-sm px-3 py-1.5 rounded-full border cursor-pointer ${
                 isDark ? 'border-neutral-800 text-neutral-300' : 'border-gray-200 text-gray-600'
               }`}>
