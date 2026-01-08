@@ -6,7 +6,9 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useTheme } from '@/app/yonetim/ThemeContext';
 import ImageUpload from '@/components/admin/ImageUpload';
+import { getMediaType } from '@/components/admin/MediaUpload';
 import { resizeImageBeforeUpload } from '@/lib/image-resize';
+import { HiOutlineVideoCamera, HiOutlinePlay } from 'react-icons/hi';
 
 type CategoryOption = {
   id?: string | number;
@@ -157,15 +159,41 @@ export default function YeniUrunPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+
+    // Validate file types
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const validVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+    
+    if (!validImageTypes.includes(file.type) && !validVideoTypes.includes(file.type)) {
+      alert('Geçersiz dosya tipi. Görsel veya video dosyası seçin.');
+      return;
+    }
+
+    // Validate file size
+    const maxSize = isVideo ? 25 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`Dosya boyutu ${isVideo ? '25MB' : '5MB'}'dan büyük olamaz.`);
+      return;
+    }
+
     setGalleryUploading(true);
     try {
-      // Client-side resize - Cloudinary kredisi tasarrufu
-      const resizedFile = await resizeImageBeforeUpload(file);
+      let fileToUpload: File | Blob = file;
+      
+      // Client-side resize - sadece görsel için
+      if (isImage) {
+        fileToUpload = await resizeImageBeforeUpload(file);
+      }
       
       const formDataUpload = new FormData();
-      formDataUpload.append('file', resizedFile);
+      formDataUpload.append('file', fileToUpload);
 
-      const res = await fetch('/api/upload', {
+      // Video için farklı endpoint
+      const endpoint = isVideo ? '/api/upload/video' : '/api/upload';
+      
+      const res = await fetch(endpoint, {
         method: 'POST',
         body: formDataUpload,
       });
@@ -518,11 +546,11 @@ export default function YeniUrunPage() {
                   />
                 </div>
 
-                {/* Gallery */}
+                {/* Gallery - Image & Video Support */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className={`text-sm font-medium ${labelClasses}`}>
-                      Galeri ({formData.gallery.length} görsel)
+                      Galeri ({formData.gallery.length} medya)
                     </label>
                     <button
                       type="button"
@@ -530,42 +558,77 @@ export default function YeniUrunPage() {
                       disabled={galleryUploading}
                       className="text-sm text-primary-500 hover:text-primary-400 font-medium disabled:opacity-50"
                     >
-                      {galleryUploading ? 'Yükleniyor...' : '+ Ekle'}
+                      {galleryUploading ? 'Yükleniyor...' : '+ Görsel/Video Ekle'}
                     </button>
                     <input
                       ref={galleryInputRef}
                       type="file"
-                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      accept="image/jpeg,image/png,image/gif,image/webp,video/mp4,video/webm,video/quicktime"
                       onChange={handleGalleryUpload}
                       className="hidden"
                     />
                   </div>
+                  <p className={`text-xs mb-3 ${textMutedClasses}`}>
+                    💡 Görsel (max 5MB) veya Video (MP4, WebM, MOV - max 25MB) yükleyebilirsiniz
+                  </p>
                   {formData.gallery.length > 0 ? (
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      {formData.gallery.map((img, index) => (
-                        <div key={index} className={`relative aspect-square rounded-lg overflow-hidden group ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
-                          <img
-                            src={img}
-                            alt={`Galeri ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = '/placeholder.svg';
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeGalleryImage(index)}
-                            className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full 
-                              opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                      {formData.gallery.map((mediaUrl, index) => {
+                        const mediaType = getMediaType(mediaUrl);
+                        const isVideo = mediaType === 'video';
+                        
+                        return (
+                          <div key={index} className={`relative aspect-square rounded-lg overflow-hidden group ${isDark ? 'bg-neutral-800' : 'bg-slate-100'}`}>
+                            {isVideo ? (
+                              <div className="relative w-full h-full">
+                                <video
+                                  src={mediaUrl}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  loop
+                                  playsInline
+                                  onMouseEnter={(e) => e.currentTarget.play()}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.pause();
+                                    e.currentTarget.currentTime = 0;
+                                  }}
+                                />
+                                {/* Video indicator */}
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity">
+                                  <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
+                                    <HiOutlinePlay className="w-4 h-4 text-white ml-0.5" />
+                                  </div>
+                                </div>
+                                {/* Video badge */}
+                                <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-purple-500 text-white text-[10px] font-medium flex items-center gap-0.5">
+                                  <HiOutlineVideoCamera className="w-2.5 h-2.5" />
+                                </div>
+                              </div>
+                            ) : (
+                              <img
+                                src={mediaUrl}
+                                alt={`Galeri ${index + 1}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/placeholder.svg';
+                                }}
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeGalleryImage(index)}
+                              className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full 
+                                opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
-                    <p className={`text-sm ${textMutedClasses}`}>Henüz galeri görseli eklenmemiş</p>
+                    <p className={`text-sm ${textMutedClasses}`}>Henüz galeri görseli/videosu eklenmemiş</p>
                   )}
                 </div>
               </div>
