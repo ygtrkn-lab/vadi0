@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
@@ -13,10 +13,8 @@ import {
   HiOutlineSave,
   HiOutlineCheck,
   HiOutlineX,
-  HiOutlineMenuAlt4,
   HiOutlineEye,
   HiOutlineExternalLink,
-  HiOutlineTrash,
   HiOutlinePhotograph,
 } from 'react-icons/hi';
 import { GripVertical, Percent, Star, ArrowUpDown } from 'lucide-react';

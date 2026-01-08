@@ -347,6 +347,17 @@ export default function AyarlarPage() {
           </div>
           <div className="flex items-center gap-2">
             <Link
+              href="/yonetim/kampanya-siralama"
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
+                isDark
+                  ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <HiOutlineColorSwatch className="w-4 h-4" />
+              <span className="hidden sm:inline">Kampanya Sıralaması</span>
+            </Link>
+            <Link
               href="/yonetim/ayarlar/off-gunleri"
               className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
                 isDark
