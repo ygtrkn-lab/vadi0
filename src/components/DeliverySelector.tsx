@@ -57,6 +57,7 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   const [step, setStep] = useState<'region' | 'district'>('region');
   const selectorRef = useRef<HTMLDivElement | null>(null);
   const lastOpenSignal = useRef<number | null>(null);
+  const [disabledDistricts, setDisabledDistricts] = useState<string[]>(DEFAULT_DISABLED_DISTRICTS);
 
   // Generate next 7 days starting from tomorrow (no same-day delivery)
   const generateDates = () => {
@@ -104,8 +105,9 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   );
 
   const currentRegion = ISTANBUL_REGIONS.find(r => r.id === selectedRegion);
-// Geçici olarak hizmet verilmeyen ilçeler
-const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
+// Dinamik kapalı ilçeler (admin ayarlarından)
+const DEFAULT_DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
+import { useMemo } from 'react';
 
   const filteredDistricts = currentRegion?.districts.filter(d =>
     d.toLowerCase().includes(searchTerm.toLowerCase())
@@ -133,6 +135,24 @@ const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
       hasNotified.current = false;
     }
   }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot, onDeliveryComplete]);
+
+  // Load dynamic delivery settings (disabled districts)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/settings?category=delivery', { cache: 'no-store' });
+        if (!res.ok) return;
+        const payload = await res.json();
+        const cat = payload?.settings || payload?.category?.settings || {};
+        const dd = Array.isArray(cat?.disabled_districts) ? (cat.disabled_districts as string[]) : DEFAULT_DISABLED_DISTRICTS;
+        if (mounted) setDisabledDistricts(dd);
+      } catch {
+        // keep defaults
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   // External trigger to open location selector and bring into view
   useEffect(() => {
@@ -340,7 +360,7 @@ const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
                       {currentRegion?.name} - İlçeler
                     </p>
                     {filteredDistricts.map((district) => {
-                      const isDisabled = DISABLED_DISTRICTS.includes(district);
+                      const isDisabled = disabledDistricts.includes(district);
                       return (
                         <button
                           key={district}

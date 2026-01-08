@@ -26,8 +26,8 @@ const ISTANBUL_REGIONS = [
   },
 ];
 
-// Geçici olarak hizmet verilmeyen ilçeler
-const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
+// Dinamik kapalı ilçeler
+const DEFAULT_DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
 
 interface DeliveryInfo {
   location: string | null;
@@ -71,6 +71,7 @@ export default function DeliverySelectorV2({
   const containerRef = useRef<HTMLDivElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const lastOpenSignal = useRef<number | null>(null);
+  const [disabledDistricts, setDisabledDistricts] = useState<string[]>(DEFAULT_DISABLED_DISTRICTS);
 
   // Time slots - 2 options like cart page
   const timeSlots = [
@@ -147,6 +148,24 @@ export default function DeliverySelectorV2({
     });
   }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot]);
 
+  // Load dynamic delivery settings (disabled districts)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/settings?category=delivery', { cache: 'no-store' });
+        if (!res.ok) return;
+        const payload = await res.json();
+        const cat = payload?.settings || payload?.category?.settings || {};
+        const dd = Array.isArray(cat?.disabled_districts) ? (cat.disabled_districts as string[]) : DEFAULT_DISABLED_DISTRICTS;
+        if (mounted) setDisabledDistricts(dd);
+      } catch {
+        // keep defaults
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   // External trigger to open location selector
   useEffect(() => {
     if (openSignal == null) return;
@@ -191,7 +210,7 @@ export default function DeliverySelectorV2({
   };
 
   const handleDistrictSelect = (district: string, regionId?: string) => {
-    if (DISABLED_DISTRICTS.includes(district)) return; // geçici olarak engellendi
+    if (disabledDistricts.includes(district)) return; // geçici olarak engellendi
     const region = regionId 
       ? ISTANBUL_REGIONS.find(r => r.id === regionId)
       : currentRegion;
@@ -387,7 +406,7 @@ export default function DeliverySelectorV2({
                     <p className="text-xs text-gray-400 px-3 py-2 uppercase tracking-wider">Bulunan İlçeler</p>
                     {allDistricts.slice(0, 10).map((item, index) => {
                       const isAnadolu = item.region.id === 'istanbul-anadolu';
-                      const isDisabled = DISABLED_DISTRICTS.includes(item.district);
+                      const isDisabled = disabledDistricts.includes(item.district);
                       const showDisabled = isAnadolu || isDisabled;
                       return (
                         <button
@@ -494,7 +513,7 @@ export default function DeliverySelectorV2({
                 </p>
                 <div className="grid grid-cols-1 gap-1">
                   {filteredDistricts.map((district) => {
-                    const isDisabled = DISABLED_DISTRICTS.includes(district);
+                    const isDisabled = disabledDistricts.includes(district);
                     return (
                       <button
                         key={district}

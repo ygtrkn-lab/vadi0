@@ -60,36 +60,17 @@ const ISTANBUL_REGIONS = [
   },
 ];
 
-// Geçici olarak hizmet verilmeyen ilçeler
-const DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
-
-// Arnavutköy'de yoğunluk nedeniyle hizmet verilmeyen mahalleler
-// İslambey Mahallesi'ne kadar açık, sonrası kapalı (süreye göre sıralı 15. sıradan sonrası)
-const DISABLED_ARNAVUTKOY_NEIGHBORHOODS = [
-  'Hacımaşlı',
-  'Yavuz Selim',
-  'Mehmet Akif Ersoy',
-  'Hastane',
-  'Çilingir',
-  'Fatih',
-  'Sazlıbosna',
-  'Deliklikaya',
-  'Yeşilbayır',
-  'Nenehatun',
-  'Boğazköy İstiklal',
-  'Hadımköy',
-  'Yassıören',
-  'Baklalı',
-  'Nakkaş',
-  'Tayakadın',
-  'Balaban',
-  'Yeniköy',
-  'Boyalık',
-  'Dursunköy',
-  'Karaburun',
-  'Durusu',
-  'Terkos'
-];
+// Dinamik kapatma ayarları (admin panelinden)
+type DisabledNeighborhoodsMap = Record<string, string[]>;
+const DEFAULT_DISABLED_DISTRICTS = ['Çatalca', 'Silivri', 'Büyükçekmece'];
+const DEFAULT_DISABLED_NEIGHBORHOODS: DisabledNeighborhoodsMap = {
+  'Arnavutköy': [
+    'Hacımaşlı', 'Yavuz Selim', 'Mehmet Akif Ersoy', 'Hastane', 'Çilingir', 'Fatih',
+    'Sazlıbosna', 'Deliklikaya', 'Yeşilbayır', 'Nenehatun', 'Boğazköy İstiklal', 'Hadımköy',
+    'Yassıören', 'Baklalı', 'Nakkaş', 'Tayakadın', 'Balaban', 'Yeniköy', 'Boyalık',
+    'Dursunköy', 'Karaburun', 'Durusu', 'Terkos'
+  ]
+};
 
 const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts;
 
@@ -208,6 +189,10 @@ export default function SepetClient() {
 
   const [deliveryOffDays, setDeliveryOffDays] = useState<string[]>([]);
 
+  // Dynamic region blocks from admin settings
+  const [disabledDistricts, setDisabledDistricts] = useState<string[]>(DEFAULT_DISABLED_DISTRICTS);
+  const [disabledNeighborhoodsMap, setDisabledNeighborhoodsMap] = useState<DisabledNeighborhoodsMap>(DEFAULT_DISABLED_NEIGHBORHOODS);
+
   const isEmpty = state.items.length === 0;
   const isLoggedIn = !!customerState.currentCustomer;
 
@@ -264,6 +249,24 @@ export default function SepetClient() {
 
     loadDeliveryOffDays();
 
+    // Load region block settings
+    const loadRegionBlocks = async () => {
+      try {
+        const res = await fetch('/api/admin/settings?category=delivery', { cache: 'no-store' });
+        if (!res.ok) return; // keep defaults
+        const payload = await res.json();
+        const cat = payload?.settings || payload?.category?.settings || {};
+        const dd = Array.isArray(cat?.disabled_districts) ? (cat.disabled_districts as string[]) : DEFAULT_DISABLED_DISTRICTS;
+        const dmap = typeof cat?.disabled_neighborhoods_by_district === 'object' && cat?.disabled_neighborhoods_by_district !== null
+          ? (cat.disabled_neighborhoods_by_district as DisabledNeighborhoodsMap)
+          : DEFAULT_DISABLED_NEIGHBORHOODS;
+        setDisabledDistricts(dd);
+        setDisabledNeighborhoodsMap(dmap);
+      } catch {}
+    };
+
+    loadRegionBlocks();
+
     return () => {
       isMounted = false;
       controller.abort();
@@ -275,7 +278,7 @@ export default function SepetClient() {
   const isAddressSupported = useCallback((addr: Address): boolean => {
     const isIstanbul = addr.province.toLowerCase().includes('istanbul') || addr.province.toLowerCase().includes('i̇stanbul');
     if (!isIstanbul) return false; // Şimdilik sadece İstanbul destekleniyor
-    const isSupportedEurope = EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase()) && !DISABLED_DISTRICTS.includes(addr.district);
+    const isSupportedEurope = EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase()) && !disabledDistricts.includes(addr.district);
     return isSupportedEurope;
   }, []);
 
@@ -294,7 +297,7 @@ export default function SepetClient() {
     
     if (isIstanbul) {
       // İstanbul için yaka belirleme
-      const isSupportedEurope = EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase()) && !DISABLED_DISTRICTS.includes(addr.district);
+      const isSupportedEurope = EUROPE_DISTRICTS.some(d => d.toLowerCase() === addr.district.toLowerCase()) && !disabledDistricts.includes(addr.district);
       if (isSupportedEurope) {
         setIstanbulSide('avrupa');
         setSelectedLocation(`${addr.district}, İstanbul`);
@@ -666,7 +669,7 @@ export default function SepetClient() {
       // Lokasyon bilgisini ayarla
       if (location) {
         // İlçe ve yaka bilgisini ayarla (sadece Avrupa yakası destekleniyor)
-        if (globalDistrict && EUROPE_DISTRICTS.some(d => d.toLowerCase() === globalDistrict.toLowerCase()) && !DISABLED_DISTRICTS.includes(globalDistrict)) {
+        if (globalDistrict && EUROPE_DISTRICTS.some(d => d.toLowerCase() === globalDistrict.toLowerCase()) && !disabledDistricts.includes(globalDistrict)) {
           setSelectedLocation(location);
           setDistrict(globalDistrict);
           setIstanbulSide('avrupa');
@@ -861,7 +864,7 @@ export default function SepetClient() {
   };
 
   const handleDistrictSelect = async (districtName: string) => {
-    if (DISABLED_DISTRICTS.includes(districtName)) {
+    if (disabledDistricts.includes(districtName)) {
       setClosedWarning(districtName);
       setTimeout(() => setClosedWarning(null), 3500);
       return;
@@ -2269,7 +2272,7 @@ export default function SepetClient() {
                                     </p>
                                     {filteredDistricts.map((districtName) => (
                                       (() => {
-                                        const isDisabled = DISABLED_DISTRICTS.includes(districtName);
+                                        const isDisabled = disabledDistricts.includes(districtName);
                                         return (
                                           <button
                                             key={districtName}
@@ -2383,7 +2386,7 @@ export default function SepetClient() {
                                         .map((n) => {
                                           // Arnavutköy için kapalı mahalle kontrolü (isim içeriyor mu kontrol et)
                                           const isDisabledNeighborhood = district === 'Arnavutköy' && 
-                                            DISABLED_ARNAVUTKOY_NEIGHBORHOODS.some(disabled => 
+                                            (disabledNeighborhoodsMap['Arnavutköy'] || DEFAULT_DISABLED_NEIGHBORHOODS['Arnavutköy']).some(disabled => 
                                               n.name.toLowerCase().includes(disabled.toLowerCase()) ||
                                               disabled.toLowerCase().includes(n.name.toLowerCase())
                                             );

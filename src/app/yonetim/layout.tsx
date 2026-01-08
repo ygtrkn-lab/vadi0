@@ -116,6 +116,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/yonetim/siparisler', label: 'Siparişler', icon: HiOutlineClipboardList, badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined },
     { href: '/yonetim/musteriler', label: 'Müşteriler', icon: HiOutlineUsers },
     { href: '/yonetim/analizler', label: 'Analizler', icon: HiOutlineChartBar },
+    { href: '/yonetim/bolge-kapatma', label: 'Bölge Kapatma', icon: HiOutlineTag },
     { href: '/yonetim/ayarlar', label: 'Ayarlar', icon: HiOutlineCog },
   ], [pendingOrdersCount]);
 
