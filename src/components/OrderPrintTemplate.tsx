@@ -131,20 +131,14 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
         </div>
       </div>
 
-      {/* Large sender and recipient names for warehouse visibility */}
+      {/* Large recipient name for warehouse visibility */}
       <div style={{ background: '#f9fafb', padding: 16, borderRadius: 8, marginBottom: 16, border: '2px solid #e5e7eb' }}>
-        <div style={{ display: 'flex', gap: 24, marginBottom: 8 }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 600 }}>GÖNDERİCİ</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>{senderName}</div>
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 600 }}>ALICI</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>{recipientName}</div>
-          </div>
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 600 }}>ALICI</div>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>{recipientName}</div>
         </div>
         <div style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic', marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
-          ⚠️ Gönderici ismi müşteri ile paylaşılmayacaktır. Sadece iç kayıt içindir.
+          ⚠️ Gönderici ismi alıcı ile paylaşılmayacaktır.
         </div>
       </div>
 
