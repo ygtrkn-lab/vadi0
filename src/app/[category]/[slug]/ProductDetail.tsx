@@ -475,6 +475,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                       loop
                       muted={isMobileVideoMuted}
                       playsInline
+                      autoPlay
                       onClick={() => {
                         if (mobileVideoRef.current) {
                           if (isMobileVideoPlaying) {

@@ -33,6 +33,7 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
   const { addToCart } = useCart();
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(true);
 
   const customer = customerState.currentCustomer;
   const isWishlisted = customer ? isFavorite(customer.id, String(product.id)) : false;
@@ -87,22 +88,33 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
             <div className="relative w-full h-full">
               <video
                 src={product.image}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 cursor-pointer"
                 loop
                 muted
                 playsInline
-                onMouseEnter={(e) => e.currentTarget.play()}
-                onMouseLeave={(e) => {
-                  e.currentTarget.pause();
-                  e.currentTarget.currentTime = 0;
+                autoPlay
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isVideoPlaying) {
+                    e.currentTarget.pause();
+                    setIsVideoPlaying(false);
+                  } else {
+                    e.currentTarget.play();
+                    setIsVideoPlaying(true);
+                  }
                 }}
+                onPlay={() => setIsVideoPlaying(true)}
+                onPause={() => setIsVideoPlaying(false)}
               />
-              {/* Video indicator */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity">
-                <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
-                  <Play size={18} className="text-white ml-0.5" />
+              {/* Video pause indicator */}
+              {!isVideoPlaying && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                    <Play size={18} className="text-white ml-0.5" />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <Image

@@ -195,6 +195,7 @@ export default function ProductGalleryDesktop({
               loop
               muted={isVideoMuted}
               playsInline
+              autoPlay
               onClick={toggleVideoPlay}
               onPlay={() => setIsVideoPlaying(true)}
               onPause={() => setIsVideoPlaying(false)}

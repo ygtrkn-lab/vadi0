@@ -4,6 +4,12 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // API Route body size limit - video yüklemeleri için
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '30mb',
+    },
+  },
   images: {
     // Custom Cloudinary loader ile optimize edilmiş görseller
     loader: 'custom',
