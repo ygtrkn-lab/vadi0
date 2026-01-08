@@ -57,8 +57,15 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
   const isWishlisted = customer ? isFavorite(customer.id, String(product.id)) : false;
 
   const images = useMemo(() => {
-    const gallery = product.gallery && product.gallery.length > 0 ? product.gallery : [product.image, product.hoverImage];
-    const valid = (gallery || []).filter((img) => img && img !== "" && !img.includes("placeholder"));
+    // Always start with main image, then add gallery items
+    const mainImage = product.image;
+    const galleryImages = product.gallery && product.gallery.length > 0 
+      ? product.gallery 
+      : (product.hoverImage ? [product.hoverImage] : []);
+    
+    // Combine: main image first, then gallery (excluding duplicates)
+    const allImages = [mainImage, ...galleryImages.filter(img => img !== mainImage)];
+    const valid = allImages.filter((img) => img && img !== "" && !img.includes("placeholder"));
     return valid.length ? valid : [product.image];
   }, [product.gallery, product.image, product.hoverImage]);
 
