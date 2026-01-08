@@ -219,11 +219,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate) {
-      query = query.gte('viewed_at', startDate);
+      const s = new Date(startDate);
+      s.setHours(0, 0, 0, 0);
+      query = query.gte('viewed_at', s.toISOString());
     }
 
     if (endDate) {
-      query = query.lte('viewed_at', endDate);
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      query = query.lte('viewed_at', e.toISOString());
     }
 
     const { data, error, count } = await query;

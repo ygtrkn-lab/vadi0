@@ -6,23 +6,34 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '/';
     const period = searchParams.get('period') || '7d';
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    const normalizeStart = (d: Date) => { d.setHours(0, 0, 0, 0); return d; };
+    const normalizeEnd = (d: Date) => { d.setHours(23, 59, 59, 999); return d; };
     
     // Calculate date range
-    const now = new Date();
     let startDate: Date;
+    let endDate: Date;
+    const now = new Date();
     
-    switch (period) {
-      case '1d':
-        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    if (startDateParam || endDateParam) {
+      startDate = normalizeStart(new Date(startDateParam || new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)));
+      endDate = normalizeEnd(new Date(endDateParam || now));
+    } else {
+      switch (period) {
+        case '1d':
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
+      endDate = now;
     }
 
     const supabase = analyticsDb;
@@ -43,6 +54,7 @@ export async function GET(request: Request) {
       .select('id, event_name, properties, created_at, session_id')
       .eq('event_name', 'click')
       .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString())
       .order('created_at', { ascending: false })
       .limit(500);
 

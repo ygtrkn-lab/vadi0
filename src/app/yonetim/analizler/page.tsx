@@ -54,6 +54,7 @@ interface OverviewStats {
   totalPageViews: number;
   totalEvents: number;
   avgSessionDuration: number;
+  totalSessionDuration: number;
   avgPagesPerSession: number;
   bounceRate: number;
   realtimeVisitors: number;
@@ -263,6 +264,8 @@ function StatCard({
   trend, 
   suffix,
   prefix,
+  subtitle,
+  highlight,
   isDark 
 }: { 
   title: string; 
@@ -271,17 +274,19 @@ function StatCard({
   trend?: number;
   suffix?: string;
   prefix?: string;
+  subtitle?: string;
+  highlight?: boolean;
   isDark: boolean;
 }) {
   return (
-    <SpotlightCard className="p-4 sm:p-6">
+    <SpotlightCard className={`p-4 sm:p-6 ${highlight ? 'ring-2 ring-purple-500/50' : ''}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <p className={`text-xs sm:text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
             {title}
           </p>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className={`text-2xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <span className={`text-2xl sm:text-3xl font-bold ${highlight ? 'text-purple-400' : isDark ? 'text-white' : 'text-gray-900'}`}>
               {prefix}{typeof value === 'number' ? <AnimatedCounter value={value} /> : value}{suffix}
             </span>
             {trend !== undefined && (
@@ -291,9 +296,14 @@ function StatCard({
               </span>
             )}
           </div>
+          {subtitle && (
+            <p className={`mt-1 text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              {subtitle}
+            </p>
+          )}
         </div>
-        <div className={`p-2 sm:p-3 rounded-xl ${isDark ? 'bg-white/10' : 'bg-gray-100'}`}>
-          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${isDark ? 'text-white' : 'text-gray-600'}`} />
+        <div className={`p-2 sm:p-3 rounded-xl ${highlight ? 'bg-purple-500/20' : isDark ? 'bg-white/10' : 'bg-gray-100'}`}>
+          <Icon className={`w-5 h-5 sm:w-6 sm:h-6 ${highlight ? 'text-purple-400' : isDark ? 'text-white' : 'text-gray-600'}`} />
         </div>
       </div>
     </SpotlightCard>
@@ -2015,10 +2025,25 @@ export default function AnalizlerPage() {
   const [checkoutFlow, setCheckoutFlow] = useState<CheckoutFlowData | null>(null);
   const [insights, setInsights] = useState<InsightsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<'1d' | '7d' | '30d' | '90d'>('7d');
+  const [period, setPeriod] = useState<'1d' | '7d' | '30d' | '90d' | 'custom'>('1d');
+  const [dateRange, setDateRange] = useState<{ from: string; to: string }>(() => {
+    const today = new Date();
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    return { from: fmt(today), to: fmt(today) };
+  });
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showAllVisitors, setShowAllVisitors] = useState(false);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
+
+  const buildQuery = useCallback(() => {
+    const params = new URLSearchParams();
+    params.set('period', period);
+    if (period === 'custom') {
+      if (dateRange.from) params.set('startDate', dateRange.from);
+      if (dateRange.to) params.set('endDate', dateRange.to);
+    }
+    return params.toString();
+  }, [period, dateRange]);
 
   // Check analytics status
   useEffect(() => {
@@ -2039,7 +2064,7 @@ export default function AnalizlerPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch(`/api/analytics/stats?period=${period}`);
+      const res = await fetch(`/api/analytics/stats?${buildQuery()}`);
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -2047,7 +2072,7 @@ export default function AnalizlerPage() {
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     }
-  }, [period]);
+  }, [buildQuery]);
 
   const fetchRealtime = useCallback(async () => {
     try {
@@ -2063,7 +2088,8 @@ export default function AnalizlerPage() {
 
   const fetchClickData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/analytics/clicks?period=${period}&page=all`);
+      const params = buildQuery();
+      const res = await fetch(`/api/analytics/clicks?${params}&page=all`);
       if (res.ok) {
         const data = await res.json();
         setClickData(data);
@@ -2071,11 +2097,11 @@ export default function AnalizlerPage() {
     } catch (error) {
       console.error('Failed to fetch click data:', error);
     }
-  }, [period]);
+  }, [buildQuery]);
 
   const fetchCheckoutFlow = useCallback(async () => {
     try {
-      const res = await fetch(`/api/analytics/checkout-flow?period=${period}`);
+      const res = await fetch(`/api/analytics/checkout-flow?${buildQuery()}`);
       if (res.ok) {
         const data = await res.json();
         setCheckoutFlow(data);
@@ -2083,11 +2109,11 @@ export default function AnalizlerPage() {
     } catch (error) {
       console.error('Failed to fetch checkout flow:', error);
     }
-  }, [period]);
+  }, [buildQuery]);
 
   const fetchInsights = useCallback(async () => {
     try {
-      const res = await fetch(`/api/analytics/insights?period=${period}`);
+      const res = await fetch(`/api/analytics/insights?${buildQuery()}`);
       if (res.ok) {
         const data = await res.json();
         setInsights(data);
@@ -2095,7 +2121,7 @@ export default function AnalizlerPage() {
     } catch (error) {
       console.error('Failed to fetch insights:', error);
     }
-  }, [period]);
+  }, [buildQuery]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -2123,6 +2149,7 @@ export default function AnalizlerPage() {
     { value: '7d', label: 'Son 7 Gün' },
     { value: '30d', label: 'Son 30 Gün' },
     { value: '90d', label: 'Son 90 Gün' },
+    { value: 'custom', label: 'Özel' },
   ];
 
   return (
@@ -2190,6 +2217,35 @@ export default function AnalizlerPage() {
                   {p.label}
                 </button>
               ))}
+            </div>
+
+            {/* Date range picker for custom */}
+            <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+              <input
+                type="date"
+                value={dateRange.from}
+                onChange={(e) => { setDateRange(prev => ({ ...prev, from: e.target.value })); setPeriod('custom'); }}
+                className="bg-transparent text-sm border border-white/10 rounded px-2 py-1"
+              />
+              <span className="text-sm opacity-70">→</span>
+              <input
+                type="date"
+                value={dateRange.to}
+                onChange={(e) => { setDateRange(prev => ({ ...prev, to: e.target.value })); setPeriod('custom'); }}
+                className="bg-transparent text-sm border border-white/10 rounded px-2 py-1"
+              />
+              <button
+                onClick={() => {
+                  setPeriod('custom');
+                  fetchStats();
+                  fetchClickData();
+                  fetchCheckoutFlow();
+                  fetchInsights();
+                }}
+                className="text-xs px-3 py-1 rounded-md bg-purple-600 text-white hover:bg-purple-700"
+              >
+                Uygula
+              </button>
             </div>
 
             {/* Refresh button */}
@@ -2260,6 +2316,37 @@ export default function AnalizlerPage() {
                 title="Ort. Oturum Süresi"
                 value={formatDuration(stats?.overview.avgSessionDuration || 0)}
                 icon={HiOutlineClock}
+                isDark={isDark}
+              />
+            </div>
+
+            {/* Süre & Sepet Metrikleri */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard
+                title="Toplam Geçirilen Süre"
+                value={formatDuration(stats?.overview.totalSessionDuration || 0)}
+                icon={HiOutlineClock}
+                isDark={isDark}
+                highlight
+              />
+              <StatCard
+                title="Sepete Ekleme"
+                value={checkoutFlow?.funnel.add_to_cart || 0}
+                icon={HiOutlineShoppingCart}
+                isDark={isDark}
+                subtitle="Sepete Ekle buton tıklaması"
+              />
+              <StatCard
+                title="Sepet Sayfası Görüntüleme"
+                value={checkoutFlow?.funnel.view_cart || 0}
+                icon={HiOutlineEye}
+                isDark={isDark}
+                subtitle="/sepet sayfasına girme"
+              />
+              <StatCard
+                title="Ödemeye Geçme"
+                value={checkoutFlow?.funnel.begin_checkout || 0}
+                icon={HiOutlineCurrencyDollar}
                 isDark={isDark}
               />
             </div>

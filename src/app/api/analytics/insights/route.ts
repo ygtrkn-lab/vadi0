@@ -13,11 +13,24 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const period = searchParams.get('period') || '7d';
+    const startDateParam = searchParams.get('startDate');
+    const endDateParam = searchParams.get('endDate');
+    const normalizeStart = (d: Date) => { d.setHours(0, 0, 0, 0); return d; };
+    const normalizeEnd = (d: Date) => { d.setHours(23, 59, 59, 999); return d; };
 
     // Tarih aralığını hesapla
-    const days = period === '1d' ? 1 : period === '7d' ? 7 : period === '30d' ? 30 : 90;
-    const dateFrom = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-    const dateTo = new Date().toISOString();
+    let dateFrom: string;
+    let dateTo: string;
+    const now = new Date();
+
+    if (startDateParam || endDateParam) {
+      dateFrom = normalizeStart(new Date(startDateParam || new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000))).toISOString();
+      dateTo = normalizeEnd(new Date(endDateParam || now)).toISOString();
+    } else {
+      const days = period === '1d' ? 1 : period === '7d' ? 7 : period === '30d' ? 30 : 90;
+      dateFrom = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+      dateTo = new Date().toISOString();
+    }
 
     // Paralel sorgular
     const [

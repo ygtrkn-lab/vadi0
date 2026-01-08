@@ -92,7 +92,6 @@ type RecipientErrors = {
   address?: string;
   streetName?: string;
   buildingNo?: string;
-  floor?: string;
   apartmentNo?: string;
   date?: string;
   time?: string;
@@ -122,9 +121,7 @@ export default function SepetClient() {
   // Detaylı adres alanları
   const [streetName, setStreetName] = useState('');
   const [buildingNo, setBuildingNo] = useState('');
-  const [floor, setFloor] = useState('');
   const [apartmentNo, setApartmentNo] = useState('');
-  const [buildingName, setBuildingName] = useState(''); // Opsiyonel
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryDateNotice, setDeliveryDateNotice] = useState<string | null>(null);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
@@ -331,11 +328,9 @@ export default function SepetClient() {
     
     // Basit regex ile parse etmeye çalış
     const noMatch = fullAddr.match(/No:\s*([^,\(]+)/i);
-    const katMatch = fullAddr.match(/Kat:\s*([^,]+)/i);
     const daireMatch = fullAddr.match(/Daire:\s*([^,]+)/i);
-    const binaMatch = fullAddr.match(/\(([^\)]+)\)/);
     
-    if (noMatch && katMatch && daireMatch) {
+    if (noMatch && daireMatch) {
       // Yeni format - parse edebiliyoruz
       // Sokak kısmını bul (No: öncesi)
       const noIndex = fullAddr.toLowerCase().indexOf('no:');
@@ -343,15 +338,11 @@ export default function SepetClient() {
       
       setStreetName(sokak);
       setBuildingNo(noMatch[1]?.trim() || '');
-      setBuildingName(binaMatch ? binaMatch[1]?.trim() : '');
-      setFloor(katMatch[1]?.trim() || '');
       setApartmentNo(daireMatch[1]?.trim() || '');
     } else {
       // Eski format - tüm adresi sokak alanına koy, diğerlerini kullanıcı doldursun
       setStreetName(fullAddr);
       setBuildingNo('');
-      setBuildingName('');
-      setFloor('');
       setApartmentNo('');
     }
     
@@ -366,7 +357,6 @@ export default function SepetClient() {
       address: undefined,
       streetName: undefined,
       buildingNo: undefined,
-      floor: undefined,
       apartmentNo: undefined,
       date: undefined,
       time: undefined,
@@ -793,6 +783,17 @@ export default function SepetClient() {
     }
   }, []);
 
+  // Set earliest available delivery date by default (usually tomorrow)
+  useEffect(() => {
+    if (deliveryDate || state.items.length === 0) return;
+    const fallback = getNextAllowedDeliveryDate();
+    if (fallback) {
+      setDeliveryDate(fallback);
+      setDeliveryDateNotice(null);
+      setRecipientErrors((prev) => ({ ...prev, date: undefined }));
+    }
+  }, [deliveryDate, getNextAllowedDeliveryDate, state.items.length]);
+
   // Form verilerini localStorage'a kaydet (değiştiğinde)
   useEffect(() => {
     // Sadece sepet boş değilse ve success adımında değilse kaydet
@@ -1195,14 +1196,12 @@ export default function SepetClient() {
     const parts = [];
     if (streetName.trim()) parts.push(streetName.trim());
     if (buildingNo.trim()) parts.push(`No: ${buildingNo.trim()}`);
-    if (buildingName.trim()) parts.push(`(${buildingName.trim()})`);
-    if (floor.trim()) parts.push(`Kat: ${floor.trim()}`);
     if (apartmentNo.trim()) parts.push(`Daire: ${apartmentNo.trim()}`);
     return parts.join(', ');
-  }, [streetName, buildingNo, buildingName, floor, apartmentNo]);
+  }, [streetName, buildingNo, apartmentNo]);
   
   // Detaylı adres alanlarının dolu olup olmadığını kontrol et
-  const hasValidAddressDetails = streetName.trim().length >= 3 && buildingNo.trim().length > 0 && floor.trim().length > 0 && apartmentNo.trim().length > 0;
+  const hasValidAddressDetails = streetName.trim().length >= 3 && buildingNo.trim().length > 0 && apartmentNo.trim().length > 0;
   
   const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && hasValidAddressDetails && neighborhood.length >= 2 && district.length > 0 && deliveryDate.length > 0 && !isDeliveryDateBlocked(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
   const guestEmailTrim = guestEmail.trim();
@@ -1302,9 +1301,6 @@ export default function SepetClient() {
     }
     if (!buildingNo || buildingNo.trim().length === 0) {
       setErr('building-no', 'buildingNo', 'Bina/Kapı no zorunludur');
-    }
-    if (!floor || floor.trim().length === 0) {
-      setErr('floor', 'floor', 'Kat bilgisi zorunludur');
     }
     if (!apartmentNo || apartmentNo.trim().length === 0) {
       setErr('apartment-no', 'apartmentNo', 'Daire no zorunludur');
@@ -2052,8 +2048,6 @@ export default function SepetClient() {
                         // Detaylı adres alanlarını temizle
                         setStreetName('');
                         setBuildingNo('');
-                        setBuildingName('');
-                        setFloor('');
                         setApartmentNo('');
                         setSelectedLocation(null);
                         setClosedWarning(null);
@@ -2495,7 +2489,7 @@ export default function SepetClient() {
                               )}
                             </div>
 
-                            {/* Bina No ve Bina Adı yan yana */}
+                            {/* Bina / Kapı ve Daire No */}
                             <div className="grid grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -2516,43 +2510,6 @@ export default function SepetClient() {
                                 />
                                 {recipientErrors.buildingNo && (
                                   <p className="text-[10px] text-red-500 mt-1">{recipientErrors.buildingNo}</p>
-                                )}
-                              </div>
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Bina Adı <span className="text-gray-400 font-normal">(opsiyonel)</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  value={buildingName}
-                                  onChange={(e) => setBuildingName(e.target.value)}
-                                  placeholder="örn: Gül Apt."
-                                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Kat ve Daire No yan yana */}
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Kat *
-                                </label>
-                                <input
-                                  id="floor"
-                                  type="text"
-                                  value={floor}
-                                  onChange={(e) => {
-                                    setFloor(e.target.value);
-                                    setRecipientErrors((prev) => ({ ...prev, floor: undefined }));
-                                  }}
-                                  placeholder="örn: 3, Zemin, Bodrum"
-                                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all ${
-                                    recipientErrors.floor ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                                  }`}
-                                />
-                                {recipientErrors.floor && (
-                                  <p className="text-[10px] text-red-500 mt-1">{recipientErrors.floor}</p>
                                 )}
                               </div>
                               <div>

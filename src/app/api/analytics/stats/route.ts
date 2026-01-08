@@ -16,15 +16,18 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Tarih aralığını hesapla
+    // Tarih aralığını hesapla (günü tam kapsayacak şekilde)
+    const normalizeStart = (d: Date) => { d.setHours(0, 0, 0, 0); return d; };
+    const normalizeEnd = (d: Date) => { d.setHours(23, 59, 59, 999); return d; };
+
     let dateFrom: Date;
-    const dateTo = endDate ? new Date(endDate) : new Date();
+    const dateTo = normalizeEnd(endDate ? new Date(endDate) : new Date());
 
     if (startDate) {
-      dateFrom = new Date(startDate);
+      dateFrom = normalizeStart(new Date(startDate));
     } else {
       const days = period === '1d' ? 1 : period === '7d' ? 7 : period === '30d' ? 30 : 90;
-      dateFrom = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      dateFrom = normalizeStart(new Date(Date.now() - days * 24 * 60 * 60 * 1000));
     }
 
     const dateFromStr = dateFrom.toISOString();
@@ -133,8 +136,9 @@ export async function GET(request: NextRequest) {
     const realtimeVisitors = realtimeResult.data?.length || 0;
 
     // Ortalama oturum süresi
+    const totalSessionDuration = sessions.reduce((acc, s) => acc + (s.duration_seconds || 0), 0);
     const avgSessionDuration = sessions.length > 0
-      ? Math.round(sessions.reduce((acc, s) => acc + (s.duration_seconds || 0), 0) / sessions.length)
+      ? Math.round(totalSessionDuration / sessions.length)
       : 0;
 
     // Bounce rate
@@ -342,6 +346,7 @@ export async function GET(request: NextRequest) {
         totalPageViews,
         totalEvents,
         avgSessionDuration,
+        totalSessionDuration,
         avgPagesPerSession,
         bounceRate,
         realtimeVisitors,
