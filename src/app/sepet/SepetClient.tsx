@@ -1331,6 +1331,8 @@ export default function SepetClient() {
         firstId = 'recipient-phone';
         firstMessage = 'Geçerli bir telefon girin (5XX XXX XX XX)';
       }
+    } else {
+      setPhoneError('');
     }
     if (!selectedLocation || selectedLocation.length === 0) {
       setErr('delivery-location', 'location', 'Teslimat bölgesi seçilmelidir');
