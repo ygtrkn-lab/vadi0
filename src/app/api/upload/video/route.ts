@@ -4,6 +4,15 @@ import { uploadToCloudinary } from '@/lib/cloudinary';
 const ACCEPTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 const MAX_VIDEO_SIZE = 25 * 1024 * 1024; // 25MB
 
+// Body size limit'i 30MB'a çıkar (25MB video + ekstra margin)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '30mb',
+    },
+  },
+};
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
