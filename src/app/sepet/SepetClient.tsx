@@ -2046,15 +2046,14 @@ export default function SepetClient() {
 
             {/* STEP: RECIPIENT */}
             {currentStep === 'recipient' && (
-              <>
+              <motion.div
+                key="recipient"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-5"
+              >
                 {console.log('Recipient adımı render ediliyor')}
-                <motion.div
-                  key="recipient"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-5"
-                >
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-[#e05a4c] to-[#ff7961] bg-clip-text text-transparent mb-2">Çiçekler Nereye Gitsin?</h2>
                   <p className="text-sm text-gray-500">Sevdiklerinize özel anlar yaratmak için sadece bir adım kaldı</p>
@@ -2927,7 +2926,6 @@ export default function SepetClient() {
                   </div>
                 </div>
               </motion.div>
-              </>
             )}
 
             {/* STEP: PAYMENT */}
