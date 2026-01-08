@@ -2777,7 +2777,24 @@ export default function SepetClient() {
                     <button
                       onClick={() => {
                         const check = validateRecipientStep();
-                        if (!check.ok) return;
+                        console.log('Recipient validation result:', check, {
+                          recipientName,
+                          recipientPhone,
+                          isPhoneValid,
+                          selectedLocation,
+                          neighborhood,
+                          streetName,
+                          buildingNo,
+                          deliveryDate,
+                          deliveryTimeSlot,
+                          senderName,
+                          closedWarning,
+                          recipientErrors
+                        });
+                        if (!check.ok) {
+                          console.log('Validation failed:', check.message, 'First error element:', check.firstId);
+                          return;
+                        }
                         setCurrentStep('message');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
