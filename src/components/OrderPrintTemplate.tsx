@@ -131,9 +131,26 @@ const OrderPrintTemplate = forwardRef<HTMLDivElement, OrderPrintTemplateProps>((
         </div>
       </div>
 
+      {/* Large sender and recipient names for warehouse visibility */}
+      <div style={{ background: '#f9fafb', padding: 16, borderRadius: 8, marginBottom: 16, border: '2px solid #e5e7eb' }}>
+        <div style={{ display: 'flex', gap: 24, marginBottom: 8 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 600 }}>GÖNDERİCİ</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>{senderName}</div>
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4, fontWeight: 600 }}>ALICI</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>{recipientName}</div>
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: '#9ca3af', fontStyle: 'italic', marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
+          ⚠️ Gönderici ismi müşteri ile paylaşılmayacaktır. Sadece iç kayıt içindir.
+        </div>
+      </div>
+
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Alıcı</div>
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>Müşteri Bilgileri</div>
           <div style={{ fontWeight: 600 }}>{order.customerName || 'Misafir'}</div>
           {order.customerPhone && <div style={{ fontSize: 12, color: '#4b5563' }}>{order.customerPhone}</div>}
           {order.customerEmail && <div style={{ fontSize: 12, color: '#4b5563' }}>{order.customerEmail}</div>}

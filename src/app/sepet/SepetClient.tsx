@@ -6,7 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useCustomer, Address } from '@/context/CustomerContext';
 import { useOrder } from '@/context/OrderContext';
 import { useAnalytics } from '@/context/AnalyticsContext';
-import { Header, Footer, MobileNavBar } from '@/components';
+import { Header, Footer } from '@/components';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -23,7 +23,6 @@ import {
   MessageSquare,
   CreditCard,
   Check,
-  Gift,
   ArrowLeft,
   CheckCircle,
   Package,
@@ -36,6 +35,7 @@ import {
 } from 'lucide-react';
 import { BorderBeam, GlassCard, SpotlightCard } from '@/components/ui-kit/premium';
 import { getNeighborhoods, getDistricts, type Neighborhood } from '@/data/turkiye-api';
+import GiftMessagePreview from '@/components/checkout/GiftMessagePreview';
 
 // İstanbul bölgeleri (DeliverySelector'dan)
 const ISTANBUL_REGIONS = [
@@ -127,7 +127,7 @@ export default function SepetClient() {
   const [deliveryDateNotice, setDeliveryDateNotice] = useState<string | null>(null);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [isGift, setIsGift] = useState(true);
+  const isGift = true; // tüm siparişler hediye kabul edilir
   const [senderName, setSenderName] = useState('');
   const [messageCard, setMessageCard] = useState('');
   const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
@@ -166,6 +166,7 @@ export default function SepetClient() {
   const [neighborhoodSuggestions, setNeighborhoodSuggestions] = useState<Neighborhood[]>([]);
   const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
   const [lastPaymentBanner, setLastPaymentBanner] = useState<null | { status: 'failed' | 'abandoned'; message?: string }>(null);
+  const [deliveryOffDayDialog, setDeliveryOffDayDialog] = useState<string | null>(null);
   
   // Inline login/register states
   const [inlineLoginEmail, setInlineLoginEmail] = useState('');
@@ -609,6 +610,16 @@ export default function SepetClient() {
         notice = 'Teslimat tarihi en fazla 7 gün sonrası seçilebilir. Sizi uygun güne yönlendirdik.';
       }
 
+      // If selected day is offlined from panel, block with modal and do not auto-shift
+      if (deliveryOffDaySet.has(bounded)) {
+        const msg = DELIVERY_OFF_DAY_ERROR_MESSAGE;
+        setDeliveryDate(bounded);
+        setDeliveryDateNotice(null);
+        setRecipientErrors((prev) => ({ ...prev, date: msg }));
+        setDeliveryOffDayDialog(msg);
+        return;
+      }
+
       const fallback = getNextAllowedDeliveryDate(bounded);
       if (!fallback) {
         setDeliveryDate('');
@@ -625,7 +636,7 @@ export default function SepetClient() {
       setDeliveryDateNotice(notice);
       setRecipientErrors((prev) => ({ ...prev, date: undefined }));
     },
-    [getNextAllowedDeliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE, getBlockedDeliveryMessage]
+    [getNextAllowedDeliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE, getBlockedDeliveryMessage, deliveryOffDaySet]
   );
 
   useEffect(() => {
@@ -807,7 +818,6 @@ export default function SepetClient() {
           if (parsed.deliveryDate) setDeliveryDate(parsed.deliveryDate);
           if (parsed.deliveryTimeSlot) setDeliveryTimeSlot(parsed.deliveryTimeSlot);
           if (parsed.deliveryNotes) setDeliveryNotes(parsed.deliveryNotes);
-          if (parsed.isGift !== undefined) setIsGift(parsed.isGift);
           if (parsed.senderName) setSenderName(parsed.senderName);
           if (parsed.messageCard) setMessageCard(parsed.messageCard);
           if (parsed.guestEmail) setGuestEmail(parsed.guestEmail);
@@ -858,7 +868,6 @@ export default function SepetClient() {
         deliveryDate,
         deliveryTimeSlot,
         deliveryNotes,
-        isGift,
         senderName,
         messageCard,
         guestEmail,
@@ -881,7 +890,6 @@ export default function SepetClient() {
     deliveryDate,
     deliveryTimeSlot,
     deliveryNotes,
-    isGift,
     senderName,
     messageCard,
     guestEmail,
@@ -1247,15 +1255,15 @@ export default function SepetClient() {
   }, [streetName, buildingNo, apartmentNo]);
   
   // Detaylı adres alanlarının dolu olup olmadığını kontrol et
-  const hasValidAddressDetails = streetName.trim().length >= 3 && buildingNo.trim().length > 0 && apartmentNo.trim().length > 0;
+  const hasValidAddressDetails = streetName.trim().length >= 3 && buildingNo.trim().length > 0;
   
-  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && hasValidAddressDetails && neighborhood.length >= 2 && district.length > 0 && deliveryDate.length > 0 && !isDeliveryDateBlocked(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
+  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && hasValidAddressDetails && neighborhood.length >= 2 && district.length > 0 && deliveryDate.length > 0 && !isDeliveryDateBlocked(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot);
   const guestEmailTrim = guestEmail.trim();
   const guestPhoneDigits = normalizeTrMobileDigits(guestPhone);
   const isGuestEmailValid = guestEmailTrim.length === 0 ? false : validateEmail(guestEmailTrim);
   const isGuestPhoneValid = guestPhoneDigits.length === 0 ? false : validatePhoneNumber(guestPhone);
   const hasGuestContact = isLoggedIn || (isGuestEmailValid && isGuestPhoneValid);
-  const canProceedToPayment = canProceedToMessage;
+  const canProceedToPayment = canProceedToMessage && (!requiresSenderName || senderName.trim().length >= 2);
   const canCompletePayment = acceptTerms && hasGuestContact;
 
   const scrollToElement = (elementId: string) => {
@@ -1347,9 +1355,6 @@ export default function SepetClient() {
     }
     if (!buildingNo || buildingNo.trim().length === 0) {
       setErr('building-no', 'buildingNo', 'Bina/Kapı no zorunludur');
-    }
-    if (!apartmentNo || apartmentNo.trim().length === 0) {
-      setErr('apartment-no', 'apartmentNo', 'Daire no zorunludur');
     }
     
     if (!deliveryDate) {
@@ -2567,7 +2572,7 @@ export default function SepetClient() {
                               </div>
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Daire No *
+                                  Daire / Dükkan (Opsiyonel)
                                 </label>
                                 <input
                                   id="apartment-no"
@@ -2575,16 +2580,10 @@ export default function SepetClient() {
                                   value={apartmentNo}
                                   onChange={(e) => {
                                     setApartmentNo(e.target.value);
-                                    setRecipientErrors((prev) => ({ ...prev, apartmentNo: undefined }));
                                   }}
-                                  placeholder="örn: 5, 5A"
-                                  className={`w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all ${
-                                    recipientErrors.apartmentNo ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                                  }`}
+                                  placeholder="örn: 5, Dükkan 3"
+                                  className="w-full px-4 py-3 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all border-gray-200"
                                 />
-                                {recipientErrors.apartmentNo && (
-                                  <p className="text-[10px] text-red-500 mt-1">{recipientErrors.apartmentNo}</p>
-                                )}
                               </div>
                             </div>
 
@@ -2748,54 +2747,6 @@ export default function SepetClient() {
                   </div>
                 </div>
 
-                {/* Gift Option */}
-                <div className="flex items-center justify-between p-3 bg-pink-50 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Gift size={16} className="text-pink-500" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Bu bir hediye</p>
-                      <p className="text-[10px] text-gray-500">Fiyat bilgisi gizlensin</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsGift(!isGift);
-                      if (isGift) {
-                        setRecipientErrors((prev) => ({ ...prev, sender: undefined }));
-                      }
-                    }}
-                    className={`w-10 h-6 rounded-full transition-colors ${isGift ? 'bg-pink-500' : 'bg-gray-300'}`}
-                  >
-                    <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${isGift ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                  </button>
-                </div>
-
-                {isGift && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                  >
-                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                      Gönderen Adı (Kartta görünecek) *
-                    </label>
-                    <input
-                      id="sender-name"
-                      type="text"
-                      value={senderName}
-                      onChange={(e) => {
-                        setSenderName(e.target.value);
-                        setRecipientErrors((prev) => ({ ...prev, sender: undefined }));
-                      }}
-                      placeholder="Sevgilerimle, Ahmet"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all"
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">Hediye seçiliyse gönderen adı zorunludur.</p>
-                    {recipientErrors.sender && (
-                      <p className="text-[10px] text-red-500 mt-1">{recipientErrors.sender}</p>
-                    )}
-                  </motion.div>
-                )}
-
                 {/* Navigation (mobilde adım sonunda statik) */}
                 <div className="mt-6">
                   <div className="max-w-2xl mx-auto flex gap-3">
@@ -2891,14 +2842,30 @@ export default function SepetClient() {
                   />
                 </div>
 
-                {/* Preview */}
-                {messageCard && (
-                  <div className="p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl border border-pink-100">
-                    <p className="text-[10px] text-pink-600 font-medium mb-1">Kart Önizleme</p>
-                    <p className="text-sm text-gray-700 italic">&ldquo;{messageCard}&rdquo;</p>
-                    {senderName && <p className="text-xs text-gray-500 text-right mt-2">- {senderName}</p>}
-                  </div>
-                )}
+                {/* Sender Name */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                    Gönderen Adı (Kartta görünecek) *
+                  </label>
+                  <input
+                    id="sender-name"
+                    type="text"
+                    value={senderName}
+                    onChange={(e) => {
+                      setSenderName(e.target.value);
+                      setRecipientErrors((prev) => ({ ...prev, sender: undefined }));
+                    }}
+                    placeholder="Sevgilerimle, Ahmet"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">Fiyat bilgisi gizlenir, tüm siparişler hediye olarak hazırlanır.</p>
+                  {recipientErrors.sender && (
+                    <p className="text-[10px] text-red-500 mt-1">{recipientErrors.sender}</p>
+                  )}
+                </div>
+
+                {/* Gift Card Template Preview */}
+                <GiftMessagePreview message={messageCard} senderName={senderName} />
 
                 {/* Skip option - More visible */}
                 <div className="flex items-center justify-center gap-4 pt-2">
@@ -3904,8 +3871,30 @@ export default function SepetClient() {
         </div>
       )}
       
+      {deliveryOffDayDialog && (
+        <div className="fixed inset-0 z-[140] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/25" onClick={() => setDeliveryOffDayDialog(null)}></div>
+          <div className="relative bg-white/95 backdrop-blur rounded-xl shadow-xl border border-gray-100 max-w-xs w-full p-4">
+            <div className="flex items-start gap-2.5">
+              <div className="p-2 rounded-lg bg-amber-100 text-amber-700">
+                <AlertCircle size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Teslimat yapılamıyor</p>
+                <p className="text-sm text-gray-700 mt-1 leading-relaxed">{deliveryOffDayDialog}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setDeliveryOffDayDialog(null)}
+              className="mt-4 w-full py-2.5 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition-colors"
+            >
+              Tamam
+            </button>
+          </div>
+        </div>
+      )}
+
       <Footer />
-      <MobileNavBar />
       {/* Checkout Step Nav - Bottom Mobile */}
       {!isEmpty && currentStep !== 'success' && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 lg:hidden">
