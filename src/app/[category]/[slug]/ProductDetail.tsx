@@ -431,7 +431,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
         </div>
 
           {/* Mobile Layout */}
-          <div className="lg:hidden">
+          <div className="lg:hidden mx-auto w-full max-w-lg">
             <div className="grid gap-4 lg:gap-6 items-start">
               <div className="relative rounded-3xl overflow-hidden bg-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.10)] lg:max-h-[60vh]">
               <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/70 to-transparent z-10 pointer-events-none" />
