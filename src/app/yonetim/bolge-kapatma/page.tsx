@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { HiOutlineCheck, HiOutlineX, HiOutlineSave, HiOutlineRefresh, HiOutlineSearch, HiOutlineLocationMarker } from 'react-icons/hi';
 import { ISTANBUL_ILCELERI, type IstanbulDistrict } from '@/data/istanbul-districts';
@@ -21,6 +21,19 @@ export default function BolgeKapatmaPage() {
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Arnavutköy');
   const [neighborhoods, setNeighborhoods] = useState<Neighborhood[]>([]);
   const [searchNeighborhood, setSearchNeighborhood] = useState('');
+  const [districtDropdownOpen, setDistrictDropdownOpen] = useState(false);
+  const [districtSearch, setDistrictSearch] = useState('');
+  const districtDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onClickOutside = (e: MouseEvent) => {
+      if (districtDropdownRef.current && !districtDropdownRef.current.contains(e.target as Node)) {
+        setDistrictDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
 
   // Load current settings
   useEffect(() => {
@@ -174,15 +187,54 @@ export default function BolgeKapatmaPage() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-medium">Mahalle Kapatma</h2>
             <div className="flex items-center gap-2">
-              <select
-                value={selectedDistrict}
-                onChange={(e) => setSelectedDistrict(e.target.value)}
-                className="px-3 py-2 rounded-xl border bg-white/5 border-white/10 text-sm"
-              >
-                {ISTANBUL_ILCELERI.map(d => (
-                  <option key={d.id} value={d.name}>{d.name}</option>
-                ))}
-              </select>
+              {/* Custom District Dropdown */}
+              <div className="relative" ref={districtDropdownRef}>
+                <button
+                  onClick={() => setDistrictDropdownOpen(v => !v)}
+                  className="px-3 py-2 rounded-xl border bg-white/5 border-white/10 text-sm min-w-[220px] flex items-center justify-between hover:bg-white/10"
+                  aria-haspopup="listbox"
+                  aria-expanded={districtDropdownOpen}
+                >
+                  <span className="truncate">{selectedDistrict}</span>
+                  <svg className="w-4 h-4 opacity-70" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.084l3.71-3.854a.75.75 0 111.08 1.04l-4.24 4.4a.75.75 0 01-1.08 0l-4.24-4.4a.75.75 0 01.02-1.06z" clipRule="evenodd"/></svg>
+                </button>
+                {districtDropdownOpen && (
+                  <div className="absolute z-50 mt-2 w-[280px] rounded-2xl border bg-white/90 backdrop-blur-xl text-gray-900 shadow-2xl overflow-hidden">
+                    <div className="p-2 border-b border-gray-100">
+                      <div className="relative">
+                        <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                          value={districtSearch}
+                          onChange={(e) => setDistrictSearch(e.target.value)}
+                          placeholder="İlçe ara..."
+                          className="pl-9 pr-3 py-2 rounded-xl border bg-white/70 border-gray-200 text-sm w-full focus:outline-none focus:ring-2 focus:ring-purple-200"
+                        />
+                      </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-1">
+                      {ISTANBUL_ILCELERI.filter(d => !districtSearch || d.name.toLowerCase().includes(districtSearch.toLowerCase())).map((d) => {
+                        const isActive = d.name === selectedDistrict;
+                        const isClosed = disabledDistricts.includes(d.name);
+                        return (
+                          <button
+                            key={d.id}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-left transition-colors ${
+                              isActive ? 'bg-purple-50 text-purple-700' : 'hover:bg-gray-50'
+                            }`}
+                            onClick={() => { setSelectedDistrict(d.name); setDistrictDropdownOpen(false); }}
+                            role="option"
+                            aria-selected={isActive}
+                          >
+                            <span className="flex-1 truncate">{d.name}</span>
+                            {isClosed && <span className="text-xs text-rose-600">Kapalı</span>}
+                            {isActive && <HiOutlineCheck className="w-4 h-4 text-purple-600" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="relative">
                 <HiOutlineSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
