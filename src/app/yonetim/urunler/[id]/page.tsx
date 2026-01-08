@@ -7,7 +7,9 @@ import Link from 'next/link';
 import { Product } from '@/data/products';
 import { useTheme } from '@/app/yonetim/ThemeContext';
 import ImageUpload from '@/components/admin/ImageUpload';
+import MediaUpload, { getMediaType } from '@/components/admin/MediaUpload';
 import { resizeImageBeforeUpload } from '@/lib/image-resize';
+import { HiOutlineVideoCamera, HiOutlinePlay } from 'react-icons/hi';
 
 type CategoryOption = {
   id?: string | number;
@@ -214,15 +216,41 @@ export default function UrunDuzenlePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+
+    // Validate file types
+    const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const validVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+    
+    if (!validImageTypes.includes(file.type) && !validVideoTypes.includes(file.type)) {
+      alert('Geçersiz dosya tipi. Görsel veya video dosyası seçin.');
+      return;
+    }
+
+    // Validate file size
+    const maxSize = isVideo ? 25 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`Dosya boyutu ${isVideo ? '25MB' : '5MB'}'dan büyük olamaz.`);
+      return;
+    }
+
     setGalleryUploading(true);
     try {
-      // Client-side resize - Cloudinary kredisi tasarrufu
-      const resizedFile = await resizeImageBeforeUpload(file);
+      let fileToUpload: File | Blob = file;
+      
+      // Client-side resize - sadece görsel için
+      if (isImage) {
+        fileToUpload = await resizeImageBeforeUpload(file);
+      }
       
       const formDataUpload = new FormData();
-      formDataUpload.append('file', resizedFile);
+      formDataUpload.append('file', fileToUpload);
 
-      const res = await fetch('/api/upload', {
+      // Video için farklı endpoint
+      const endpoint = isVideo ? '/api/upload/video' : '/api/upload';
+      
+      const res = await fetch(endpoint, {
         method: 'POST',
         body: formDataUpload,
       });
