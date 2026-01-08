@@ -2023,11 +2023,14 @@ export default function SepetClient() {
                       <div className="max-w-2xl mx-auto">
                         <button
                           onClick={() => {
+                            console.log('İleri butonuna tıklandı', { canProceedToRecipient, itemsLength: state.items.length });
                             if (!canProceedToRecipient) {
                               alert('Sepetinizde ürün bulunmuyor.');
                               return;
                             }
+                            console.log('Alıcı bilgilerine geçiliyor...');
                             setCurrentStep('recipient');
+                            console.log('Step değiştirildi, yeni currentStep: recipient');
                           }}
                           className="w-full py-3.5 bg-[#e05a4c] text-white font-semibold rounded-xl hover:bg-[#cd3f31] transition-colors flex items-center justify-center gap-2"
                         >
@@ -2043,13 +2046,15 @@ export default function SepetClient() {
 
             {/* STEP: RECIPIENT */}
             {currentStep === 'recipient' && (
-              <motion.div
-                key="recipient"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-5"
-              >
+              <>
+                {console.log('Recipient adımı render ediliyor')}
+                <motion.div
+                  key="recipient"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-5"
+                >
                 <div className="text-center mb-8">
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-[#e05a4c] to-[#ff7961] bg-clip-text text-transparent mb-2">Çiçekler Nereye Gitsin?</h2>
                   <p className="text-sm text-gray-500">Sevdiklerinize özel anlar yaratmak için sadece bir adım kaldı</p>
@@ -2922,6 +2927,7 @@ export default function SepetClient() {
                   </div>
                 </div>
               </motion.div>
+              </>
             )}
 
             {/* STEP: PAYMENT */}
