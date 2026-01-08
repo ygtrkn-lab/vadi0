@@ -441,7 +441,6 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
           <div className="lg:hidden mx-auto w-full max-w-lg">
             <div className="grid gap-4 lg:gap-6 items-start">
               <div className="relative rounded-3xl overflow-hidden bg-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.10)] lg:max-h-[60vh]">
-              <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/70 to-transparent z-10 pointer-events-none" />
               {/* Desktop rail thumbnails with video support */}
               <div className="hidden lg:flex flex-col gap-2 absolute left-4 top-4 z-20 max-h-[60vh] overflow-auto pr-1">
                 {images.map((mediaUrl, idx) => {

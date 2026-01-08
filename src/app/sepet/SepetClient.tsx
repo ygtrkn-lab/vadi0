@@ -605,7 +605,6 @@ export default function SepetClient() {
       let notice: string | null = null;
       if (bounded < MIN_DELIVERY_DATE) {
         bounded = MIN_DELIVERY_DATE;
-        notice = 'Teslimat tarihi en erken yarın olabilir. Sizi uygun güne yönlendirdik.';
       } else if (bounded > MAX_DELIVERY_DATE) {
         bounded = MAX_DELIVERY_DATE;
         notice = 'Teslimat tarihi en fazla 7 gün sonrası seçilebilir. Sizi uygun güne yönlendirdik.';
@@ -647,7 +646,6 @@ export default function SepetClient() {
     }
 
     if (deliveryDate < MIN_DELIVERY_DATE) {
-      setRecipientErrors((prev) => ({ ...prev, date: 'Teslimat tarihi en erken yarın olabilir' }));
       return;
     }
 
@@ -675,7 +673,6 @@ export default function SepetClient() {
 
     if (deliveryDate < MIN_DELIVERY_DATE) {
       target = MIN_DELIVERY_DATE;
-      notice = 'Teslimat tarihi en erken yarın olabilir. Sizi uygun güne yönlendirdik.';
     } else if (deliveryDate > MAX_DELIVERY_DATE) {
       target = MAX_DELIVERY_DATE;
       notice = 'Teslimat tarihi en fazla 7 gün sonrası seçilebilir. Sizi uygun güne yönlendirdik.';
@@ -1361,7 +1358,7 @@ export default function SepetClient() {
     if (!deliveryDate) {
       setErr('delivery-date', 'date', 'Teslimat tarihi seçilmelidir');
     } else if (deliveryDate < MIN_DELIVERY_DATE) {
-      setErr('delivery-date', 'date', 'Teslimat tarihi en erken yarın olabilir');
+      // Silently allow past dates without error
     } else {
       // Validate blocked delivery dates (Sundays or manual off days)
       const [y, m, d] = deliveryDate.split('-').map(Number);
