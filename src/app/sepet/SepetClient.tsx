@@ -75,6 +75,7 @@ const DEFAULT_DISABLED_NEIGHBORHOODS: DisabledNeighborhoodsMap = {
 const EUROPE_DISTRICTS = ISTANBUL_REGIONS[0].districts;
 
 const DELIVERY_OFF_DAY_ERROR_MESSAGE = 'Yoğunluk sebebiyle bu tarihte teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.';
+const SUNDAY_BLOCK_ERROR_MESSAGE = 'Pazar günleri teslimat yapılamamaktadır. Lütfen başka bir tarih seçin.';
 const NO_AVAILABLE_DELIVERY_DATE_ERROR_MESSAGE = 'Seçilen aralıkta uygun teslimat günü bulunamadı. Lütfen daha sonra tekrar deneyin veya bizimle iletişime geçin.';
 
 type CheckoutStep = 'cart' | 'recipient' | 'message' | 'payment' | 'success';
@@ -533,6 +534,16 @@ export default function SepetClient() {
     [deliveryOffDaySet]
   );
 
+  const getBlockedDeliveryMessage = useCallback(
+    (iso: string): string | null => {
+      if (!iso) return null;
+      if (deliveryOffDaySet.has(iso)) return DELIVERY_OFF_DAY_ERROR_MESSAGE;
+      if (isLocalIsoDateSunday(iso)) return SUNDAY_BLOCK_ERROR_MESSAGE;
+      return null;
+    },
+    [deliveryOffDaySet]
+  );
+
   const getNextAllowedDeliveryDate = useCallback(
     (preferred?: string | null): string | null => {
       let candidate = preferred && parseLocalISODate(preferred) ? clampIsoToDeliveryWindow(preferred) : MIN_DELIVERY_DATE;
@@ -583,14 +594,14 @@ export default function SepetClient() {
       }
 
       if (!notice && fallback !== raw) {
-        notice = DELIVERY_OFF_DAY_ERROR_MESSAGE;
+        notice = getBlockedDeliveryMessage(raw);
       }
 
       setDeliveryDate(fallback);
       setDeliveryDateNotice(notice);
       setRecipientErrors((prev) => ({ ...prev, date: undefined }));
     },
-    [getNextAllowedDeliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE]
+    [getNextAllowedDeliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE, getBlockedDeliveryMessage]
   );
 
   useEffect(() => {
@@ -610,11 +621,12 @@ export default function SepetClient() {
     }
 
     if (isDeliveryDateBlocked(deliveryDate)) {
-      setRecipientErrors((prev) => ({ ...prev, date: DELIVERY_OFF_DAY_ERROR_MESSAGE }));
+      const msg = getBlockedDeliveryMessage(deliveryDate) || DELIVERY_OFF_DAY_ERROR_MESSAGE;
+      setRecipientErrors((prev) => ({ ...prev, date: msg }));
     } else {
       setRecipientErrors((prev) => (prev.date ? { ...prev, date: undefined } : prev));
     }
-  }, [deliveryDate, isDeliveryDateBlocked, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE]);
+  }, [deliveryDate, isDeliveryDateBlocked, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE, getBlockedDeliveryMessage]);
 
   useEffect(() => {
     if (!deliveryDate) {
@@ -632,7 +644,7 @@ export default function SepetClient() {
       target = MAX_DELIVERY_DATE;
       notice = 'Teslimat tarihi en fazla 7 gün sonrası seçilebilir. Sizi uygun güne yönlendirdik.';
     } else if (isDeliveryDateBlocked(deliveryDate)) {
-      notice = DELIVERY_OFF_DAY_ERROR_MESSAGE;
+      notice = getBlockedDeliveryMessage(deliveryDate);
     } else {
       return;
     }
@@ -652,7 +664,7 @@ export default function SepetClient() {
       setDeliveryDateNotice(notice ?? 'Teslimat tarihi güncellendi.');
       setRecipientErrors((prev) => ({ ...prev, date: undefined }));
     }
-  }, [deliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE, getNextAllowedDeliveryDate, isDeliveryDateBlocked]);
+  }, [deliveryDate, MIN_DELIVERY_DATE, MAX_DELIVERY_DATE, getNextAllowedDeliveryDate, isDeliveryDateBlocked, getBlockedDeliveryMessage]);
 
   // Global delivery info'dan teslimat bilgilerini yükle (ürün detay sayfasından seçilen)
   useEffect(() => {
@@ -1321,10 +1333,11 @@ export default function SepetClient() {
           firstMessage = 'Geçersiz tarih seçildi';
         }
       } else if (isDeliveryDateBlocked(deliveryDate)) {
-        setErr('delivery-date', 'date', DELIVERY_OFF_DAY_ERROR_MESSAGE);
+        const msg = getBlockedDeliveryMessage(deliveryDate) || DELIVERY_OFF_DAY_ERROR_MESSAGE;
+        setErr('delivery-date', 'date', msg);
         if (!firstId) {
           firstId = 'delivery-date';
-          firstMessage = DELIVERY_OFF_DAY_ERROR_MESSAGE;
+          firstMessage = msg;
         }
       }
     }
