@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle, Loader2, Package, CreditCard, Truck } from 'lucide-react';
@@ -8,6 +8,8 @@ import { BorderBeam, GlassCard, SpotlightCard } from '@/components/ui-kit/premiu
 import { useCart } from '@/context/CartContext';
 import GoogleCustomerReviewsOptIn from '@/components/checkout/GoogleCustomerReviewsOptIn';
 import { trackMetaPurchase } from '@/lib/meta-pixel';
+import QRCode from 'react-qr-code';
+import { downloadPdfClientSide } from '@/lib/print';
 
 function extractEstimatedDeliveryDate(delivery: any): string | null {
   if (!delivery) return null;
@@ -39,11 +41,30 @@ function PaymentCompleteContent() {
     email: string;
     estimatedDeliveryDate: string;
   }>(null);
+  const [orderDetails, setOrderDetails] = useState<{ items: { name: string; quantity: number; unitPrice: number; total: number }[]; total: number | null }>({ items: [], total: null });
   // Track if Meta Pixel Purchase event was already fired to prevent duplicates
   const purchaseTrackedRef = useRef(false);
+  const pdfRef = useRef<HTMLDivElement | null>(null);
 
   const gcrMerchantId = Number(process.env.NEXT_PUBLIC_GOOGLE_CUSTOMER_REVIEWS_MERCHANT_ID || '');
   const canRenderGcr = Number.isFinite(gcrMerchantId) && gcrMerchantId > 0;
+
+  const formatPrice = (amount: number | null | undefined) =>
+    typeof amount === 'number' && Number.isFinite(amount)
+      ? new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 2 }).format(amount)
+      : '—';
+
+  const amountText = useMemo(() => formatPrice(orderDetails.total ?? paymentResult?.paidAmount ?? null), [orderDetails.total, paymentResult?.paidAmount]);
+
+  const handleDownloadPdf = async () => {
+    const orderId = paymentResult?.orderId;
+    if (!orderId || !pdfRef.current) return;
+    try {
+      await downloadPdfClientSide(pdfRef.current, `vadiler-siparis-${orderId}.pdf`);
+    } catch (e) {
+      console.error('PDF export failed', e);
+    }
+  };
 
   useEffect(() => {
     // Check for active session
@@ -87,10 +108,10 @@ function PaymentCompleteContent() {
           message: 'Ödeme başarıyla tamamlandı',
         });
         setLoading(false);
-        
-        // Clear cart and delivery info immediately after successful payment
-        clearCart();
-        console.log('✅ Sepet ve teslimat bilgileri temizlendi (GET redirect)');
+        // Keep cart/form data per retention requirement; clear flags only
+        try {
+          localStorage.removeItem('vadiler_checkout_started');
+        } catch {}
         
         // No automatic redirect - user will use button to navigate
         return;
@@ -134,9 +155,15 @@ function PaymentCompleteContent() {
 
             if (data?.success) {
               setPaymentResult(data);
-              // Clear cart and delivery info immediately after successful payment
-              clearCart();
-              console.log('✅ Sepet ve teslimat bilgileri temizlendi (API token)');
+              // Keep cart/form data; clear checkout started flag and record success
+              try {
+                localStorage.removeItem('vadiler_checkout_started');
+                localStorage.setItem('vadiler_last_payment_status', JSON.stringify({
+                  status: 'success',
+                  message: 'Ödeme başarılı',
+                  when: Date.now(),
+                }));
+              } catch {}
               lastError = null;
               break; // Success, exit retry loop
             } else {
@@ -157,7 +184,14 @@ function PaymentCompleteContent() {
                   success: true,
                   message: 'Ödemeniz başarıyla alındı',
                 });
-                clearCart();
+                try {
+                  localStorage.removeItem('vadiler_checkout_started');
+                  localStorage.setItem('vadiler_last_payment_status', JSON.stringify({
+                    status: 'success',
+                    message: 'Ödeme başarılı',
+                    when: Date.now(),
+                  }));
+                } catch {}
                 lastError = null;
               } else {
                 setError('Bir hata oluştu: ' + err.message);
@@ -214,6 +248,17 @@ function PaymentCompleteContent() {
               quantity: item.quantity || 1,
             })),
           });
+          try {
+            setOrderDetails({
+              items: order.items.map((item: any) => ({
+                name: item.productName || item.name || 'Ürün',
+                quantity: Number(item.quantity) || 1,
+                unitPrice: Number(item.price) || 0,
+                total: (Number(item.price) || 0) * (Number(item.quantity) || 1),
+              })),
+              total: typeof order.totalAmount === 'number' ? order.totalAmount : (paidAmount || null),
+            });
+          } catch {}
           console.log('[Meta Pixel] Purchase event tracked for order:', orderId);
         } else {
           // Fallback: track with minimal info
@@ -257,6 +302,20 @@ function PaymentCompleteContent() {
         const estimatedDeliveryDate = extractEstimatedDeliveryDate(order.delivery);
         const customerId = order.customerId as string | undefined;
         if (!estimatedDeliveryDate || !customerId) return;
+
+        try {
+          if (order.items) {
+            setOrderDetails({
+              items: order.items.map((item: any) => ({
+                name: item.productName || item.name || 'Ürün',
+                quantity: Number(item.quantity) || 1,
+                unitPrice: Number(item.price) || 0,
+                total: (Number(item.price) || 0) * (Number(item.quantity) || 1),
+              })),
+              total: typeof order.totalAmount === 'number' ? order.totalAmount : (paymentResult?.paidAmount || null),
+            });
+          }
+        } catch {}
 
         const customerRes = await fetch(`/api/customers/${encodeURIComponent(customerId)}`, {
           method: 'GET',
@@ -413,6 +472,19 @@ function PaymentCompleteContent() {
               </button>
 
               <button
+                onClick={handleDownloadPdf}
+                className="w-full py-3.5 mb-3 bg-white border border-gray-200 text-gray-900 font-semibold rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                disabled={!paymentResult?.orderId}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+                  <path d="M12 3v12"></path>
+                  <path d="m8 11 4 4 4-4"></path>
+                  <path d="M5 19h14"></path>
+                </svg>
+                PDF Olarak İndir
+              </button>
+
+              <button
                 onClick={() => {
                   if (hasSession) {
                     router.push('/hesabim/siparislerim');
@@ -427,6 +499,65 @@ function PaymentCompleteContent() {
             </div>
           </SpotlightCard>
         </motion.div>
+      </div>
+      <div className="absolute -left-[9999px] top-0">
+        <div
+          ref={pdfRef}
+          className="w-[720px] bg-white text-gray-900 rounded-2xl border border-gray-200 p-10 shadow-sm"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Ödeme Fişi</p>
+              <h2 className="text-2xl font-semibold mt-1">Vadiler Sipariş Onayı</h2>
+              <p className="text-sm text-gray-600 mt-2">Tarih: {new Intl.DateTimeFormat('tr-TR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500">Sipariş No</p>
+              <p className="font-mono text-xl font-semibold">{paymentResult?.orderId || '—'}</p>
+              <p className="mt-2 text-sm text-gray-700">Tutar: {amountText}</p>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <p className="text-xs uppercase tracking-[0.18em] text-gray-500">Sepet Özeti</p>
+            <div className="mt-3 border border-gray-200 rounded-xl overflow-hidden">
+              <div className="grid grid-cols-12 bg-gray-50 text-[11px] font-semibold text-gray-600 px-4 py-2">
+                <span className="col-span-6">Ürün</span>
+                <span className="col-span-2 text-center">Adet</span>
+                <span className="col-span-2 text-right">Birim</span>
+                <span className="col-span-2 text-right">Tutar</span>
+              </div>
+              {orderDetails.items.length > 0 ? (
+                orderDetails.items.map((item, idx) => (
+                  <div key={`${item.name}-${idx}`} className="grid grid-cols-12 px-4 py-3 border-t border-gray-100 text-sm text-gray-800">
+                    <span className="col-span-6 pr-3 font-medium">{item.name}</span>
+                    <span className="col-span-2 text-center text-gray-700">{item.quantity}x</span>
+                    <span className="col-span-2 text-right text-gray-700">{formatPrice(item.unitPrice)}</span>
+                    <span className="col-span-2 text-right font-semibold">{formatPrice(item.total)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="px-4 py-6 text-sm text-gray-500">Sepet özeti bulunamadı.</div>
+              )}
+              <div className="grid grid-cols-12 px-4 py-3 bg-gray-50 border-t border-gray-200 text-sm font-semibold text-gray-900">
+                <span className="col-span-8">Toplam</span>
+                <span className="col-span-4 text-right">{amountText}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 flex items-center justify-end">
+            <div className="p-3 border border-gray-200 rounded-xl" data-qr>
+              <QRCode value={`https://vadiler.com/siparis-takip?siparis=${paymentResult?.orderId ?? ''}`} size={120} />
+              <p className="text-[11px] text-gray-600 mt-2 text-center">Bu QR'ı okutarak siparişinizi takip edebilirsiniz.</p>
+            </div>
+          </div>
+
+          <div className="mt-8 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-700">
+            <p>• Bu fişi ödeme dekontunuza ekleyebilirsiniz.</p>
+            <p className="mt-2">• Sipariş detaylarını sağdaki QR üzerinden takip edebilirsiniz.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

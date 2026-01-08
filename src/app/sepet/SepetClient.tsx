@@ -165,6 +165,7 @@ export default function SepetClient() {
   const [recipientErrors, setRecipientErrors] = useState<RecipientErrors>({});
   const [neighborhoodSuggestions, setNeighborhoodSuggestions] = useState<Neighborhood[]>([]);
   const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
+  const [lastPaymentBanner, setLastPaymentBanner] = useState<null | { status: 'failed' | 'abandoned'; message?: string }>(null);
   
   // Inline login/register states
   const [inlineLoginEmail, setInlineLoginEmail] = useState('');
@@ -272,6 +273,29 @@ export default function SepetClient() {
       isMounted = false;
       controller.abort();
     };
+  }, []);
+
+  // Detect last payment status and show resume banner
+  useEffect(() => {
+    try {
+      const last = localStorage.getItem('vadiler_last_payment_status');
+      if (last) {
+        const parsed = JSON.parse(last);
+        if (parsed?.status === 'failed') {
+          setLastPaymentBanner({ status: 'failed', message: parsed?.message || 'Ödeme işlemi tamamlanamadı' });
+          setCurrentStep('payment');
+        }
+        localStorage.removeItem('vadiler_last_payment_status');
+        return;
+      }
+
+      const started = localStorage.getItem('vadiler_checkout_started');
+      if (started) {
+        // Payment flow started earlier but user is back to cart; treat as abandoned
+        setLastPaymentBanner({ status: 'abandoned', message: 'Ödeme işleminiz yarıda kalmış görünüyor.' });
+        setCurrentStep('payment');
+      }
+    } catch {}
   }, []);
 
   // handleSelectSavedAddress - useCallback ile optimize edilmiş
@@ -794,6 +818,16 @@ export default function SepetClient() {
       console.error('Form verilerini yüklerken hata:', error);
     }
   }, []);
+
+  // If cart is empty but payment was started/failed, keep data and clear flags
+  useEffect(() => {
+    if (state.items.length === 0) {
+      try {
+        localStorage.removeItem('vadiler_checkout_started');
+        localStorage.removeItem('vadiler_last_payment_status');
+      } catch {}
+    }
+  }, [state.items.length]);
 
   // Set earliest available delivery date by default (usually tomorrow)
   useEffect(() => {
@@ -1531,22 +1565,29 @@ export default function SepetClient() {
 
       // Handle payment based on selected method
       if (selectedPaymentMethod === 'bank_transfer') {
-        // Bank transfer flow - show bank details modal
-        const totalAmount = getTotalPrice(); // Save total before clearing cart
+        // Bank transfer flow - redirect to dedicated confirmation page
+        const totalAmount = getTotalPrice();
         setBankTransferOrderNumber(orderResult.order.orderNumber);
         setBankTransferOrderId(orderResult.order.id);
         setBankTransferTotal(totalAmount);
-        setShowBankTransferModal(true);
-        
-        // Clear cart after successful order creation
-        clearCart();
-        
-        // Clear localStorage form data after successful order
+        const orderItemsSummary = state.items.map(item => ({
+          name: item.product.name,
+          quantity: item.quantity,
+          unitPrice: item.product.price,
+          total: item.product.price * item.quantity,
+        }));
         try {
-          localStorage.removeItem('vadiler_sepet_form');
-        } catch (error) {
-          console.error('localStorage temizlenirken hata:', error);
-        }
+          localStorage.setItem('vadiler_bank_transfer_info', JSON.stringify({
+            orderNumber: orderResult.order.orderNumber,
+            orderId: orderResult.order.id,
+            totalAmount,
+            items: orderItemsSummary,
+            createdAt: Date.now(),
+          }));
+        } catch {}
+        router.push(`/payment/havale-onay?orderNumber=${orderResult.order.orderNumber}&amount=${encodeURIComponent(totalAmount)}`);
+        
+        // Not clearing cart or form data per retention requirement
         
         // Add to customer orders if logged in
         if (isLoggedIn && customerState.currentCustomer) {
@@ -1581,16 +1622,15 @@ export default function SepetClient() {
           console.log('✅ Payment initialized:', paymentData.paymentId);
         }
 
-        // Clear cart before redirecting to 3DS
-        // Order is already created, no need to keep items in cart
-        clearCart();
-
-        // Clear localStorage form data after successful order
+        // Mark checkout as started (in case user abandons or fails)
         try {
-          localStorage.removeItem('vadiler_sepet_form');
-        } catch (error) {
-          console.error('localStorage temizlenirken hata:', error);
-        }
+          localStorage.setItem('vadiler_checkout_started', JSON.stringify({
+            startedAt: Date.now(),
+            orderId: orderResult.order.id,
+            paymentId: paymentData.paymentId || null,
+            method: 'credit_card'
+          }));
+        } catch {}
 
         // Redirect to 3DS page (full page, not modal)
         // This is e-commerce standard - callback will return to our site
@@ -2917,9 +2957,39 @@ export default function SepetClient() {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-5"
               >
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Sipariş Özeti</h2>
-                  <p className="text-sm text-gray-500">Son adım! Siparişinizi tamamlayın</p>
+                <div className="text-center mb-6 space-y-3">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Sipariş Özeti</h2>
+                    <p className="text-sm text-gray-500">Son adım! Siparişinizi tamamlayın</p>
+                  </div>
+                  {lastPaymentBanner && (
+                    <div
+                      className={`mx-auto max-w-2xl p-4 rounded-xl border flex items-start gap-3 text-left ${
+                        lastPaymentBanner.status === 'failed'
+                          ? 'border-red-200 bg-red-50'
+                          : 'border-amber-200 bg-amber-50'
+                      }`}
+                    >
+                      <AlertCircle className={`w-5 h-5 flex-shrink-0 ${lastPaymentBanner.status === 'failed' ? 'text-red-600' : 'text-amber-600'}`} />
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {lastPaymentBanner.status === 'failed' ? 'Ödeme tamamlanamadı' : 'Ödeme yarıda kalmış'}
+                        </p>
+                        <p className="text-xs text-gray-700 leading-relaxed">
+                          {lastPaymentBanner.message || 'Lütfen ödeme adımını tekrar deneyin.'}
+                        </p>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setLastPaymentBanner(null)}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
+                          >
+                            Gizle
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Üye / Misafir Seçimi - Sadece giriş yapmamışsa göster */}
@@ -3716,12 +3786,12 @@ export default function SepetClient() {
 
       {/* Bank Transfer Modal - Apple Pay Style */}
       {showBankTransferModal && bankTransferOrderNumber && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[2000] flex items-stretch sm:items-center justify-center">
           <motion.div
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white w-full sm:max-w-sm sm:mx-4 rounded-t-3xl sm:rounded-3xl overflow-hidden shadow-2xl"
+            className="bg-white w-full h-full sm:h-auto sm:max-w-lg sm:max-h-[90vh] sm:mx-4 rounded-none sm:rounded-3xl overflow-y-auto shadow-2xl flex flex-col"
           >
             {/* Success Header */}
             <div className="pt-6 pb-4 px-6 text-center relative">
@@ -3773,24 +3843,35 @@ export default function SepetClient() {
                 <span className="text-gray-500 text-sm">Banka</span>
                 <Image src="/TR/garanti.svg" alt="Garanti Bankası" width={100} height={24} className="h-6 w-auto" />
               </div>
-              <div className="flex items-center justify-between py-2.5 border-b border-gray-100">
-                <span className="text-gray-500 text-sm">Hesap Sahibi</span>
-                <span className="font-medium text-gray-900">STR GRUP A.Ş</span>
-              </div>
-              <div className="flex items-center justify-between py-2.5">
-                <span className="text-gray-500 text-sm">IBAN</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-gray-900">TR12 0006 2000 7520 0006 2942 76</span>
+              <div className="py-2.5 border-b border-gray-100">
+                <span className="text-gray-500 text-sm block mb-1">Hesap Sahibi</span>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="font-medium text-gray-900 text-center">STR GRUP A.Ş</p>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText('TR120006200075200006294276');
-                    }}
-                    className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    onClick={() => navigator.clipboard.writeText('STR GRUP A.Ş')}
+                    className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold shadow-sm hover:bg-gray-800 transition-colors"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
                       <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                     </svg>
+                    <span>Kopyala</span>
+                  </button>
+                </div>
+              </div>
+              <div className="py-2.5">
+                <span className="text-gray-500 text-sm block mb-1">IBAN</span>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="font-mono text-sm text-gray-900 leading-relaxed text-center">TR12 0006 2000 7520 0006 2942 76</p>
+                  <button
+                    onClick={() => navigator.clipboard.writeText('TR120006200075200006294276')}
+                    className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold shadow-sm hover:bg-gray-800 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>IBAN&#39;ı Kopyala</span>
                   </button>
                 </div>
               </div>

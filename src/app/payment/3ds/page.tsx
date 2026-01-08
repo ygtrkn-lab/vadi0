@@ -29,6 +29,14 @@ function ThreeDSContent() {
     if (!htmlContent) {
       setError('3DS doğrulama bilgileri eksik');
       setLoading(false);
+      try {
+        localStorage.setItem('vadiler_last_payment_status', JSON.stringify({
+          status: 'failed',
+          message: '3DS doğrulama bilgileri eksik',
+          when: Date.now(),
+        }));
+        localStorage.removeItem('vadiler_checkout_started');
+      } catch {}
       setTimeout(() => router.push('/sepet'), 3000);
       return;
     }
@@ -85,6 +93,14 @@ function ThreeDSContent() {
       console.error('❌ Failed to mount 3DS form:', e);
       setError('3DS formu yüklenemedi');
       setLoading(false);
+      try {
+        localStorage.setItem('vadiler_last_payment_status', JSON.stringify({
+          status: 'failed',
+          message: '3DS formu yüklenemedi',
+          when: Date.now(),
+        }));
+        localStorage.removeItem('vadiler_checkout_started');
+      } catch {}
     }
   }, [searchParams, router]);
 

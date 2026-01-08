@@ -47,7 +47,17 @@ function PaymentFailureContent() {
 
           <div className="space-y-3">
             <button
-              onClick={() => router.push('/sepet')}
+              onClick={() => {
+                try {
+                  localStorage.setItem('vadiler_last_payment_status', JSON.stringify({
+                    status: 'failed',
+                    message: error,
+                    when: Date.now(),
+                  }));
+                  localStorage.removeItem('vadiler_checkout_started');
+                } catch {}
+                router.push('/sepet');
+              }}
               className="w-full bg-[#e8b4bc] text-white py-3 rounded-lg hover:bg-[#d9a3ab] transition-colors font-medium flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-5 h-5" />
