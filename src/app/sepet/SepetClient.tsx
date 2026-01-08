@@ -1383,9 +1383,7 @@ export default function SepetClient() {
     if (!isValidDeliveryTimeSlot(deliveryTimeSlot)) {
       setErr('delivery-time', 'time', 'Teslimat saat dilimini seçin');
     }
-    if (requiresSenderName && senderName.trim().length < 2) {
-      setErr('sender-name', 'sender', 'Gönderen adı en az 2 karakter olmalıdır');
-    }
+    // senderName kontrolü message adımına taşındı - recipient adımında kontrol edilmemeli
 
     setRecipientErrors(errors);
 
@@ -2776,25 +2774,25 @@ export default function SepetClient() {
                     </button>
                     <button
                       onClick={() => {
+                        console.log('=== İLERİ BUTONUNA BASILDI ===');
+                        console.log('recipientName:', recipientName, 'length:', recipientName.trim().length);
+                        console.log('recipientPhone:', recipientPhone, 'isPhoneValid:', isPhoneValid);
+                        console.log('selectedLocation:', selectedLocation);
+                        console.log('neighborhood:', neighborhood);
+                        console.log('streetName:', streetName);
+                        console.log('buildingNo:', buildingNo);
+                        console.log('deliveryDate:', deliveryDate);
+                        console.log('deliveryTimeSlot:', deliveryTimeSlot);
+                        console.log('closedWarning:', closedWarning);
+                        
                         const check = validateRecipientStep();
-                        console.log('Recipient validation result:', check, {
-                          recipientName,
-                          recipientPhone,
-                          isPhoneValid,
-                          selectedLocation,
-                          neighborhood,
-                          streetName,
-                          buildingNo,
-                          deliveryDate,
-                          deliveryTimeSlot,
-                          senderName,
-                          closedWarning,
-                          recipientErrors
-                        });
+                        console.log('Validation result:', check);
+                        
                         if (!check.ok) {
-                          console.log('Validation failed:', check.message, 'First error element:', check.firstId);
+                          console.log('VALIDATION FAILED - firstId:', check.firstId, 'message:', check.message);
                           return;
                         }
+                        console.log('VALIDATION OK - geçiş yapılıyor');
                         setCurrentStep('message');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
@@ -2907,7 +2905,13 @@ export default function SepetClient() {
                     onClick={() => {
                       setMessageCard('');
                       setSelectedMessage(null);
-                      if (!canProceedToPayment) return;
+                      // senderName kontrolü
+                      if (requiresSenderName && senderName.trim().length < 2) {
+                        setRecipientErrors(prev => ({ ...prev, sender: 'Gönderen adı en az 2 karakter olmalıdır' }));
+                        scrollToElement('sender-name');
+                        return;
+                      }
+                      setRecipientErrors(prev => ({ ...prev, sender: undefined }));
                       setCurrentStep('payment');
                     }}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
@@ -2932,8 +2936,13 @@ export default function SepetClient() {
                     </button>
                     <button
                       onClick={() => {
-                        const check = validateRecipientStep();
-                        if (!check.ok) return;
+                        // senderName kontrolü - message adımında yapılmalı
+                        if (requiresSenderName && senderName.trim().length < 2) {
+                          setRecipientErrors(prev => ({ ...prev, sender: 'Gönderen adı en az 2 karakter olmalıdır' }));
+                          scrollToElement('sender-name');
+                          return;
+                        }
+                        setRecipientErrors(prev => ({ ...prev, sender: undefined }));
                         setCurrentStep('payment');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
