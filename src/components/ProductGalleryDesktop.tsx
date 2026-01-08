@@ -3,7 +3,20 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Maximize2, RotateCw, Minus, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2, RotateCw, Minus, Plus, Play, Pause, Volume2, VolumeX } from "lucide-react";
+
+// URL'den medya türünü belirle
+function getMediaType(url: string): 'image' | 'video' | 'unknown' {
+  if (!url) return 'unknown';
+  const lowered = url.toLowerCase();
+  if (lowered.includes('.mp4') || lowered.includes('.webm') || lowered.includes('.mov') || lowered.includes('/video/')) {
+    return 'video';
+  }
+  if (lowered.includes('.jpg') || lowered.includes('.jpeg') || lowered.includes('.png') || lowered.includes('.gif') || lowered.includes('.webp') || lowered.includes('/image/')) {
+    return 'image';
+  }
+  return 'unknown';
+}
 
 interface ProductGalleryDesktopProps {
   images: string[];
@@ -35,10 +48,17 @@ export default function ProductGalleryDesktop({
 }: ProductGalleryDesktopProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [zoomState, setZoomState] = useState<ZoomState>({ scale: 1, x: 0, y: 0 });
   const [isZooming, setIsZooming] = useState(false);
   const [touchDistance, setTouchDistance] = useState(0);
   const [showZoomHint, setShowZoomHint] = useState(true);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isVideoMuted, setIsVideoMuted] = useState(true);
+
+  // Check if current media is video
+  const currentMedia = images[selectedImage] || images[0];
+  const isCurrentVideo = getMediaType(currentMedia) === 'video';
 
   // Mouse wheel zoom - Amazon style
   const handleWheel = useCallback((e: WheelEvent) => {
@@ -119,45 +139,123 @@ export default function ProductGalleryDesktop({
     if (isZooming) setShowZoomHint(false);
   }, [isZooming]);
 
+  // Video controls
+  const toggleVideoPlay = () => {
+    if (videoRef.current) {
+      if (isVideoPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsVideoPlaying(!isVideoPlaying);
+    }
+  };
+
+  const toggleVideoMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isVideoMuted;
+      setIsVideoMuted(!isVideoMuted);
+    }
+  };
+
+  // Reset video state when changing media
+  useEffect(() => {
+    setIsVideoPlaying(false);
+    setIsVideoMuted(true);
+  }, [selectedImage]);
+
   return (
     <div className="hidden lg:flex flex-col gap-4">
-      {/* Main Gallery - Clean Style */}
+      {/* Main Gallery - Clean Style - 1:1 aspect ratio for consistency */}
       <div
         ref={containerRef}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsZooming(true)}
+        onMouseMove={isCurrentVideo ? undefined : handleMouseMove}
+        onMouseEnter={() => !isCurrentVideo && setIsZooming(true)}
         onMouseLeave={() => {
-          setIsZooming(false);
-          resetZoom();
+          if (!isCurrentVideo) {
+            setIsZooming(false);
+            resetZoom();
+          }
         }}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        className="relative rounded-xl overflow-hidden bg-[#fafafa] aspect-[4/5] xl:aspect-[3/4] cursor-zoom-in select-none group"
+        onTouchMove={isCurrentVideo ? undefined : handleTouchMove}
+        onTouchEnd={isCurrentVideo ? undefined : handleTouchEnd}
+        className={`relative rounded-xl overflow-hidden bg-[#fafafa] aspect-square select-none group ${!isCurrentVideo ? 'cursor-zoom-in' : ''}`}
       >
-        {/* Subtle vignette (placed below image) */}
+        {/* Subtle vignette (placed below media) */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/5 z-0 pointer-events-none" />
 
-        {/* Main image container */}
-        <motion.div
-          ref={imageContainerRef}
-          animate={{
-            scale: zoomState.scale,
-            x: `${zoomState.x * 0.1}%`,
-            y: `${zoomState.y * 0.1}%`,
-          }}
-          transition={{ type: "tween", duration: 0.2 }}
-          className="w-full h-full relative z-10"
-        >
-          <Image
-            src={images[selectedImage] || images[0]}
-            alt={productName}
-            fill
-            sizes="(max-width: 1280px) 50vw, (max-width: 1536px) 40vw, 600px"
-            className="object-cover will-change-transform z-10"
-            priority
-            quality={80}
-          />
-        </motion.div>
+        {/* Main media container */}
+        {isCurrentVideo ? (
+          // Video display
+          <div className="w-full h-full relative z-10">
+            <video
+              ref={videoRef}
+              src={currentMedia}
+              className="w-full h-full object-cover"
+              loop
+              muted={isVideoMuted}
+              playsInline
+              onClick={toggleVideoPlay}
+              onPlay={() => setIsVideoPlaying(true)}
+              onPause={() => setIsVideoPlaying(false)}
+            />
+            
+            {/* Video controls overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <AnimatePresence>
+                {!isVideoPlaying && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    onClick={toggleVideoPlay}
+                    className="w-16 h-16 rounded-full bg-black/60 text-white flex items-center justify-center pointer-events-auto hover:bg-black/70 transition-colors"
+                  >
+                    <Play size={28} className="ml-1" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Video control buttons */}
+            <div className="absolute bottom-4 left-4 flex items-center gap-2 z-20">
+              <button
+                onClick={toggleVideoPlay}
+                className="h-10 w-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg hover:bg-white transition"
+              >
+                {isVideoPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+              </button>
+              <button
+                onClick={toggleVideoMute}
+                className="h-10 w-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg hover:bg-white transition"
+              >
+                {isVideoMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Image display with zoom
+          <motion.div
+            ref={imageContainerRef}
+            animate={{
+              scale: zoomState.scale,
+              x: `${zoomState.x * 0.1}%`,
+              y: `${zoomState.y * 0.1}%`,
+            }}
+            transition={{ type: "tween", duration: 0.2 }}
+            className="w-full h-full relative z-10"
+          >
+            <Image
+              src={currentMedia}
+              alt={productName}
+              fill
+              sizes="(max-width: 1280px) 50vw, (max-width: 1536px) 40vw, 600px"
+              className="object-cover will-change-transform z-10"
+              priority
+              quality={80}
+            />
+          </motion.div>
+        )}
 
         {/* Discount badge */}
         {discount > 0 && (
