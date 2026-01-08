@@ -620,16 +620,17 @@ export default function UrunDuzenlePage() {
               transition={{ delay: 0.2 }}
               className={`rounded-2xl p-6 shadow-sm border ${cardClasses}`}
             >
-              <h2 className={`text-lg font-semibold mb-4 ${headingClasses}`}>Görseller</h2>
+              <h2 className={`text-lg font-semibold mb-4 ${headingClasses}`}>Görseller / Video</h2>
 
               <div className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-6">
-                  <ImageUpload
+                  <MediaUpload
                     value={formData.image}
                     onChange={(url) => handleInputChange('image', url)}
-                    label="Ana Görsel"
+                    label="Ana Görsel / Video"
                     required
                     isDark={isDark}
+                    acceptVideo={true}
                   />
 
                   <ImageUpload
