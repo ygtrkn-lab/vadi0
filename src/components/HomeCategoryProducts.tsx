@@ -4,10 +4,20 @@ import { useState, useRef, useEffect, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
-import { Heart, ShoppingCart, ChevronRight, ChevronLeft, Star, Truck, Gift, Clock, Check } from 'lucide-react';
+import { Heart, ShoppingCart, ChevronRight, ChevronLeft, Star, Truck, Gift, Clock, Check, Play } from 'lucide-react';
 import type { Product } from '@/data/products';
 import { useCustomer } from '@/context/CustomerContext';
 import { useCart } from '@/context/CartContext';
+
+// URL'den medya türünü belirle
+function getMediaType(url: string): 'image' | 'video' | 'unknown' {
+  if (!url) return 'unknown';
+  const lowered = url.toLowerCase();
+  if (lowered.includes('.mp4') || lowered.includes('.webm') || lowered.includes('.mov') || lowered.includes('/video/')) {
+    return 'video';
+  }
+  return 'image';
+}
 
 interface HomeCategoryProductsProps {
   categorySlug: string;
@@ -26,6 +36,7 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
 
   const customer = customerState.currentCustomer;
   const isWishlisted = customer ? isFavorite(customer.id, String(product.id)) : false;
+  const isMainVideo = getMediaType(product.image) === 'video';
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('tr-TR', {
@@ -70,15 +81,38 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
         href={`/${product.category}/${product.slug}`}
         className="block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100"
       >
-        {/* Image Container */}
+        {/* Image Container - Video Support */}
         <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-          <Image
-            src={imageError ? '/placeholder-flower.jpg' : product.image}
-            alt={product.name}
-            fill
-            className="object-cover group-hover:scale-110 transition-transform duration-700"
-            onError={() => setImageError(true)}
-          />
+          {isMainVideo ? (
+            <div className="relative w-full h-full">
+              <video
+                src={product.image}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                loop
+                muted
+                playsInline
+                onMouseEnter={(e) => e.currentTarget.play()}
+                onMouseLeave={(e) => {
+                  e.currentTarget.pause();
+                  e.currentTarget.currentTime = 0;
+                }}
+              />
+              {/* Video indicator */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity">
+                <div className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center">
+                  <Play size={18} className="text-white ml-0.5" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Image
+              src={imageError ? '/placeholder-flower.jpg' : product.image}
+              alt={product.name}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-700"
+              onError={() => setImageError(true)}
+            />
+          )}
           
           {/* Discount Badge - More prominent */}
           {product.discount > 0 && (

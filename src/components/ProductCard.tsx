@@ -4,11 +4,24 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingCart, Eye, Star, Check } from 'lucide-react';
+import { Heart, ShoppingCart, Eye, Star, Check, Play } from 'lucide-react';
 import type { Product } from '@/data/products';
 import { useCustomer } from '@/context/CustomerContext';
 import { useCart } from '@/context/CartContext';
 import { useCategoryNames } from '@/hooks/useCategoryNames';
+
+// URL'den medya türünü belirle
+function getMediaType(url: string): 'image' | 'video' | 'unknown' {
+  if (!url) return 'unknown';
+  const lowered = url.toLowerCase();
+  if (lowered.includes('.mp4') || lowered.includes('.webm') || lowered.includes('.mov') || lowered.includes('/video/')) {
+    return 'video';
+  }
+  if (lowered.includes('.jpg') || lowered.includes('.jpeg') || lowered.includes('.png') || lowered.includes('.gif') || lowered.includes('.webp') || lowered.includes('/image/')) {
+    return 'image';
+  }
+  return 'unknown';
+}
 
 interface ProductCardProps {
   product: Product;
@@ -23,6 +36,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { getName } = useCategoryNames();
 
   const customer = customerState.currentCustomer;
+  const isMainVideo = getMediaType(product.image) === 'video';
   const isWishlisted = customer ? isFavorite(customer.id, String(product.id)) : false;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -90,26 +104,51 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             </div>
           )}
 
-          {/* Main Image */}
-          <Image
-            src={imageError ? '/placeholder-flower.jpg' : product.image}
-            alt={product.name}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className="product-image object-cover rounded-xl"
-            onError={() => setImageError(true)}
-          />
-          
-          {/* Hover Image */}
-          {product.hoverImage && !imageError && (
-            <Image
-              src={product.hoverImage}
-              alt={`${product.name} - hover`}
-              fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              loading="lazy"
-              className="product-image-hover object-cover rounded-xl"
-            />
+          {/* Main Image or Video */}
+          {isMainVideo ? (
+            <div className="relative w-full h-full">
+              <video
+                src={product.image}
+                className="product-image w-full h-full object-cover rounded-xl"
+                loop
+                muted
+                playsInline
+                onMouseEnter={(e) => e.currentTarget.play()}
+                onMouseLeave={(e) => {
+                  e.currentTarget.pause();
+                  e.currentTarget.currentTime = 0;
+                }}
+              />
+              {/* Video indicator */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity">
+                <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
+                  <Play size={20} className="text-white ml-1" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Image
+                src={imageError ? '/placeholder-flower.jpg' : product.image}
+                alt={product.name}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                className="product-image object-cover rounded-xl"
+                onError={() => setImageError(true)}
+              />
+              
+              {/* Hover Image */}
+              {product.hoverImage && !imageError && (
+                <Image
+                  src={product.hoverImage}
+                  alt={`${product.name} - hover`}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  loading="lazy"
+                  className="product-image-hover object-cover rounded-xl"
+                />
+              )}
+            </>
           )}
 
           {/* Badges */}
