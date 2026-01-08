@@ -7,7 +7,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle, X, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import type { Product } from "@/data/products";
-import { Header, Footer, MobileNavBar } from "@/components";
+import { Header, Footer } from "@/components";
 import ProductReviews from "@/components/ProductReviews";
 import ProductDetailDesktop from "@/components/ProductDetailDesktop";
 import ProductGalleryDesktop from "@/components/ProductGalleryDesktop";
@@ -431,7 +431,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
         </div>
 
           {/* Mobile Layout */}
-          <div className="lg:hidden">
+          <div className="lg:hidden px-4">
             <div className="grid gap-4 lg:gap-6 items-start">
               <div className="relative rounded-3xl overflow-hidden bg-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.10)] lg:max-h-[60vh]">
               <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/70 to-transparent z-10 pointer-events-none" />
@@ -1165,8 +1165,6 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
           z-index: 9999 !important;
         }
       `}</style>
-      
-      <MobileNavBar />
     </>
   );
 }
