@@ -7,6 +7,7 @@ import { useCustomer, Address } from '@/context/CustomerContext';
 import { useOrder } from '@/context/OrderContext';
 import { useAnalytics } from '@/context/AnalyticsContext';
 import { Header, Footer } from '@/components';
+import { getMediaType } from '@/components/admin/MediaUpload';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -1903,12 +1904,23 @@ export default function SepetClient() {
                           href={`/${item.product.category}/${item.product.slug}`}
                           className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0"
                         >
-                          <Image
-                            src={item.product.image}
-                            alt={item.product.name}
-                            fill
-                            className="object-cover"
-                          />
+                          {getMediaType(item.product.image) === 'video' ? (
+                            <video
+                              src={item.product.image}
+                              className="w-full h-full object-cover"
+                              muted
+                              loop
+                              playsInline
+                              autoPlay
+                            />
+                          ) : (
+                            <Image
+                              src={item.product.image}
+                              alt={item.product.name}
+                              fill
+                              className="object-cover"
+                            />
+                          )}
                         </Link>
 
                         <div className="flex-1 min-w-0">
@@ -3414,7 +3426,18 @@ export default function SepetClient() {
                     {state.items.map((item) => (
                       <div key={item.product.id} className="flex items-center gap-3">
                         <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image src={item.product.image} alt={item.product.name} fill className="object-cover" />
+                          {getMediaType(item.product.image) === 'video' ? (
+                            <video
+                              src={item.product.image}
+                              className="w-full h-full object-cover"
+                              muted
+                              loop
+                              playsInline
+                              autoPlay
+                            />
+                          ) : (
+                            <Image src={item.product.image} alt={item.product.name} fill className="object-cover" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">{item.product.name}</p>

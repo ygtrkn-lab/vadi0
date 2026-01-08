@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import { getMediaType } from '@/components/admin/MediaUpload';
 import { SpotlightCard, FadeContent, StatusBadge } from '@/components/admin';
 import { useTheme } from '../ThemeContext';
 import { useOrder, Order, OrderStatus } from '@/context/OrderContext';
@@ -17,6 +18,7 @@ import {
   HiOutlineSearch, 
   HiOutlineCurrencyDollar,
   HiOutlineEye,
+  HiOutlineTrash,
   HiOutlineX,
   HiOutlineClipboardList,
   HiOutlineTruck,
@@ -156,8 +158,12 @@ export default function SiparislerPage() {
   const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0 });
   
   const { isDark } = useTheme();
-  const { state: orderState, updateOrderStatus } = useOrder();
+  const { state: orderState, updateOrderStatus, deleteOrder } = useOrder();
   const { getCustomerById } = useCustomer();
+  
+  // Delete confirmation state
+  const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -265,6 +271,21 @@ export default function SiparislerPage() {
           { status: newStatus, timestamp: new Date().toISOString(), note }
         ]
       } : null);
+    }
+  };
+
+  const handleDeleteOrder = async (order: Order) => {
+    setIsDeleting(true);
+    try {
+      await deleteOrder(order.id);
+      setDeleteConfirmOrder(null);
+      if (selectedOrder?.id === order.id) {
+        setSelectedOrder(null);
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -723,6 +744,22 @@ export default function SiparislerPage() {
                     }`} />
 
                     <div className="relative p-6 flex-1 flex flex-col">
+                      {/* Delete Button - Top Right Corner */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteConfirmOrder(order);
+                        }}
+                        className={`absolute top-3 right-3 p-2 rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 z-10 ${
+                          isDark 
+                            ? 'bg-red-500/20 hover:bg-red-500/40 text-red-400 hover:text-red-300' 
+                            : 'bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-600'
+                        }`}
+                        title="Siparişi Sil"
+                      >
+                        <HiOutlineTrash className="w-4 h-4" />
+                      </button>
+
                       {/* Header: Order Number + Status + Order Date */}
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex flex-col gap-2.5">
@@ -810,7 +847,18 @@ export default function SiparislerPage() {
                               style={{ zIndex: 3 - idx }}
                             >
                               {p.image ? (
-                                <Image src={p.image} alt={p.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" unoptimized />
+                                getMediaType(p.image) === 'video' ? (
+                                  <video
+                                    src={p.image}
+                                    className="w-full h-full object-cover"
+                                    muted
+                                    loop
+                                    playsInline
+                                    autoPlay
+                                  />
+                                ) : (
+                                  <Image src={p.image} alt={p.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" unoptimized />
+                                )
                               ) : (
                                 <div className={`w-full h-full flex items-center justify-center text-2xl backdrop-blur-sm ${
                                   isDark ? 'bg-gradient-to-br from-neutral-800 to-neutral-900 text-neutral-500' : 'bg-gradient-to-br from-gray-50 to-gray-100 text-gray-400'
@@ -839,29 +887,6 @@ export default function SiparislerPage() {
                           )}
                         </div>
                       </div>
-
-                      {/* Quick Action Button - Premium Style */}
-                      {getNextStatus(order.status) && (
-                        <motion.button
-                          initial={{ opacity: 0, y: 10 }}
-                          whileHover={{ scale: 1.015 }}
-                          whileTap={{ scale: 0.985 }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUpdateStatus(order.id, getNextStatus(order.status)!.status);
-                          }}
-                          className={`w-full mt-5 py-3 rounded-[14px] text-[13px] font-semibold tracking-wide opacity-0 group-hover:opacity-100 transition-all duration-500 backdrop-blur-2xl shadow-lg hover:shadow-xl flex items-center justify-center gap-2 ${
-                            isDark 
-                              ? 'bg-gradient-to-r from-white/[0.15] to-white/[0.08] hover:from-white/[0.22] hover:to-white/[0.15] text-white ring-1 ring-white/[0.25] hover:ring-white/[0.35] shadow-black/20' 
-                              : 'bg-gradient-to-r from-black/[0.06] to-black/[0.03] hover:from-black/[0.10] hover:to-black/[0.06] text-gray-900 ring-1 ring-black/[0.12] hover:ring-black/[0.18] shadow-black/10'
-                          }`}
-                        >
-                          <span>{getNextStatus(order.status)!.label}</span>
-                          <svg className="w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                          </svg>
-                        </motion.button>
-                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -1350,7 +1375,18 @@ export default function SiparislerPage() {
                         }`}>
                           <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-gray-100 to-gray-200">
                             {product.image ? (
-                              <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
+                              getMediaType(product.image) === 'video' ? (
+                                <video
+                                  src={product.image}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  loop
+                                  playsInline
+                                  autoPlay
+                                />
+                              ) : (
+                                <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
+                              )
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-gray-400">🌸</div>
                             )}
@@ -1473,6 +1509,117 @@ export default function SiparislerPage() {
               {/* Hidden printable template */}
               <div style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: 800 }} aria-hidden>
                 <OrderPrintTemplate ref={printRef} order={selectedOrder} />
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isMounted && deleteConfirmOrder && createPortal(
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100000] flex items-center justify-center p-4"
+          >
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => !isDeleting && setDeleteConfirmOrder(null)}
+            />
+            
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={`relative w-full max-w-md rounded-3xl p-6 shadow-2xl ${
+                isDark 
+                  ? 'bg-neutral-900 border border-neutral-800' 
+                  : 'bg-white border border-gray-200'
+              }`}
+            >
+              {/* Warning Icon */}
+              <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                isDark ? 'bg-red-500/20' : 'bg-red-100'
+              }`}>
+                <HiOutlineTrash className={`w-8 h-8 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
+              </div>
+              
+              {/* Title */}
+              <h3 className={`text-xl font-bold text-center mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Siparişi Sil
+              </h3>
+              
+              {/* Description */}
+              <p className={`text-center mb-6 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+                <span className="font-semibold">#{deleteConfirmOrder.orderNumber}</span> numaralı siparişi silmek istediğinize emin misiniz? 
+                <br />
+                <span className="text-sm text-red-500">Bu işlem geri alınamaz.</span>
+              </p>
+              
+              {/* Order Info */}
+              <div className={`p-4 rounded-2xl mb-6 ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${
+                    isDark ? 'bg-purple-500/30 text-purple-300' : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {(deleteConfirmOrder.customerName || 'M').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-semibold truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {deleteConfirmOrder.customerName || 'Müşteri'}
+                    </p>
+                    <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
+                      {formatPrice(deleteConfirmOrder.total)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirmOrder(null)}
+                  disabled={isDeleting}
+                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                    isDark 
+                      ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  } ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  İptal
+                </button>
+                <button
+                  onClick={() => handleDeleteOrder(deleteConfirmOrder)}
+                  disabled={isDeleting}
+                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    isDark 
+                      ? 'bg-red-500/80 text-white hover:bg-red-500' 
+                      : 'bg-red-600 text-white hover:bg-red-700'
+                  } ${isDeleting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  {isDeleting ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Siliniyor...
+                    </>
+                  ) : (
+                    <>
+                      <HiOutlineTrash className="w-4 h-4" />
+                      Sil
+                    </>
+                  )}
+                </button>
               </div>
             </motion.div>
           </motion.div>
