@@ -277,9 +277,9 @@ export default function ProductGalleryDesktop({
           </div>
         )}
 
-        {/* Zoom hint */}
+        {/* Zoom hint - only for images */}
         <AnimatePresence>
-          {showZoomHint && isZooming && zoomState.scale === 1 && (
+          {!isCurrentVideo && showZoomHint && isZooming && zoomState.scale === 1 && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -291,9 +291,9 @@ export default function ProductGalleryDesktop({
           )}
         </AnimatePresence>
 
-        {/* Zoom controls */}
+        {/* Zoom controls - only for images */}
         <AnimatePresence>
-          {isZooming && zoomState.scale > 1 && (
+          {!isCurrentVideo && isZooming && zoomState.scale > 1 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -353,32 +353,53 @@ export default function ProductGalleryDesktop({
         )}
       </div>
 
-      {/* Thumbnail rail */}
+      {/* Thumbnail rail with video indicators */}
       {images.length > 1 && (
         <div className="flex gap-3 overflow-x-auto pb-1">
-          {images.map((img, idx) => (
-            <button
-              key={`gallery-thumb-${idx}`}
-              onClick={() => {
-                onImageSelect(idx);
-                resetZoom();
-              }}
-              className={`relative h-16 w-16 xl:h-20 xl:w-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                selectedImage === idx
-                  ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/20"
-                  : "border-gray-200 opacity-70 hover:opacity-100 hover:border-gray-300"
-              }`}
-            >
-              <Image
-                src={img}
-                alt={`${productName}-thumb-${idx}`}
-                fill
-                sizes="80px"
-                className="object-cover"
-                quality={70}
-              />
-            </button>
-          ))}
+          {images.map((mediaUrl, idx) => {
+            const isVideo = getMediaType(mediaUrl) === 'video';
+            
+            return (
+              <button
+                key={`gallery-thumb-${idx}`}
+                onClick={() => {
+                  onImageSelect(idx);
+                  resetZoom();
+                }}
+                className={`relative h-16 w-16 xl:h-20 xl:w-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                  selectedImage === idx
+                    ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/20"
+                    : "border-gray-200 opacity-70 hover:opacity-100 hover:border-gray-300"
+                }`}
+              >
+                {isVideo ? (
+                  <div className="relative w-full h-full bg-gray-900">
+                    <video
+                      src={mediaUrl}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                    />
+                    {/* Video play indicator on thumbnail */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
+                        <Play size={14} className="text-white ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <Image
+                    src={mediaUrl}
+                    alt={`${productName}-thumb-${idx}`}
+                    fill
+                    sizes="80px"
+                    className="object-cover"
+                    quality={70}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>

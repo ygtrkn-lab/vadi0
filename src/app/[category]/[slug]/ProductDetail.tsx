@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle, X, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import type { Product } from "@/data/products";
 import { Header, Footer, MobileNavBar } from "@/components";
 import ProductReviews from "@/components/ProductReviews";
@@ -14,6 +14,19 @@ import ProductGalleryDesktop from "@/components/ProductGalleryDesktop";
 import { useCart } from "@/context/CartContext";
 import { useCustomer } from "@/context/CustomerContext";
 import { useAnalytics } from "@/context/AnalyticsContext";
+
+// URL'den medya türünü belirle
+function getMediaType(url: string): 'image' | 'video' | 'unknown' {
+  if (!url) return 'unknown';
+  const lowered = url.toLowerCase();
+  if (lowered.includes('.mp4') || lowered.includes('.webm') || lowered.includes('.mov') || lowered.includes('/video/')) {
+    return 'video';
+  }
+  if (lowered.includes('.jpg') || lowered.includes('.jpeg') || lowered.includes('.png') || lowered.includes('.gif') || lowered.includes('.webp') || lowered.includes('/image/')) {
+    return 'image';
+  }
+  return 'unknown';
+}
 
 type ProductDetailProps = {
   product: Product;
@@ -31,6 +44,11 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [showTopBar, setShowTopBar] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
+  
+  // Video state for mobile
+  const mobileVideoRef = useRef<HTMLVideoElement>(null);
+  const [isMobileVideoPlaying, setIsMobileVideoPlaying] = useState(false);
+  const [isMobileVideoMuted, setIsMobileVideoMuted] = useState(true);
 
   const { addToCart } = useCart();
   const { state: customerState, addToFavorites, removeFromFavorites, isFavorite } = useCustomer();
@@ -43,6 +61,16 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     const valid = (gallery || []).filter((img) => img && img !== "" && !img.includes("placeholder"));
     return valid.length ? valid : [product.image];
   }, [product.gallery, product.image, product.hoverImage]);
+
+  // Check if current media is video
+  const currentMedia = images[selectedImage] || product.image;
+  const isCurrentVideo = getMediaType(currentMedia) === 'video';
+
+  // Reset video state when changing media
+  useEffect(() => {
+    setIsMobileVideoPlaying(false);
+    setIsMobileVideoMuted(true);
+  }, [selectedImage]);
 
   // Track product view
   useEffect(() => {
