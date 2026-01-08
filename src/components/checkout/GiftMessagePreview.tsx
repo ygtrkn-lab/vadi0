@@ -35,7 +35,7 @@ export default function GiftMessagePreview({ message, senderName }: GiftMessageP
             <div className="h-1" />
             
             {/* Message content */}
-            <div className="border-t border-gray-200 pt-3 mt-2 flex-1">
+            <div className="border-t border-gray-200 pt-[16px] mt-2 flex-1">
               <div 
                 className="text-sm leading-relaxed text-gray-900 font-semibold whitespace-pre-wrap break-words line-clamp-6"
                 style={{ 
