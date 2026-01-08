@@ -435,65 +435,173 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
             <div className="grid gap-4 lg:gap-6 items-start">
               <div className="relative rounded-3xl overflow-hidden bg-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.10)] lg:max-h-[60vh]">
               <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/70 to-transparent z-10 pointer-events-none" />
+              {/* Desktop rail thumbnails with video support */}
               <div className="hidden lg:flex flex-col gap-2 absolute left-4 top-4 z-20 max-h-[60vh] overflow-auto pr-1">
-                {images.map((img, idx) => (
-                  <button
-                    key={`rail-${idx}`}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`relative h-16 w-16 rounded-2xl overflow-hidden border backdrop-blur transition-all ${
-                      selectedImage === idx ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/40" : "border-white/40 hover:border-white/80"
-                    } shadow-sm`}
-                  >
-                    <Image src={img} alt={`${product.name}-rail-${idx}`} fill className="object-cover" />
-                  </button>
-                ))}
+                {images.map((mediaUrl, idx) => {
+                  const isVideo = getMediaType(mediaUrl) === 'video';
+                  return (
+                    <button
+                      key={`rail-${idx}`}
+                      onClick={() => setSelectedImage(idx)}
+                      className={`relative h-16 w-16 rounded-2xl overflow-hidden border backdrop-blur transition-all ${
+                        selectedImage === idx ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/40" : "border-white/40 hover:border-white/80"
+                      } shadow-sm`}
+                    >
+                      {isVideo ? (
+                        <div className="relative w-full h-full bg-gray-900">
+                          <video src={mediaUrl} className="w-full h-full object-cover" muted playsInline />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-black/50 flex items-center justify-center">
+                              <Play size={10} className="text-white ml-0.5" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <Image src={mediaUrl} alt={`${product.name}-rail-${idx}`} fill className="object-cover" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-              <motion.div layout className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] min-h-[60vh]">
-                <Image
-                  src={images[selectedImage] || product.image}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 60vw"
-                  className="object-cover"
-                  priority
-                />
-                {product.discount > 0 && (
-                  <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-xs font-semibold bg-[#e05a4c] shadow-lg">
-                    -%{product.discount}
-                  </div>
-                )}
-                {isWeeklyCampaign && (
-                  <div className="absolute left-4 top-14 z-20">
-                    <Image
-                      src="/TR/bugune-ozel.png"
-                      alt="Bugüne Özel"
-                      width={80}
-                      height={80}
-                      className="h-16 w-16 drop-shadow"
+              {/* Mobile main media display - 1:1 aspect ratio with video support */}
+              <motion.div layout className="relative aspect-square min-h-[60vh]">
+                {isCurrentVideo ? (
+                  // Video display
+                  <div className="w-full h-full relative">
+                    <video
+                      ref={mobileVideoRef}
+                      src={currentMedia}
+                      className="w-full h-full object-cover"
+                      loop
+                      muted={isMobileVideoMuted}
+                      playsInline
+                      onClick={() => {
+                        if (mobileVideoRef.current) {
+                          if (isMobileVideoPlaying) {
+                            mobileVideoRef.current.pause();
+                          } else {
+                            mobileVideoRef.current.play();
+                          }
+                          setIsMobileVideoPlaying(!isMobileVideoPlaying);
+                        }
+                      }}
+                      onPlay={() => setIsMobileVideoPlaying(true)}
+                      onPause={() => setIsMobileVideoPlaying(false)}
                     />
+                    
+                    {/* Video play button overlay */}
+                    <AnimatePresence>
+                      {!isMobileVideoPlaying && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                        >
+                          <div className="w-16 h-16 rounded-full bg-black/60 text-white flex items-center justify-center">
+                            <Play size={28} className="ml-1" />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Video controls */}
+                    <div className="absolute bottom-4 left-4 flex items-center gap-2 z-20">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (mobileVideoRef.current) {
+                            if (isMobileVideoPlaying) {
+                              mobileVideoRef.current.pause();
+                            } else {
+                              mobileVideoRef.current.play();
+                            }
+                            setIsMobileVideoPlaying(!isMobileVideoPlaying);
+                          }
+                        }}
+                        className="h-10 w-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg"
+                      >
+                        {isMobileVideoPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (mobileVideoRef.current) {
+                            mobileVideoRef.current.muted = !isMobileVideoMuted;
+                            setIsMobileVideoMuted(!isMobileVideoMuted);
+                          }
+                        }}
+                        className="h-10 w-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg"
+                      >
+                        {isMobileVideoMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                      </button>
+                    </div>
                   </div>
+                ) : (
+                  // Image display
+                  <>
+                    <Image
+                      src={currentMedia}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, 60vw"
+                      className="object-cover"
+                      priority
+                    />
+                    {product.discount > 0 && (
+                      <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-xs font-semibold bg-[#e05a4c] shadow-lg">
+                        -%{product.discount}
+                      </div>
+                    )}
+                    {isWeeklyCampaign && (
+                      <div className="absolute left-4 top-14 z-20">
+                        <Image
+                          src="/TR/bugune-ozel.png"
+                          alt="Bugüne Özel"
+                          width={80}
+                          height={80}
+                          className="h-16 w-16 drop-shadow"
+                        />
+                      </div>
+                    )}
+                    <button
+                      onClick={() => setIsImageModalOpen(true)}
+                      className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/90 text-slate-800 px-5 py-2 text-xs font-semibold shadow-md"
+                    >
+                      Tam ekran
+                    </button>
+                  </>
                 )}
-                <button
-                  onClick={() => setIsImageModalOpen(true)}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/90 text-slate-800 px-5 py-2 text-xs font-semibold shadow-md"
-                >
-                  Tam ekran
-                </button>
               </motion.div>
 
+              {/* Mobile thumbnail strip with video support */}
               {images.length > 1 && (
                 <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white/80 backdrop-blur border-t border-slate-100 lg:hidden">
-                  {images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImage(idx)}
-                      className={`relative h-16 w-16 rounded-2xl overflow-hidden border transition-all ${
-                        selectedImage === idx ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/30" : "border-transparent opacity-75"
-                      }`}
-                    >
-                      <Image src={img} alt={`${product.name}-${idx}`} fill className="object-cover" />
-                    </button>
-                  ))}
+                  {images.map((mediaUrl, idx) => {
+                    const isVideo = getMediaType(mediaUrl) === 'video';
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedImage(idx)}
+                        className={`relative h-16 w-16 rounded-2xl overflow-hidden border transition-all ${
+                          selectedImage === idx ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/30" : "border-transparent opacity-75"
+                        }`}
+                      >
+                        {isVideo ? (
+                          <div className="relative w-full h-full bg-gray-900">
+                            <video src={mediaUrl} className="w-full h-full object-cover" muted playsInline />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-6 h-6 rounded-full bg-black/50 flex items-center justify-center">
+                                <Play size={10} className="text-white ml-0.5" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <Image src={mediaUrl} alt={`${product.name}-${idx}`} fill className="object-cover" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -982,24 +1090,41 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
               )}
 
               <div className="relative w-full h-full min-h-[90vh] flex items-center justify-center">
-                <Image
-                  src={images[selectedImage]}
-                  alt={product.name}
-                  fill
-                  className="object-contain"
-                  sizes="100vw"
-                  priority
-                />
-                {isWeeklyCampaign && (
-                  <div className="absolute left-6 top-10 z-20">
-                    <Image
-                      src="/TR/bugune-ozel.png"
-                      alt="Bugüne Özel"
-                      width={90}
-                      height={90}
-                      className="h-16 w-16 drop-shadow"
+                {getMediaType(images[selectedImage]) === 'video' ? (
+                  // Video in fullscreen modal
+                  <div className="relative w-full max-w-4xl aspect-square mx-auto">
+                    <video
+                      src={images[selectedImage]}
+                      className="w-full h-full object-contain"
+                      controls
+                      autoPlay
+                      loop
+                      playsInline
                     />
                   </div>
+                ) : (
+                  // Image in fullscreen modal
+                  <>
+                    <Image
+                      src={images[selectedImage]}
+                      alt={product.name}
+                      fill
+                      className="object-contain"
+                      sizes="100vw"
+                      priority
+                    />
+                    {isWeeklyCampaign && (
+                      <div className="absolute left-6 top-10 z-20">
+                        <Image
+                          src="/TR/bugune-ozel.png"
+                          alt="Bugüne Özel"
+                          width={90}
+                          height={90}
+                          className="h-16 w-16 drop-shadow"
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
