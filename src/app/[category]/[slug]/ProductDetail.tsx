@@ -464,14 +464,14 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                 })}
               </div>
               {/* Mobile main media display - 1:1 aspect ratio with video support */}
-              <motion.div layout className="relative aspect-square min-h-[60vh]">
+              <motion.div layout className="relative aspect-square w-full flex items-center justify-center">
                 {isCurrentVideo ? (
                   // Video display
-                  <div className="w-full h-full relative">
+                  <div className="w-full h-full relative flex items-center justify-center">
                     <video
                       ref={mobileVideoRef}
                       src={currentMedia}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       loop
                       muted={isMobileVideoMuted}
                       playsInline
@@ -546,7 +546,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                       alt={product.name}
                       fill
                       sizes="(max-width: 768px) 100vw, 60vw"
-                      className="object-cover"
+                      className="object-contain"
                       priority
                     />
                     {product.discount > 0 && (
