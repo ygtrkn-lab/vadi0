@@ -58,6 +58,7 @@ export default function DeliverySelector({ onDeliveryComplete, isRequired = true
   const selectorRef = useRef<HTMLDivElement | null>(null);
   const lastOpenSignal = useRef<number | null>(null);
   const [disabledDistricts, setDisabledDistricts] = useState<string[]>(DEFAULT_DISABLED_DISTRICTS);
+  const [isAnadoluClosed, setIsAnadoluClosed] = useState(true);
 
   // Generate next 7 days starting from tomorrow (no same-day delivery)
   const generateDates = () => {
@@ -136,7 +137,7 @@ import { useMemo } from 'react';
     }
   }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot, onDeliveryComplete]);
 
-  // Load dynamic delivery settings (disabled districts)
+  // Load dynamic delivery settings (disabled districts + anadolu side)
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -146,7 +147,11 @@ import { useMemo } from 'react';
         const payload = await res.json();
         const cat = payload?.settings || payload?.category?.settings || {};
         const dd = Array.isArray(cat?.disabled_districts) ? (cat.disabled_districts as string[]) : DEFAULT_DISABLED_DISTRICTS;
-        if (mounted) setDisabledDistricts(dd);
+        const anadolu = typeof cat?.is_anadolu_closed === 'boolean' ? !!cat.is_anadolu_closed : true;
+        if (mounted) {
+          setDisabledDistricts(dd);
+          setIsAnadoluClosed(anadolu);
+        }
       } catch {
         // keep defaults
       }
@@ -267,7 +272,7 @@ import { useMemo } from 'react';
         </button>
 
         {/* Helper text */}
-        {!selectedLocation && !isLocationOpen && (
+        {!selectedLocation && !isLocationOpen && isAnadoluClosed && (
           <div className="text-xs text-[#e05a4c] mt-1.5 px-1 space-y-0.5">
             <p>Şu an sadece İstanbul (Avrupa) teslimat yapılmaktadır.</p>
             <p className="text-[11px] text-amber-600">Anadolu yakası çok yakında hizmete açılacak.</p>
@@ -312,27 +317,30 @@ import { useMemo } from 'react';
                     <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium px-2 py-1">İstanbul</p>
                     {filteredRegions.map((region) => {
                       const isAnadolu = region.id === 'istanbul-anadolu';
+                      const anadoluDisabled = isAnadolu && isAnadoluClosed;
                       return (
                         <button
                           key={region.id}
                           onClick={() => {
-                            if (isAnadolu) return; // disable selection
+                            if (anadoluDisabled) return; // disable selection
                             handleRegionSelect(region.id);
                           }}
-                          disabled={isAnadolu}
+                          disabled={anadoluDisabled}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
-                            isAnadolu
+                            anadoluDisabled
                               ? 'opacity-60 cursor-not-allowed bg-gray-50'
                               : 'hover:bg-[#e05a4c]/5'
                           }`}
                         >
-                          <MapPin size={14} className={isAnadolu ? 'text-gray-400' : 'text-[#e05a4c]'} />
-                          <span className={`text-sm flex-1 ${isAnadolu ? 'text-gray-500' : 'text-gray-700'}`}>{region.name}</span>
-                          <ChevronRight size={14} className={isAnadolu ? 'text-gray-200' : 'text-gray-300'} />
+                          <MapPin size={14} className={anadoluDisabled ? 'text-gray-400' : 'text-[#e05a4c]'} />
+                          <span className={`text-sm flex-1 ${anadoluDisabled ? 'text-gray-500' : 'text-gray-700'}`}>{region.name}</span>
+                          <ChevronRight size={14} className={anadoluDisabled ? 'text-gray-200' : 'text-gray-300'} />
                         </button>
                       );
                     })}
-                    <p className="text-[11px] text-amber-600 mt-2 px-2">Anadolu yakası çok yakında!</p>
+                    {isAnadoluClosed && (
+                      <p className="text-[11px] text-amber-600 mt-2 px-2">Anadolu yakası çok yakında!</p>
+                    )}
                   </div>
 
                   {/* Diğer İller */}

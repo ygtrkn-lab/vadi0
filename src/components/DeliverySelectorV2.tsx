@@ -72,6 +72,7 @@ export default function DeliverySelectorV2({
   const locationDropdownRef = useRef<HTMLDivElement>(null);
   const lastOpenSignal = useRef<number | null>(null);
   const [disabledDistricts, setDisabledDistricts] = useState<string[]>(DEFAULT_DISABLED_DISTRICTS);
+  const [isAnadoluClosed, setIsAnadoluClosed] = useState(true);
 
   // Time slots - 2 options like cart page
   const timeSlots = [
@@ -148,7 +149,7 @@ export default function DeliverySelectorV2({
     });
   }, [selectedLocation, selectedDistrict, selectedDate, selectedTimeSlot]);
 
-  // Load dynamic delivery settings (disabled districts)
+  // Load dynamic delivery settings (disabled districts + anadolu side)
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -158,7 +159,11 @@ export default function DeliverySelectorV2({
         const payload = await res.json();
         const cat = payload?.settings || payload?.category?.settings || {};
         const dd = Array.isArray(cat?.disabled_districts) ? (cat.disabled_districts as string[]) : DEFAULT_DISABLED_DISTRICTS;
-        if (mounted) setDisabledDistricts(dd);
+        const anadolu = typeof cat?.is_anadolu_closed === 'boolean' ? !!cat.is_anadolu_closed : true;
+        if (mounted) {
+          setDisabledDistricts(dd);
+          setIsAnadoluClosed(anadolu);
+        }
       } catch {
         // keep defaults
       }
@@ -203,7 +208,7 @@ export default function DeliverySelectorV2({
 
   // Handlers
   const handleRegionSelect = (regionId: string) => {
-    if (regionId === 'istanbul-anadolu') return; // Disabled
+    if (regionId === 'istanbul-anadolu' && isAnadoluClosed) return; // Disabled when closed
     setSelectedRegion(regionId);
     setLocationStep('district');
     setLocationSearchTerm('');
@@ -215,7 +220,7 @@ export default function DeliverySelectorV2({
       ? ISTANBUL_REGIONS.find(r => r.id === regionId)
       : currentRegion;
     
-    if (region?.id === 'istanbul-anadolu') return; // Disabled
+    if (region?.id === 'istanbul-anadolu' && isAnadoluClosed) return; // Disabled when closed
     
     setSelectedRegion(region?.id || null);
     setSelectedDistrict(district);
@@ -407,7 +412,7 @@ export default function DeliverySelectorV2({
                     {allDistricts.slice(0, 10).map((item, index) => {
                       const isAnadolu = item.region.id === 'istanbul-anadolu';
                       const isDisabled = disabledDistricts.includes(item.district);
-                      const showDisabled = isAnadolu || isDisabled;
+                      const showDisabled = (isAnadolu && isAnadoluClosed) || isDisabled;
                       return (
                         <button
                           key={`${item.region.id}-${item.district}-${index}`}
@@ -432,8 +437,8 @@ export default function DeliverySelectorV2({
                             <p className="text-sm font-medium text-gray-800 truncate">{item.district}</p>
                             <p className="text-xs text-gray-400">{item.region.name}</p>
                           </div>
-                          {isAnadolu && <span className="text-xs text-amber-600">Yakında</span>}
-                          {isDisabled && !isAnadolu && <span className="text-xs text-rose-600">Kapalı</span>}
+                          {isAnadolu && isAnadoluClosed && <span className="text-xs text-amber-600">Yakında</span>}
+                          {isDisabled && !(isAnadolu && isAnadoluClosed) && <span className="text-xs text-rose-600">Kapalı</span>}
                         </button>
                       );
                     })}
@@ -461,14 +466,15 @@ export default function DeliverySelectorV2({
                 <p className="text-xs text-gray-400 px-3 py-2 uppercase tracking-wider">Bölge Seçin</p>
                 {filteredRegions.map((region) => {
                   const isAnadolu = region.id === 'istanbul-anadolu';
+                  const anadoluDisabled = isAnadolu && isAnadoluClosed;
                   return (
                     <button
                       key={region.id}
                       onClick={() => handleRegionSelect(region.id)}
-                      disabled={isAnadolu}
+                      disabled={anadoluDisabled}
                       className={`
                         w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left
-                        ${isAnadolu 
+                        ${anadoluDisabled 
                           ? 'opacity-50 cursor-not-allowed bg-gray-50' 
                           : 'hover:bg-[#549658]/5 active:bg-[#549658]/10'
                         }
@@ -476,17 +482,17 @@ export default function DeliverySelectorV2({
                     >
                       <div className={`
                         w-10 h-10 rounded-xl flex items-center justify-center
-                        ${isAnadolu ? 'bg-gray-100' : 'bg-[#549658]/10'}
+                        ${anadoluDisabled ? 'bg-gray-100' : 'bg-[#549658]/10'}
                       `}>
-                        <MapPin size={18} className={isAnadolu ? 'text-gray-400' : 'text-[#549658]'} />
+                        <MapPin size={18} className={anadoluDisabled ? 'text-gray-400' : 'text-[#549658]'} />
                       </div>
                       <div className="flex-1">
-                        <p className={`text-sm font-medium ${isAnadolu ? 'text-gray-400' : 'text-gray-800'}`}>
+                        <p className={`text-sm font-medium ${anadoluDisabled ? 'text-gray-400' : 'text-gray-800'}`}>
                           {region.name}
                         </p>
                         <p className="text-xs text-gray-400">{region.districts.length} ilçe</p>
                       </div>
-                      {isAnadolu ? (
+                      {anadoluDisabled ? (
                         <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">Yakında</span>
                       ) : (
                         <ChevronDown size={16} className="text-gray-400 -rotate-90" />
@@ -553,7 +559,7 @@ export default function DeliverySelectorV2({
         )}
 
         {/* Helper text when no location selected */}
-        {!selectedLocation && !isLocationDropdownOpen && (
+        {!selectedLocation && !isLocationDropdownOpen && isAnadoluClosed && (
           <p className="text-xs text-[#e05a4c] mt-2 px-1">
             Şu an sadece İstanbul (Avrupa) teslimat yapılmaktadır.
           </p>

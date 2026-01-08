@@ -118,6 +118,7 @@ export default function SepetClient() {
   const [district, setDistrict] = useState('');
   const [districtId, setDistrictId] = useState(0);
   const [neighborhood, setNeighborhood] = useState('');
+  const [isAnadoluClosed, setIsAnadoluClosed] = useState(true);
   // Detaylı adres alanları
   const [streetName, setStreetName] = useState('');
   const [buildingNo, setBuildingNo] = useState('');
@@ -262,6 +263,8 @@ export default function SepetClient() {
           : DEFAULT_DISABLED_NEIGHBORHOODS;
         setDisabledDistricts(dd);
         setDisabledNeighborhoodsMap(dmap);
+        const anadolu = typeof cat?.is_anadolu_closed === 'boolean' ? !!cat.is_anadolu_closed : true;
+        setIsAnadoluClosed(anadolu);
       } catch {}
     };
 
@@ -2244,26 +2247,29 @@ export default function SepetClient() {
                                     <p className="text-[10px] uppercase tracking-wider text-gray-400 font-medium px-2 py-1">İstanbul</p>
                                     {filteredRegions.map((region) => {
                                       const isAnadolu = region.id === 'anadolu';
+                                      const anadoluDisabled = isAnadolu && isAnadoluClosed;
                                       return (
                                         <button
                                           key={region.id}
                                           type="button"
                                           onClick={() => {
-                                            if (isAnadolu) return;
+                                            if (anadoluDisabled) return;
                                             handleRegionSelect(region.id as 'avrupa');
                                           }}
-                                          disabled={isAnadolu}
+                                          disabled={anadoluDisabled}
                                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
-                                            isAnadolu ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'hover:bg-[#e05a4c]/5'
+                                            anadoluDisabled ? 'opacity-60 cursor-not-allowed bg-gray-50' : 'hover:bg-[#e05a4c]/5'
                                           }`}
                                         >
-                                          <MapPin size={14} className={isAnadolu ? 'text-gray-400' : 'text-[#e05a4c]'} />
-                                          <span className={`text-sm flex-1 ${isAnadolu ? 'text-gray-500' : 'text-gray-700'}`}>{region.name}</span>
-                                          <ChevronRight size={14} className={isAnadolu ? 'text-gray-200' : 'text-gray-300'} />
+                                          <MapPin size={14} className={anadoluDisabled ? 'text-gray-400' : 'text-[#e05a4c]'} />
+                                          <span className={`text-sm flex-1 ${anadoluDisabled ? 'text-gray-500' : 'text-gray-700'}`}>{region.name}</span>
+                                          <ChevronRight size={14} className={anadoluDisabled ? 'text-gray-200' : 'text-gray-300'} />
                                         </button>
                                       );
                                     })}
-                                    <p className="text-[11px] text-amber-600 mt-2 px-2">Anadolu yakası çok yakında!</p>
+                                    {isAnadoluClosed && (
+                                      <p className="text-[11px] text-amber-600 mt-2 px-2">Anadolu yakası çok yakında!</p>
+                                    )}
                                   </div>
                                 ) : (
                                   <div className="p-2">

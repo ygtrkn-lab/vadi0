@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { HiOutlineCheck, HiOutlineX, HiOutlineSave, HiOutlineRefresh, HiOutlineSearch, HiOutlineLocationMarker } from 'react-icons/hi';
-import { ISTANBUL_ILCELERI, type IstanbulDistrict } from '@/data/istanbul-districts';
+import { ISTANBUL_ILCELERI, ANADOLU_ILCELERI, AVRUPA_ILCELERI, type IstanbulDistrict } from '@/data/istanbul-districts';
 import { getDistricts, getNeighborhoods, type District, type Neighborhood } from '@/data/turkiye-api';
 
 type DisabledMap = Record<string, string[]>; // districtName -> disabled neighborhoods
@@ -16,6 +16,7 @@ export default function BolgeKapatmaPage() {
 
   const [disabledDistricts, setDisabledDistricts] = useState<string[]>([]);
   const [disabledNeighborhoods, setDisabledNeighborhoods] = useState<DisabledMap>({});
+  const [isAnadoluClosed, setIsAnadoluClosed] = useState(true);
 
   const [istanbulDistricts, setIstanbulDistricts] = useState<District[]>([]);
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Arnavutköy');
@@ -24,6 +25,7 @@ export default function BolgeKapatmaPage() {
   const [districtDropdownOpen, setDistrictDropdownOpen] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
   const districtDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [selectedSide, setSelectedSide] = useState<'avrupa' | 'anadolu'>('avrupa');
 
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
@@ -48,8 +50,10 @@ export default function BolgeKapatmaPage() {
         const dmap = typeof cat?.disabled_neighborhoods_by_district === 'object' && cat?.disabled_neighborhoods_by_district !== null
           ? (cat.disabled_neighborhoods_by_district as DisabledMap)
           : {};
+        const anadolu = typeof cat?.is_anadolu_closed === 'boolean' ? !!cat.is_anadolu_closed : true;
         setDisabledDistricts(dd);
         setDisabledNeighborhoods(dmap);
+        setIsAnadoluClosed(anadolu);
       } catch (err) {
         if (!mounted) return;
         setLoadError('Ayarlar yüklenemedi. Lütfen tekrar deneyin.');
@@ -101,6 +105,27 @@ export default function BolgeKapatmaPage() {
     });
   };
 
+  // Side-based district lists (dynamic via Türkiye API mapped to side definitions)
+  const avrupaNames = useMemo(() => new Set(AVRUPA_ILCELERI.map(d => d.name)), []);
+  const anadoluNames = useMemo(() => new Set(ANADOLU_ILCELERI.map(d => d.name)), []);
+  const avrupaDistricts = useMemo(() => istanbulDistricts.filter(d => avrupaNames.has(d.name)), [istanbulDistricts, avrupaNames]);
+  const anadoluDistricts = useMemo(() => istanbulDistricts.filter(d => anadoluNames.has(d.name)), [istanbulDistricts, anadoluNames]);
+
+  // Ensure selectedSide stays in sync with selectedDistrict
+  useEffect(() => {
+    if (avrupaNames.has(selectedDistrict)) setSelectedSide('avrupa');
+    else if (anadoluNames.has(selectedDistrict)) setSelectedSide('anadolu');
+  }, [selectedDistrict, avrupaNames, anadoluNames]);
+
+  // Ensure selectedDistrict is valid for current side
+  useEffect(() => {
+    const list = selectedSide === 'avrupa' ? avrupaDistricts : anadoluDistricts;
+    const fallback = selectedSide === 'avrupa' ? (AVRUPA_ILCELERI[0]?.name) : (ANADOLU_ILCELERI[0]?.name);
+    if (!list.some(d => d.name === selectedDistrict)) {
+      setSelectedDistrict(list[0]?.name || fallback || selectedDistrict);
+    }
+  }, [selectedSide, avrupaDistricts, anadoluDistricts]);
+
   const handleSave = async () => {
     setIsSaving(true);
     setSaveError(null);
@@ -112,6 +137,7 @@ export default function BolgeKapatmaPage() {
         body: JSON.stringify({
           category: 'delivery',
           updates: {
+            is_anadolu_closed: isAnadoluClosed,
             disabled_districts: disabledDistricts,
             disabled_neighborhoods_by_district: disabledNeighborhoods,
           },
@@ -151,20 +177,58 @@ export default function BolgeKapatmaPage() {
         </div>
       )}
 
+      {/* Side selector band + Anadolu kapatma toggle */}
+      <div className="mb-6 flex items-center gap-3 flex-wrap">
+        <div className="inline-flex p-1 rounded-2xl border backdrop-blur-xl bg-white/3 border-white/8">
+          <button
+            className={`px-4 py-2 rounded-xl text-sm ${selectedSide === 'avrupa' ? 'bg-white/20' : ''}`}
+            onClick={() => setSelectedSide('avrupa')}
+          >
+            Avrupa Yakası
+          </button>
+          <button
+            className={`px-4 py-2 rounded-xl text-sm ${selectedSide === 'anadolu' ? 'bg-white/20' : ''}`}
+            onClick={() => setSelectedSide('anadolu')}
+          >
+            Anadolu Yakası
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 px-3 py-2 rounded-2xl border backdrop-blur-xl bg-white/3 border-white/8">
+          <div className="text-sm">
+            <p className="font-medium">Anadolu Yakası</p>
+            <p className="text-xs text-gray-500">Kapalı/açık durumu</p>
+          </div>
+          <button
+            onClick={() => setIsAnadoluClosed(v => !v)}
+            className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${isAnadoluClosed ? 'bg-rose-500/80' : 'bg-emerald-500/80'}`}
+            aria-pressed={isAnadoluClosed}
+          >
+            <span className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${isAnadoluClosed ? 'translate-x-1' : 'translate-x-7'}`}/>
+            <span className="sr-only">{isAnadoluClosed ? 'Kapalı' : 'Açık'}</span>
+          </button>
+          <span className={`text-xs font-semibold ${isAnadoluClosed ? 'text-rose-600' : 'text-emerald-600'}`}>
+            {isAnadoluClosed ? 'Kapalı' : 'Açık'}
+          </span>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* İlçe Kapatma */}
+        {/* İlçe Kapatma - Selected side only */}
         <div className="p-4 rounded-2xl border backdrop-blur-xl bg-white/3 border-white/8">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-medium">İlçe Kapatma</h2>
+            <h2 className="text-lg font-medium">İlçe Kapatma — {selectedSide === 'avrupa' ? 'Avrupa' : 'Anadolu'}</h2>
             <button
-              onClick={() => setDisabledDistricts([])}
+              onClick={() => setDisabledDistricts(prev => prev.filter(name => !(selectedSide === 'avrupa' ? avrupaNames : anadoluNames).has(name)))}
               className="px-3 py-1.5 rounded-lg text-xs bg-black/5 hover:bg-black/10"
             >
               Temizle
             </button>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {ISTANBUL_ILCELERI.map((d: IstanbulDistrict) => {
+            {((selectedSide === 'avrupa' ? avrupaDistricts : anadoluDistricts).length
+              ? (selectedSide === 'avrupa' ? avrupaDistricts : anadoluDistricts)
+              : (selectedSide === 'avrupa' ? AVRUPA_ILCELERI : ANADOLU_ILCELERI)).map((d: any) => {
               const isDisabled = disabledDistricts.includes(d.name);
               return (
                 <button
@@ -212,7 +276,9 @@ export default function BolgeKapatmaPage() {
                       </div>
                     </div>
                     <div className="max-h-64 overflow-y-auto p-1">
-                      {ISTANBUL_ILCELERI.filter(d => !districtSearch || d.name.toLowerCase().includes(districtSearch.toLowerCase())).map((d) => {
+                      {(selectedSide === 'avrupa' ? AVRUPA_ILCELERI : ANADOLU_ILCELERI)
+                        .filter(d => !districtSearch || d.name.toLowerCase().includes(districtSearch.toLowerCase()))
+                        .map((d) => {
                         const isActive = d.name === selectedDistrict;
                         const isClosed = disabledDistricts.includes(d.name);
                         return (
@@ -221,7 +287,7 @@ export default function BolgeKapatmaPage() {
                             className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-left transition-colors ${
                               isActive ? 'bg-purple-50 text-purple-700' : 'hover:bg-gray-50'
                             }`}
-                            onClick={() => { setSelectedDistrict(d.name); setDistrictDropdownOpen(false); }}
+                            onClick={() => { setSelectedDistrict(d.name); setDistrictDropdownOpen(false); setSelectedSide(selectedSide); }}
                             role="option"
                             aria-selected={isActive}
                           >

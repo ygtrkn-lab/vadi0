@@ -12,6 +12,8 @@ const settingsJsonFallback: Record<string, Record<string, any>> = {
     min_order_amount: 100,
     free_shipping_threshold: 500,
     standard_shipping_cost: 29,
+    // Anadolu Yakası genel kapatma (dinamik)
+    is_anadolu_closed: true,
     // Dynamic region blocking defaults
     disabled_districts: ['Çatalca', 'Silivri', 'Büyükçekmece'],
     disabled_neighborhoods_by_district: {
