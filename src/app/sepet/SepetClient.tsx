@@ -1735,7 +1735,7 @@ export default function SepetClient() {
         id: isLoggedIn && customerState.currentCustomer?.id ? customerState.currentCustomer.id : null,
         name: isLoggedIn && customerState.currentCustomer?.name ? customerState.currentCustomer.name : recipientName,
         email: isLoggedIn && customerState.currentCustomer?.email ? customerState.currentCustomer.email : (guestEmail || 'guest@vadiler.com'),
-        phone: isLoggedIn && customerState.currentCustomer?.phone ? customerState.currentCustomer.phone : (guestPhone || recipientPhone),
+        phone: isLoggedIn && customerState.currentCustomer?.phone ? normalizeTrMobileDigits(customerState.currentCustomer.phone) : normalizeTrMobileDigits(guestPhone || recipientPhone),
       };
 
       // For guest checkout, we don't create a customer record
@@ -1758,7 +1758,7 @@ export default function SepetClient() {
         items: state.items,
         delivery: {
           recipientName,
-          recipientPhone,
+          recipientPhone: normalizeTrMobileDigits(recipientPhone),
           province: 'İstanbul (Avrupa)',
           district,
           neighborhood,

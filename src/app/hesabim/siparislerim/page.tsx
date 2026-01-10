@@ -48,6 +48,20 @@ function getErrorMessage(error: unknown): string {
   }
 }
 
+// Telefon numarasını formatla: 5XXXXXXXXX -> 5XX XXX XX XX
+function formatPhoneNumber(phone: string): string {
+  if (!phone) return '';
+  
+  // Sadece rakamları al
+  const digits = phone.replace(/\D/g, '');
+  
+  // 10 haneli değilse olduğu gibi döndür
+  if (digits.length !== 10) return phone;
+  
+  // 5XX XXX XX XX formatına çevir
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`;
+}
+
 // Status icons config
 const statusIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   pending: HiOutlineClock,
@@ -902,7 +916,7 @@ function OrderDetailContent({
                 className="inline-flex items-center gap-2 mt-2 text-sm text-black hover:underline"
               >
                 <HiOutlinePhone className="w-4 h-4" />
-                {order.delivery.recipientPhone}
+                {formatPhoneNumber(order.delivery.recipientPhone)}
               </a>
             </div>
           </div>

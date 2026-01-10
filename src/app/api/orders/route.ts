@@ -33,6 +33,21 @@ function hasStatusEmailNotification(timeline: unknown, status: string): boolean 
   });
 }
 
+// Normalize Turkish phone numbers to 10 digits (5XXXXXXXXX)
+function normalizePhone(phone: string): string {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('90') && digits.length >= 12) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith('0') && digits.length >= 11) {
+    digits = digits.slice(1);
+  }
+  if (digits.length > 10) {
+    digits = digits.slice(0, 10);
+  }
+  return digits;
+}
+
 function getDeliveryFields(delivery: unknown): {
   deliveryDate?: string;
   deliveryTime?: string;
@@ -42,13 +57,14 @@ function getDeliveryFields(delivery: unknown): {
   recipientPhone?: string;
 } {
   if (!isRecord(delivery)) return {};
+  const rawPhone = getString(delivery['recipientPhone']);
   return {
     deliveryDate: getString(delivery['deliveryDate']) || undefined,
     deliveryTime: getString(delivery['deliveryTimeSlot']) || undefined,
     deliveryAddress: getString(delivery['fullAddress']) || undefined,
     district: getString(delivery['district']) || undefined,
     recipientName: getString(delivery['recipientName']) || undefined,
-    recipientPhone: getString(delivery['recipientPhone']) || undefined,
+    recipientPhone: rawPhone ? normalizePhone(rawPhone) : undefined,
   };
 }
 
@@ -169,6 +185,11 @@ export async function POST(request: NextRequest) {
     customerName = customerName || newOrder.delivery?.recipientName || '';
     customerEmail = customerEmail || '';
     customerPhone = customerPhone || newOrder.delivery?.recipientPhone || '';
+    
+    // Normalize customer phone to ensure consistent format (10 digits: 5XXXXXXXXX)
+    if (customerPhone) {
+      customerPhone = normalizePhone(customerPhone);
+    }
 
     // Guest flag: respect explicit is_guest if provided; otherwise infer from missing customer_id
     const isGuest: boolean = typeof newOrder.is_guest === 'boolean' ? newOrder.is_guest : !customerId;

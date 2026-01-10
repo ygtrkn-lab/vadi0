@@ -117,6 +117,24 @@ export async function POST(request: NextRequest) {
     const buyerFirstName = nameParts[0] || 'Müşteri';
     const buyerSurname = nameParts.slice(1).join(' ') || buyerFirstName; // Use first name as surname if only one word
 
+    // Normalize phone: remove all non-digits, handle +90/90/0 prefixes, ensure 10 digits
+    const normalizePhone = (phone: string): string => {
+      let digits = phone.replace(/\D/g, '');
+      if (digits.startsWith('90') && digits.length >= 12) {
+        digits = digits.slice(2);
+      }
+      if (digits.startsWith('0') && digits.length >= 11) {
+        digits = digits.slice(1);
+      }
+      if (digits.length > 10) {
+        digits = digits.slice(0, 10);
+      }
+      return digits;
+    };
+
+    const normalizedPhone = normalizePhone(customer.phone);
+    const gsmNumber = normalizedPhone.length === 10 ? `+90${normalizedPhone}` : `+90${customer.phone.replace(/\D/g, '')}`;
+
     // Build iyzico checkout form request (hosted payment) using trusted order data and verified basket items
     const paymentRequest = {
       locale: 'tr',
@@ -132,11 +150,7 @@ export async function POST(request: NextRequest) {
         id: buyerId,
         name: buyerFirstName,
         surname: buyerSurname,
-        gsmNumber: customer.phone.replace(/\s/g, '').startsWith('+')
-          ? customer.phone.replace(/\s/g, '')
-          : '+90' + (customer.phone.replace(/\s/g, '').startsWith('0')
-              ? customer.phone.replace(/\s/g, '').substring(1)
-              : customer.phone.replace(/\s/g, '')),
+        gsmNumber: gsmNumber,
         email: customer.email,
         identityNumber: '11111111111',
         registrationAddress: (order.delivery as any)?.fullAddress || 'Istanbul, Turkey',

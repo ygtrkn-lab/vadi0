@@ -52,6 +52,20 @@ const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'i
 const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 
+// Telefon numarasını formatla: 5XXXXXXXXX -> 5XX XXX XX XX
+function formatPhoneNumber(phone: string): string {
+  if (!phone) return '';
+  
+  // Sadece rakamları al
+  const digits = phone.replace(/\D/g, '');
+  
+  // 10 haneli değilse olduğu gibi döndür
+  if (digits.length !== 10) return phone;
+  
+  // 5XX XXX XX XX formatına çevir
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`;
+}
+
 // Tarihi okunabilir formata çevir: "3 Ocak Perşembe"
 function formatDeliveryDateFriendly(dateStr: string, timeSlot?: string): string {
   if (!dateStr) return '';
@@ -1165,7 +1179,7 @@ export default function SiparislerPage() {
                       )}
                       {selectedOrder.customerPhone && (
                         <a href={`tel:${selectedOrder.customerPhone}`} className={`flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-                          <HiOutlinePhone className="w-4 h-4" /> {selectedOrder.customerPhone}
+                          <HiOutlinePhone className="w-4 h-4" /> {formatPhoneNumber(selectedOrder.customerPhone)}
                         </a>
                       )}
                       {selectedOrder.customerId && (
@@ -1193,7 +1207,7 @@ export default function SiparislerPage() {
                           <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedOrder.delivery.recipientName || '-'}</p>
                           {selectedOrder.delivery.recipientPhone && (
                             <a href={`tel:${selectedOrder.delivery.recipientPhone}`} className={`flex items-center gap-2 text-sm mt-1 ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-                              <HiOutlinePhone className="w-4 h-4" /> {selectedOrder.delivery.recipientPhone}
+                              <HiOutlinePhone className="w-4 h-4" /> {formatPhoneNumber(selectedOrder.delivery.recipientPhone)}
                             </a>
                           )}
                         </div>
