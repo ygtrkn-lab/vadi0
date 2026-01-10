@@ -221,7 +221,7 @@ export default async function CityOccasionPage({ params }: PageProps) {
             </nav>
 
             {/* Hero Card - Glass Morphism */}
-            <div className="relative overflow-hidden rounded-[2rem] bg-white/40 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl ring-1 ring-white/30 border border-white/20">
+            <div className="relative overflow-hidden rounded-[2rem] bg-white/75 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl ring-1 ring-dark-100/20 border border-white/40">
               {/* Gradient Orb Decorations */}
               <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary-400/20 to-secondary-400/10 blur-2xl" />
               <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-gradient-to-tr from-secondary-400/20 to-primary-400/10 blur-2xl" />
@@ -260,33 +260,33 @@ export default async function CityOccasionPage({ params }: PageProps) {
 
                 {/* Trust Badges Row */}
                 <div className="flex flex-wrap gap-3 mb-8">
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/30 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/40 border border-white/20">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/80 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-dark-100/20 border border-white/40">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
                       <Truck className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-dark-900">{cityData.deliveryInfo}</span>
-                      <p className="text-xs text-dark-500">Garantili Teslimat</p>
+                      <span className="text-sm font-semibold text-dark-800">{cityData.deliveryInfo}</span>
+                      <p className="text-xs text-dark-600">Garantili Teslimat</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/30 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/40 border border-white/20">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/80 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-dark-100/20 border border-white/40">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30">
                       <Gift className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-dark-900">Özel Paketleme</span>
-                      <p className="text-xs text-dark-500">{specialDay.name} temalı</p>
+                      <span className="text-sm font-semibold text-dark-800">Özel Paketleme</span>
+                      <p className="text-xs text-dark-600">{specialDay.name} temalı</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/30 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/40 border border-white/20">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/80 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-dark-100/20 border border-white/40">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30">
                       <MessageSquare className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-dark-900">Ücretsiz Mesaj</span>
-                      <p className="text-xs text-dark-500">Kart hediye</p>
+                      <span className="text-sm font-semibold text-dark-800">Ücretsiz Mesaj</span>
+                      <p className="text-xs text-dark-600">Kart hediye</p>
                     </div>
                   </div>
                 </div>
@@ -311,8 +311,8 @@ export default async function CityOccasionPage({ params }: PageProps) {
             <div className="grid gap-8 lg:grid-cols-12">
               {/* Main Content */}
               <div className="lg:col-span-8">
-                <div className="rounded-3xl bg-white/40 backdrop-blur-2xl p-8 sm:p-10 shadow-xl ring-1 ring-white/30 border border-white/20">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-dark-950 mb-6">
+                <div className="rounded-3xl bg-white/80 backdrop-blur-2xl p-8 sm:p-10 shadow-xl ring-1 ring-dark-100/20 border border-white/40">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-dark-900 mb-6">
                     {cityData.name}&apos;de {specialDay.name} için <span className="text-primary-600">En Güzel Çiçekler</span>
                   </h2>
                   
@@ -323,42 +323,42 @@ export default async function CityOccasionPage({ params }: PageProps) {
                   
                   {/* Features Grid */}
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/30 backdrop-blur-xl ring-1 ring-white/40 border border-white/20">
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/80 backdrop-blur-xl ring-1 ring-dark-100/20 border border-white/40">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
                         <Truck className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-dark-900 mb-1">Hızlı Teslimat</h3>
+                        <h3 className="font-semibold text-dark-800 mb-1">Hızlı Teslimat</h3>
                         <p className="text-sm text-dark-600">{cityData.deliveryInfo}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/30 backdrop-blur-xl ring-1 ring-white/40 border border-white/20">
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/80 backdrop-blur-xl ring-1 ring-dark-100/20 border border-white/40">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
                         <Flower2 className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-dark-900 mb-1">Taze Çiçek Garantisi</h3>
+                        <h3 className="font-semibold text-dark-800 mb-1">Taze Çiçek Garantisi</h3>
                         <p className="text-sm text-dark-600">Her gün taze kesim çiçekler</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/30 backdrop-blur-xl ring-1 ring-white/40 border border-white/20">
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/80 backdrop-blur-xl ring-1 ring-dark-100/20 border border-white/40">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg">
                         <Package className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-dark-900 mb-1">Özel Paketleme</h3>
+                        <h3 className="font-semibold text-dark-800 mb-1">Özel Paketleme</h3>
                         <p className="text-sm text-dark-600">{specialDay.name} temalı ambalaj</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/30 backdrop-blur-xl ring-1 ring-white/40 border border-white/20">
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/80 backdrop-blur-xl ring-1 ring-dark-100/20 border border-white/40">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 shadow-lg">
                         <MessageSquare className="h-5 w-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-dark-900 mb-1">Ücretsiz Mesaj Kartı</h3>
+                        <h3 className="font-semibold text-dark-800 mb-1">Ücretsiz Mesaj Kartı</h3>
                         <p className="text-sm text-dark-600">Özel mesajınızı ekleyin</p>
                       </div>
                     </div>
@@ -370,8 +370,8 @@ export default async function CityOccasionPage({ params }: PageProps) {
               <aside className="lg:col-span-4">
                 <div className="sticky top-32 space-y-6">
                   {/* Quick Info Card */}
-                  <div className="rounded-3xl bg-white/40 backdrop-blur-2xl p-6 shadow-xl ring-1 ring-white/30 border border-white/20">
-                    <h3 className="text-lg font-bold text-dark-950 mb-5">Sipariş Süreci</h3>
+                  <div className="rounded-3xl bg-white/85 backdrop-blur-2xl p-6 shadow-xl ring-1 ring-dark-100/20 border border-white/40">
+                    <h3 className="text-lg font-bold text-dark-900 mb-5">Sipariş Süreci</h3>
                     <ol className="space-y-4">
                       <li className="flex items-start gap-3">
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-500 text-sm font-bold text-white">1</div>
@@ -406,8 +406,8 @@ export default async function CityOccasionPage({ params }: PageProps) {
 
                   {/* Popüler Bölgeler */}
                   {cityData.popularAreas && cityData.popularAreas.length > 0 && (
-                    <div className="rounded-2xl bg-white/40 backdrop-blur-xl p-5 shadow-lg ring-1 ring-white/30 border border-white/20">
-                      <h3 className="text-sm font-bold text-dark-950 mb-3 flex items-center gap-2">
+                    <div className="rounded-2xl bg-white/85 backdrop-blur-xl p-5 shadow-lg ring-1 ring-dark-100/20 border border-white/40">
+                      <h3 className="text-sm font-bold text-dark-900 mb-3 flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-primary-500" />
                         Teslimat Bölgeleri
                       </h3>

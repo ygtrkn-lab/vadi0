@@ -92,7 +92,7 @@ export default function CitiesIndexPage() {
             </nav>
 
             {/* Hero Card - Glass Morphism */}
-            <div className="relative overflow-hidden rounded-[2rem] bg-white/40 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl ring-1 ring-white/30 border border-white/20">
+            <div className="relative overflow-hidden rounded-[2rem] bg-white/70 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl ring-1 ring-dark-100/20 border border-white/50">
               {/* Gradient Orb Decorations */}
               <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary-400/20 to-secondary-400/10 blur-2xl" />
               <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-gradient-to-tr from-secondary-400/20 to-primary-400/10 blur-2xl" />
@@ -121,33 +121,33 @@ export default function CitiesIndexPage() {
 
                 {/* Trust Badges Row */}
                 <div className="flex flex-wrap gap-3 mb-8">
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/30 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/40 border border-white/20 transition-all hover:shadow-xl hover:scale-[1.02] hover:bg-white/40">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/80 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:scale-[1.02] hover:bg-white/90">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
                       <Map className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-dark-900">39 İlçe</span>
-                      <p className="text-xs text-dark-500">Tüm İstanbul</p>
+                      <span className="text-sm font-semibold text-dark-800">39 İlçe</span>
+                      <p className="text-xs text-dark-600">Tüm İstanbul</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/30 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/40 border border-white/20 transition-all hover:shadow-xl hover:scale-[1.02] hover:bg-white/40">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/80 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:scale-[1.02] hover:bg-white/90">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30">
                       <Truck className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-dark-900">Aynı Gün</span>
-                      <p className="text-xs text-dark-500">Hızlı Teslimat</p>
+                      <span className="text-sm font-semibold text-dark-800">Aynı Gün</span>
+                      <p className="text-xs text-dark-600">Hızlı Teslimat</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/30 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/40 border border-white/20 transition-all hover:shadow-xl hover:scale-[1.02] hover:bg-white/40">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/80 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:scale-[1.02] hover:bg-white/90">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30">
                       <Flower2 className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
-                      <span className="text-sm font-semibold text-dark-900">1000+ Çiçek</span>
-                      <p className="text-xs text-dark-500">Geniş Seçim</p>
+                      <span className="text-sm font-semibold text-dark-800">1000+ Çiçek</span>
+                      <p className="text-xs text-dark-600">Geniş Seçim</p>
                     </div>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export default function CitiesIndexPage() {
           <div className="container mx-auto px-4">
             <Link
               href="/sehir/istanbul"
-              className="group flex items-center justify-between rounded-3xl bg-white/40 backdrop-blur-xl p-6 sm:p-8 shadow-xl ring-1 ring-white/30 border border-white/20 hover:shadow-2xl hover:bg-white/60 transition-all"
+              className="group flex items-center justify-between rounded-3xl bg-white/80 backdrop-blur-xl p-6 sm:p-8 shadow-xl ring-1 ring-dark-100/20 hover:shadow-2xl hover:bg-white/95 transition-all"
             >
               <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25">
@@ -211,7 +211,7 @@ export default function CitiesIndexPage() {
                 <Link
                   key={district.id}
                   href={`/sehir/${createCitySlug(district.name)}`}
-                  className="group relative overflow-hidden rounded-2xl bg-white/40 backdrop-blur-xl p-4 text-center shadow-lg ring-1 ring-white/30 border border-white/20 transition-all duration-300 hover:shadow-xl hover:bg-white/60 hover:-translate-y-1"
+                  className="group relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl p-4 text-center shadow-lg ring-1 ring-dark-100/20 border border-white/40 transition-all duration-300 hover:shadow-xl hover:bg-white/95 hover:-translate-y-1"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 to-primary-500/0 group-hover:from-primary-500/5 group-hover:to-primary-600/10 transition-all duration-300" />
                   <span className="relative text-sm font-medium text-dark-800 group-hover:text-primary-700 transition-colors">
@@ -241,7 +241,7 @@ export default function CitiesIndexPage() {
                 <Link
                   key={district.id}
                   href={`/sehir/${createCitySlug(district.name)}`}
-                  className="group relative overflow-hidden rounded-2xl bg-white/40 backdrop-blur-xl p-4 text-center shadow-lg ring-1 ring-white/30 border border-white/20 transition-all duration-300 hover:shadow-xl hover:bg-white/60 hover:-translate-y-1"
+                  className="group relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl p-4 text-center shadow-lg ring-1 ring-dark-100/20 border border-white/40 transition-all duration-300 hover:shadow-xl hover:bg-white/95 hover:-translate-y-1"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-teal-500/0 group-hover:from-teal-500/10 group-hover:to-emerald-600/15 transition-all duration-300" />
                   <span className="relative text-sm font-medium text-dark-800 group-hover:text-teal-700 transition-colors">
@@ -270,7 +270,7 @@ export default function CitiesIndexPage() {
             </div>
             
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="group rounded-3xl bg-white/40 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-white/30 border border-white/20 transition-all hover:shadow-xl hover:bg-white/60 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white/80 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:bg-white/95 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25">
                   <Clock className="h-8 w-8 text-white" />
                 </div>
@@ -280,7 +280,7 @@ export default function CitiesIndexPage() {
                 </p>
               </div>
               
-              <div className="group rounded-3xl bg-white/40 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-white/30 border border-white/20 transition-all hover:shadow-xl hover:bg-white/60 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white/80 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:bg-white/95 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25">
                   <Rocket className="h-8 w-8 text-white" />
                 </div>
@@ -290,7 +290,7 @@ export default function CitiesIndexPage() {
                 </p>
               </div>
               
-              <div className="group rounded-3xl bg-white/40 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-white/30 border border-white/20 transition-all hover:shadow-xl hover:bg-white/60 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white/80 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:bg-white/95 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25">
                   <Camera className="h-8 w-8 text-white" />
                 </div>
