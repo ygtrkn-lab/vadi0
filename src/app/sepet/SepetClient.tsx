@@ -169,6 +169,7 @@ export default function SepetClient() {
   const [neighborhoodSuggestions, setNeighborhoodSuggestions] = useState<Neighborhood[]>([]);
   const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
   const [lastPaymentBanner, setLastPaymentBanner] = useState<null | { status: 'failed' | 'abandoned'; message?: string }>(null);
+  const [showAbandonedModal, setShowAbandonedModal] = useState(false);
   const [deliveryOffDayDialog, setDeliveryOffDayDialog] = useState<string | null>(null);
   
   // Inline login/register states
@@ -304,6 +305,7 @@ export default function SepetClient() {
       if (started) {
         // Payment flow started earlier but user is back to cart; treat as abandoned
         setLastPaymentBanner({ status: 'abandoned', message: 'Ödeme işleminiz yarıda kalmış görünüyor.' });
+        setShowAbandonedModal(true);
       }
     } catch {}
   }, []);
@@ -805,47 +807,6 @@ export default function SepetClient() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [neighborhoodSearchOpen]);
 
-  // Mobile edge swipe: navigate steps with left/right flicks from screen edges
-  useEffect(() => {
-    const handleTouchStart = (e: TouchEvent) => {
-      if (window.innerWidth > 1024) return; // only mobile/tablet
-      if (!e.touches || e.touches.length === 0) return;
-      const t = e.touches[0];
-      const edgeZone = 28;
-      const isEdge = t.clientX <= edgeZone || t.clientX >= window.innerWidth - edgeZone;
-      if (!isEdge) return;
-      touchActiveRef.current = true;
-      touchStartXRef.current = t.clientX;
-      touchStartYRef.current = t.clientY;
-    };
-
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (!touchActiveRef.current) return;
-      touchActiveRef.current = false;
-      if (window.innerWidth > 1024) return;
-      const t = e.changedTouches && e.changedTouches[0];
-      if (!t) return;
-      const dx = t.clientX - touchStartXRef.current;
-      const dy = t.clientY - touchStartYRef.current;
-      const minDistance = 70;
-      const maxOffAxis = 50;
-      if (Math.abs(dx) < minDistance || Math.abs(dy) > maxOffAxis) return;
-      if (dx > 0) {
-        handleEdgeSwipe('prev');
-      } else {
-        handleEdgeSwipe('next');
-      }
-    };
-
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-    return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [handleEdgeSwipe]);
-
   // LocalStorage'dan form verilerini yükle (sayfa yüklendiğinde)
   useEffect(() => {
     try {
@@ -1026,6 +987,7 @@ export default function SepetClient() {
   const filteredDistricts = currentRegion?.districts.filter(d =>
     d.toLowerCase().includes(locationSearch.toLowerCase())
   ) || [];
+
 
   // Türkiye telefon numarası validasyonu
   const validatePhoneNumber = (phone: string): boolean => {
@@ -1295,59 +1257,6 @@ export default function SepetClient() {
   const canProceedToRecipient = state.items.length > 0;
   const requiresSenderName = false;
 
-  const handleEdgeSwipe = useCallback(
-    (direction: 'next' | 'prev') => {
-      if (direction === 'prev') {
-        if (currentStep === 'payment') {
-          setCurrentStep('message');
-          scrollToTop();
-          return;
-        }
-        if (currentStep === 'message') {
-          setCurrentStep('recipient');
-          scrollToTop();
-          return;
-        }
-        if (currentStep === 'recipient') {
-          setCurrentStep('cart');
-          scrollToTop();
-          return;
-        }
-        return;
-      }
-
-      // direction === 'next'
-      if (currentStep === 'cart') {
-        if (canProceedToRecipient) {
-          setCurrentStep('recipient');
-          scrollToTop();
-        }
-        return;
-      }
-
-      if (currentStep === 'recipient') {
-        const check = validateRecipientStep();
-        if (!check.ok) return;
-        setCurrentStep('message');
-        scrollToTop();
-        return;
-      }
-
-      if (currentStep === 'message') {
-        if (requiresSenderName && senderName.trim().length < 2) {
-          setRecipientErrors(prev => ({ ...prev, sender: 'Gönderen adı en az 2 karakter olmalıdır' }));
-          scrollToElement('sender-name');
-          return;
-        }
-        setRecipientErrors(prev => ({ ...prev, sender: undefined }));
-        setCurrentStep('payment');
-        scrollToTop();
-        return;
-      }
-    },
-    [canProceedToRecipient, currentStep, requiresSenderName, senderName, validateRecipientStep]
-  );
-  
   // Detaylı adres alanlarından tam adresi oluştur
   const fullAddress = useMemo(() => {
     const parts = [];
@@ -1570,6 +1479,100 @@ export default function SepetClient() {
 
     return { ok: true };
   };
+
+  const handleEdgeSwipe = useCallback(
+    (direction: 'next' | 'prev') => {
+      if (direction === 'prev') {
+        if (currentStep === 'payment') {
+          setCurrentStep('message');
+          scrollToTop();
+          return;
+        }
+        if (currentStep === 'message') {
+          setCurrentStep('recipient');
+          scrollToTop();
+          return;
+        }
+        if (currentStep === 'recipient') {
+          setCurrentStep('cart');
+          scrollToTop();
+          return;
+        }
+        return;
+      }
+
+      // direction === 'next'
+      if (currentStep === 'cart') {
+        if (canProceedToRecipient) {
+          setCurrentStep('recipient');
+          scrollToTop();
+        }
+        return;
+      }
+
+      if (currentStep === 'recipient') {
+        const check = validateRecipientStep();
+        if (!check.ok) return;
+        setCurrentStep('message');
+        scrollToTop();
+        return;
+      }
+
+      if (currentStep === 'message') {
+        if (requiresSenderName && senderName.trim().length < 2) {
+          setRecipientErrors(prev => ({ ...prev, sender: 'Gönderen adı en az 2 karakter olmalıdır' }));
+          scrollToElement('sender-name');
+          return;
+        }
+        setRecipientErrors(prev => ({ ...prev, sender: undefined }));
+        setCurrentStep('payment');
+        scrollToTop();
+        return;
+      }
+    },
+    [canProceedToRecipient, currentStep, requiresSenderName, senderName, validateRecipientStep]
+  );
+
+  // Mobile edge swipe: navigate steps with left/right flicks from screen edges
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (window.innerWidth > 1024) return; // only mobile/tablet
+      if (!e.touches || e.touches.length === 0) return;
+      const t = e.touches[0];
+      const edgeZone = 28;
+      const isEdge = t.clientX <= edgeZone || t.clientX >= window.innerWidth - edgeZone;
+      if (!isEdge) return;
+      touchActiveRef.current = true;
+      touchStartXRef.current = t.clientX;
+      touchStartYRef.current = t.clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchActiveRef.current) return;
+      touchActiveRef.current = false;
+      if (window.innerWidth > 1024) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - touchStartXRef.current;
+      const dy = t.clientY - touchStartYRef.current;
+      const minDistance = 70;
+      const maxOffAxis = 50;
+      if (Math.abs(dx) < minDistance || Math.abs(dy) > maxOffAxis) return;
+      if (dx > 0) {
+        handleEdgeSwipe('prev');
+      } else {
+        handleEdgeSwipe('next');
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleEdgeSwipe]);
 
   const handleCompleteOrder = async () => {
     const paymentCheck = validatePaymentStep();
@@ -3073,6 +3076,61 @@ export default function SepetClient() {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-5"
               >
+                {/* Abandoned payment modal */}
+                <AnimatePresence>
+                  {showAbandonedModal && lastPaymentBanner?.status === 'abandoned' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-[12000] flex items-center justify-center bg-black/50 px-4"
+                    >
+                      <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 space-y-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 font-bold">!</div>
+                          <div className="space-y-1">
+                            <p className="text-lg font-semibold text-gray-900">Ödeme yarıda kalmış</p>
+                            <p className="text-sm text-gray-600">Sepetinizi bekletiyoruz. Devam ederseniz siparişiniz birkaç adımda tamamlanacak.</p>
+                          </div>
+                        </div>
+                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-800">
+                          {lastPaymentBanner?.message || 'Ödeme işleminiz yarıda kalmış görünüyor.'}
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAbandonedModal(false);
+                              setCurrentStep('payment');
+                              scrollToTop();
+                              try { localStorage.removeItem('vadiler_checkout_started'); } catch {}
+                            }}
+                            className="w-full py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 active:scale-[0.99] transition"
+                          >
+                            Ödemeye devam et
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowAbandonedModal(false);
+                              setLastPaymentBanner(null);
+                              try { localStorage.removeItem('vadiler_checkout_started'); } catch {}
+                            }}
+                            className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 active:scale-[0.99] transition"
+                          >
+                            Daha sonra
+                          </button>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="text-center mb-6 space-y-3">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Sipariş Özeti</h2>
