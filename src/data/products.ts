@@ -58,7 +58,7 @@ export const slides: HeroSlide[] = [
     image:
       'https://res.cloudinary.com/dgdl1vdao/image/upload/f_auto,q_auto/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
     mobileImage:
-      'https://res.cloudinary.com/dgdl1vdao/image/upload/f_auto,q_auto/v1766363507/vadiler/slider/slide-3_ibzway.jpg',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/f_auto,q_auto,w_auto,c_limit/v1766363507/vadiler/slider/slide-3_ibzway.jpg',
     buttonText: 'Kampanyalara Git',
     buttonLink: '/haftanin-cicek-kampanyalari-vadiler-com',
   },

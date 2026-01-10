@@ -253,17 +253,14 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <picture>
-                    <source srcSet="/logo.webp" type="image/webp" />
-                    <Image
-                      src="/logo.png"
-                      alt="Vadiler Çiçek"
-                      width={isScrolled ? 120 : 150}
-                      height={isScrolled ? 40 : 50}
-                      className="transition-all duration-300 object-contain"
-                      priority
-                    />
-                  </picture>
+                  <Image
+                    src="/logo.webp"
+                    alt="Vadiler Çiçek"
+                    width={isScrolled ? 120 : 150}
+                    height={isScrolled ? 40 : 50}
+                    className="transition-all duration-300 object-contain"
+                    priority
+                  />
                 </motion.div>
               </div>
             </Link>

@@ -98,18 +98,15 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
           {/* Weekly campaign badge */}
           {isWeeklyCampaign && (
             <div className="absolute left-2 top-10 sm:top-12 z-20">
-              <picture>
-                <source srcSet="/TR/bugune-ozel.webp 1x, /TR/bugune-ozel@2x.webp 2x" type="image/webp" />
-                <img
-                  src="/TR/bugune-ozel.png"
-                  alt="Bugüne Özel"
-                  width="72"
-                  height="72"
-                  className="h-14 w-14 sm:h-16 sm:w-16 drop-shadow"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </picture>
+              <img
+                src="/TR/bugune-ozel.webp"
+                alt="Bugüne Özel"
+                width="72"
+                height="72"
+                className="h-14 w-14 sm:h-16 sm:w-16 drop-shadow"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           )}
 
