@@ -1,12 +1,14 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductDetail from './ProductDetail';
+import supabaseAdmin from '@/lib/supabase/admin';
+import { transformProduct, transformProducts } from '@/lib/transformers';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     category: string;
     slug: string;
-  };
+  }>;
 }
 
 // Cache product pages for faster TTFB while keeping data fresh
@@ -15,24 +17,28 @@ export const dynamicParams = true;
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
-// Fetch product from API with ISR-friendly caching
+// Fetch product directly from Supabase to avoid internal fetch/env issues
 async function getProduct(category: string, slug: string) {
   try {
-    // Use relative fetch so it works in all environments (prod/preview/local)
-    const [productsRes, categoriesRes] = await Promise.all([
-      fetch('/api/products', { next: { revalidate } }),
-      fetch('/api/categories', { next: { revalidate } })
+    const [{ data: productRow }, { data: categoryRow }, { data: productsForList }] = await Promise.all([
+      supabaseAdmin
+        .from('products')
+        .select('*')
+        .eq('slug', slug)
+        .eq('category', category)
+        .maybeSingle(),
+      supabaseAdmin.from('categories').select('*').eq('slug', category).eq('is_active', true).maybeSingle(),
+      supabaseAdmin
+        .from('products')
+        .select('*')
+        .or(`category.eq.${category},occasion_tags.cs.{${category}}`)
+        .order('id', { ascending: true })
     ]);
-    
-    const productsData = await productsRes.json();
-    const categoriesData = await categoriesRes.json();
-    
-    const allProducts = productsData.products || productsData.data || [];
-    const allCategories = categoriesData.categories || categoriesData.data || [];
-    
-    const product = allProducts.find((p: any) => p.category === category && p.slug === slug);
-    const categoryData = allCategories.find((c: any) => c.slug === category);
-    
+
+    const product = productRow ? transformProduct(productRow) : null;
+    const categoryData = categoryRow ?? null;
+    const allProducts = transformProducts(productsForList ?? []);
+
     return { product, categoryData, allProducts };
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -42,7 +48,7 @@ async function getProduct(category: string, slug: string) {
 
 // Generate metadata for SEO using cached server data
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { category, slug } = params;
+  const { category, slug } = await params;
   const { product, categoryData } = await getProduct(category, slug);
 
   if (!product) {
@@ -186,7 +192,7 @@ function generateJsonLd(product: any) {
 }
 
 export default async function ProductPage({ params }: PageProps) {
-  const { category, slug } = params;
+  const { category, slug } = await params;
   
   const { product, categoryData, allProducts } = await getProduct(category, slug);
 

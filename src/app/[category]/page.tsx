@@ -1,11 +1,13 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import CategoryPageClient from './CategoryPageClient';
+import supabaseAdmin from '@/lib/supabase/admin';
+import { transformProducts } from '@/lib/transformers';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     category: string;
-  };
+  }>;
 }
 
 // Cache category pages for faster TTFB while keeping data fresh
@@ -14,23 +16,20 @@ export const dynamicParams = true;
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
-// Fetch category and products from API with ISR-friendly caching
+// Fetch category and products directly from Supabase to avoid internal fetch/env issues
 async function getCategoryData(slug: string) {
   try {
-    // Use relative fetch so it works in all environments (prod/preview/local)
-    const [categoriesRes, productsRes] = await Promise.all([
-      fetch('/api/categories', { next: { revalidate } }),
-      fetch(`/api/products?category=${slug}`, { next: { revalidate } })
+    const [{ data: categoryRow }, { data: productRows }] = await Promise.all([
+      supabaseAdmin.from('categories').select('*').eq('slug', slug).eq('is_active', true).maybeSingle(),
+      supabaseAdmin
+        .from('products')
+        .select('*')
+        .or(`category.eq.${slug},occasion_tags.cs.{${slug}}`)
+        .order('id', { ascending: true })
     ]);
 
-    const categoriesData = await categoriesRes.json();
-    const productsData = await productsRes.json();
-
-    const allCategories = categoriesData.categories || categoriesData.data || [];
-    const filteredProducts = productsData.products || productsData.data || [];
-
-    const category = allCategories.find((c: any) => c.slug === slug);
-    const products = filteredProducts;
+    const category = categoryRow ?? null;
+    const products = transformProducts(productRows ?? []);
 
     return { category, products };
   } catch (error) {
@@ -41,7 +40,7 @@ async function getCategoryData(slug: string) {
 
 // Generate metadata for SEO using cached server data
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { category } = params;
+  const { category } = await params;
 
   const { category: categoryData, products: categoryProducts } = await getCategoryData(category);
 
@@ -79,7 +78,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CategoryPage({ params }: PageProps) {
-  const { category } = params;
+  const { category } = await params;
 
   const { category: categoryData, products: categoryProducts } = await getCategoryData(category);
 
