@@ -109,6 +109,7 @@ export default function SepetClient() {
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('cart');
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<{ orderNumber: number; id: string } | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   
   // Form states
   const [recipientName, setRecipientName] = useState('');
@@ -222,6 +223,11 @@ export default function SepetClient() {
   const MAX_DELIVERY_DATE = getMaxDeliveryDate();
 
   const deliveryOffDaySet = useMemo(() => new Set(deliveryOffDays), [deliveryOffDays]);
+
+  // Hydration fix
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -1785,7 +1791,7 @@ export default function SepetClient() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white pt-32 lg:pt-52 pb-32">
+      <main className="min-h-screen bg-white pt-32 lg:pt-52 pb-32" suppressHydrationWarning>
         <div className="max-w-2xl mx-auto px-4">
           
           {/* Step Indicator - Apple Premium Style */}
@@ -1798,16 +1804,14 @@ export default function SepetClient() {
                 
                 return (
                   <React.Fragment key={step.id}>
-                    <motion.button
+                    <button
                       onClick={() => {
                         if (index < currentStepIndex) {
                           setCurrentStep(step.id as CheckoutStep);
                         }
                       }}
                       disabled={index > currentStepIndex}
-                      whileHover={index <= currentStepIndex ? { scale: 1.05 } : {}}
-                      whileTap={index <= currentStepIndex ? { scale: 0.95 } : {}}
-                      className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-sm ${
+                      className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-sm hover:scale-105 active:scale-95 ${
                         isActive
                           ? 'bg-gradient-to-r from-[#e05a4c] to-[#ff6b5a] text-white shadow-lg shadow-[#e05a4c]/30'
                           : isCompleted
@@ -1835,7 +1839,7 @@ export default function SepetClient() {
                           transition={{ duration: 1.5, repeat: Infinity }}
                         />
                       )}
-                    </motion.button>
+                    </button>
                     {index < steps.length - 1 && (
                       <motion.div 
                         className={`h-0.5 ${index < currentStepIndex ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gray-200'}`}
@@ -2760,53 +2764,6 @@ export default function SepetClient() {
                   </div>
                 </div>
 
-                {/* Gift Option */}
-                <div className="flex items-center justify-between p-3 bg-pink-50 rounded-xl">
-                  <div className="flex items-center gap-2">
-                    <Gift size={16} className="text-pink-500" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Bu bir hediye</p>
-                      <p className="text-[10px] text-gray-500">Fiyat bilgisi gizlensin</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsGift(!isGift);
-                      if (isGift) {
-                        setRecipientErrors((prev) => ({ ...prev, sender: undefined }));
-                      }
-                    }}
-                    className={`w-10 h-6 rounded-full transition-colors ${isGift ? 'bg-pink-500' : 'bg-gray-300'}`}
-                  >
-                    <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${isGift ? 'translate-x-4' : 'translate-x-0.5'}`} />
-                  </button>
-                </div>
-
-                {isGift && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                  >
-                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                      Gönderen Adı (Kartta görünecek)
-                    </label>
-                    <input
-                      id="sender-name"
-                      type="text"
-                      value={senderName}
-                      onChange={(e) => {
-                        setSenderName(e.target.value);
-                        setRecipientErrors((prev) => ({ ...prev, sender: undefined }));
-                      }}
-                      placeholder="Sevgilerimle, Ahmet"
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all"
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">Hediye seçiliyse gönderen adı isteğe bağlıdır.</p>
-                    {recipientErrors.sender && (
-                      <p className="text-[10px] text-red-500 mt-1">{recipientErrors.sender}</p>
-                    )}
-                  </motion.div>
-                )}
                 {/* Navigation (mobilde adım sonunda statik) */}
                 <div className="mt-6">
                   <div className="max-w-2xl mx-auto flex gap-3">
