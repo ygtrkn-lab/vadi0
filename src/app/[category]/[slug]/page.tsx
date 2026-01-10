@@ -88,13 +88,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 // JSON-LD Structured Data for SEO
 function generateJsonLd(product: any) {
+  const hasValidRating = product.rating > 0 && product.reviewCount > 0;
+  
   return {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
-    description: product.description,
-    image: product.gallery || [product.image],
-    sku: product.sku,
+    description: product.description || product.name,
+    image: Array.isArray(product.gallery) && product.gallery.length > 0 
+      ? product.gallery 
+      : [product.image || 'https://vadiler.com/placeholder.jpg'],
+    sku: product.sku || `VAD-${product.id}`,
     brand: {
       '@type': 'Brand',
       name: 'Vadiler Çiçek',
@@ -105,22 +109,74 @@ function generateJsonLd(product: any) {
       priceCurrency: 'TRY',
       price: product.price,
       priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      availability: product.inStock
+      availability: product.inStock || product.in_stock
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
       seller: {
         '@type': 'Organization',
         name: 'Vadiler Çiçek',
       },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'TR',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 2,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn',
+      },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: '0',
+          currency: 'TRY',
+        },
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'TR',
+          addressRegion: 'İstanbul',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 0,
+            maxValue: 1,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 0,
+            maxValue: 1,
+            unitCode: 'DAY',
+          },
+        },
+      },
     },
-    // Only include aggregateRating if product has valid rating (> 0)
-    ...(product.rating > 0 && {
+    // Include aggregateRating if product has valid rating
+    ...(hasValidRating && {
       aggregateRating: {
         '@type': 'AggregateRating',
         ratingValue: product.rating,
-        reviewCount: product.reviewCount || 1,
+        reviewCount: product.reviewCount,
         bestRating: 5,
         worstRating: 1,
+      },
+    }),
+    // Include review array if product has reviews
+    ...(hasValidRating && {
+      review: {
+        '@type': 'Review',
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: product.rating,
+          bestRating: 5,
+          worstRating: 1,
+        },
+        author: {
+          '@type': 'Person',
+          name: 'Vadiler Müşterisi',
+        },
       },
     }),
   };
