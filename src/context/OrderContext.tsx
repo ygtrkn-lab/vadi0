@@ -57,6 +57,7 @@ export interface OrderDelivery {
 export interface OrderPayment {
   method: PaymentMethod;
   status: PaymentStatus;
+  clientInfo?: OrderClientInfo;
   cardLast4?: string;
   transactionId?: string;
   paidAt?: string;
@@ -79,6 +80,14 @@ export interface OrderPayment {
   reminderActionAt?: string;
   reminderDismissCount?: number;
   reminderResumeCount?: number;
+}
+
+export interface OrderClientInfo {
+  userAgent?: string;
+  deviceType?: string;
+  browser?: string;
+  browserVersion?: string;
+  os?: string;
 }
 
 export interface OrderMessage {

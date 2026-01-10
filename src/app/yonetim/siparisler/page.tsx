@@ -1243,6 +1243,20 @@ export default function SiparislerPage() {
                         {selectedOrder.payment.transactionId && (
                           <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>İşlem: {selectedOrder.payment.transactionId}</p>
                         )}
+                        <div className={`p-3 rounded-xl ${isDark ? 'bg-neutral-950 border border-neutral-800' : 'bg-gray-50 border border-gray-200'}`}>
+                          <p className={`text-xs font-semibold mb-1 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                            Cihaz & Tarayıcı
+                          </p>
+                          <p className={`text-sm font-medium ${isDark ? 'text-neutral-100' : 'text-gray-800'}`}>
+                            {(selectedOrder.payment.clientInfo?.deviceType || 'Bilinmiyor').replace(/^(\w)/, (m) => m.toUpperCase())}
+                            {' • '}
+                            {selectedOrder.payment.clientInfo?.browser || 'Bilinmiyor'}
+                            {selectedOrder.payment.clientInfo?.browserVersion ? ` v${selectedOrder.payment.clientInfo.browserVersion}` : ''}
+                          </p>
+                          <p className={`text-[11px] mt-1 leading-snug break-all ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>
+                            {selectedOrder.payment.clientInfo?.userAgent || 'Kullanıcı aracısı yok'}
+                          </p>
+                        </div>
                         {reminderInfo.shown && (
                           <div className={`p-3 rounded-xl border ${isDark ? 'bg-amber-500/5 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
                             <p className={`text-xs font-semibold ${isDark ? 'text-amber-200' : 'text-amber-700'}`}>Hatırlatma Gösterildi</p>

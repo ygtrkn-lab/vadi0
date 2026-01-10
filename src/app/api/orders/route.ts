@@ -52,6 +52,31 @@ function getDeliveryFields(delivery: unknown): {
   };
 }
 
+function detectDeviceType(userAgent: string): 'mobile' | 'tablet' | 'desktop' {
+  const ua = userAgent.toLowerCase();
+  if (!ua) return 'desktop';
+  if (ua.includes('ipad') || ua.includes('tablet')) return 'tablet';
+  if (ua.includes('mobi') || ua.includes('iphone') || ua.includes('android')) return 'mobile';
+  return 'desktop';
+}
+
+function detectBrowser(userAgent: string): { browser: string; version: string } {
+  const ua = userAgent;
+  const matchers: Array<{ name: string; regex: RegExp }> = [
+    { name: 'Edge', regex: /Edg\/([\d.]+)/ },
+    { name: 'Chrome', regex: /Chrome\/([\d.]+)/ },
+    { name: 'Firefox', regex: /Firefox\/([\d.]+)/ },
+    { name: 'Safari', regex: /Version\/([\d.]+).*Safari/ },
+    { name: 'Opera', regex: /OPR\/([\d.]+)/ },
+  ];
+
+  for (const { name, regex } of matchers) {
+    const match = ua.match(regex);
+    if (match) return { browser: name, version: match[1] || '' };
+  }
+  return { browser: 'Bilinmiyor', version: '' };
+}
+
 // GET - Fetch orders (with optional customer filter)
 export async function GET(request: NextRequest) {
   try {
@@ -192,6 +217,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Build order data with only valid Supabase columns
+    const userAgent = request.headers.get('user-agent') || '';
+    const platform = request.headers.get('sec-ch-ua-platform') || '';
+    const { browser, version } = detectBrowser(userAgent);
+    const deviceType = detectDeviceType(userAgent);
+
+    const paymentWithClient = {
+      ...(newOrder.payment || {}),
+      clientInfo: {
+        ...(newOrder.payment?.clientInfo || newOrder.payment?.client_info),
+        userAgent: userAgent || undefined,
+        deviceType,
+        browser,
+        browserVersion: version || undefined,
+        os: platform || undefined,
+      },
+    };
+
     const orderData = {
       customer_id: customerId,
       customer_name: customerName,
@@ -200,7 +242,7 @@ export async function POST(request: NextRequest) {
       is_guest: isGuest,
       products: trustedProducts,
       delivery: newOrder.delivery,
-      payment: newOrder.payment || {},
+      payment: paymentWithClient,
       message: newOrder.message || null,
       subtotal: trustedSubtotal,
       discount,
