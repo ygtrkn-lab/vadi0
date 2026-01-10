@@ -161,27 +161,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   })
 
-  // Kombinasyonel sayfalar: Özel Gün × Kategori
-  const occasionCategoryPages: MetadataRoute.Sitemap = []
-  const activeCategorySlugs = categoryPages
-    .map((entry) => {
-      const url = entry?.url || ''
-      const path = url.startsWith(BASE_URL) ? url.slice(BASE_URL.length) : url
-      const slug = path.split('/').filter(Boolean)[0]
-      return slug || null
-    })
-    .filter((v): v is string => Boolean(v))
-
-  SPECIAL_DAYS.forEach(occasion => {
-    activeCategorySlugs.forEach((categorySlug) => {
-      occasionCategoryPages.push({
-        url: `${BASE_URL}/ozel-gun/${occasion.slug}/${categorySlug}`,
-        lastModified: now,
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      })
-    })
-  })
+  // Kombinasyonel sayfalar kaldırıldı (broken routes) - REMOVED
+  // Önceden: /ozel-gun/[occasion]/[category] ve /sehir/[city]/[occasion]/[category]
+  // Bunlar çoğunlukla duplicate content ve low quality olduğu için indexlenmiyordu
+  // Analytics gösteriyor ki kullanıcılar doğru ana kategori sayfasını ziyaret ediyor
 
   return [
     ...staticPages,

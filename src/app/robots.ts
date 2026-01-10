@@ -8,7 +8,11 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/arama'],
+        disallow: [
+          '/arama',  // Search pages - low quality
+          '/ozel-gun/*/[a-z]*', // Broken routes - no page component
+          '/sehir/*/', // District pages without main category - low quality
+        ],
       },
       {
         userAgent: 'Googlebot',
