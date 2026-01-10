@@ -1134,6 +1134,21 @@ export default function SepetClient() {
     }
   };
 
+  const handleInlineRegisterPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const digits = normalizeTrMobileDigits(value);
+    
+    // Maksimum 10 rakam
+    if (digits.length > 10) return;
+
+    // İlk rakam 5 değilse girişi engelle
+    if (digits.length > 0 && digits[0] !== '5') {
+      return;
+    }
+    
+    setInlineRegisterPhone(formatPhoneNumber(digits));
+  };
+
   const predefinedMessages = [
     {
       id: 'love',
@@ -3651,20 +3666,20 @@ export default function SepetClient() {
                                   placeholder="E-posta adresiniz"
                                   className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                 />
-                                <input
-                                  type="tel"
-                                  value={inlineRegisterPhone}
-                                  onChange={(e) => {
-                                    let val = e.target.value.replace(/\D/g, '');
-                                    if (val.length > 0 && !val.startsWith('0')) val = '0' + val;
-                                    if (val.length > 4) val = val.slice(0, 4) + ' ' + val.slice(4);
-                                    if (val.length > 8) val = val.slice(0, 8) + ' ' + val.slice(8);
-                                    if (val.length > 11) val = val.slice(0, 11) + ' ' + val.slice(11);
-                                    setInlineRegisterPhone(val.slice(0, 13));
-                                  }}
-                                  placeholder="Telefon (05XX XXX XX XX)"
-                                  className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                />
+                                <div className="relative">
+                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm select-none pointer-events-none">
+                                    +90
+                                  </span>
+                                  <input
+                                    type="tel"
+                                    value={inlineRegisterPhone}
+                                    onChange={handleInlineRegisterPhoneChange}
+                                    inputMode="numeric"
+                                    maxLength={13}
+                                    placeholder="5XX XXX XX XX"
+                                    className="w-full pl-[3.5rem] pr-4 py-3 bg-white border border-emerald-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                  />
+                                </div>
                                 <input
                                   type="password"
                                   value={inlineRegisterPassword}
@@ -3692,7 +3707,7 @@ export default function SepetClient() {
                                         body: JSON.stringify({
                                           name: inlineRegisterName,
                                           email: inlineRegisterEmail,
-                                          phone: inlineRegisterPhone.replace(/\s/g, ''),
+                                          phone: normalizeTrMobileDigits(inlineRegisterPhone),
                                           password: inlineRegisterPassword,
                                         }),
                                       });
