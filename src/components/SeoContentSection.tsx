@@ -104,7 +104,7 @@ const SeoContentSection = () => {
                 ].map((d) => (
                   <Link
                     key={d.slug}
-                    href={`/sehir/istanbul/${d.slug}`}
+                    href={`/sehir/${d.slug}`}
                     className="inline-flex items-center justify-center px-3 py-2 rounded-xl text-sm bg-white border border-gray-200 hover:border-primary-200 hover:bg-primary-50 text-gray-800 hover:text-primary-700 transition"
                   >
                     {d.name}

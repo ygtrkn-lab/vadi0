@@ -87,7 +87,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `${BASE_URL}/${category}/${slug}`,
     },
     other: {
-      'product:price:amount': product.price.toString(),
+      // Fiyatı noktalı ondalık formatında gönder (Google standardı)
+      'product:price:amount': Number(product.price).toFixed(2),
       'product:price:currency': 'TRY',
       'product:availability': (product.inStock || product.in_stock) ? 'in stock' : 'out of stock',
       'product:category': categoryData?.name || product.categoryName || product.category_name || '',
@@ -97,7 +98,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 // JSON-LD Structured Data for SEO
 function generateJsonLd(product: any) {
-  const hasValidRating = product.rating > 0 && product.reviewCount > 0;
+  // reviewCount veya review_count'u kontrol et (snake_case veya camelCase)
+  const reviewCount = Number(product.reviewCount || product.review_count || 0);
+  const rating = Number(product.rating || 0);
+  const hasValidRating = rating > 0 && reviewCount > 0;
+  
+  // Fiyatı sayı olarak formatla (Google için noktalı ondalık gerekli)
+  // product.price zaten indirimli fiyat, product.oldPrice eski fiyat
+  const currentPrice = Number(product.price);
+  const originalPrice = Number(product.oldPrice || product.old_price || 0);
+  const hasDiscount = originalPrice > 0 && originalPrice > currentPrice;
+  
+  // Google için fiyatı string olarak formatla (noktalı ondalık)
+  const formatPrice = (price: number) => price.toFixed(2);
   
   return {
     '@context': 'https://schema.org',
@@ -116,7 +129,8 @@ function generateJsonLd(product: any) {
       '@type': 'Offer',
       url: `https://vadiler.com/${product.category}/${product.slug}`,
       priceCurrency: 'TRY',
-      price: product.price,
+      // Her zaman güncel satış fiyatını kullan (indirimli veya normal)
+      price: formatPrice(currentPrice),
       priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       availability: product.inStock || product.in_stock
         ? 'https://schema.org/InStock'
@@ -125,6 +139,15 @@ function generateJsonLd(product: any) {
         '@type': 'Organization',
         name: 'Vadiler Çiçek',
       },
+      // İndirim varsa priceSpecification ekle (Google için net fiyat gösterimi)
+      ...(hasDiscount && {
+        priceSpecification: {
+          '@type': 'PriceSpecification',
+          price: formatPrice(currentPrice),
+          priceCurrency: 'TRY',
+          valueAddedTaxIncluded: true,
+        },
+      }),
       hasMerchantReturnPolicy: {
         '@type': 'MerchantReturnPolicy',
         applicableCountry: 'TR',
@@ -166,26 +189,11 @@ function generateJsonLd(product: any) {
     ...(hasValidRating && {
       aggregateRating: {
         '@type': 'AggregateRating',
-        ratingValue: product.rating,
-        reviewCount: product.reviewCount,
+        ratingValue: rating.toFixed(1),
+        reviewCount: reviewCount,
+        ratingCount: reviewCount,
         bestRating: 5,
         worstRating: 1,
-      },
-    }),
-    // Include review array if product has reviews
-    ...(hasValidRating && {
-      review: {
-        '@type': 'Review',
-        reviewRating: {
-          '@type': 'Rating',
-          ratingValue: product.rating,
-          bestRating: 5,
-          worstRating: 1,
-        },
-        author: {
-          '@type': 'Person',
-          name: 'Vadiler Müşterisi',
-        },
       },
     }),
   };

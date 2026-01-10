@@ -204,7 +204,8 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
           },
           offers: {
             '@type': 'Offer',
-            price: product.price,
+            // Fiyatı noktalı ondalık formatında gönder (Google standardı)
+            price: Number(product.price).toFixed(2),
             priceCurrency: 'TRY',
             priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             availability: product.inStock
