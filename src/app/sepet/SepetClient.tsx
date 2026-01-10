@@ -2044,22 +2044,22 @@ export default function SepetClient() {
                     <CreditCard className="w-6 h-6 text-[#e05a4c]" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-xl font-bold text-gray-900">Ödeme adımını tamamlayalım</h3>
+                    <h3 className="text-xl font-bold text-gray-900">Ödeme İşleminizi Tamamlayın</h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
-                      Sepetiniz hazır. Ödeme 1 dakikadan kısa sürer ve teslimatınızı ayırmış durumdayız.
+                      Siparişinizi tamamlamak için ödeme adımına geçin. Teslimat tarihiniz ve seçtiğiniz ürünler rezerve edilmiştir.
                     </p>
                     <ul className="text-xs text-gray-700 space-y-1">
                       <li className="flex items-start gap-2">
                         <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
-                        <span>Güvenli ödeme &amp; 3D Secure desteği</span>
+                        <span>SSL sertifikalı güvenli ödeme altyapısı</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
-                        <span>Ürünleriniz ve teslimat tarihi rezerve</span>
+                        <span>Teslimat tarihi ve ürünleriniz rezerve edildi</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
-                        <span>Siparişinizi kaybetmeden devam edin</span>
+                        <span>1 dakikadan kısa güvenli ödeme süreci</span>
                       </li>
                     </ul>
                   </div>
