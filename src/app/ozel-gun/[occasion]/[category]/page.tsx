@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
+import { Header, Footer, MobileNavBar } from '@/components';
 import { SPECIAL_DAYS } from '@/data/special-days';
 import supabaseAdmin from '@/lib/supabase/admin';
 
@@ -277,6 +278,8 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
       />
       
+      <Header />
+      
       <main className="container mx-auto px-4 py-8 mt-20">
         {/* Hero Section */}
         <div className="mb-10">
@@ -440,6 +443,9 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
           </div>
         </div>
       </main>
+
+      <Footer />
+      <MobileNavBar />
     </>
   );
 }
