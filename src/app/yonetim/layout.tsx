@@ -21,7 +21,8 @@ import {
   HiOutlineMoon,
   HiOutlineSun,
   HiOutlineUsers,
-  HiOutlineChartBar
+  HiOutlineChartBar,
+  HiOutlineChatAlt2
 } from 'react-icons/hi';
 import { ShinyText } from '@/components/ui-kit';
 import DarkVeil from '@/components/DarkVeil';
@@ -114,6 +115,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/yonetim/urunler', label: 'Ürünler', icon: HiOutlineCube },
     { href: '/yonetim/kategoriler', label: 'Kategoriler', icon: HiOutlineTag },
     { href: '/yonetim/siparisler', label: 'Siparişler', icon: HiOutlineClipboardList, badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined },
+    { href: '/yonetim/degerlendirmeler', label: 'Değerlendirmeler', icon: HiOutlineChatAlt2 },
     { href: '/yonetim/musteriler', label: 'Müşteriler', icon: HiOutlineUsers },
     { href: '/yonetim/analizler', label: 'Analizler', icon: HiOutlineChartBar },
     { href: '/yonetim/bolge-kapatma', label: 'Bölge Kapatma', icon: HiOutlineTag },
