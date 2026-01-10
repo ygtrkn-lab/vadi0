@@ -190,6 +190,9 @@ export default function SepetClient() {
   const [neighborhoodSearchOpen, setNeighborhoodSearchOpen] = useState(false);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
   const neighborhoodInputRef = useRef<HTMLInputElement>(null);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const touchActiveRef = useRef(false);
 
   const [deliveryOffDays, setDeliveryOffDays] = useState<string[]>([]);
 
@@ -802,6 +805,47 @@ export default function SepetClient() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [neighborhoodSearchOpen]);
 
+  // Mobile edge swipe: navigate steps with left/right flicks from screen edges
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (window.innerWidth > 1024) return; // only mobile/tablet
+      if (!e.touches || e.touches.length === 0) return;
+      const t = e.touches[0];
+      const edgeZone = 28;
+      const isEdge = t.clientX <= edgeZone || t.clientX >= window.innerWidth - edgeZone;
+      if (!isEdge) return;
+      touchActiveRef.current = true;
+      touchStartXRef.current = t.clientX;
+      touchStartYRef.current = t.clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchActiveRef.current) return;
+      touchActiveRef.current = false;
+      if (window.innerWidth > 1024) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - touchStartXRef.current;
+      const dy = t.clientY - touchStartYRef.current;
+      const minDistance = 70;
+      const maxOffAxis = 50;
+      if (Math.abs(dx) < minDistance || Math.abs(dy) > maxOffAxis) return;
+      if (dx > 0) {
+        handleEdgeSwipe('prev');
+      } else {
+        handleEdgeSwipe('next');
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleEdgeSwipe]);
+
   // LocalStorage'dan form verilerini yükle (sayfa yüklendiğinde)
   useEffect(() => {
     try {
@@ -1250,6 +1294,59 @@ export default function SepetClient() {
   const isPhoneValid = validatePhoneNumber(recipientPhone);
   const canProceedToRecipient = state.items.length > 0;
   const requiresSenderName = false;
+
+  const handleEdgeSwipe = useCallback(
+    (direction: 'next' | 'prev') => {
+      if (direction === 'prev') {
+        if (currentStep === 'payment') {
+          setCurrentStep('message');
+          scrollToTop();
+          return;
+        }
+        if (currentStep === 'message') {
+          setCurrentStep('recipient');
+          scrollToTop();
+          return;
+        }
+        if (currentStep === 'recipient') {
+          setCurrentStep('cart');
+          scrollToTop();
+          return;
+        }
+        return;
+      }
+
+      // direction === 'next'
+      if (currentStep === 'cart') {
+        if (canProceedToRecipient) {
+          setCurrentStep('recipient');
+          scrollToTop();
+        }
+        return;
+      }
+
+      if (currentStep === 'recipient') {
+        const check = validateRecipientStep();
+        if (!check.ok) return;
+        setCurrentStep('message');
+        scrollToTop();
+        return;
+      }
+
+      if (currentStep === 'message') {
+        if (requiresSenderName && senderName.trim().length < 2) {
+          setRecipientErrors(prev => ({ ...prev, sender: 'Gönderen adı en az 2 karakter olmalıdır' }));
+          scrollToElement('sender-name');
+          return;
+        }
+        setRecipientErrors(prev => ({ ...prev, sender: undefined }));
+        setCurrentStep('payment');
+        scrollToTop();
+        return;
+      }
+    },
+    [canProceedToRecipient, currentStep, requiresSenderName, senderName, validateRecipientStep]
+  );
   
   // Detaylı adres alanlarından tam adresi oluştur
   const fullAddress = useMemo(() => {
@@ -1538,7 +1635,7 @@ export default function SepetClient() {
       // Create order with pending_payment status
       // Tam adresi oluştur
       const completeDeliveryAddress = `${neighborhood} Mah. ${fullAddress}, ${district}/İstanbul`;
-      const orderResult = await createOrder({
+        const orderResult = await createOrder({
         customerId: customerInfo.id,
         customerName: customerInfo.name,
         customerEmail: customerInfo.email,
@@ -1565,7 +1662,7 @@ export default function SepetClient() {
           senderName: senderName || '',
           isGift,
         } : null,
-        status: selectedPaymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'pending_payment',
+        status: selectedPaymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'pending',
       });
 
       if (!orderResult.success || !orderResult.order) {
@@ -1649,6 +1746,9 @@ export default function SepetClient() {
         // This is e-commerce standard - callback will return to our site
         const threeDSUrl = new URL('/payment/3ds', window.location.origin);
         threeDSUrl.searchParams.set('html', paymentData.threeDSHtmlContent);
+        if (orderResult?.order?.id) {
+          threeDSUrl.searchParams.set('orderId', orderResult.order.id);
+        }
         
         // Navigate to 3DS page
         window.location.href = threeDSUrl.toString();
