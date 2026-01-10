@@ -37,6 +37,7 @@ type ProductDetailProps = {
 export default function ProductDetail({ product, relatedProducts, categoryName }: ProductDetailProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const SUPPORT_WHATSAPP_NUMBER = '908503074876';
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [activeSection, setActiveSection] = useState<"desc" | "care" | "delivery">("desc");
@@ -203,26 +204,15 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     setTimeout(() => setShowShareToast(false), 2000);
   };
 
-  const handleWhatsAppShare = async () => {
-    const shareUrl = window.location.href;
-    const text = `${product.name} - ${product.description}\n${shareUrl}`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    
-    if (navigator.share && navigator.canShare({ url: whatsappUrl })) {
-      try {
-        await navigator.share({ 
-          title: product.name,
-          text: product.description,
-          url: shareUrl 
-        });
-        return;
-      } catch (err) {
-        /* noop */
-      }
-    }
-    
-    // Fallback: açık WhatsApp share linki
-    window.open(whatsappUrl, '_blank');
+  const handleWhatsAppSupport = () => {
+    const supportText = `Merhaba, ${product.name} hakkında destek almak istiyorum.`;
+    const whatsappUrl = `https://wa.me/${SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(supportText)}`;
+    trackEvent('whatsapp_support_click', {
+      product_id: product.id,
+      product_name: product.name,
+      source: 'product_detail_primary',
+    });
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
   const sectionCard = (id: "desc" | "care" | "delivery", title: string, content: React.ReactNode) => (
@@ -400,7 +390,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
                   </button>
 
                   <button
-                    onClick={handleWhatsAppShare}
+                    onClick={handleWhatsAppSupport}
                     className="relative overflow-hidden group bg-[#e05a4c] text-white py-3 px-6 rounded-full font-medium text-base hover:bg-[#d43a2a] transition-all duration-300 flex items-center justify-center space-x-2"
                   >
                     <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
