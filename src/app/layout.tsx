@@ -194,6 +194,10 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   alternates: {
     canonical: "https://vadiler.com/",
+    languages: {
+      'tr-TR': 'https://vadiler.com/',
+      'x-default': 'https://vadiler.com/',
+    },
   },
   openGraph: {
     title: "İstanbul Çiçek Siparişi | Vadiler Çiçek - Güvenilir Çiçekçi, Aynı Gün Teslimat",

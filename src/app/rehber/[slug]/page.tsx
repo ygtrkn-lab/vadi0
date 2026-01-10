@@ -134,6 +134,25 @@ export default async function GuideDetailPage({ params }: PageProps) {
     ],
   };
 
+  // HowTo Schema (eğer adımlar varsa)
+  const howToSchema = guide.howToSteps
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'HowTo',
+        name: guide.title,
+        description: guide.excerpt,
+        image: guide.image,
+        totalTime: `PT${guide.readTime}M`,
+        step: guide.howToSteps.map((step, index) => ({
+          '@type': 'HowToStep',
+          position: index + 1,
+          name: step.name,
+          text: step.text,
+          ...(step.image && { image: step.image }),
+        })),
+      }
+    : null;
+
   return (
     <>
       <script
@@ -144,6 +163,12 @@ export default async function GuideDetailPage({ params }: PageProps) {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        />
+      )}
+      {howToSchema && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
         />
       )}
       <script

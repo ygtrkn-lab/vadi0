@@ -76,6 +76,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ],
       type: 'website',
       siteName: 'Vadiler Çiçek',
+      locale: 'tr_TR',
+      url: `${BASE_URL}/${product.category}/${product.slug}`,
     },
     twitter: {
       card: 'summary_large_image',

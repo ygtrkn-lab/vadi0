@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { SPECIAL_DAYS, getSpecialDayBySlug, getAllSpecialDaySlugs } from '@/data/special-days'
+import { getOccasionFAQs } from '@/data/occasion-faqs'
 import ProductCard from '@/components/ProductCard'
 import supabaseAdmin from '@/lib/supabase/admin'
 import { transformProducts, type Product } from '@/lib/transformers'
@@ -248,6 +249,21 @@ export default async function SpecialDayPage({ params }: PageProps) {
   // Diğer özel günler
   const otherSpecialDays = SPECIAL_DAYS.filter(day => day.slug !== occasion).slice(0, 6)
 
+  // FAQ Schema - Özel gün bazlı sorular
+  const occasionFaqs = getOccasionFAQs(occasion);
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: occasionFaqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
+
   return (
     <>
       <script
@@ -257,6 +273,11 @@ export default async function SpecialDayPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      {/* FAQ Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
       <main className="min-h-screen bg-gray-50">

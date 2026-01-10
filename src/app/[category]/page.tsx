@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import CategoryPageClient from './CategoryPageClient';
 import supabaseAdmin from '@/lib/supabase/admin';
 import { transformProducts } from '@/lib/transformers';
+import { getCategoryFAQs } from '@/data/category-faqs';
 
 interface PageProps {
   params: Promise<{
@@ -194,6 +195,21 @@ export default async function CategoryPage({ params }: PageProps) {
     ],
   };
 
+  // FAQ Schema - Kategori bazlı sorular
+  const categoryFaqs = getCategoryFAQs(category);
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: categoryFaqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
+
   return (
     <>
       {/* JSON-LD Structured Data */}
@@ -206,6 +222,12 @@ export default async function CategoryPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
+      {/* FAQ Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
       <CategoryPageClient 
