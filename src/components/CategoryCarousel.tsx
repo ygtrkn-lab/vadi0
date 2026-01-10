@@ -2,14 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Percent } from "lucide-react";
+import { ChevronLeft, ChevronRight, Percent, Flame, Sparkles } from "lucide-react";
 import ProductCard from "./ProductCard";
 import type { Product } from "@/data/products";
 
 const SLICE_LIMIT = 16;
 
+interface CategoryCarouselProps {
+	variant?: 'default' | 'city';
+}
+
 // Campaign-only product slider placed under the circle categories.
-export default function CategoryCarousel() {
+export default function CategoryCarousel({ variant = 'default' }: CategoryCarouselProps) {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const [products, setProducts] = useState<Product[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -96,7 +100,7 @@ export default function CategoryCarousel() {
 
 	if (loading) {
 		return (
-			<section className="py-6 bg-gradient-to-b from-primary-50/60 to-white">
+			<section className={`${variant === 'city' ? 'py-12 sm:py-16' : 'py-6'} bg-gradient-to-b ${variant === 'city' ? 'from-white to-gray-50' : 'from-primary-50/60 to-white'}`}>
 				<div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex items-center gap-2 mb-4">
 						<div className="w-10 h-10 rounded-full bg-primary-100 animate-pulse" />
@@ -117,28 +121,44 @@ export default function CategoryCarousel() {
 
 	if (!hasProducts) return null;
 
+	const isCityVariant = variant === 'city';
+	const bgGradient = isCityVariant 
+		? 'bg-gradient-to-b from-white to-gray-50' 
+		: 'bg-gradient-to-b from-primary-50/60 to-white';
+	const sectionPy = isCityVariant ? 'py-12 sm:py-16' : 'py-1.5 md:py-3';
+	const headingSize = isCityVariant ? 'text-2xl sm:text-3xl' : 'text-xl md:text-2xl';
+	const headerGap = isCityVariant ? 'gap-3' : 'gap-2';
+
 	return (
-		<section className="py-1.5 md:py-3 bg-gradient-to-b from-primary-50/60 to-white">
+		<section className={`${sectionPy} ${bgGradient}`}>
 			<div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-				<div className="flex items-center justify-between mb-4 md:mb-6">
-					<div className="flex items-center gap-2">
-						<span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-primary-700 shadow-lg border border-primary-100">
-							<Percent size={18} />
+				<div className="flex items-center justify-between mb-6 md:mb-8">
+					<div className={`flex items-center ${headerGap}`}>
+						<span className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${
+							isCityVariant 
+								? 'bg-gradient-to-br from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30' 
+								: 'bg-white text-primary-700 shadow-lg border border-primary-100'
+						}`}>
+							{isCityVariant ? <Flame size={20} /> : <Percent size={18} />}
 						</span>
 						<div>
-							<h2 className="text-xl md:text-2xl font-bold text-gray-900">Kampanyalı Ürünler</h2>
-							<p className="text-sm text-gray-600">En yüksek indirime sahip ürünler</p>
+							<h2 className={`${headingSize} font-bold text-gray-900`}>
+								{isCityVariant ? '🔥 Sıcak Kampanyalar' : 'Kampanyalı Ürünler'}
+							</h2>
+							<p className="text-sm text-gray-600">
+								{isCityVariant ? 'Sınırlı ürün, büyük indirimler' : 'En yüksek indirime sahip ürünler'}
+							</p>
 						</div>
 					</div>
 
-					<div className="hidden md:flex items-center gap-2">
+					<div className={`${isCityVariant ? 'flex' : 'hidden md:flex'} items-center gap-2`}>
 						<button
 							onClick={() => scroll("left")}
 							disabled={!canScrollLeft}
 							className={`p-2 rounded-full border transition-all shadow-sm ${
 								canScrollLeft
-									? "border-gray-300 bg-white hover:bg-primary-50 hover:border-primary-400 hover:text-primary-600"
-									: "border-gray-200 text-gray-300 cursor-not-allowed"
+									? 'border-gray-300 bg-white hover:bg-primary-50 hover:border-primary-400 hover:text-primary-600'
+									: 'border-gray-200 text-gray-300 cursor-not-allowed'
 							}`}
 						>
 							<ChevronLeft size={20} />
@@ -148,8 +168,8 @@ export default function CategoryCarousel() {
 							disabled={!canScrollRight}
 							className={`p-2 rounded-full border transition-all shadow-sm ${
 								canScrollRight
-									? "border-gray-300 bg-white hover:bg-primary-50 hover:border-primary-400 hover:text-primary-600"
-									: "border-gray-200 text-gray-300 cursor-not-allowed"
+									? 'border-gray-300 bg-white hover:bg-primary-50 hover:border-primary-400 hover:text-primary-600'
+									: 'border-gray-200 text-gray-300 cursor-not-allowed'
 							}`}
 						>
 							<ChevronRight size={20} />

@@ -18,6 +18,7 @@ import { Footer, Header, MobileNavBar } from '@/components'
 import { DISTRICT_CONTENTS, getDistrictContentBySlug, createCitySlug } from '@/data/city-content'
 import { ISTANBUL_ILCELERI } from '@/data/istanbul-districts'
 import ProductCard from '@/components/ProductCard'
+import CategoryCarousel from '@/components/CategoryCarousel'
 import supabaseAdmin from '@/lib/supabase/admin'
 import { transformProducts } from '@/lib/transformers'
 
@@ -191,7 +192,10 @@ export default async function CityPage({ params }: PageProps) {
       
       <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
         
-        {/* ✨ Premium Hero Section */}
+        {/* 🎁 Haftanın Kampanyalı Ürünler - EN ÜSTTE HERO ALANINDA */}
+        <CategoryCarousel variant="city" />
+
+        {/* ✨ Premium Info Section */}
         <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden bg-white">
           {/* Decorative Elements */}
           <div className="absolute inset-0 overflow-hidden">
@@ -295,6 +299,41 @@ export default async function CityPage({ params }: PageProps) {
           </div>
         </section>
 
+        {/* � Özel Günler (haftanın kampanyalarından hemen sonra) */}
+        <section className="py-10 sm:py-14">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                {content.name} İçin <span className="text-primary-600">Özel Günler</span>
+              </h2>
+              <Link href="/ozel-gun" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                Tümünü Gör <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {SPECIAL_DAYS.map((day) => {
+                const Icon = day.icon
+                return (
+                  <Link
+                    key={day.slug}
+                    href={`/sehir/${city}/${day.slug}`}
+                    className="group relative overflow-hidden rounded-3xl bg-white p-6 shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-xl hover:ring-primary-500/50 hover:-translate-y-1"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${day.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
+                    <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${day.color} shadow-lg mb-4`}>
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">{day.name}</h3>
+                    <p className="text-sm text-gray-600">{content.name} teslimat</p>
+                    <ArrowRight className="absolute bottom-6 right-6 h-5 w-5 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
         {/* 🎯 İlçeler Grid (sadece İstanbul ana sayfasında) */}
         {isIstanbul && (
           <section className="py-12 sm:py-16">
@@ -330,41 +369,6 @@ export default async function CityPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* 🎁 Özel Günler (tüm sayfalarda) */}
-        <section className="py-10 sm:py-14">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                {content.name} İçin <span className="text-primary-600">Özel Günler</span>
-              </h2>
-              <Link href="/ozel-gun" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
-                Tümünü Gör <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {SPECIAL_DAYS.map((day) => {
-                const Icon = day.icon
-                return (
-                  <Link
-                    key={day.slug}
-                    href={`/sehir/${city}/${day.slug}`}
-                    className="group relative overflow-hidden rounded-3xl bg-white p-6 shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-xl hover:ring-primary-500/50 hover:-translate-y-1"
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${day.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
-                    <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${day.color} shadow-lg mb-4`}>
-                      <Icon className="h-6 w-6 text-white" />
-                    </div>
-                    <h3 className="text-base font-semibold text-gray-900 mb-1">{day.name}</h3>
-                    <p className="text-sm text-gray-600">{content.name} teslimat</p>
-                    <ArrowRight className="absolute bottom-6 right-6 h-5 w-5 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-
         {/* 📦 Popüler Bölgeler (ilçe sayfalarında) */}
         {!isIstanbul && content.popularAreas && content.popularAreas.length > 0 && (
           <section className="py-8">
@@ -392,7 +396,7 @@ export default async function CityPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* 📝 İçerik Section */}
+        {/* 📝 BİLGİLENDİRMELER - İçerik Section */}
         <section className="py-12 sm:py-16">
           <div className="container mx-auto px-4">
             <div className="grid gap-8 lg:grid-cols-12">
@@ -470,7 +474,7 @@ export default async function CityPage({ params }: PageProps) {
           </div>
         </section>
 
-        {/* 🌸 Ürünler Section */}
+        {/* 🌸 Popüler Çiçekler Section - EN SONDA */}
         <section className="py-12 sm:py-16 bg-gray-50">
           <div className="container mx-auto px-4">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
