@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import dynamic from 'next/dynamic'
 import { 
   Building2, 
   Camera, 
@@ -18,10 +17,9 @@ import {
   Heart
 } from 'lucide-react'
 import { Footer, Header, MobileNavBar } from '@/components'
+import DarkVeilBackground from '@/components/DarkVeilBackground'
 import { AVRUPA_ILCELERI, ANADOLU_ILCELERI } from '@/data/istanbul-districts'
 import { createCitySlug } from '@/data/city-content'
-
-const DarkVeil = dynamic(() => import('@/components/DarkVeil'), { ssr: false })
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com'
 
@@ -74,18 +72,7 @@ export default function CitiesIndexPage() {
       <div className="h-0 lg:h-40" />
       
       <main className="min-h-screen relative overflow-hidden">
-        {/* DarkVeil Animated Background */}
-        <div className="fixed inset-0 -z-10">
-          <DarkVeil 
-            hueShift={220} 
-            noiseIntensity={0.03} 
-            speed={0.15} 
-            warpAmount={0.3}
-            resolutionScale={0.5}
-          />
-          {/* Dark overlay for better readability */}
-          <div className="absolute inset-0 bg-dark-950/60 backdrop-blur-[2px]" />
-        </div>
+        <DarkVeilBackground />
         
         {/* ✨ Premium Hero Section */}
         <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden">
@@ -265,45 +252,45 @@ export default function CitiesIndexPage() {
         <section className="py-12 sm:py-16">
           <div className="container mx-auto px-4">
             <div className="text-center mb-10">
-              <span className="inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-1.5 text-xs font-semibold text-primary-700 mb-4">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-xl px-4 py-1.5 text-xs font-semibold text-white ring-1 ring-white/20 mb-4">
                 <Truck className="h-3.5 w-3.5" />
                 TESLİMAT GARANTİSİ
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-dark-950 mb-3">
-                İstanbul <span className="text-primary-600">Teslimat Seçenekleri</span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                İstanbul <span className="text-primary-400">Teslimat Seçenekleri</span>
               </h2>
-              <p className="text-dark-600 max-w-2xl mx-auto">
+              <p className="text-white/70 max-w-2xl mx-auto">
                 Profesyonel teslimat ekibimiz ile siparişleriniz güvenle kapınıza ulaşsın
               </p>
             </div>
             
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="group rounded-3xl bg-white/80 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:bg-white/95 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white/10 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-white/20 transition-all hover:bg-white/20 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25">
                   <Clock className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-dark-950 mb-2">Aynı Gün Teslimat</h3>
-                <p className="text-dark-600 text-sm">
+                <h3 className="text-lg font-bold text-white mb-2">Aynı Gün Teslimat</h3>
+                <p className="text-white/70 text-sm">
                   Saat 16:00&apos;ya kadar verilen siparişler aynı gün teslim edilir.
                 </p>
               </div>
               
-              <div className="group rounded-3xl bg-white/80 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:bg-white/95 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white/10 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-white/20 transition-all hover:bg-white/20 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25">
                   <Rocket className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-dark-950 mb-2">Ekspres Teslimat</h3>
-                <p className="text-dark-600 text-sm">
+                <h3 className="text-lg font-bold text-white mb-2">Ekspres Teslimat</h3>
+                <p className="text-white/70 text-sm">
                   Acil siparişler için 2 saat içinde teslimat seçeneği mevcuttur.
                 </p>
               </div>
               
-              <div className="group rounded-3xl bg-white/80 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-dark-100/20 transition-all hover:shadow-xl hover:bg-white/95 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white/10 backdrop-blur-xl p-8 text-center shadow-lg ring-1 ring-white/20 transition-all hover:bg-white/20 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25">
                   <Camera className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-dark-950 mb-2">Teslimat Fotoğrafı</h3>
-                <p className="text-dark-600 text-sm">
+                <h3 className="text-lg font-bold text-white mb-2">Teslimat Fotoğrafı</h3>
+                <p className="text-white/70 text-sm">
                   Her teslimat sonrası fotoğraf ile bilgilendirilirsiniz.
                 </p>
               </div>
@@ -314,18 +301,15 @@ export default function CitiesIndexPage() {
         {/* 🚀 CTA Section */}
         <section className="py-16 sm:py-20">
           <div className="container mx-auto px-4">
-            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 p-10 sm:p-16 text-center shadow-soft-xl">
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary-500/30 to-primary-600/40 backdrop-blur-xl p-10 sm:p-16 text-center shadow-2xl ring-1 ring-white/20">
               {/* Decorative Elements */}
               <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
-                <div className="absolute top-10 left-10 h-2 w-2 rounded-full bg-white/40" />
-                <div className="absolute top-20 right-20 h-3 w-3 rounded-full bg-white/30" />
-                <div className="absolute bottom-16 left-1/4 h-2 w-2 rounded-full bg-white/50" />
+                <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary-500/20 blur-3xl" />
+                <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-secondary-500/20 blur-3xl" />
               </div>
               
               <div className="relative">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-sm px-5 py-2 text-sm font-medium text-white mb-6">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-xl px-5 py-2 text-sm font-medium text-white ring-1 ring-white/30 mb-6">
                   <Heart className="h-4 w-4" />
                   <span>39 İlçede Hizmet</span>
                 </div>
@@ -333,13 +317,13 @@ export default function CitiesIndexPage() {
                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
                   İstanbul&apos;a Hemen <br className="sm:hidden" />Çiçek Gönderin
                 </h2>
-                <p className="text-lg text-white/90 max-w-xl mx-auto mb-8">
+                <p className="text-lg text-white/80 max-w-xl mx-auto mb-8">
                   Aynı gün teslimat garantisiyle sevdiklerinize özel anlar yaratın.
                 </p>
                 
                 <Link
                   href="/kategoriler"
-                  className="inline-flex items-center gap-3 rounded-2xl bg-white/90 backdrop-blur-xl px-10 py-5 text-lg font-bold text-primary-700 shadow-2xl ring-1 ring-white/50 transition-all hover:shadow-3xl hover:scale-[1.03] active:scale-[0.98]"
+                  className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-600 px-10 py-5 text-lg font-bold text-white shadow-2xl shadow-primary-500/40 ring-1 ring-white/30 transition-all hover:shadow-3xl hover:scale-[1.03] active:scale-[0.98]"
                 >
                   <Sparkles className="h-5 w-5" />
                   Çiçek Seç

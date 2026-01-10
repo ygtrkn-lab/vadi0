@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabase/server-client';
 import { toCamelCase } from '@/lib/supabase/transformer';
 import { hashOtpCode, isOtpCode, normalizeEmail, OTP_MAX_ATTEMPTS } from '@/lib/auth/otp';
+import { signCustomerSessionCookie } from '@/lib/auth/signedSession';
+
+const CUSTOMER_COOKIE = 'vadiler_customer_auth';
+const SESSION_DURATION_MS = 365 * 24 * 60 * 60 * 1000; // 1 yıl
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,7 +74,29 @@ export async function POST(request: NextRequest) {
 
     const { password: _pw, ...safeCustomer } = customer as any;
 
-    return NextResponse.json({ customer: toCamelCase(safeCustomer) });
+    // 1 yıllık session cookie oluştur
+    const secret = process.env.AUTH_SESSION_SECRET;
+    const response = NextResponse.json({ customer: toCamelCase(safeCustomer) });
+    
+    if (secret) {
+      const now = Date.now();
+      const sessionToken = signCustomerSessionCookie(secret, {
+        customerId: safeCustomer.id,
+        email: safeCustomer.email,
+        issuedAt: now,
+        expiresAt: now + SESSION_DURATION_MS,
+      });
+      
+      response.cookies.set(CUSTOMER_COOKIE, sessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: Math.floor(SESSION_DURATION_MS / 1000), // 1 yıl (saniye cinsinden)
+      });
+    }
+
+    return response;
   } catch (error) {
     console.error('Error verifying customer login OTP:', error);
     return NextResponse.json({ error: 'Doğrulama yapılamadı.' }, { status: 500 });
