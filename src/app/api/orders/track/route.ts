@@ -46,6 +46,20 @@ function maskPhone(phone: string): string {
   return `${last10.slice(0, 3)} ${last10.slice(3, 6)} ** **`;
 }
 
+function normalizeTimeSlot(raw: string, fallback = '11:00-17:00'): string {
+  const value = (raw || '').replace(/\s+/g, '').replace(/–/g, '-');
+  if (!value || value === '00:00-00:00') return fallback;
+  const match = value.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
+  if (!match) return fallback;
+  const pad = (t: string) => {
+    const [hh, mm] = t.split(':');
+    return `${String(hh).padStart(2, '0')}:${mm}`;
+  };
+  const normalized = `${pad(match[1])}-${pad(match[2])}`;
+  const allowed = ['11:00-17:00', '17:00-22:00'];
+  return allowed.includes(normalized) ? normalized : fallback;
+}
+
 function mapStatus(dbStatus: string):
   | 'pending'
   | 'confirmed'
@@ -148,7 +162,7 @@ export async function POST(request: NextRequest) {
       status: mapStatus(getString(row.status)),
       createdAt: getString(row.created_at),
       deliveryDate: getString(delivery['deliveryDate']) || getString(row.created_at),
-      deliveryTimeSlot: getString(delivery['deliveryTimeSlot']) || '11:00-17:00',
+      deliveryTimeSlot: normalizeTimeSlot(getString(delivery['deliveryTimeSlot'])),
       recipientName: getString(delivery['recipientName']) || 'Alıcı',
       recipientPhone: maskPhone(getString(delivery['recipientPhone'])),
       deliveryAddress: getString(delivery['fullAddress']) || getString(delivery['recipientAddress']) || '',

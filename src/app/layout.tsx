@@ -269,7 +269,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="antialiased overflow-x-hidden"
+        className="antialiased overflow-x-hidden swipe-guard"
       >
         <ClientRoot>
           <div className="overflow-x-hidden">

@@ -127,7 +127,8 @@ export default function SepetClient() {
   const [apartmentNo, setApartmentNo] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryDateNotice, setDeliveryDateNotice] = useState<string | null>(null);
-  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
+  const DEFAULT_DELIVERY_TIME_SLOT = '11:00-17:00';
+  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState(DEFAULT_DELIVERY_TIME_SLOT);
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const isGift = true; // tüm siparişler hediye kabul edilir
   const [senderName, setSenderName] = useState('');
@@ -283,7 +284,7 @@ export default function SepetClient() {
     };
   }, []);
 
-  // Detect last payment status and show resume banner
+  // Detect last payment status and show resume banner (without forcing step change)
   useEffect(() => {
     try {
       const last = localStorage.getItem('vadiler_last_payment_status');
@@ -291,7 +292,6 @@ export default function SepetClient() {
         const parsed = JSON.parse(last);
         if (parsed?.status === 'failed') {
           setLastPaymentBanner({ status: 'failed', message: parsed?.message || 'Ödeme işlemi tamamlanamadı' });
-          setCurrentStep('payment');
         }
         localStorage.removeItem('vadiler_last_payment_status');
         return;
@@ -301,7 +301,6 @@ export default function SepetClient() {
       if (started) {
         // Payment flow started earlier but user is back to cart; treat as abandoned
         setLastPaymentBanner({ status: 'abandoned', message: 'Ödeme işleminiz yarıda kalmış görünüyor.' });
-        setCurrentStep('payment');
       }
     } catch {}
   }, []);
@@ -820,7 +819,10 @@ export default function SepetClient() {
           if (parsed.neighborhood) setNeighborhood(parsed.neighborhood);
           if (parsed.selectedLocation) setSelectedLocation(parsed.selectedLocation);
           if (parsed.deliveryDate) setDeliveryDate(parsed.deliveryDate);
-          if (parsed.deliveryTimeSlot) setDeliveryTimeSlot(parsed.deliveryTimeSlot);
+          if (parsed.deliveryTimeSlot) {
+            const normalized = normalizeDeliveryTimeSlot(parsed.deliveryTimeSlot);
+            setDeliveryTimeSlot(isValidDeliveryTimeSlot(normalized) ? normalized : DEFAULT_DELIVERY_TIME_SLOT);
+          }
           if (parsed.deliveryNotes) setDeliveryNotes(parsed.deliveryNotes);
           if (parsed.senderName) setSenderName(parsed.senderName);
           if (parsed.messageCard) setMessageCard(parsed.messageCard);
@@ -1387,7 +1389,9 @@ export default function SepetClient() {
       }
     }
     if (!isValidDeliveryTimeSlot(deliveryTimeSlot)) {
-      setErr('delivery-time', 'time', 'Teslimat saat dilimini seçin');
+      // Otomatik olarak varsayılan aralığa çek ve ilerlemeye izin ver
+      setDeliveryTimeSlot(DEFAULT_DELIVERY_TIME_SLOT);
+      setErr('delivery-time', 'time', undefined);
     }
     // senderName kontrolü message adımına taşındı - recipient adımında kontrol edilmemeli
 
@@ -2879,7 +2883,7 @@ export default function SepetClient() {
                 {/* Sender Name */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Gönderen Adı (Kartta görünecek) *
+                    Gönderen Adı (Kartta görünecek)
                   </label>
                   <input
                     id="sender-name"
@@ -2993,7 +2997,26 @@ export default function SepetClient() {
                         <div className="flex flex-wrap gap-2 pt-1">
                           <button
                             type="button"
-                            onClick={() => setLastPaymentBanner(null)}
+                            onClick={() => {
+                              setCurrentStep('payment');
+                              setLastPaymentBanner(null);
+                              scrollToTop();
+                              try {
+                                localStorage.removeItem('vadiler_checkout_started');
+                              } catch {}
+                            }}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                          >
+                            Ödemeye dön
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLastPaymentBanner(null);
+                              try {
+                                localStorage.removeItem('vadiler_checkout_started');
+                              } catch {}
+                            }}
                             className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
                           >
                             Gizle

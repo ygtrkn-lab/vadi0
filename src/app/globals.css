@@ -106,6 +106,16 @@ body {
   overflow-x: hidden;
 }
 
+.swipe-guard {
+  overscroll-behavior-x: contain;
+}
+
+@media screen and (max-width: 768px) {
+  .swipe-guard {
+    touch-action: pan-y pinch-zoom;
+  }
+}
+
 /* Prevent iOS zoom on input focus - minimum 16px font-size */
 @media screen and (max-width: 768px) {
   input[type="text"],
