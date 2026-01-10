@@ -55,6 +55,7 @@ export async function PUT(
 
     const { data, error } = await supabaseAdmin
       .from('delivery_off_days')
+      // @ts-expect-error - Supabase type inference issue with delivery_off_days table
       .update(updates)
       .eq('id', offDayId)
       .select()

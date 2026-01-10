@@ -37,7 +37,7 @@ const organizationSchema = {
     width: 200,
     height: 60,
   },
-  description: 'Vadiler Çiçek ile taze çiçekleri hızlı ve güvenli şekilde İstanbul\'a gönderin. Online çiçek siparişi, hızlı teslimat, uygun fiyatlar.',
+  description: 'İstanbul\'un güvenilir çiçekçisi Vadiler Çiçek. Taze çiçekler, gül, orkide ve buketler aynı gün teslim. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul\'a hızlı teslimat.',
   foundingDate: '2024',
   address: {
     '@type': 'PostalAddress',
@@ -64,7 +64,7 @@ const websiteSchema = {
   '@id': `${BASE_URL}/#website`,
   name: 'Vadiler Çiçek',
   url: BASE_URL,
-  description: 'Online çiçek siparişi ve hızlı teslimat',
+  description: 'İstanbul\'da online çiçek siparişi ve aynı gün teslimat. Güvenilir çiçekçi, taze çiçekler.',
   publisher: {
     '@id': `${BASE_URL}/#organization`,
   },
@@ -126,16 +126,19 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: getMetadataBaseUrl(),
   title: {
-    default: "Vadiler Çiçek - Online Çiçek Siparişi İstanbul | Aynı Gün Teslimat",
-    template: "%s | Vadiler Çiçek"
+    default: "İstanbul Çiçek Siparişi | Vadiler Çiçek - Güvenilir Çiçekçi, Aynı Gün Teslimat",
+    template: "%s | Vadiler Çiçek İstanbul"
   },
-  description: "İstanbul'un en güvenilir online çiçekçisi Vadiler Çiçek! Taze çiçekler, gül, orkide, buket ve çiçek aranjmanları aynı gün teslimat. ☎️ 0850 307 4876",
+  description: "İstanbul çiçek siparişi için güvenilir adres Vadiler Çiçek! Taze gül, orkide, buket ve aranjmanlar aynı gün teslim. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul'a teslimat. ☎️ 0850 307 4876",
   keywords: [
     "çiçek siparişi",
     "online çiçek siparişi",
     "çiçek gönder",
     "istanbul çiçek siparişi",
     "çiçekçi istanbul",
+    "istanbul çiçekçi",
+    "güvenilir çiçek gönderme siteleri",
+    "istanbul çiçek gönder",
     "aynı gün çiçek teslimat",
     "gül buketi",
     "orkide",
@@ -149,11 +152,14 @@ export const metadata: Metadata = {
     "beşiktaş çiçekçi",
     "beyoğlu çiçekçi",
     "bakırköy çiçekçi",
+    "şişli çiçekçi",
+    "üsküdar çiçekçi",
     "ucuz çiçek",
     "taze çiçek",
     "vadiler çiçek",
     "vadiler.com",
     "vadiler",
+    "vadilercom",
   ],
   verification: {
     google: 'NdD2A097rf0YcV2o0TULpp__uSTaNmzMvRBhIrZVB2s',
@@ -177,8 +183,8 @@ export const metadata: Metadata = {
     canonical: "https://vadiler.com/",
   },
   openGraph: {
-    title: "Vadiler Çiçek - Online Çiçek Siparişi İstanbul | Aynı Gün Teslimat",
-    description: "İstanbul'un en güvenilir online çiçekçisi! Taze çiçekler, gül, orkide ve özel aranjmanlar. Aynı gün teslimat, güvenli ödeme. ☎️ 0850 307 4876",
+    title: "İstanbul Çiçek Siparişi | Vadiler Çiçek - Güvenilir Çiçekçi, Aynı Gün Teslimat",
+    description: "İstanbul'da online çiçek siparişi için güvenilir adres! Taze gül, orkide, buket ve aranjmanlar. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul'a aynı gün teslimat. ☎️ 0850 307 4876",
     url: "https://vadiler.com/",
     siteName: "Vadiler Çiçek",
     images: [
@@ -194,8 +200,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vadiler Çiçek - İstanbul Online Çiçek Siparişi",
-    description: "Taze çiçekler, aynı gün teslimat! Gül, orkide, buket ve özel aranjmanlar. ☎️ 0850 307 4876",
+    title: "İstanbul Çiçek Siparişi | Vadiler Çiçek - Güvenilir, Aynı Gün Teslimat",
+    description: "İstanbul'da güvenilir çiçek siparişi! Taze gül, orkide, buket. Kadıköy, Beşiktaş, Şişli'ye aynı gün teslimat. ☎️ 0850 307 4876",
     site: "@vadilercom",
     images: ["https://vadiler.com/og-image.jpg"],
   },
