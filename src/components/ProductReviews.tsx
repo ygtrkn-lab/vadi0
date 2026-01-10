@@ -74,6 +74,8 @@ export default function ProductReviews({
         productId: productId.toString(),
         isApproved: 'true',
         sortBy,
+        limit: '200',
+        offset: '0',
         ...(filterRating && { rating: filterRating.toString() }),
       });
 
