@@ -55,15 +55,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const categoryName = categoryData.name || category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
   return {
-    title: `${categoryName} | Online Çiçek Siparişi | Vadiler Çiçek`,
-    description: `${categoryName} kategorisinde ${categoryProducts.length} ürün bulunmaktadır. En taze çiçekler, hızlı ve özenli teslimat ile Vadiler Çiçek'te.`,
+    title: `${categoryName} ✿ Online Sipariş ➜ Aynı Gün Teslimat | Vadiler`,
+    description: `✅ ${categoryName} - ${categoryProducts.length}+ çeşit! Aynı gün teslimat, ücretsiz kargo. Taze çiçek garantisi ile güvenle alışveriş yapın. Hemen sipariş verin!`,
     keywords: [`${categoryName.toLowerCase()}`, `${categoryName.toLowerCase()} çiçek`, `${categoryName.toLowerCase()} online`, 'çiçek siparişi', 'istanbul çiçek'],
     alternates: {
       canonical: `${BASE_URL}/${category}`,
     },
     openGraph: {
-      title: `${categoryName} | Vadiler Çiçek`,
-      description: `${categoryName} kategorisinde ${categoryProducts.length} ürün. Taze çiçekler, hızlı teslimat.`,
+      title: `${categoryName} ✿ Aynı Gün Teslimat | Vadiler`,
+      description: `${categoryName} - ${categoryProducts.length}+ çeşit! Aynı gün teslimat, ücretsiz kargo.`,
       url: `${BASE_URL}/${category}`,
       type: 'website',
       locale: 'tr_TR',
@@ -71,8 +71,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${categoryName} | Vadiler Çiçek`,
-      description: `${categoryName} kategorisinde ${categoryProducts.length} ürün bulunmaktadır.`,
+      title: `${categoryName} ✿ Aynı Gün Teslimat | Vadiler`,
+      description: `${categoryName} - ${categoryProducts.length}+ çeşit! Taze çiçek garantisi.`,
     },
   };
 }

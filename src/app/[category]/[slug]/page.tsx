@@ -131,7 +131,12 @@ function generateJsonLd(product: any) {
       priceCurrency: 'TRY',
       // Her zaman güncel satış fiyatını kullan (indirimli veya normal)
       price: formatPrice(currentPrice),
-      priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      // Google için fiyat geçerlilik tarihi (90 gün sonra)
+      priceValidUntil: (() => {
+        const date = new Date();
+        date.setDate(date.getDate() + 90);
+        return date.toISOString().split('T')[0];
+      })(),
       availability: product.inStock || product.in_stock
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
@@ -220,6 +225,13 @@ export default async function ProductPage({ params }: PageProps) {
     || '';
 
   const jsonLd = generateJsonLd(product);
+  
+  // Breadcrumb items for visible breadcrumb
+  const breadcrumbItems = [
+    { name: 'Ana Sayfa', url: '/' },
+    { name: categoryName, url: `/${product.category}` },
+    { name: product.name, url: `/${product.category}/${product.slug}` },
+  ];
 
   return (
     <>
@@ -260,7 +272,12 @@ export default async function ProductPage({ params }: PageProps) {
         }}
       />
 
-      <ProductDetail product={product} relatedProducts={relatedProducts} categoryName={categoryName} />
+      <ProductDetail 
+        product={product} 
+        relatedProducts={relatedProducts} 
+        categoryName={categoryName} 
+        breadcrumbItems={breadcrumbItems}
+      />
     </>
   );
 }

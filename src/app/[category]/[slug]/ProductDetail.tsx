@@ -32,9 +32,10 @@ type ProductDetailProps = {
   product: Product;
   relatedProducts: Product[];
   categoryName: string;
+  breadcrumbItems: { name: string; url: string }[];
 };
 
-export default function ProductDetail({ product, relatedProducts, categoryName }: ProductDetailProps) {
+export default function ProductDetail({ product, relatedProducts, categoryName, breadcrumbItems }: ProductDetailProps) {
   const pathname = usePathname();
   const router = useRouter();
   const SUPPORT_WHATSAPP_NUMBER = '908503074876';

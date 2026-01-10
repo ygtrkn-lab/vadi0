@@ -9,6 +9,13 @@
       "schedule": "*/5 * * * *"
     }
   ],
+  "redirects": [
+    {
+      "source": "/:path*/",
+      "destination": "/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/_next/image(.*)",

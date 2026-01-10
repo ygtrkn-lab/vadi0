@@ -22,8 +22,8 @@ export const ISTANBUL_CONTENT: CityContent = {
   name: "İstanbul",
   title: "İstanbul Çiçek Siparişi",
   description: "İstanbul'un tüm ilçelerine çiçek teslimatı. Online sipariş verin, taze çiçekler kapınıza gelsin.",
-  metaTitle: "İstanbul Çiçek Siparişi | Hızlı Teslimat | Vadiler Çiçek",
-  metaDescription: "İstanbul'a online çiçek siparişi! 39 ilçeye hızlı ve özenli teslimat, taze çiçekler, uygun fiyatlar. Vadiler Çiçek ile İstanbul'a çiçek gönderin!",
+  metaTitle: "İstanbul Çiçek Siparişi ✿ Aynı Gün Teslimat ➜ 499₺'den Başlayan Fiyatlar",
+  metaDescription: "✅ İstanbul'a aynı gün çiçek teslimatı! 39 ilçeye ücretsiz kargo, 499₺'den başlayan fiyatlar. Gül, orkide, lilyum - Taze çiçek garantisi. Hemen sipariş verin!",
   keywords: ["istanbul çiçek siparişi", "istanbul çiçekçi", "istanbul çiçek gönder", "istanbul online çiçek", "istanbul hızlı teslimat"],
   content: `İstanbul, Türkiye'nin kalbi ve en kalabalık şehri olarak milyonlarca insana ev sahipliği yapıyor. Boğaziçi'nin eşsiz güzelliği, tarihi yarımadasının büyüsü ve modern yaşam alanlarıyla İstanbul, her köşesinde farklı bir hikaye barındırıyor.
 

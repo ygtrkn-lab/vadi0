@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Trailing slash yok - SEO için tutarlılık
+  trailingSlash: false,
   // API Route body size limit - video yüklemeleri için
   experimental: {
     serverActions: {
