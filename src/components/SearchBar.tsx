@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Search, X, ArrowRight, Tag, Folder } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface SearchResult {
   type: 'product' | 'category';
@@ -27,6 +28,7 @@ interface SearchBarProps {
 
 export default function SearchBar({ isMobile = false, onClose, autoFocus = false, onOpenChange }: SearchBarProps) {
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 300); // INP optimizasyonu için debounce
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [allProducts, setAllProducts] = useState<any[]>([]);
@@ -65,11 +67,11 @@ export default function SearchBar({ isMobile = false, onClose, autoFocus = false
     fetchData();
   }, []);
 
-  // Search results - optimized matching
+  // Search results - optimized matching with debounce
   const searchResults = useMemo((): SearchResult[] => {
-    if (!query.trim() || query.length < 1) return [];
+    if (!debouncedQuery.trim() || debouncedQuery.length < 1) return [];
 
-    const searchTerm = query.toLowerCase().trim();
+    const searchTerm = debouncedQuery.toLowerCase().trim();
     const results: SearchResult[] = [];
 
     // Search in categories - only show categories with products
@@ -114,7 +116,7 @@ export default function SearchBar({ isMobile = false, onClose, autoFocus = false
     const productResults = results.filter(r => r.type === 'product').slice(0, 8);
     
     return [...categoryResults, ...productResults];
-  }, [query, allProducts, allCategories]);
+  }, [debouncedQuery, allProducts, allCategories]);
 
   // Group results by type
   const groupedResults = useMemo(() => {

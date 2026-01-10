@@ -237,24 +237,28 @@ export default function RootLayout({
         <link rel="dns-prefetch" href={BASE_URL} />
         <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
 
-        {/* Google tag (gtag.js) */}
+        {/* Google tag (gtag.js) - lazyOnload ile INP optimizasyonu */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="gtag-init" strategy="afterInteractive">
+        <Script id="gtag-init" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){window.dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');
+            gtag('config', '${GA_MEASUREMENT_ID}', {
+              'send_page_view': false
+            });
+            // Sayfa yüklendikten sonra pageview gönder
+            gtag('event', 'page_view');
           `}
         </Script>
 
-        {/* Meta Pixel (Facebook Pixel) */}
+        {/* Meta Pixel (Facebook Pixel) - lazyOnload ile INP optimizasyonu */}
         {META_PIXEL_ID && (
           <>
-            <Script id="fb-pixel" strategy="afterInteractive">
+            <Script id="fb-pixel" strategy="lazyOnload">
               {`
                 !function(f,b,e,v,n,t,s)
                 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

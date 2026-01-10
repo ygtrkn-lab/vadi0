@@ -26,9 +26,10 @@ function getMediaType(url: string): 'image' | 'video' | 'unknown' {
 interface ProductCardProps {
   product: Product;
   index?: number;
+  priority?: boolean; // İlk görünen ürünler için priority loading
 }
 
-export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+export default function ProductCard({ product, index = 0, priority = false }: ProductCardProps) {
   const { state: customerState, addToFavorites, removeFromFavorites, isFavorite } = useCustomer();
   const { addToCart } = useCart();
   const [isAddedToCart, setIsAddedToCart] = useState(false);
@@ -147,6 +148,8 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="product-image object-cover rounded-xl"
                 onError={() => setImageError(true)}
+                priority={priority} // İlk 4-6 ürün için priority
+                loading={priority ? undefined : 'lazy'}
               />
               
               {/* Hover Image */}
