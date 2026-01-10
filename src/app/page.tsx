@@ -13,17 +13,10 @@ import FAQSchema from '@/components/FAQSchema';
 // Lazy load ağır carousel bileşenleri - INP optimizasyonu
 const HeroSlider = dynamic(() => import('@/components/HeroSlider'), {
   loading: () => <div className="h-[400px] lg:h-[600px] bg-gradient-to-r from-pink-100 to-rose-100 animate-pulse" />,
-  ssr: true, // SEO için SSR aktif
 });
 
 const CategoryCarousel = dynamic(() => import('@/components/CategoryCarousel'), {
   loading: () => <div className="h-32 bg-gray-100 animate-pulse" />,
-  ssr: false, // İnteraktif bileşen, SSR gereksiz
-});
-
-const StoryBannerCarousel = dynamic(() => import('@/components/StoryBannerCarousel'), {
-  loading: () => <div className="h-48 bg-gray-100 animate-pulse" />,
-  ssr: false,
 });
 
 const faqs = [
@@ -228,9 +221,6 @@ export default function Home() {
       <main>
         {/* Hero Slider */}
         <HeroSlider id="hero-section" />
-
-        {/* Story-style Category Carousel (like Çiçeksepeti) */}
-        <StoryBannerCarousel />
 
         {/* Kampanyalı Ürünler Slider - only under circle categories */}
         <CategoryCarousel />

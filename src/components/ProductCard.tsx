@@ -9,6 +9,7 @@ import type { Product } from '@/data/products';
 import { useCustomer } from '@/context/CustomerContext';
 import { useCart } from '@/context/CartContext';
 import { useCategoryNames } from '@/hooks/useCategoryNames';
+import { useVideoLazyLoad } from '@/hooks/useVideoLazyLoad';
 
 // URL'den medya türünü belirle
 function getMediaType(url: string): 'image' | 'video' | 'unknown' {
@@ -36,6 +37,7 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
   const [imageError, setImageError] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
   const { getName } = useCategoryNames();
+  const { ref: videoRef, shouldLoad: shouldLoadVideo } = useVideoLazyLoad();
 
   const customer = customerState.currentCustomer;
   const isMainVideo = getMediaType(product.image) === 'video';
@@ -96,13 +98,18 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
           {/* Weekly campaign badge */}
           {isWeeklyCampaign && (
             <div className="absolute left-2 top-10 sm:top-12 z-20">
-              <Image
-                src="/TR/bugune-ozel.png"
-                alt="Bugüne Özel"
-                width={72}
-                height={72}
-                className="h-14 w-14 sm:h-16 sm:w-16 drop-shadow"
-              />
+              <picture>
+                <source srcSet="/TR/bugune-ozel.webp 1x, /TR/bugune-ozel@2x.webp 2x" type="image/webp" />
+                <img
+                  src="/TR/bugune-ozel.png"
+                  alt="Bugüne Özel"
+                  width="72"
+                  height="72"
+                  className="h-14 w-14 sm:h-16 sm:w-16 drop-shadow"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </picture>
             </div>
           )}
 
@@ -110,12 +117,13 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
           {isMainVideo ? (
             <div className="relative w-full h-full">
               <video
-                src={product.image}
+                ref={videoRef}
+                src={shouldLoadVideo ? product.image : undefined}
                 className="product-image w-full h-full object-cover rounded-xl cursor-pointer"
                 loop
                 muted
                 playsInline
-                autoPlay
+                autoPlay={shouldLoadVideo}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -189,6 +197,7 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
                 ? 'bg-red-500 text-white border-red-500 shadow-glow scale-110 animate-pulse' 
                 : 'bg-white/90 text-gray-700 border-white/60 backdrop-blur-sm hover:bg-red-50 hover:text-red-500 hover:border-red-200'
               }`}
+            aria-label={isWishlisted ? 'Favorilerden çıkar' : 'Favorilere ekle'}
           >
             <Heart 
               size={16} 

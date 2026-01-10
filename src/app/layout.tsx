@@ -232,6 +232,11 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
+        {/* Preconnect to critical origins for faster resource loading */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://mpc-prod-16-s6uit34pua-uk.a.run.app" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://mpc-prod-16-s6uit34pua-uk.a.run.app" />
         {/* Preconnect to primary origin and analytics for faster LCP/INP */}
         <link rel="preconnect" href={BASE_URL} />
         <link rel="dns-prefetch" href={BASE_URL} />

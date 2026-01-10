@@ -293,6 +293,8 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                   onClick={() => goToSlide(index)}
                   className={`relative h-1 rounded-full transition-all duration-500 overflow-hidden
                     ${activeIndex === index ? 'w-10 bg-white' : 'w-6 bg-white/40'}`}
+                  aria-label={`Slayt ${index + 1}`}
+                  aria-current={activeIndex === index ? 'true' : 'false'}
                 >
                   {activeIndex === index && isPlaying && (
                     <motion.div

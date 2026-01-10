@@ -253,14 +253,17 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <Image
-                    src="/logo.png"
-                    alt="Vadiler Çiçek"
-                    width={isScrolled ? 120 : 150}
-                    height={isScrolled ? 40 : 50}
-                    className="transition-all duration-300 object-contain"
-                    priority
-                  />
+                  <picture>
+                    <source srcSet="/logo.webp" type="image/webp" />
+                    <Image
+                      src="/logo.png"
+                      alt="Vadiler Çiçek"
+                      width={isScrolled ? 120 : 150}
+                      height={isScrolled ? 40 : 50}
+                      className="transition-all duration-300 object-contain"
+                      priority
+                    />
+                  </picture>
                 </motion.div>
               </div>
             </Link>
@@ -276,6 +279,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
               <button 
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Arama"
               >
                 <Search size={22} className="text-gray-700" />
               </button>
@@ -287,7 +291,8 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   e.stopPropagation();
                   window.location.href = '/hesabim';
                 }}
-                className="hidden sm:flex items-center gap-2 p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer">
+                className="hidden sm:flex items-center gap-2 p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer"
+                aria-label="Hesabım">
                 <User size={22} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
                 <span className="hidden xl:inline text-sm text-gray-700 group-hover:text-primary-500 transition-colors">
                   Hesabım
@@ -301,7 +306,8 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   e.stopPropagation();
                   window.location.href = '/hesabim/favorilerim';
                 }}
-                className="relative p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer">
+                className="relative p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer"
+                aria-label="Favorilerim">
                 <Heart size={22} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
                 {isHydrated && wishlistCount > 0 && (
                   <span className="absolute top-0 right-0 min-w-4 h-4 px-1 text-white text-[10px] 
@@ -321,7 +327,8 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                 }}
                 className="relative flex items-center gap-2 p-2 px-3 rounded-full 
                 hover:opacity-90 transition-all group shadow-md cursor-pointer"
-                style={{ backgroundColor: '#e05a4c' }}>
+                style={{ backgroundColor: '#e05a4c' }}
+                aria-label={`Sepet${cartCount > 0 ? ` (${cartCount} ürün)` : ''}`}>
                 <ShoppingCart size={20} className="text-white" />
                 <span className="hidden sm:inline text-sm font-medium text-white">Sepet</span>
                 {isHydrated && cartCount > 0 && (
@@ -342,6 +349,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   window.dispatchEvent(new CustomEvent('openMobileSidebar'));
                 }}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Menü"
                 style={{
                   position: 'relative',
                   zIndex: 99999,
