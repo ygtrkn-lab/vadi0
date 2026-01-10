@@ -1322,6 +1322,26 @@ export default function SepetClient() {
     } catch (_) {}
   };
 
+  const clearAbandonedPaymentFlag = () => {
+    try {
+      localStorage.removeItem('vadiler_checkout_started');
+    } catch {}
+  };
+
+  const handleResumeAbandonedPayment = () => {
+    clearAbandonedPaymentFlag();
+    setShowAbandonedModal(false);
+    setLastPaymentBanner(null);
+    setCurrentStep('payment');
+    scrollToTop();
+  };
+
+  const handleDismissAbandonedPayment = () => {
+    clearAbandonedPaymentFlag();
+    setShowAbandonedModal(false);
+    setLastPaymentBanner(prev => (prev?.status === 'abandoned' ? null : prev));
+  };
+
   const validateRecipientStep = (options?: { skipScroll?: boolean }): ValidationResult => {
     const errors: RecipientErrors = {};
     let firstId: string | undefined;
@@ -1899,6 +1919,81 @@ export default function SepetClient() {
     <>
       <Header />
       <main className="min-h-screen bg-white pt-32 lg:pt-52 pb-32" suppressHydrationWarning>
+        <AnimatePresence>
+          {showAbandonedModal && lastPaymentBanner?.status === 'abandoned' && (
+            <motion.div
+              className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                aria-hidden
+                onClick={handleDismissAbandonedPayment}
+              />
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ type: 'spring', duration: 0.35 }}
+                className="relative z-[1] w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 space-y-4"
+              >
+                <button
+                  type="button"
+                  onClick={handleDismissAbandonedPayment}
+                  className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                  aria-label="Kapat"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#e05a4c]/10 border border-[#e05a4c]/30 flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-[#e05a4c]" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-gray-900">Ödeme adımını tamamlayalım</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Sepetiniz hazır. Ödeme 1 dakikadan kısa sürer ve teslimatınızı ayırmış durumdayız.
+                    </p>
+                    <ul className="text-xs text-gray-700 space-y-1">
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
+                        <span>Güvenli ödeme &amp; 3D Secure desteği</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
+                        <span>Ürünleriniz ve teslimat tarihi rezerve</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
+                        <span>Siparişinizi kaybetmeden devam edin</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleResumeAbandonedPayment}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-[#e05a4c] to-[#ff6b5a] text-white font-semibold shadow-lg shadow-[#e05a4c]/25 hover:brightness-105 transition-all"
+                  >
+                    Ödemeye devam et
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDismissAbandonedPayment}
+                    className="w-full py-3 rounded-xl border border-gray-200 font-semibold text-gray-700 hover:bg-gray-50 transition-all"
+                  >
+                    Sepete geri dön
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="max-w-2xl mx-auto px-4">
           
           {/* Step Indicator - Apple Premium Style */}
@@ -3076,61 +3171,6 @@ export default function SepetClient() {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-5"
               >
-                {/* Abandoned payment modal */}
-                <AnimatePresence>
-                  {showAbandonedModal && lastPaymentBanner?.status === 'abandoned' && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="fixed inset-0 z-[12000] flex items-center justify-center bg-black/50 px-4"
-                    >
-                      <motion.div
-                        initial={{ scale: 0.95, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.95, opacity: 0 }}
-                        className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 space-y-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-700 font-bold">!</div>
-                          <div className="space-y-1">
-                            <p className="text-lg font-semibold text-gray-900">Ödeme yarıda kalmış</p>
-                            <p className="text-sm text-gray-600">Sepetinizi bekletiyoruz. Devam ederseniz siparişiniz birkaç adımda tamamlanacak.</p>
-                          </div>
-                        </div>
-                        <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 text-sm text-amber-800">
-                          {lastPaymentBanner?.message || 'Ödeme işleminiz yarıda kalmış görünüyor.'}
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowAbandonedModal(false);
-                              setCurrentStep('payment');
-                              scrollToTop();
-                              try { localStorage.removeItem('vadiler_checkout_started'); } catch {}
-                            }}
-                            className="w-full py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 active:scale-[0.99] transition"
-                          >
-                            Ödemeye devam et
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowAbandonedModal(false);
-                              setLastPaymentBanner(null);
-                              try { localStorage.removeItem('vadiler_checkout_started'); } catch {}
-                            }}
-                            className="w-full py-3 rounded-xl border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 active:scale-[0.99] transition"
-                          >
-                            Daha sonra
-                          </button>
-                        </div>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 <div className="text-center mb-6 space-y-3">
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Sipariş Özeti</h2>
