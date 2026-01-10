@@ -1241,7 +1241,7 @@ export default function SepetClient() {
 
   const isPhoneValid = validatePhoneNumber(recipientPhone);
   const canProceedToRecipient = state.items.length > 0;
-  const requiresSenderName = isGift;
+  const requiresSenderName = false;
   
   // Detaylı adres alanlarından tam adresi oluştur
   const fullAddress = useMemo(() => {
@@ -2760,6 +2760,53 @@ export default function SepetClient() {
                   </div>
                 </div>
 
+                {/* Gift Option */}
+                <div className="flex items-center justify-between p-3 bg-pink-50 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Gift size={16} className="text-pink-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Bu bir hediye</p>
+                      <p className="text-[10px] text-gray-500">Fiyat bilgisi gizlensin</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsGift(!isGift);
+                      if (isGift) {
+                        setRecipientErrors((prev) => ({ ...prev, sender: undefined }));
+                      }
+                    }}
+                    className={`w-10 h-6 rounded-full transition-colors ${isGift ? 'bg-pink-500' : 'bg-gray-300'}`}
+                  >
+                    <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${isGift ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                  </button>
+                </div>
+
+                {isGift && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                  >
+                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                      Gönderen Adı (Kartta görünecek)
+                    </label>
+                    <input
+                      id="sender-name"
+                      type="text"
+                      value={senderName}
+                      onChange={(e) => {
+                        setSenderName(e.target.value);
+                        setRecipientErrors((prev) => ({ ...prev, sender: undefined }));
+                      }}
+                      placeholder="Sevgilerimle, Ahmet"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">Hediye seçiliyse gönderen adı isteğe bağlıdır.</p>
+                    {recipientErrors.sender && (
+                      <p className="text-[10px] text-red-500 mt-1">{recipientErrors.sender}</p>
+                    )}
+                  </motion.div>
+                )}
                 {/* Navigation (mobilde adım sonunda statik) */}
                 <div className="mt-6">
                   <div className="max-w-2xl mx-auto flex gap-3">

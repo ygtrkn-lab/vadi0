@@ -223,14 +223,6 @@ export default function SepetClient() {
           })
           return false
         }
-        if (addressForm.isGift && !addressForm.senderName.trim()) {
-          showNotice({
-            tone: 'warning',
-            title: 'Gönderen adı eksik',
-            message: 'Hediye olarak göndermek istiyorsanız gönderen adını girin.'
-          })
-          return false
-        }
         return true
       }
       case 2: {
