@@ -107,6 +107,11 @@ export default function AyarlarPage() {
     // Maksimum 10 rakam
     if (digits.length > 10) return;
     
+    // İlk rakam 5 değilse girişi engelle
+    if (digits.length > 0 && digits[0] !== '5') {
+      return;
+    }
+    
     setProfileData({ ...profileData, phone: formatPhoneNumber(digits) });
   };
 
@@ -265,16 +270,20 @@ export default function AyarlarPage() {
                     </label>
                     <div className="relative">
                       <HiOutlinePhone className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <span className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-base select-none pointer-events-none">
+                        +90
+                      </span>
                       <input
                         type="tel"
                         value={profileData.phone}
                         onChange={handlePhoneChange}
-                        className="w-full pl-8 py-2 bg-transparent border-0 text-gray-900 text-base
+                        className="w-full pl-[4.5rem] py-2 bg-transparent border-0 text-gray-900 text-base
                           focus:outline-none focus:ring-0 placeholder-gray-400"
                         placeholder="5XX XXX XX XX"
                         required
                       />
                     </div>
+                    <p className="text-xs text-gray-400 mt-1 ml-8">5 ile başlayan 10 haneli numara</p>
                   </div>
 
                   {/* Submit Button - Full Width Native Style */}

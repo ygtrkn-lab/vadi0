@@ -176,6 +176,11 @@ export default function AdreslerimPage() {
     // Maksimum 10 rakam
     if (digits.length > 10) return;
     
+    // İlk rakam 5 değilse girişi engelle
+    if (digits.length > 0 && digits[0] !== '5') {
+      return;
+    }
+    
     setFormData({ ...formData, recipientPhone: formatPhoneNumber(digits) });
   };
 
@@ -557,14 +562,20 @@ function AddressFormModal({ isOpen, onClose, formData, setFormData, onSubmit, is
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     Telefon *
                   </label>
-                  <input
-                    type="tel"
-                    value={formData.recipientPhone}
-                    onChange={handlePhoneChange}
-                    placeholder="5XX XXX XX XX"
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e05a4c] focus:border-transparent"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium select-none pointer-events-none">
+                      +90
+                    </span>
+                    <input
+                      type="tel"
+                      value={formData.recipientPhone}
+                      onChange={handlePhoneChange}
+                      placeholder="5XX XXX XX XX"
+                      required
+                      className="w-full pl-[3.5rem] pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e05a4c] focus:border-transparent"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">5 ile başlayan 10 haneli numara</p>
                 </div>
               </div>
 

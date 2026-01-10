@@ -1105,6 +1105,12 @@ export default function SepetClient() {
     // Maksimum 10 rakam
     if (digits.length > 10) return;
 
+    // İlk rakam 5 değilse girişi engelle
+    if (digits.length > 0 && digits[0] !== '5') {
+      setGuestPhoneError('Telefon numarası 5 ile başlamalıdır');
+      return;
+    }
+
     setGuestPhone(formatPhoneNumber(digits));
 
     if (digits.length === 0) {
@@ -1112,17 +1118,20 @@ export default function SepetClient() {
       return;
     }
 
-    if (digits[0] !== '5') {
-      setGuestPhoneError('Telefon numarası 5 ile başlamalıdır');
+    // 1-9 hane arası: devam edebilir
+    if (digits.length < 10) {
+      setGuestPhoneError('');
       return;
     }
 
-    if (digits.length === 10 && !validatePhoneNumber(digits)) {
-      setGuestPhoneError('Geçersiz telefon numarası');
-      return;
+    // 10 hane: tam validasyon
+    if (digits.length === 10) {
+      if (!validatePhoneNumber(digits)) {
+        setGuestPhoneError('Geçersiz telefon numarası');
+        return;
+      }
+      setGuestPhoneError('');
     }
-
-    setGuestPhoneError('');
   };
 
   const predefinedMessages = [
@@ -2491,6 +2500,9 @@ export default function SepetClient() {
                         </label>
                         <div className="relative">
                           <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-500 font-medium select-none pointer-events-none">
+                            +90
+                          </span>
                           <input
                             id="recipient-phone"
                             type="tel"
@@ -2500,15 +2512,23 @@ export default function SepetClient() {
                             autoComplete="tel"
                             maxLength={13}
                             placeholder="5XX XXX XX XX"
-                            className={`w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-xl text-base focus:outline-none focus:ring-2 transition-all ${
+                            className={`w-full pl-[4.5rem] pr-4 py-3 bg-gray-50 border rounded-xl text-base focus:outline-none focus:ring-2 transition-all ${
                               phoneError ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : 'border-gray-200 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c]'
                             }`}
                           />
                         </div>
                         {phoneError ? (
-                          <p className="text-[10px] text-red-500 mt-1">{phoneError}</p>
+                          <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
+                            <span className="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
+                            {phoneError}
+                          </p>
+                        ) : recipientPhone.length > 0 ? (
+                          <p className="text-[10px] text-green-600 mt-1 flex items-center gap-1">
+                            <span className="inline-block w-1 h-1 bg-green-600 rounded-full"></span>
+                            Geçerli telefon numarası
+                          </p>
                         ) : (
-                          <p className="text-[10px] text-gray-400 mt-1">Teslimat için alıcıyla iletişime geçeceğiz</p>
+                          <p className="text-[10px] text-gray-400 mt-1">5 ile başlayan 10 haneli numara giriniz</p>
                         )}
                       </div>
 
@@ -3482,22 +3502,30 @@ export default function SepetClient() {
                                   guestEmailError ? 'border-red-300' : 'border-blue-200'
                                 }`}
                               />
-                              <input
-                                type="tel"
-                                id="guest-phone"
-                                value={guestPhone}
-                                onChange={handleGuestPhoneChange}
-                                inputMode="numeric"
-                                autoComplete="tel"
-                                maxLength={13}
-                                placeholder="Telefon numaranız *"
-                                className={`w-full px-4 py-3 bg-white border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
-                                  guestPhoneError ? 'border-red-300' : 'border-blue-200'
-                                }`}
-                              />
+                              <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm select-none pointer-events-none">
+                                  +90
+                                </span>
+                                <input
+                                  type="tel"
+                                  id="guest-phone"
+                                  value={guestPhone}
+                                  onChange={handleGuestPhoneChange}
+                                  inputMode="numeric"
+                                  autoComplete="tel"
+                                  maxLength={13}
+                                  placeholder="5XX XXX XX XX"
+                                  className={`w-full pl-[3.5rem] pr-4 py-3 bg-white border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
+                                    guestPhoneError ? 'border-red-300' : 'border-blue-200'
+                                  }`}
+                                />
+                              </div>
                             </div>
                             {(guestEmailError || guestPhoneError) && (
-                              <p className="text-[11px] text-red-600">{guestEmailError || guestPhoneError}</p>
+                              <p className="text-[11px] text-red-600 flex items-center gap-1">
+                                <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                                {guestEmailError || guestPhoneError}
+                              </p>
                             )}
                           </div>
                         </motion.div>
