@@ -70,68 +70,68 @@ export default function CitiesIndexPage() {
       <Header />
       <div className="h-0 lg:h-40" />
       
-      <main className="min-h-screen bg-gray-950">
+      <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
         
         {/* ✨ Premium Hero Section */}
-        <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800">
+        <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden bg-white">
           {/* Decorative Elements */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary-100 blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-primary-50 blur-3xl" />
           </div>
           
           <div className="container mx-auto px-4 relative">
             {/* Breadcrumb */}
-            <nav className="mb-6 text-xs text-white/70 sm:text-sm">
+            <nav className="mb-6 text-xs text-gray-600 sm:text-sm">
               <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <li><Link href="/" className="hover:text-white transition-colors">Ana Sayfa</Link></li>
-                <li className="text-white/50">/</li>
-                <li className="font-medium text-white">Teslimat Bölgeleri</li>
+                <li><Link href="/" className="hover:text-gray-900 transition-colors">Ana Sayfa</Link></li>
+                <li className="text-gray-400">/</li>
+                <li className="font-medium text-gray-900">Teslimat Bölgeleri</li>
               </ol>
             </nav>
 
             {/* Hero Content */}
             <div className="relative z-10">
               {/* Location Badge */}
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-xl px-4 py-1.5 text-xs font-medium text-white shadow-lg ring-1 ring-white/30 mb-6">
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-1.5 text-xs font-medium text-primary-700 shadow-lg ring-1 ring-primary-200 mb-6">
                 <MapPin className="h-3.5 w-3.5" />
                 <span>39 İlçe • Tüm İstanbul</span>
               </div>
               
               {/* Emotional Headline */}
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-                <span className="text-white">
+                <span className="text-gray-900">
                   İstanbul&apos;a
                 </span>
                 <br />
-                <span className="bg-gradient-to-r from-primary-300 via-white to-primary-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-600 bg-clip-text text-transparent">
                   Çiçek Teslimatı
                 </span>
               </h1>
               
-              <p className="max-w-2xl text-base sm:text-lg text-white/90 leading-relaxed mb-8">
+              <p className="max-w-2xl text-base sm:text-lg text-gray-600 leading-relaxed mb-8">
                 İstanbul&apos;un tüm ilçelerine aynı gün çiçek teslimatı. Avrupa ve Anadolu yakasına taze çiçekler, özenli paketleme ve hızlı teslimat garantisi.
               </p>
 
               {/* Trust Badges Row */}
               <div className="flex flex-wrap gap-3 mb-8">
-                <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/20">
+                <div className="flex items-center gap-2.5 rounded-2xl bg-white px-5 py-3 shadow-lg ring-1 ring-gray-200">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
                     <Map className="h-4.5 w-4.5 text-white" />
                   </div>
                   <div>
-                    <span className="text-sm font-semibold text-white">39 İlçe</span>
-                    <p className="text-xs text-white/70">Tüm İstanbul</p>
+                    <span className="text-sm font-semibold text-gray-900">39 İlçe</span>
+                    <p className="text-xs text-gray-600">Tüm İstanbul</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/20">
+                <div className="flex items-center gap-2.5 rounded-2xl bg-white px-5 py-3 shadow-lg ring-1 ring-gray-200">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg">
                     <Truck className="h-4.5 w-4.5 text-white" />
                   </div>
                   <div>
-                    <span className="text-sm font-semibold text-white">Aynı Gün</span>
-                    <p className="text-xs text-white/70">Hızlı Teslimat</p>
+                    <span className="text-sm font-semibold text-gray-900">Aynı Gün</span>
+                    <p className="text-xs text-gray-600">Hızlı Teslimat</p>
                   </div>
                 </div>
                 
@@ -149,7 +149,7 @@ export default function CitiesIndexPage() {
               {/* CTA Button */}
               <Link
                 href="/kategoriler"
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 text-base font-semibold text-primary-700 shadow-xl transition-all hover:shadow-2xl hover:scale-[1.03] active:scale-[0.98]"
+                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-4 text-base font-semibold text-white shadow-xl transition-all hover:shadow-2xl hover:scale-[1.03] active:scale-[0.98]"
               >
                 <Sparkles className="h-5 w-5" />
                 Çiçek Seç
@@ -164,7 +164,7 @@ export default function CitiesIndexPage() {
           <div className="container mx-auto px-4">
             <Link
               href="/sehir/istanbul"
-              className="group flex items-center justify-between rounded-3xl bg-gray-800/90 backdrop-blur-xl p-6 sm:p-8 shadow-xl ring-1 ring-white/10 hover:bg-gray-700 transition-all"
+              className="group flex items-center justify-between rounded-3xl bg-white backdrop-blur-xl p-6 sm:p-8 shadow-xl ring-1 ring-gray-200 hover:shadow-2xl hover:ring-primary-500/50 transition-all"
             >
               <div className="flex items-start gap-4">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/25">
@@ -204,7 +204,7 @@ export default function CitiesIndexPage() {
                 <Link
                   key={district.id}
                   href={`/sehir/${createCitySlug(district.name)}`}
-                    className="group relative overflow-hidden rounded-2xl bg-gray-800/90 p-4 text-center shadow-lg ring-1 ring-white/10 transition-all duration-300 hover:bg-gray-700 hover:ring-blue-500/30 hover:-translate-y-1"
+                    className="group relative overflow-hidden rounded-2xl bg-white p-4 text-center shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-xl hover:ring-blue-500/50 hover:-translate-y-1"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-indigo-500/0 group-hover:from-blue-500/20 group-hover:to-indigo-600/30 transition-all duration-300" />
                   <span className="relative text-sm font-medium text-white group-hover:text-white transition-colors">
@@ -234,7 +234,7 @@ export default function CitiesIndexPage() {
                 <Link
                   key={district.id}
                   href={`/sehir/${createCitySlug(district.name)}`}
-                    className="group relative overflow-hidden rounded-2xl bg-gray-800/90 p-4 text-center shadow-lg ring-1 ring-white/10 transition-all duration-300 hover:bg-gray-700 hover:ring-teal-500/30 hover:-translate-y-1"
+                    className="group relative overflow-hidden rounded-2xl bg-white p-4 text-center shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-xl hover:ring-teal-500/50 hover:-translate-y-1"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 to-emerald-500/0 group-hover:from-teal-500/20 group-hover:to-emerald-600/30 transition-all duration-300" />
                   <span className="relative text-sm font-medium text-white group-hover:text-white transition-colors">
@@ -263,32 +263,32 @@ export default function CitiesIndexPage() {
             </div>
             
             <div className="grid md:grid-cols-3 gap-6">
-              <div className="group rounded-3xl bg-gray-800/90 p-8 text-center shadow-lg ring-1 ring-white/10 transition-all hover:bg-gray-700 hover:ring-amber-500/30 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-200 transition-all hover:shadow-xl hover:ring-amber-500/50 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/25">
                   <Clock className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Aynı Gün Teslimat</h3>
-                <p className="text-white/70 text-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Aynı Gün Teslimat</h3>
+                <p className="text-gray-600 text-sm">
                   Saat 16:00&apos;ya kadar verilen siparişler aynı gün teslim edilir.
                 </p>
               </div>
               
-              <div className="group rounded-3xl bg-gray-800/90 p-8 text-center shadow-lg ring-1 ring-white/10 transition-all hover:bg-gray-700 hover:ring-purple-500/30 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-200 transition-all hover:shadow-xl hover:ring-purple-500/50 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25">
                   <Rocket className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Ekspres Teslimat</h3>
-                <p className="text-white/70 text-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Ekspres Teslimat</h3>
+                <p className="text-gray-600 text-sm">
                   Acil siparişler için 2 saat içinde teslimat seçeneği mevcuttur.
                 </p>
               </div>
               
-              <div className="group rounded-3xl bg-gray-800/90 p-8 text-center shadow-lg ring-1 ring-white/10 transition-all hover:bg-gray-700 hover:ring-emerald-500/30 hover:-translate-y-1">
+              <div className="group rounded-3xl bg-white p-8 text-center shadow-lg ring-1 ring-gray-200 transition-all hover:shadow-xl hover:ring-emerald-500/50 hover:-translate-y-1">
                 <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25">
                   <Camera className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Teslimat Fotoğrafı</h3>
-                <p className="text-white/70 text-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Teslimat Fotoğrafı</h3>
+                <p className="text-gray-600 text-sm">
                   Her teslimat sonrası fotoğraf ile bilgilendirilirsiniz.
                 </p>
               </div>
