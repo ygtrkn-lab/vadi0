@@ -250,7 +250,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName }
     <>
       <Header />
 
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white pt-32 lg:pt-40 pb-16 product-detail-page">
+      <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white pt-36 lg:pt-56 pb-16 product-detail-page">
         <div className="container-custom space-y-4 lg:space-y-5">
           <nav className="flex items-center gap-1.5 text-[11px] text-slate-500">
             <Link href="/" className="hover:text-primary-500">Ana Sayfa</Link>
