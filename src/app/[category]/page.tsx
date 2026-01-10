@@ -3,33 +3,35 @@ import { notFound } from 'next/navigation';
 import CategoryPageClient from './CategoryPageClient';
 
 interface PageProps {
-  params: Promise<{
+  params: {
     category: string;
-  }>;
+  };
 }
 
-// Force dynamic rendering to reduce build size
-export const dynamic = 'force-dynamic';
+// Cache category pages for faster TTFB while keeping data fresh
+export const revalidate = 900; // 15 minutes ISR window
 export const dynamicParams = true;
 
-// Fetch category and products from API
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
+
+// Fetch category and products from API with ISR-friendly caching
 async function getCategoryData(slug: string) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const [categoriesRes, productsRes] = await Promise.all([
-      fetch(`${baseUrl}/api/categories`, { cache: 'no-store' }),
-      fetch(`${baseUrl}/api/products?category=${slug}`, { cache: 'no-store' })
+      fetch(`${baseUrl}/api/categories`, { next: { revalidate } }),
+      fetch(`${baseUrl}/api/products?category=${slug}`, { next: { revalidate } })
     ]);
-    
+
     const categoriesData = await categoriesRes.json();
     const productsData = await productsRes.json();
-    
+
     const allCategories = categoriesData.categories || categoriesData.data || [];
     const filteredProducts = productsData.products || productsData.data || [];
-    
+
     const category = allCategories.find((c: any) => c.slug === slug);
     const products = filteredProducts;
-    
+
     return { category, products };
   } catch (error) {
     console.error('Error fetching category data:', error);
@@ -37,16 +39,22 @@ async function getCategoryData(slug: string) {
   }
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
-
-// Generate metadata for SEO
+// Generate metadata for SEO using cached server data
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { category } = await params;
-  
+  const { category } = params;
+
   const { category: categoryData, products: categoryProducts } = await getCategoryData(category);
-  
-  const categoryName = categoryData?.name || category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-  
+
+  if (!categoryData) {
+    return {
+      title: 'Kategori Bulunamadı | Vadiler Çiçek',
+      description: 'Aradığınız kategori bulunamadı.',
+      alternates: { canonical: `${BASE_URL}/${category}` },
+    };
+  }
+
+  const categoryName = categoryData.name || category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+
   return {
     title: `${categoryName} | Online Çiçek Siparişi | Vadiler Çiçek`,
     description: `${categoryName} kategorisinde ${categoryProducts.length} ürün bulunmaktadır. En taze çiçekler, hızlı ve özenli teslimat ile Vadiler Çiçek'te.`,
@@ -71,10 +79,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CategoryPage({ params }: PageProps) {
-  const { category } = await params;
-  
+  const { category } = params;
+
   const { category: categoryData, products: categoryProducts } = await getCategoryData(category);
-  
+
   if (!categoryData) {
     notFound();
   }

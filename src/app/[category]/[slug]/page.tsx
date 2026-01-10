@@ -3,23 +3,25 @@ import { notFound } from 'next/navigation';
 import ProductDetail from './ProductDetail';
 
 interface PageProps {
-  params: Promise<{
+  params: {
     category: string;
     slug: string;
-  }>;
+  };
 }
 
-// Force dynamic rendering to reduce build size
-export const dynamic = 'force-dynamic';
+// Cache product pages for faster TTFB while keeping data fresh
+export const revalidate = 900; // 15 minutes ISR window
 export const dynamicParams = true;
 
-// Fetch product from API
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
+
+// Fetch product from API with ISR-friendly caching
 async function getProduct(category: string, slug: string) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const [productsRes, categoriesRes] = await Promise.all([
-      fetch(`${baseUrl}/api/products`, { cache: 'no-store' }),
-      fetch(`${baseUrl}/api/categories`, { cache: 'no-store' })
+      fetch(`${baseUrl}/api/products`, { next: { revalidate } }),
+      fetch(`${baseUrl}/api/categories`, { next: { revalidate } })
     ]);
     
     const productsData = await productsRes.json();
@@ -31,22 +33,23 @@ async function getProduct(category: string, slug: string) {
     const product = allProducts.find((p: any) => p.category === category && p.slug === slug);
     const categoryData = allCategories.find((c: any) => c.slug === category);
     
-    return { product, categoryData };
+    return { product, categoryData, allProducts };
   } catch (error) {
     console.error('Error fetching product:', error);
-    return { product: null, categoryData: null };
+    return { product: null, categoryData: null, allProducts: [] };
   }
 }
 
-// Generate metadata for SEO
+// Generate metadata for SEO using cached server data
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { category, slug } = await params;
+  const { category, slug } = params;
   const { product, categoryData } = await getProduct(category, slug);
 
   if (!product) {
     return {
       title: 'Ürün Bulunamadı | Vadiler Çiçek',
       description: 'Aradığınız ürün bulunamadı.',
+      alternates: { canonical: `${BASE_URL}/${category}/${slug}` },
     };
   }
 
@@ -75,7 +78,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: [product.image],
     },
     alternates: {
-      canonical: `https://vadiler.com/${category}/${slug}`,
+      canonical: `${BASE_URL}/${category}/${slug}`,
     },
     other: {
       'product:price:amount': product.price.toString(),
@@ -183,20 +186,15 @@ function generateJsonLd(product: any) {
 }
 
 export default async function ProductPage({ params }: PageProps) {
-  const { category, slug } = await params;
+  const { category, slug } = params;
   
-  const { product, categoryData } = await getProduct(category, slug);
+  const { product, categoryData, allProducts } = await getProduct(category, slug);
 
   if (!product) {
     notFound();
   }
 
-  // Get related products from same category
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-  const productsRes = await fetch(`${baseUrl}/api/products`, { cache: 'no-store' });
-  const productsData = await productsRes.json();
-  const allProducts = productsData.products || productsData.data || [];
-  
+  // Get related products from same category using already-fetched list
   const relatedProducts = allProducts
     .filter((p: any) => p.category === category && p.id !== product.id)
     .slice(0, 4);
