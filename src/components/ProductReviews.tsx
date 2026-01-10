@@ -39,6 +39,7 @@ export default function ProductReviews({
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [votedReviews, setVotedReviews] = useState<Record<string, 'helpful' | 'unhelpful'>>({});
+  const autoReply = 'Kaliteli bir hizmet sunabilmek adına ilettiğiniz değerli geri bildiriminiz için VADİLER ailesi olarak teşekkür ediyoruz. Memnuniyetiniz bizler için önemlidir. İlginiz için teşekkür eder, iyi günler dileriz.';
 
   // Load voted reviews from localStorage
   useEffect(() => {
@@ -459,6 +460,11 @@ export default function ProductReviews({
 
               {/* Comment */}
               <p className="text-gray-700 mb-4">{review.comment}</p>
+
+              {/* Auto Reply */}
+              <div className="mb-4 rounded-xl bg-gray-50 border border-gray-100 p-3 text-sm text-gray-700">
+                {autoReply}
+              </div>
 
               {/* Photos */}
               {review.photos && review.photos.length > 0 && (
