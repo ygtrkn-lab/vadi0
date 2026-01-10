@@ -192,20 +192,10 @@ export default async function CityPage({ params }: PageProps) {
       
       <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
         
-        {/* 🎁 Haftanın Kampanyalı Ürünler - EN ÜSTTE HERO ALANINDA */}
-        <CategoryCarousel variant="city" />
-
-        {/* ✨ Premium Info Section */}
-        <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden bg-white">
-          {/* Decorative Elements */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary-100 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-primary-50 blur-3xl" />
-          </div>
-          
-          <div className="container mx-auto px-4 relative">
-            {/* Breadcrumb */}
-            <nav className="mb-6 text-xs text-gray-600 sm:text-sm">
+        {/* � Breadcrumb - EN ÜSTTE */}
+        <section className="bg-white border-b border-gray-200">
+          <div className="container mx-auto px-4 py-4">
+            <nav className="text-xs text-gray-600 sm:text-sm">
               <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <li><Link href="/" className="hover:text-gray-900 transition-colors">Ana Sayfa</Link></li>
                 <li className="text-gray-400">/</li>
@@ -220,7 +210,21 @@ export default async function CityPage({ params }: PageProps) {
                 <li className="font-medium text-gray-900">{content.name}</li>
               </ol>
             </nav>
+          </div>
+        </section>
 
+        {/* 🎁 Haftanın Kampanyalı Ürünler - HERO ALANINDA */}
+        <CategoryCarousel variant="city" />
+
+        {/* ✨ Premium Info Section */}
+        <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden bg-white">
+          {/* Decorative Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary-100 blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-primary-50 blur-3xl" />
+          </div>
+          
+          <div className="container mx-auto px-4 relative">
             {/* Hero Content */}
             <div className="relative z-10">
               {/* Location Badge */}
