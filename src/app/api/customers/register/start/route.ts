@@ -134,10 +134,16 @@ export async function POST(request: NextRequest) {
       otpId = (inserted as any).id;
     }
 
-    const sent = await EmailService.sendCustomerOtp({ to: email, code, purpose: 'register' });
-    if (!sent) {
+    const result = await EmailService.sendCustomerOtpWithDetails({ to: email, code, purpose: 'register' });
+    if (!result.success) {
       await sb.from('customers').delete().eq('id', (createdCustomer as any).id);
-      return NextResponse.json({ error: 'E-posta gönderilemedi. Lütfen tekrar deneyin.' }, { status: 500 });
+      
+      // Geçersiz e-posta adresi durumunda kullanıcı dostu mesaj
+      const errorMessage = result.errorCode === 'INVALID_EMAIL' 
+        ? 'Girdiğiniz e-posta adresine kod gönderilemedi. E-posta adresinizi kontrol edip tekrar deneyin.'
+        : 'E-posta gönderilemedi. Lütfen tekrar deneyin.';
+      
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
     return NextResponse.json({

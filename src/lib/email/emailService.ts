@@ -16,6 +16,14 @@ interface EmailOptions {
   text?: string;
 }
 
+// E-posta gönderim sonucu için detaylı arayüz
+export interface EmailSendResult {
+  success: boolean;
+  error?: string;
+  errorCode?: 'INVALID_EMAIL' | 'SMTP_ERROR' | 'CONNECTION_ERROR' | 'UNKNOWN';
+  messageId?: string;
+}
+
 interface OrderEmailData {
   orderNumber: string;
   customerName: string;
@@ -129,9 +137,75 @@ export class EmailService {
   }
 
   /**
+   * E-posta gönderim hatasını analiz et ve kullanıcı dostu hata kodu döndür
+   */
+  private static analyzeEmailError(error: unknown): { errorCode: EmailSendResult['errorCode']; message: string } {
+    const err = error as { message?: string; code?: string; responseCode?: number } | null;
+    const errorMessage = err?.message?.toLowerCase() || '';
+    const errorCode = err?.code?.toLowerCase() || '';
+    const responseCode = err?.responseCode || 0;
+    
+    // Geçersiz alıcı adresi hataları (SMTP 550, 553, 554 vb.)
+    if (
+      responseCode === 550 || 
+      responseCode === 553 || 
+      responseCode === 554 ||
+      errorMessage.includes('invalid') ||
+      errorMessage.includes('does not exist') ||
+      errorMessage.includes('user unknown') ||
+      errorMessage.includes('no such user') ||
+      errorMessage.includes('mailbox not found') ||
+      errorMessage.includes('recipient rejected') ||
+      errorMessage.includes('undeliverable') ||
+      errorMessage.includes('invalid recipient') ||
+      errorMessage.includes('address rejected')
+    ) {
+      return {
+        errorCode: 'INVALID_EMAIL',
+        message: 'Bu e-posta adresine mesaj gönderilemedi. Lütfen e-posta adresinizi kontrol edin.'
+      };
+    }
+    
+    // Bağlantı hataları
+    if (
+      errorCode === 'econnrefused' ||
+      errorCode === 'etimedout' ||
+      errorCode === 'enotfound' ||
+      errorMessage.includes('connection') ||
+      errorMessage.includes('timeout')
+    ) {
+      return {
+        errorCode: 'CONNECTION_ERROR',
+        message: 'E-posta sunucusuna bağlanılamadı. Lütfen daha sonra tekrar deneyin.'
+      };
+    }
+    
+    // SMTP sunucu hataları
+    if (responseCode >= 500 && responseCode < 600) {
+      return {
+        errorCode: 'SMTP_ERROR',
+        message: 'E-posta gönderilemedi. Lütfen daha sonra tekrar deneyin.'
+      };
+    }
+    
+    return {
+      errorCode: 'UNKNOWN',
+      message: 'E-posta gönderilemedi. Lütfen tekrar deneyin.'
+    };
+  }
+
+  /**
    * Send a generic email
    */
   static async sendEmail(options: EmailOptions): Promise<boolean> {
+    const result = await this.sendEmailWithDetails(options);
+    return result.success;
+  }
+
+  /**
+   * Send email with detailed result (including error info)
+   */
+  static async sendEmailWithDetails(options: EmailOptions): Promise<EmailSendResult> {
     try {
       const transporter = this.getTransporter();
       const from = process.env.SMTP_USER || 'bilgi@vadiler.com';
@@ -153,14 +227,20 @@ export class EmailService {
       });
 
       console.log('✅ Email sent successfully:', result.messageId);
-      return true;
+      return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('❌ Email sending error:', error);
       if (error instanceof Error) {
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
       }
-      return false;
+      
+      const analyzed = this.analyzeEmailError(error);
+      return {
+        success: false,
+        error: analyzed.message,
+        errorCode: analyzed.errorCode
+      };
     }
   }
 
@@ -219,6 +299,68 @@ export class EmailService {
     `;
 
     return this.sendEmail({
+      to: params.to,
+      subject: `Vadiler ${purposeLabel} Doğrulama Kodu`,
+      html,
+      text: `Vadiler ${purposeLabel} doğrulama kodunuz: ${params.code} (10 dakika geçerli)`,
+    });
+  }
+
+  /**
+   * Send customer OTP with detailed result (for error handling)
+   */
+  static async sendCustomerOtpWithDetails(params: {
+    to: string;
+    code: string;
+    purpose: 'login' | 'register' | 'password-reset';
+  }): Promise<EmailSendResult> {
+    let purposeLabel = '';
+    let title = '';
+    
+    switch (params.purpose) {
+      case 'register':
+        purposeLabel = 'Kayıt';
+        title = 'Kayıt işleminizi tamamlamak için doğrulama kodunuz:';
+        break;
+      case 'login':
+        purposeLabel = 'Giriş';
+        title = 'Giriş işleminizi tamamlamak için doğrulama kodunuz:';
+        break;
+      case 'password-reset':
+        purposeLabel = 'Şifre Sıfırlama';
+        title = 'Şifrenizi sıfırlamak için doğrulama kodunuz:';
+        break;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #111827; background: #f9fafb; }
+            .container { max-width: 520px; margin: 0 auto; padding: 24px; }
+            .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
+            .brand { font-weight: 700; font-size: 18px; margin: 0 0 8px 0; }
+            .muted { color: #6b7280; font-size: 13px; }
+            .code { font-size: 28px; font-weight: 800; letter-spacing: 6px; text-align: center; padding: 16px 0; border-radius: 10px; background: #f3f4f6; border: 1px dashed #d1d5db; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="card">
+              <p class="brand">Vadiler</p>
+              <p>${title}</p>
+              <div class="code">${params.code}</div>
+              <p class="muted">Kod 10 dakika geçerlidir. Eğer bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return this.sendEmailWithDetails({
       to: params.to,
       subject: `Vadiler ${purposeLabel} Doğrulama Kodu`,
       html,
