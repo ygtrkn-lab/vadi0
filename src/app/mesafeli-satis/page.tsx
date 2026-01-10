@@ -1,4 +1,21 @@
 import { Header, Footer, MobileNavBar } from '@/components';
+import { Metadata } from 'next';
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
+
+export const metadata: Metadata = {
+  title: 'Mesafeli Satış Sözleşmesi | Vadiler Çiçek',
+  description: 'Vadiler Çiçek Mesafeli Satış Sözleşmesi. Online alışveriş şartları, iade politikası ve müşteri haklarınız hakkında bilgi.',
+  alternates: {
+    canonical: `${BASE_URL}/mesafeli-satis`,
+  },
+  openGraph: {
+    title: 'Mesafeli Satış Sözleşmesi',
+    description: 'Vadiler Çiçek Mesafeli Satış Sözleşmesi',
+    url: `${BASE_URL}/mesafeli-satis`,
+    type: 'website',
+  },
+};
 
 export default function MesafeliSatisSozlesmesi() {
   return (

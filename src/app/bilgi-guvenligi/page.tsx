@@ -1,4 +1,21 @@
 import { Header, Footer, MobileNavBar } from '@/components';
+import { Metadata } from 'next';
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
+
+export const metadata: Metadata = {
+  title: 'Bilgi Güvenliği Politikası | Vadiler Çiçek',
+  description: 'Vadiler Çiçek Bilgi Güvenliği Politikası. Siber güvenlik, veri koruma ve alışveriş güvenliği hakkında bilgi.',
+  alternates: {
+    canonical: `${BASE_URL}/bilgi-guvenligi`,
+  },
+  openGraph: {
+    title: 'Bilgi Güvenliği Politikası',
+    description: 'Vadiler Çiçek Bilgi Güvenliği Politikası',
+    url: `${BASE_URL}/bilgi-guvenligi`,
+    type: 'website',
+  },
+};
 
 export default function BilgiGuvenligi() {
   return (

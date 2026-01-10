@@ -1,4 +1,21 @@
 import { Header, Footer, MobileNavBar } from '@/components';
+import { Metadata } from 'next';
+
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
+
+export const metadata: Metadata = {
+  title: 'Kişisel Verilerin Korunması Politikası | Vadiler Çiçek',
+  description: 'Vadiler Çiçek KVKK Kişisel Verilerin Korunması Politikası. Kişisel verilerinizin güvenliği ve korunması hakkında bilgi.',
+  alternates: {
+    canonical: `${BASE_URL}/kvkk`,
+  },
+  openGraph: {
+    title: 'Kişisel Verilerin Korunması Politikası',
+    description: 'Vadiler Çiçek KVKK Kişisel Verilerin Korunması Politikası',
+    url: `${BASE_URL}/kvkk`,
+    type: 'website',
+  },
+};
 
 export default function KVKKPolitikasi() {
   return (
