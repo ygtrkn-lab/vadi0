@@ -216,89 +216,105 @@ export default async function CityPage({ params }: PageProps) {
         {/* 🎁 Haftanın Kampanyalı Ürünler - HERO ALANINDA */}
         <CategoryCarousel variant="city" />
 
-        {/* ✨ Premium Info Section */}
-        <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden bg-white">
-          {/* Decorative Elements */}
+        {/* ✨ Premium Hero Section V2 - Modernized */}
+        <section className="relative pt-12 pb-16 sm:pt-16 sm:pb-20 overflow-hidden bg-white">
+          {/* Animated Background Elements */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary-100 blur-3xl" />
-            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-primary-50 blur-3xl" />
+            <div className="absolute -top-32 -right-32 h-80 w-80 rounded-full bg-gradient-to-br from-primary-100 via-primary-50 to-transparent blur-3xl opacity-60 animate-pulse" />
+            <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-gradient-to-tr from-secondary-100 via-primary-50 to-transparent blur-3xl opacity-60 animate-pulse" />
+            <div className="absolute top-1/2 left-1/3 h-60 w-60 rounded-full bg-gradient-to-br from-pink-100/40 to-transparent blur-3xl" />
           </div>
           
-          <div className="container mx-auto px-4 relative">
-            {/* Hero Content */}
-            <div className="relative z-10">
-              {/* Location Badge */}
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-1.5 text-xs font-medium text-primary-700 shadow-lg ring-1 ring-primary-200 mb-6">
-                <MapPin className="h-3.5 w-3.5" />
-                <span>İstanbul, Türkiye</span>
+          <div className="container mx-auto px-4 relative z-10">
+            {/* Premium Location Badge */}
+            <div className="mb-8 flex justify-center sm:justify-start">
+              <div className="inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-primary-50 to-secondary-50 px-6 py-2.5 border border-primary-200/60 shadow-lg ring-1 ring-primary-100/50">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 shadow-md">
+                  <MapPin className="h-4 w-4 text-white" />
+                </div>
+                <span className="text-sm font-semibold bg-gradient-to-r from-primary-700 to-primary-600 bg-clip-text text-transparent">İstanbul, Türkiye</span>
               </div>
-              
-              {/* Emotional Headline */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-                <span className="text-gray-900">
-                  {content.name}&apos;e
+            </div>
+
+            {/* Main Headline - V2 Style */}
+            <div className="mb-8 max-w-4xl">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-tight mb-4">
+                <span className="block text-gray-900 mb-2">
+                  İstanbul'e
                 </span>
-                <br />
-                <span className="bg-gradient-to-r from-primary-600 via-primary-700 to-primary-600 bg-clip-text text-transparent">
+                <span className="block bg-gradient-to-r from-primary-600 via-primary-500 via-60% to-secondary-500 bg-clip-text text-transparent drop-shadow-sm">
                   Taze Çiçek Gönder
                 </span>
               </h1>
               
-              <p className="max-w-2xl text-base sm:text-lg text-gray-600 leading-relaxed mb-8">
-                {content.description}
+              <div className="h-1 w-20 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-full mb-6" />
+              
+              <p className="text-lg sm:text-xl text-gray-600 leading-relaxed max-w-2xl font-medium">
+                İstanbul'un tüm ilçelerine hızlı ve özenli çiçek teslimatı. Taze çiçekler, kaliteli hizmet, garantili mutluluk.
               </p>
+            </div>
 
-              {/* Trust Badges Row */}
-              <div className="flex flex-wrap gap-3 mb-8">
-                <div className="flex items-center gap-2.5 rounded-2xl bg-white px-5 py-3 shadow-lg ring-1 ring-gray-200 transition-all hover:shadow-xl hover:scale-[1.02]">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
-                    <Truck className="h-4.5 w-4.5 text-white" />
+            {/* Trust Badges Grid - V2 Enhanced */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10 max-w-3xl">
+              {/* Badge 1 - Delivery */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50 p-6 shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-2xl hover:ring-primary-500/50 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/10 group-hover:to-emerald-500/20 transition-all duration-300" />
+                <div className="relative">
+                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Truck className="h-5 w-5 text-white" />
                   </div>
-                  <div>
-                    <span className="text-sm font-semibold text-gray-900">{content.deliveryInfo}</span>
-                    <p className="text-xs text-gray-600">Garantili Teslimat</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2.5 rounded-2xl bg-white px-5 py-3 shadow-lg ring-1 ring-gray-200 transition-all hover:shadow-xl hover:scale-[1.02]">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30">
-                    <Star className="h-4.5 w-4.5 text-white" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-semibold text-gray-900">4.9 Puan</span>
-                    <p className="text-xs text-gray-600">12.000+ Mutlu Müşteri</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2.5 rounded-2xl bg-white px-5 py-3 shadow-lg ring-1 ring-gray-200 transition-all hover:shadow-xl hover:scale-[1.02]">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30">
-                    <Flower2 className="h-4.5 w-4.5 text-white" />
-                  </div>
-                  <div>
-                    <span className="text-sm font-semibold text-gray-900">1000+ Çiçek</span>
-                    <p className="text-xs text-gray-600">Geniş Ürün Yelpazesi</p>
-                  </div>
+                  <p className="text-sm font-semibold text-gray-900 mb-1">{content.deliveryInfo}</p>
+                  <p className="text-xs text-gray-500 font-medium">Garantili Teslimat</p>
                 </div>
               </div>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-4">
-                <Link
-                  href="/kategoriler"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-4 text-base font-semibold text-white shadow-xl transition-all hover:shadow-2xl hover:scale-[1.03] active:scale-[0.98]"
-                >
+              {/* Badge 2 - Rating */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50 p-6 shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-2xl hover:ring-amber-500/50 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/0 to-amber-500/0 group-hover:from-amber-500/10 group-hover:to-amber-500/20 transition-all duration-300" />
+                <div className="relative">
+                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Star className="h-5 w-5 text-white fill-white" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900 mb-1">4.9 Puan</p>
+                  <p className="text-xs text-gray-500 font-medium">12.000+ Müşteri</p>
+                </div>
+              </div>
+
+              {/* Badge 3 - Products */}
+              <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white to-gray-50 p-6 shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-2xl hover:ring-pink-500/50 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-500/0 to-pink-500/0 group-hover:from-pink-500/10 group-hover:to-pink-500/20 transition-all duration-300" />
+                <div className="relative">
+                  <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 shadow-lg mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Flower2 className="h-5 w-5 text-white" />
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900 mb-1">1000+ Çiçek</p>
+                  <p className="text-xs text-gray-500 font-medium">Geniş Yelpaze</p>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Buttons - V2 Style */}
+            <div className="flex flex-col sm:flex-row gap-4 max-w-2xl">
+              <Link
+                href="/kategoriler"
+                className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-700 px-8 py-4 text-base font-bold text-white shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.03] hover:to-primary-600 active:scale-[0.98]"
+              >
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <span className="relative flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
                   Çiçek Seç
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-                <Link
-                  href="/ozel-gun"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-8 py-4 text-base font-semibold text-gray-900 shadow-lg ring-1 ring-gray-200 transition-all hover:shadow-xl hover:scale-[1.03] active:scale-[0.98]"
-                >
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </Link>
+              <Link
+                href="/ozel-gun"
+                className="group relative inline-flex items-center justify-center gap-3 rounded-2xl bg-white px-8 py-4 text-base font-bold text-primary-700 shadow-lg ring-2 ring-primary-200 transition-all duration-300 hover:shadow-xl hover:scale-[1.03] hover:ring-primary-400 active:scale-[0.98]"
+              >
+                <span className="relative flex items-center gap-2">
                   <Gift className="h-5 w-5" />
                   Özel Günler
-                </Link>
-              </div>
+                </span>
+              </Link>
             </div>
           </div>
         </section>
