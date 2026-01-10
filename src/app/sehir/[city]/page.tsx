@@ -216,50 +216,50 @@ export default async function CityPage({ params }: PageProps) {
         {/* 🎁 Haftanın Kampanyalı Ürünler - HERO ALANINDA */}
         <CategoryCarousel variant="city" />
 
-        {/* ✨ Apple-Inspired Hero Section - Minimalist & Elegant */}
+        {/* ✨ Apple-Inspired Hero Section - Minimalist & Elegant & Compact */}
         <section className="relative bg-white overflow-hidden">
           {/* Subtle gradient background */}
           <div className="absolute inset-0">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-primary-50/40 to-transparent blur-3xl pointer-events-none" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-primary-50/30 to-transparent blur-3xl pointer-events-none" />
           </div>
 
           {/* Main content */}
-          <div className="container mx-auto px-4 relative z-10 py-24 md:py-32 lg:py-40">
-            <div className="max-w-4xl">
+          <div className="container mx-auto px-4 relative z-10 py-16 md:py-20">
+            <div className="max-w-3xl">
               {/* Subtle badge */}
-              <div className="mb-8 inline-block">
+              <div className="mb-5 inline-block">
                 <span className="text-xs font-semibold text-primary-600 uppercase tracking-widest">İstanbul'da Çiçek Teslimatı</span>
               </div>
 
               {/* Main headline - Apple style */}
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-[1.1] mb-8">
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.15] mb-6">
                 <span className="block text-gray-900">Taze Çiçekler</span>
                 <span className="block bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">Kapınıza Gelsin</span>
               </h1>
 
               {/* Descriptive subtitle */}
-              <p className="text-xl md:text-2xl text-gray-600 leading-relaxed mb-12 max-w-3xl font-light">
-                İstanbul'un tüm ilçelerine hızlı, güvenli ve özenli çiçek teslimatı. Taze çiçeklerle sevdiklerinizi mutlu edin.
+              <p className="text-lg md:text-xl text-gray-600 leading-relaxed mb-8 max-w-2xl font-light">
+                İstanbul'un tüm ilçelerine hızlı ve özenli çiçek teslimatı.
               </p>
 
               {/* CTA Buttons - Minimal style */}
-              <div className="flex flex-col sm:flex-row gap-4 items-start">
+              <div className="flex flex-col sm:flex-row gap-3 items-start">
                 <Link
                   href="/kategoriler"
-                  className="group px-8 py-4 bg-gray-900 text-white rounded-full font-semibold text-lg transition-all duration-300 hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-900/20 active:scale-95"
+                  className="group px-7 py-3 bg-gray-900 text-white rounded-full font-semibold text-base transition-all duration-300 hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-900/20 active:scale-95"
                 >
                   <span className="flex items-center gap-2">
                     Çiçekleri İncele
-                    <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </Link>
                 <Link
                   href="/ozel-gun"
-                  className="group px-8 py-4 bg-gray-100 text-gray-900 rounded-full font-semibold text-lg transition-all duration-300 hover:bg-gray-200 hover:shadow-lg hover:shadow-gray-900/10 active:scale-95"
+                  className="group px-7 py-3 bg-gray-100 text-gray-900 rounded-full font-semibold text-base transition-all duration-300 hover:bg-gray-200 hover:shadow-lg hover:shadow-gray-900/10 active:scale-95"
                 >
                   <span className="flex items-center gap-2">
                     Özel Günler
-                    <Sparkles className="h-5 w-5" />
+                    <Sparkles className="h-4 w-4" />
                   </span>
                 </Link>
               </div>
@@ -268,26 +268,26 @@ export default async function CityPage({ params }: PageProps) {
 
           {/* Trust indicators - Subtle line under hero */}
           <div className="border-t border-gray-200">
-            <div className="container mx-auto px-4 py-16 md:py-20">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
+            <div className="container mx-auto px-4 py-12 md:py-16">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
                 {/* Indicator 1 */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Teslimat</p>
-                  <p className="text-2xl md:text-3xl font-bold text-gray-900">{content.deliveryInfo}</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{content.deliveryInfo}</p>
                   <p className="text-sm text-gray-600">Garanti ile kapınıza</p>
                 </div>
 
                 {/* Indicator 2 */}
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Müşteri Memnuniyeti</p>
-                  <p className="text-2xl md:text-3xl font-bold text-gray-900">4.9 <span className="text-lg text-primary-600">★</span></p>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Memnuniyet</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">4.9 <span className="text-sm text-primary-600">★</span></p>
                   <p className="text-sm text-gray-600">12.000+ değerlendirme</p>
                 </div>
 
                 {/* Indicator 3 */}
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Ürün Seçeneği</p>
-                  <p className="text-2xl md:text-3xl font-bold text-gray-900">1000+</p>
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Seçenek</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">1000+</p>
                   <p className="text-sm text-gray-600">Çiçek ve aranjman</p>
                 </div>
               </div>

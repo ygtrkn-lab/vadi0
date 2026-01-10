@@ -301,7 +301,8 @@ export default async function CityOccasionPage({ params }: PageProps) {
                 </Link>
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
         {/* 📝 Neden Vadiler Section */}
         <section className="py-12 sm:py-16">
@@ -414,7 +415,7 @@ export default async function CityOccasionPage({ params }: PageProps) {
                           <span key={index} className="text-xs bg-gray-50 text-gray-700 px-2 py-1 rounded-full ring-1 ring-gray-200">
                             {area}
                           </span>
-                        ))>
+                        ))}
                       </div>
                     </div>
                   )}
