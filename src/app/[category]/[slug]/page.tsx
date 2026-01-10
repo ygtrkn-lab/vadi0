@@ -18,10 +18,10 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 // Fetch product from API with ISR-friendly caching
 async function getProduct(category: string, slug: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    // Use relative fetch so it works in all environments (prod/preview/local)
     const [productsRes, categoriesRes] = await Promise.all([
-      fetch(`${baseUrl}/api/products`, { next: { revalidate } }),
-      fetch(`${baseUrl}/api/categories`, { next: { revalidate } })
+      fetch('/api/products', { next: { revalidate } }),
+      fetch('/api/categories', { next: { revalidate } })
     ]);
     
     const productsData = await productsRes.json();

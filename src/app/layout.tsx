@@ -228,6 +228,11 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
+        {/* Preconnect to primary origin and analytics for faster LCP/INP */}
+        <link rel="preconnect" href={BASE_URL} />
+        <link rel="dns-prefetch" href={BASE_URL} />
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
+
         {/* Google tag (gtag.js) */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}

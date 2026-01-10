@@ -8,18 +8,22 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
+        disallow: ['/arama'],
       },
       {
         userAgent: 'Googlebot',
         allow: '/',
+        disallow: ['/arama'],
       },
       {
         userAgent: 'Bingbot',
         allow: '/',
+        disallow: ['/arama'],
       },
       {
         userAgent: 'Yandex',
         allow: '/',
+        disallow: ['/arama'],
       },
     ],
     sitemap: [
