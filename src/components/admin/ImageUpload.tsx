@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { resizeImageBeforeUpload } from '@/lib/image-resize';
 
 interface ImageUploadProps {
   value: string;
@@ -37,8 +38,11 @@ export default function ImageUpload({ value, onChange, label, required, isDark =
     setUploading(true);
 
     try {
+      // Client-side resize - Cloudinary kredisi tasarrufu
+      const resizedFile = await resizeImageBeforeUpload(file);
+      
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', resizedFile);
 
       const res = await fetch('/api/upload', {
         method: 'POST',

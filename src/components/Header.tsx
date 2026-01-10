@@ -34,7 +34,11 @@ interface Category {
   image?: string;
 }
 
-export default function Header() {
+interface HeaderProps {
+  hideCategories?: boolean;
+}
+
+export default function Header({ hideCategories = false }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false);
@@ -126,9 +130,10 @@ export default function Header() {
   }, []);
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[20000]" style={{ pointerEvents: 'auto' }}>
-      {/* Top Bar */}
-      <motion.div 
+    <>
+      <div className="fixed top-0 left-0 right-0 z-[20000]" style={{ pointerEvents: 'auto' }}>
+        {/* Top Bar */}
+        <motion.div 
         ref={topBandRef}
         initial={false}
         animate={{
@@ -220,8 +225,7 @@ export default function Header() {
           duration: 0.4,
           ease: [0.25, 0.1, 0.25, 1],
         }}
-        className="relative z-[100]"
-        style={{ pointerEvents: isHidden ? 'none' : 'auto' }}
+        className="relative z-[20001]"
       >
         <div className="container-custom">
           <div className="flex items-center justify-between gap-4">
@@ -261,7 +265,7 @@ export default function Header() {
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-2 sm:gap-4 relative z-[9999]" style={{ pointerEvents: 'auto' }}>
+            <div className="flex items-center gap-2 sm:gap-4 relative z-[20002]">
               {/* Mobile Search Toggle */}
               <button 
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
@@ -325,12 +329,20 @@ export default function Header() {
 
               {/* Mobile Menu Toggle */}
               <button 
-                onClick={() => {
-                  // Close other overlays before opening the mobile sidebar to avoid stacking
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   window.dispatchEvent(new Event('closeAllOverlays'));
                   window.dispatchEvent(new CustomEvent('openMobileSidebar'));
                 }}
                 className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+                style={{
+                  position: 'relative',
+                  zIndex: 99999,
+                  pointerEvents: 'auto',
+                  cursor: 'pointer',
+                }}
+                aria-label="Menüyü Aç"
               >
                 <Menu size={24} className="text-gray-700" />
               </button>
@@ -362,10 +374,11 @@ export default function Header() {
       </motion.div>
 
       {/* Navigation - Desktop */}
-      <nav className={`hidden lg:block bg-white border-t border-gray-100 transition-all duration-300 ${
-        isScrolled ? 'h-0 overflow-hidden opacity-0' : 'h-auto opacity-100'
-      } ${isSearchDropdownOpen ? 'relative z-0' : 'relative z-10'}`}>
-        <div className="container-custom">
+      {!hideCategories && (
+        <nav className={`hidden lg:block bg-white border-t border-gray-100 transition-all duration-300 ${
+          isScrolled ? 'h-0 overflow-hidden opacity-0' : 'h-auto opacity-100'
+        } ${isSearchDropdownOpen ? 'relative z-0' : 'relative z-10'}`}>
+          <div className="container-custom">
           <ul className="flex items-center justify-center gap-2">
             {/* Tüm Kategoriler Dropdown */}
             <li 
@@ -466,7 +479,9 @@ export default function Header() {
           </ul>
         </div>
       </nav>
+      )}
     </div>
+    </>
   );
 }
 

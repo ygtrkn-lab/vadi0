@@ -1,0 +1,58 @@
+================================================================================
+ARNAVUTKÖY MAHALLELERİ - BAHÇELİEVLER SOĞANLI MAHALLESİ
+SÜRE + KM'YE GÖRE ARTAN SIRALAMA
+================================================================================
+
+Hedef Adres: SOĞANLI MAH. GÖLÇE SOKAK NO: 1 İÇ KAPI NO: 4, BAHÇELİEVLER / İSTANBUL
+Trafik Verisi: Yok (OSRM)
+Tarih: 05.01.2026 19:25:05
+
+================================================================================
+Sıra  Mahalle                                  Mesafe       Süre
+================================================================================
+
+  1.  Bolluca Mahallesi                         28.10 km     24 dk
+  2.  Mustafa Kemal Paşa Mahallesi              28.38 km     25 dk
+  3.  Anadolu Mahallesi                         28.61 km     26 dk
+  4.  Atatürk Mahallesi                         29.25 km     26 dk
+  5.  Arnavutköy Merkez Mahallesi               29.09 km     26 dk
+  6.  Merkez Mahallesi                          29.09 km     26 dk
+  7.  Karlıbayır Mahallesi                      28.73 km     26 dk
+  8.  Taşoluk Mahallesi                         30.02 km     26 dk
+  9.  Ömerli Mahallesi                          29.47 km     27 dk
+ 10.  Hicret Mahallesi                          29.60 km     27 dk
+ 11.  Mareşal Fevzi Çakmak Mahallesi            30.47 km     27 dk
+ 12.  Haraççı Mahallesi                         31.52 km     28 dk
+ 13.  Adnan Menderes Mahallesi                  31.14 km     28 dk
+ 14.  İslambey Mahallesi                        28.92 km     28 dk
+ 15.  İmrahor Mahallesi                         31.17 km     28 dk
+ 16.  Hacımaşlı Mahallesi                       31.84 km     29 dk
+ 17.  Yavuz Selim Mahallesi                     31.93 km     29 dk
+ 18.  Mehmet Akif Ersoy Mahallesi               33.43 km     30 dk
+ 19.  Hastane Mahallesi                         32.93 km     30 dk
+ 20.  Çilingir Mahallesi                        33.31 km     30 dk
+ 21.  Fatih Mahallesi                           32.51 km     30 dk
+ 22.  Sazlıbosna Mahallesi                      33.99 km     30 dk
+ 23.  Deliklikaya Mahallesi                     30.17 km     30 dk
+ 24.  Yeşilbayır Mahallesi                      33.91 km     31 dk
+ 25.  Nenehatun Mahallesi                       29.43 km     32 dk
+ 26.  Boğazköy İstiklal Mahallesi               27.08 km     35 dk
+ 27.  Hadımköy Mahallesi                        25.84 km     36 dk
+ 28.  Yassıören Mahallesi                       39.63 km     36 dk
+ 29.  Baklalı Mahallesi                         44.09 km     37 dk
+ 30.  Nakkaş Mahallesi                          40.97 km     38 dk
+ 31.  Tayakadın Mahallesi                       39.07 km     38 dk
+ 32.  Balaban Mahallesi                         41.76 km     39 dk
+ 33.  Yeniköy Mahallesi                         42.98 km     40 dk
+ 34.  Boyalık Mahallesi                         43.58 km     42 dk
+ 35.  Dursunköy Mahallesi                       39.87 km     48 dk
+ 36.  Karaburun Mahallesi                       51.12 km     52 dk
+ 37.  Durusu Mahallesi                          47.73 km     61 dk
+ 38.  Terkos Mahallesi                          52.22 km     64 dk
+
+================================================================================
+ÖZET
+================================================================================
+En Hızlı Ulaşım: Bolluca Mahallesi (28.10 km - 24 dk)
+En Yavaş Ulaşım: Terkos Mahallesi (52.22 km - 64 dk)
+================================================================================

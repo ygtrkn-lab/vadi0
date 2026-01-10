@@ -155,7 +155,7 @@ export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps
           initial={{ y: 100 }}
           animate={{ y: isVisible ? 0 : 100 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="fixed bottom-0 left-0 right-0 z-50 lg:hidden"
+          className="fixed bottom-0 left-0 right-0 z-[9999] lg:hidden"
         >
           <div
             ref={bottomBarInnerRef}
@@ -254,7 +254,7 @@ export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 z-[30000] bg-black/40 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10000]"
             />
 
             {/* Sidebar */}

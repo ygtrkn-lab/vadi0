@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FadeContent, SpotlightCard } from '@/components/admin';
 import { useTheme } from '../../ThemeContext';
+import { resizeImageBeforeUpload } from '@/lib/image-resize';
 import {
   HiOutlineArrowLeft,
   HiOutlinePhotograph,
@@ -106,8 +107,11 @@ export default function CategoryCoverManagerPage() {
 
     setUploadingField(`${id}-${field}`);
     try {
+      // Client-side resize - Cloudinary kredisi tasarrufu (sadece image için)
+      const fileToUpload = type === 'image' ? await resizeImageBeforeUpload(file) : file;
+      
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToUpload);
       const endpoint = type === 'video' ? '/api/upload/video' : '/api/upload';
       const response = await fetch(endpoint, {
         method: 'POST',

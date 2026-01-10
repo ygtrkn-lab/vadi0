@@ -21,18 +21,41 @@ export default function CategoryCarousel() {
 			try {
 				setLoading(true);
 				// Haftanın kampanyası kategorisinden çekiyoruz; yoksa boş kalır.
-				const res = await fetch(
-					"/api/products?category=haftanin-cicek-kampanyalari-vadiler-com&inStock=true&limit=48"
-				);
-				const data = await res.json();
-				const raw: Product[] = (data.products || data.data || []) as Product[];
+				// Ayrıca admin panelden kaydedilen sıralamayı da çekiyoruz.
+				const [productsRes, orderRes] = await Promise.all([
+					fetch("/api/products?category=haftanin-cicek-kampanyalari-vadiler-com&inStock=true&limit=48"),
+					fetch("/api/admin/campaign-order")
+				]);
+				
+				const productsData = await productsRes.json();
+				const orderData = await orderRes.json();
+				
+				const raw: Product[] = (productsData.products || productsData.data || []) as Product[];
+				const savedOrder: number[] = orderData.order || [];
 
-				const weeklyCampaigns = raw
-					.filter((p) => Number(p.discount) > 0)
-					.sort((a, b) => (b.discount || 0) - (a.discount || 0))
-					.slice(0, SLICE_LIMIT);
+				// İndirimli ürünleri filtrele
+				const weeklyCampaigns = raw.filter((p) => Number(p.discount) > 0);
+				
+				// Admin panelden kaydedilen sıraya göre sırala
+				let sortedProducts: Product[];
+				if (savedOrder.length > 0) {
+					const orderMap = new Map(savedOrder.map((id, index) => [id, index]));
+					sortedProducts = [...weeklyCampaigns].sort((a, b) => {
+						const orderA = orderMap.has(a.id) ? orderMap.get(a.id)! : Infinity;
+						const orderB = orderMap.has(b.id) ? orderMap.get(b.id)! : Infinity;
+						
+						if (orderA === Infinity && orderB === Infinity) {
+							// Her ikisi de sıralamada yoksa, indirime göre sırala
+							return (b.discount || 0) - (a.discount || 0);
+						}
+						return orderA - orderB;
+					});
+				} else {
+					// Varsayılan: indirime göre sırala
+					sortedProducts = [...weeklyCampaigns].sort((a, b) => (b.discount || 0) - (a.discount || 0));
+				}
 
-				setProducts(weeklyCampaigns);
+				setProducts(sortedProducts.slice(0, SLICE_LIMIT));
 			} catch (error) {
 				console.error("Kampanyalı ürünler alınırken hata oluştu", error);
 				setProducts([]);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client';
+import { analyticsDb, getAnalyticsStatus } from '@/lib/supabase/analytics-client';
 
 /**
  * POST /api/analytics/pageview
@@ -8,7 +8,8 @@ import { analyticsDb, isAnalyticsEnabled } from '@/lib/supabase/analytics-client
 export async function POST(request: NextRequest) {
   try {
     // Analytics devre dışıysa veya DB bağlantısı yoksa
-    if (!isAnalyticsEnabled || !analyticsDb) {
+    const analyticsEnabled = await getAnalyticsStatus();
+    if (!analyticsEnabled || !analyticsDb) {
       return NextResponse.json({ success: false, error: 'Analytics disabled' }, { status: 503 });
     }
 
@@ -218,11 +219,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate) {
-      query = query.gte('viewed_at', startDate);
+      const s = new Date(startDate);
+      s.setHours(0, 0, 0, 0);
+      query = query.gte('viewed_at', s.toISOString());
     }
 
     if (endDate) {
-      query = query.lte('viewed_at', endDate);
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      query = query.lte('viewed_at', e.toISOString());
     }
 
     const { data, error, count } = await query;

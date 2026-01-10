@@ -1154,7 +1154,7 @@ export default function SepetClient() {
 
   const isPhoneValid = validatePhoneNumber(recipientPhone);
   const canProceedToRecipient = state.items.length > 0;
-  const requiresSenderName = isGift;
+  const requiresSenderName = false;
   
   // Detaylı adres alanlarından tam adresi oluştur
   const fullAddress = useMemo(() => {
@@ -1170,7 +1170,7 @@ export default function SepetClient() {
   // Detaylı adres alanlarının dolu olup olmadığını kontrol et
   const hasValidAddressDetails = streetName.trim().length >= 3 && buildingNo.trim().length > 0 && floor.trim().length > 0 && apartmentNo.trim().length > 0;
   
-  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && hasValidAddressDetails && neighborhood.length >= 2 && district.length > 0 && deliveryDate.length > 0 && !isDeliveryDateBlocked(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot) && (!requiresSenderName || senderName.trim().length >= 2);
+  const canProceedToMessage = recipientName.length >= 3 && isPhoneValid && hasValidAddressDetails && neighborhood.length >= 2 && district.length > 0 && deliveryDate.length > 0 && !isDeliveryDateBlocked(deliveryDate) && isValidDeliveryTimeSlot(deliveryTimeSlot);
   const guestEmailTrim = guestEmail.trim();
   const guestPhoneDigits = normalizeTrMobileDigits(guestPhone);
   const isGuestEmailValid = guestEmailTrim.length === 0 ? false : validateEmail(guestEmailTrim);
@@ -2710,7 +2710,7 @@ export default function SepetClient() {
                     animate={{ opacity: 1, height: 'auto' }}
                   >
                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                      Gönderen Adı (Kartta görünecek) *
+                      Gönderen Adı (Kartta görünecek)
                     </label>
                     <input
                       id="sender-name"
@@ -2723,7 +2723,7 @@ export default function SepetClient() {
                       placeholder="Sevgilerimle, Ahmet"
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c] transition-all"
                     />
-                    <p className="text-[10px] text-gray-400 mt-1">Hediye seçiliyse gönderen adı zorunludur.</p>
+                    <p className="text-[10px] text-gray-400 mt-1">Hediye seçiliyse gönderen adı isteğe bağlıdır.</p>
                     {recipientErrors.sender && (
                       <p className="text-[10px] text-red-500 mt-1">{recipientErrors.sender}</p>
                     )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, createContext, useContext, useRef, useCallback, Suspense } from 'react';
 import { usePathname } from 'next/navigation';
-import { Preloader } from '@/components';
+import { Preloader, ScrollToTop } from '@/components';
 import { CartProvider } from '@/context/CartContext';
 import { CustomerProvider } from '@/context/CustomerContext';
 import { OrderProvider } from '@/context/OrderContext';
@@ -160,6 +160,7 @@ export default function ClientRoot({ children }: ClientRootProps) {
                   {children}
                 </div>
                 <WhatsAppButton />
+                <ScrollToTop />
               </PreloaderContext.Provider>
             </AnalyticsProvider>
           </Suspense>

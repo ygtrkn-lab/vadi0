@@ -20,8 +20,11 @@ import {
   HiOutlineX,
   HiOutlineFilter,
   HiOutlineCheck,
-  HiOutlinePhotograph
+  HiOutlinePhotograph,
+  HiOutlineVideoCamera,
+  HiOutlinePlay
 } from 'react-icons/hi';
+import { getMediaType } from '@/components/admin/MediaUpload';
 
 export default function UrunlerPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -410,12 +413,34 @@ export default function UrunlerPage() {
               >
                 <SpotlightCard className="overflow-hidden">
                   <div className="relative aspect-square">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {getMediaType(product.image) === 'video' ? (
+                      <div className="relative w-full h-full">
+                        <video
+                          src={product.image}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          muted
+                          loop
+                          playsInline
+                          onMouseEnter={(e) => e.currentTarget.play()}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.pause();
+                            e.currentTarget.currentTime = 0;
+                          }}
+                        />
+                        {/* Video badge */}
+                        <div className="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-purple-500 text-white text-[10px] font-medium flex items-center gap-0.5 z-10">
+                          <HiOutlineVideoCamera className="w-3 h-3" />
+                          Video
+                        </div>
+                      </div>
+                    ) : (
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    )}
 
                     {/* Selection Checkbox */}
                     <button

@@ -1,0 +1,65 @@
+================================================================================
+ARNAVUTKÖY MAHALLELERİ - BAHÇELİEVLER SOĞANLI MAHALLESİ MESAFE LİSTESİ
+================================================================================
+
+Hedef Adres: SOĞANLI MAH. GÖLÇE SOKAK NO: 1 İÇ KAPI NO: 4, BAHÇELİEVLER / İSTANBUL
+
+Sıralama: KM'ye göre ARTAN (En yakından en uzağa)
+
+================================================================================
+Sıra  Mahalle                                  Mesafe (km)    Süre
+================================================================================
+
+  1.  Boğazköy İstiklal Mahallesi                   26.98 km     24 dk
+  2.  Arnavutköy Merkez Mahallesi                   28.25 km     25 dk
+  3.  Deliklikaya Mahallesi                         28.52 km     27 dk
+  4.  Nenehatun Mahallesi                           28.64 km     25 dk
+  5.  Anadolu Mahallesi                             28.89 km     26 dk
+  6.  Atatürk Mahallesi                             29.09 km     26 dk
+  7.  Bolluca Mahallesi                             29.18 km     25 dk
+  8.  Mustafa Kemal Paşa Mahallesi                  29.28 km     26 dk
+  9.  Merkez Mahallesi                              29.53 km     26 dk
+ 10.  İslambey Mahallesi                            29.93 km     26 dk
+ 11.  Hicret Mahallesi                              30.23 km     27 dk
+ 12.  Ömerli Mahallesi                              30.30 km     30 dk
+ 13.  Karlıbayır Mahallesi                          30.35 km     26 dk
+ 14.  İmrahor Mahallesi                             31.61 km     29 dk
+ 15.  Mareşal Fevzi Çakmak Mahallesi                31.77 km     29 dk
+ 16.  Taşoluk Mahallesi                             31.80 km     29 dk
+ 17.  Haraççı Mahallesi                             31.89 km     28 dk
+ 18.  Yavuz Selim Mahallesi                         32.06 km     28 dk
+ 19.  Hacımaşlı Mahallesi                           33.58 km     32 dk
+ 20.  Mehmet Akif Ersoy Mahallesi                   33.84 km     30 dk
+ 21.  Çilingir Mahallesi                            33.86 km     30 dk
+ 22.  Fatih Mahallesi                               34.69 km     32 dk
+ 23.  Adnan Menderes Mahallesi                      34.70 km     32 dk
+ 24.  Sazlıbosna Mahallesi                          35.70 km     32 dk
+ 25.  Yeşilbayır Mahallesi                          37.11 km     33 dk
+ 26.  Hastane Mahallesi                             38.92 km     33 dk
+ 27.  Dursunköy Mahallesi                           39.40 km     36 dk
+ 28.  Hadımköy Mahallesi                            39.66 km     35 dk
+ 29.  Tayakadın Mahallesi                           40.54 km     38 dk
+ 30.  Baklalı Mahallesi                             43.66 km     42 dk
+ 31.  Durusu Mahallesi                              45.62 km     43 dk
+ 32.  Terkos Mahallesi                              45.67 km     43 dk
+ 33.  Boyalık Mahallesi                             45.71 km     43 dk
+ 34.  Balaban Mahallesi                             49.53 km     49 dk
+ 35.  Yeniköy Mahallesi                             49.97 km     50 dk
+ 36.  Karaburun Mahallesi                           52.22 km     53 dk
+ 37.  Yassıören Mahallesi                           56.48 km     42 dk
+ 38.  Nakkaş Mahallesi                              61.32 km     42 dk
+
+================================================================================
+ÖZET İSTATİSTİKLER
+================================================================================
+
+En Yakın Mahalle:  Boğazköy İstiklal Mahallesi  (26.98 km - 24 dakika)
+En Uzak Mahalle:   Nakkaş Mahallesi             (61.32 km - 42 dakika)
+Ortalama Mesafe:   36.59 km
+
+================================================================================
+NOT: Koordinat bulunamayan mahalle: Baltacı Mahallesi
+================================================================================
+
+Oluşturulma Tarihi: 5 Ocak 2026
+Kaynak: OpenStreetMap Nominatim + OSRM
