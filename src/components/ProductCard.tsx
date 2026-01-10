@@ -120,6 +120,8 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
                 loop
                 muted
                 playsInline
+                preload="none"
+                poster={product.hoverImage || product.gallery?.[0] || ''}
                 autoPlay={shouldLoadVideo}
                 onClick={(e) => {
                   e.preventDefault();
@@ -148,6 +150,7 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
             <>
               <Image
                 src={imageError ? '/placeholder-flower.jpg' : product.image}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 alt={product.name}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

@@ -92,6 +92,8 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
                 loop
                 muted
                 playsInline
+                preload="none"
+                poster={product.hoverImage || product.gallery?.[0] || ''}
                 autoPlay
                 onClick={(e) => {
                   e.preventDefault();
@@ -121,6 +123,7 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
               src={imageError ? '/placeholder-flower.jpg' : product.image}
               alt={product.name}
               fill
+              sizes="(max-width: 640px) 160px, (max-width: 768px) 180px, (max-width: 1024px) 200px, 220px"
               className="object-cover group-hover:scale-110 transition-transform duration-700"
               onError={() => setImageError(true)}
             />
