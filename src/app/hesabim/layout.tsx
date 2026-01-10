@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCustomer } from '@/context/CustomerContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { MobileNavBar } from '@/components';
 import {
   HiOutlineHome,
   HiOutlineShoppingBag,
@@ -107,8 +108,8 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
       {/* Ana Site Header */}
       <Header hideCategories />
 
-      {/* Main Content Area */}
-      <div className="flex-1 pt-4 pb-20 lg:pb-8">
+      {/* Main Content Area - pt-20 for mobile header, lg:pt-24 for desktop header */}
+      <div className="flex-1 pt-20 lg:pt-24 pb-20 lg:pb-8">
         <div className="container-custom">
           {/* Breadcrumb */}
           <nav className="mb-4 lg:mb-6">
@@ -257,6 +258,9 @@ export default function HesabimLayout({ children }: { children: React.ReactNode 
           </button>
         </div>
       </nav>
+
+      {/* MobileNavBar for Header Menu Button - bottom bar hidden since we have our own */}
+      <MobileNavBar showBottomBar={false} />
 
       {/* Footer - Desktop Only */}
       <div className="hidden lg:block">

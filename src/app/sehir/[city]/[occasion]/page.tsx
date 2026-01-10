@@ -18,7 +18,6 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Footer, Header, MobileNavBar } from '@/components';
-import DarkVeilBackground from '@/components/DarkVeilBackground';
 import ProductCard from '@/components/ProductCard';
 import { SPECIAL_DAYS } from '@/data/special-days';
 import { ISTANBUL_CONTENT, DISTRICT_CONTENTS, getDistrictContentBySlug, createCitySlug } from '@/data/city-content';
@@ -197,11 +196,15 @@ export default async function CityOccasionPage({ params }: PageProps) {
       <Header />
       <div className="h-0 lg:h-40" />
       
-      <main className="min-h-screen relative overflow-hidden">
-        <DarkVeilBackground />
+      <main className="min-h-screen relative overflow-hidden bg-gray-950">
         
         {/* ✨ Premium Hero Section */}
-        <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden">
+        <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800">
+          {/* Decorative Elements */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
+          </div>
           <div className="container mx-auto px-4 relative">
             {/* Breadcrumb */}
             <nav className="mb-6 text-xs text-white/60 sm:text-sm">
@@ -216,11 +219,11 @@ export default async function CityOccasionPage({ params }: PageProps) {
               </ol>
             </nav>
 
-            {/* Hero Card - Glass Morphism on Dark */}
-            <div className="relative overflow-hidden rounded-[2rem] bg-white/10 backdrop-blur-2xl p-8 sm:p-12 shadow-2xl ring-1 ring-white/20 border border-white/10">
+            {/* Hero Card - Dark Theme */}
+            <div className="relative overflow-hidden rounded-[2rem] bg-gray-800/90 p-8 sm:p-12 shadow-2xl ring-1 ring-white/10">
               {/* Gradient Orb Decorations */}
-              <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-gradient-to-br from-primary-500/30 to-secondary-500/20 blur-2xl" />
-              <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-gradient-to-tr from-secondary-500/30 to-primary-500/20 blur-2xl" />
+              <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary-500/20 blur-2xl" />
+              <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-secondary-500/20 blur-2xl" />
               
               <div className="relative z-10">
                 {/* Back Link */}
@@ -256,33 +259,33 @@ export default async function CityOccasionPage({ params }: PageProps) {
 
                 {/* Trust Badges Row */}
                 <div className="flex flex-wrap gap-3 mb-8">
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/20">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-gray-700/90 px-5 py-3 shadow-lg ring-1 ring-white/10">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30">
                       <Truck className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
                       <span className="text-sm font-semibold text-white">{cityData.deliveryInfo}</span>
-                      <p className="text-xs text-white/70">Garantili Teslimat</p>
+                      <p className="text-xs text-white/60">Garantili Teslimat</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/20">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-gray-700/90 px-5 py-3 shadow-lg ring-1 ring-white/10">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg shadow-purple-500/30">
                       <Gift className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
                       <span className="text-sm font-semibold text-white">Özel Paketleme</span>
-                      <p className="text-xs text-white/70">{specialDay.name} temalı</p>
+                      <p className="text-xs text-white/60">{specialDay.name} temalı</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2.5 rounded-2xl bg-white/15 backdrop-blur-xl px-5 py-3 shadow-lg ring-1 ring-white/20">
+                  <div className="flex items-center gap-2.5 rounded-2xl bg-gray-700/90 px-5 py-3 shadow-lg ring-1 ring-white/10">
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30">
                       <MessageSquare className="h-4.5 w-4.5 text-white" />
                     </div>
                     <div>
                       <span className="text-sm font-semibold text-white">Ücretsiz Mesaj</span>
-                      <p className="text-xs text-white/70">Kart hediye</p>
+                      <p className="text-xs text-white/60">Kart hediye</p>
                     </div>
                   </div>
                 </div>
@@ -307,7 +310,7 @@ export default async function CityOccasionPage({ params }: PageProps) {
             <div className="grid gap-8 lg:grid-cols-12">
               {/* Main Content */}
               <div className="lg:col-span-8">
-                <div className="rounded-3xl bg-white/10 backdrop-blur-2xl p-8 sm:p-10 shadow-xl ring-1 ring-white/20">
+                <div className="rounded-3xl bg-gray-800/90 p-8 sm:p-10 shadow-xl ring-1 ring-white/10">
                   <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">
                     {cityData.name}&apos;de {specialDay.name} için <span className="text-primary-400">En Güzel Çiçekler</span>
                   </h2>
@@ -319,43 +322,43 @@ export default async function CityOccasionPage({ params }: PageProps) {
                   
                   {/* Features Grid */}
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-xl ring-1 ring-white/20">
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-700/90 ring-1 ring-white/10">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
                         <Truck className="h-5 w-5 text-white" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-white mb-1">Hızlı Teslimat</h3>
-                        <p className="text-sm text-white/70">{cityData.deliveryInfo}</p>
+                        <p className="text-sm text-white/60">{cityData.deliveryInfo}</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-xl ring-1 ring-white/20">
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-700/90 ring-1 ring-white/10">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
                         <Flower2 className="h-5 w-5 text-white" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-white mb-1">Taze Çiçek Garantisi</h3>
-                        <p className="text-sm text-white/70">Her gün taze kesim çiçekler</p>
+                        <p className="text-sm text-white/60">Her gün taze kesim çiçekler</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-xl ring-1 ring-white/20">
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-700/90 ring-1 ring-white/10">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg">
                         <Package className="h-5 w-5 text-white" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-white mb-1">Özel Paketleme</h3>
-                        <p className="text-sm text-white/70">{specialDay.name} temalı ambalaj</p>
+                        <p className="text-sm text-white/60">{specialDay.name} temalı ambalaj</p>
                       </div>
                     </div>
                     
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-xl ring-1 ring-white/20">
+                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-gray-700/90 ring-1 ring-white/10">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 shadow-lg">
                         <MessageSquare className="h-5 w-5 text-white" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-white mb-1">Ücretsiz Mesaj Kartı</h3>
-                        <p className="text-sm text-white/70">Özel mesajınızı ekleyin</p>
+                        <p className="text-sm text-white/60">Özel mesajınızı ekleyin</p>
                       </div>
                     </div>
                   </div>
@@ -366,7 +369,7 @@ export default async function CityOccasionPage({ params }: PageProps) {
               <aside className="lg:col-span-4">
                 <div className="sticky top-32 space-y-6">
                   {/* Quick Info Card */}
-                  <div className="rounded-3xl bg-white/10 backdrop-blur-2xl p-6 shadow-xl ring-1 ring-white/20">
+                  <div className="rounded-3xl bg-gray-800/90 p-6 shadow-xl ring-1 ring-white/10">
                     <h3 className="text-lg font-bold text-white mb-5">Sipariş Süreci</h3>
                     <ol className="space-y-4">
                       <li className="flex items-start gap-3">
@@ -402,17 +405,17 @@ export default async function CityOccasionPage({ params }: PageProps) {
 
                   {/* Popüler Bölgeler */}
                   {cityData.popularAreas && cityData.popularAreas.length > 0 && (
-                    <div className="rounded-2xl bg-white/10 backdrop-blur-xl p-5 shadow-lg ring-1 ring-white/20">
+                    <div className="rounded-2xl bg-gray-800/90 p-5 shadow-lg ring-1 ring-white/10">
                       <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-primary-400" />
                         Teslimat Bölgeleri
                       </h3>
                       <div className="flex flex-wrap gap-1.5">
                         {cityData.popularAreas.slice(0, 8).map((area, index) => (
-                          <span key={index} className="text-xs bg-white/15 text-white/80 px-2 py-1 rounded-full ring-1 ring-white/20">
+                          <span key={index} className="text-xs bg-gray-700/90 text-white/70 px-2 py-1 rounded-full ring-1 ring-white/10">
                             {area}
                           </span>
-                        ))}
+                        ))>
                       </div>
                     </div>
                   )}
@@ -423,10 +426,10 @@ export default async function CityOccasionPage({ params }: PageProps) {
         </section>
 
         {/* 🌸 Products Section */}
-        <section id="products" className="py-12 sm:py-16 bg-gradient-to-b from-white via-primary-50/30 to-white">
+        <section id="products" className="py-12 sm:py-16 bg-gray-900/50">
           <div className="container mx-auto px-4">
             <div className="text-center mb-10">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-xl px-4 py-1.5 text-xs font-semibold text-primary-300 ring-1 ring-white/20 mb-4">
+              <span className="inline-flex items-center gap-2 rounded-full bg-primary-500/20 px-4 py-1.5 text-xs font-semibold text-primary-400 ring-1 ring-primary-500/30 mb-4">
                 <Sparkles className="h-3.5 w-3.5" />
                 {specialDay.name.toUpperCase()} KOLEKSİYONU
               </span>
@@ -446,7 +449,7 @@ export default async function CityOccasionPage({ params }: PageProps) {
               </div>
             ) : (
               <div className="text-center py-16">
-                <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/20 mb-4">
+                <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-gray-800/90 ring-1 ring-white/10 mb-4">
                   <Flower2 className="h-8 w-8 text-primary-400" />
                 </div>
                 <p className="text-white/70 text-lg mb-4">

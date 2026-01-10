@@ -1,8 +1,7 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-
-const DarkVeil = dynamic(() => import('@/components/DarkVeil'), { ssr: false })
+import DarkVeil from '@/components/DarkVeil'
+import './DarkVeil.css'
 
 interface DarkVeilBackgroundProps {
   hueShift?: number
@@ -20,9 +19,8 @@ export default function DarkVeilBackground({
   resolutionScale = 0.5
 }: DarkVeilBackgroundProps) {
   return (
-    <>
-      {/* Dark Veil Animated Background */}
-      <div className="fixed inset-0 -z-10">
+    <div className="fixed inset-0 -z-10 bg-dark-950">
+      <div className="absolute inset-0">
         <DarkVeil 
           hueShift={hueShift}
           noiseIntensity={noiseIntensity}
@@ -30,8 +28,8 @@ export default function DarkVeilBackground({
           warpAmount={warpAmount}
           resolutionScale={resolutionScale}
         />
-        <div className="absolute inset-0 bg-dark-950/60 backdrop-blur-[2px]" />
       </div>
-    </>
+      <div className="absolute inset-0 bg-dark-950/40 backdrop-blur-[1px]" />
+    </div>
   )
 }
