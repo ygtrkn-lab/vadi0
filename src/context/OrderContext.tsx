@@ -73,6 +73,12 @@ export interface OrderPayment {
   reminderChannel?: string;
   reminderType?: string;
   reminderMessage?: string;
+  reminderClosed?: boolean;
+  reminderClosedAt?: string;
+  reminderAction?: string;
+  reminderActionAt?: string;
+  reminderDismissCount?: number;
+  reminderResumeCount?: number;
 }
 
 export interface OrderMessage {

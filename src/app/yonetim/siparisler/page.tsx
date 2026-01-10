@@ -318,6 +318,25 @@ export default function SiparislerPage() {
 
   const reminderInfo = useMemo(() => getReminderInfo(selectedOrder?.payment), [selectedOrder]);
 
+  const getReminderActions = (payment?: Order['payment']) => {
+    if (!payment) return { hasAction: false, lastAction: null as string | null, lastAt: null as string | null, resumeCount: 0, dismissCount: 0 };
+    const raw = payment as any;
+    const lastAction = raw.reminderAction || raw.reminder_action || raw.reminderLastAction || raw.reminder_last_action || null;
+    const lastAt = raw.reminderActionAt || raw.reminder_action_at || raw.reminderLastActionAt || raw.reminder_last_action_at || raw.reminderClosedAt || raw.reminder_closed_at || null;
+    const resumeCount = Number(raw.reminderResumeCount || raw.reminder_resume_count || 0) || 0;
+    const dismissCount = Number(raw.reminderDismissCount || raw.reminder_dismiss_count || 0) || 0;
+    const hasAction = !!(lastAction || lastAt || resumeCount || dismissCount);
+    return {
+      hasAction,
+      lastAction: lastAction ? String(lastAction) : null,
+      lastAt: lastAt ? String(lastAt) : null,
+      resumeCount,
+      dismissCount,
+    };
+  };
+
+  const reminderActions = useMemo(() => getReminderActions(selectedOrder?.payment), [selectedOrder]);
+
   const getNextStatus = (currentStatus: OrderStatus): { status: OrderStatus; label: string } | null => {
     switch (currentStatus) {
       case 'pending': return { status: 'confirmed', label: 'Onayla' };
@@ -1236,6 +1255,22 @@ export default function SiparislerPage() {
                                 {reminderInfo.at && reminderInfo.channel ? ' • ' : ''}
                                 {reminderInfo.channel ? `Kanal: ${reminderInfo.channel}` : ''}
                               </p>
+                            )}
+                            {reminderActions.hasAction && (
+                              <div className={`mt-2 p-2 rounded-lg ${isDark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-amber-100'}`}>
+                                <p className={`text-xs font-semibold ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>Kullanıcı Etkileşimi</p>
+                                <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-700'}`}>
+                                  {reminderActions.lastAction ? `Son aksiyon: ${reminderActions.lastAction}` : 'Son aksiyon kaydı yok.'}
+                                  {reminderActions.lastAt ? ` • Zaman: ${formatDate(reminderActions.lastAt)}` : ''}
+                                </p>
+                                {(reminderActions.resumeCount > 0 || reminderActions.dismissCount > 0) && (
+                                  <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-700'}`}>
+                                    {reminderActions.resumeCount > 0 ? `Ödemeye geç: ${reminderActions.resumeCount}×` : ''}
+                                    {reminderActions.resumeCount > 0 && reminderActions.dismissCount > 0 ? ' • ' : ''}
+                                    {reminderActions.dismissCount > 0 ? `Sepete dön/kapat: ${reminderActions.dismissCount}×` : ''}
+                                  </p>
+                                )}
+                              </div>
                             )}
                           </div>
                         )}
