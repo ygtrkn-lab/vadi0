@@ -68,6 +68,11 @@ export interface OrderPayment {
   errorCode?: unknown;
   errorMessage?: string;
   errorGroup?: unknown;
+  reminderShown?: boolean;
+  reminderShownAt?: string;
+  reminderChannel?: string;
+  reminderType?: string;
+  reminderMessage?: string;
 }
 
 export interface OrderMessage {

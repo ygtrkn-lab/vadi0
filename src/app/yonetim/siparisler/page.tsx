@@ -307,6 +307,17 @@ export default function SiparislerPage() {
     }).format(price);
   };
 
+  const getReminderInfo = (payment?: Order['payment']) => {
+    if (!payment) return { shown: false, at: null as string | null, channel: null as string | null };
+    const raw = payment as any;
+    const at = raw.reminderShownAt || raw.reminder_shown_at || raw.reminderLastShownAt || raw.reminder_last_shown_at || null;
+    const channel = raw.reminderChannel || raw.reminder_channel || raw.reminderType || raw.reminder_type || null;
+    const shown = raw.reminderShown === true || raw.reminder_shown === true || raw.reminderAcknowledged === true || !!at;
+    return { shown: !!shown, at: at ? String(at) : null, channel: channel ? String(channel) : null };
+  };
+
+  const reminderInfo = useMemo(() => getReminderInfo(selectedOrder?.payment), [selectedOrder]);
+
   const getNextStatus = (currentStatus: OrderStatus): { status: OrderStatus; label: string } | null => {
     switch (currentStatus) {
       case 'pending': return { status: 'confirmed', label: 'Onayla' };
@@ -1212,6 +1223,21 @@ export default function SiparislerPage() {
                         </p>
                         {selectedOrder.payment.transactionId && (
                           <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>İşlem: {selectedOrder.payment.transactionId}</p>
+                        )}
+                        {reminderInfo.shown && (
+                          <div className={`p-3 rounded-xl border ${isDark ? 'bg-amber-500/5 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
+                            <p className={`text-xs font-semibold ${isDark ? 'text-amber-200' : 'text-amber-700'}`}>Hatırlatma Gösterildi</p>
+                            <p className={`text-sm mt-1 ${isDark ? 'text-neutral-100' : 'text-gray-800'}`}>
+                              Ödeme adımına dönüş için kullanıcıya hatırlatma penceresi gösterildi.
+                            </p>
+                            {(reminderInfo.at || reminderInfo.channel) && (
+                              <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+                                {reminderInfo.at ? `Gösterim: ${formatDate(reminderInfo.at)}` : ''}
+                                {reminderInfo.at && reminderInfo.channel ? ' • ' : ''}
+                                {reminderInfo.channel ? `Kanal: ${reminderInfo.channel}` : ''}
+                              </p>
+                            )}
+                          </div>
                         )}
                         <div className={`p-3 rounded-xl ${isDark ? 'bg-neutral-950 border border-neutral-800' : 'bg-gray-50 border border-gray-200'}`}>
                           <div className="flex justify-between text-sm mb-1">
