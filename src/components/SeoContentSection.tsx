@@ -83,6 +83,34 @@ const SeoContentSection = () => {
                 <Link href="/dogum-gunu" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Doğum Günü</Link>
                 <Link href="/sehir/istanbul" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">İstanbul Çiçek Gönder</Link>
               </div>
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                {[
+                  { name: 'Kadıköy', slug: 'kadikoy' },
+                  { name: 'Beşiktaş', slug: 'besiktas' },
+                  { name: 'Şişli', slug: 'sisli' },
+                  { name: 'Bakırköy', slug: 'bakirkoy' },
+                  { name: 'Üsküdar', slug: 'uskudar' },
+                  { name: 'Beyoğlu', slug: 'beyoglu' },
+                  { name: 'Ataşehir', slug: 'atasehir' },
+                  { name: 'Sarıyer', slug: 'sariyer' },
+                  { name: 'Fatih', slug: 'fatih' },
+                  { name: 'Maltepe', slug: 'maltepe' },
+                  { name: 'Kartal', slug: 'kartal' },
+                  { name: 'Pendik', slug: 'pendik' },
+                  { name: 'Beylikdüzü', slug: 'beylikduzu' },
+                  { name: 'Kağıthane', slug: 'kagithane' },
+                  { name: 'Ümraniye', slug: 'umraniye' },
+                  { name: 'Zeytinburnu', slug: 'zeytinburnu' },
+                ].map((d) => (
+                  <Link
+                    key={d.slug}
+                    href={`/sehir/istanbul/${d.slug}`}
+                    className="inline-flex items-center justify-center px-3 py-2 rounded-xl text-sm bg-white border border-gray-200 hover:border-primary-200 hover:bg-primary-50 text-gray-800 hover:text-primary-700 transition"
+                  >
+                    {d.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>

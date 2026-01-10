@@ -18,6 +18,10 @@ const faqs = [
     answer: 'Vadiler.com üzerinden çiçek siparişi vermek çok kolay! İstediğiniz çiçeği seçin, teslimat adresini girin ve güvenli ödeme yöntemlerimizden biriyle siparişinizi tamamlayın. Kredi kartı veya banka havalesi ile ödeme yapabilirsiniz.',
   },
   {
+    question: 'İstanbul içi aynı gün teslimat saat kaça kadar?',
+    answer: 'İstanbul içi aynı gün teslimat için siparişinizi saat 16:00’ya kadar oluşturabilirsiniz. Yoğun günlerde bazı ilçelerde kesim saati farklılık gösterebilir; sepet aşamasında en yakın teslim saatini görebilirsiniz.',
+  },
+  {
     question: 'Gül buketi fiyatları nedir?',
     answer: 'Gül buketi fiyatları gül sayısı, buket boyutu ve aranjman tasarımına göre değişir. En güncel fiyatları Güller kategorisindeki ürün sayfalarında görebilir ve dilediğiniz kombinasyonu seçebilirsiniz.',
   },
@@ -48,6 +52,10 @@ const faqs = [
   {
     question: 'Çiçek siparişi teslim süresi nedir?',
     answer: 'Teslim süresi ürün, hazırlık süresi ve teslimat adresine göre değişir. Sepet ve ödeme adımlarında en yakın teslim tarihi ve zaman aralığı gösterilir; bu bilgiyi onaydan önce görebilirsiniz.',
+  },
+  {
+    question: 'İstanbul’un hangi ilçelerine teslimat yapılıyor?',
+    answer: 'Kadıköy, Beşiktaş, Şişli, Bakırköy, Üsküdar, Beyoğlu, Ataşehir, Sarıyer, Fatih, Maltepe, Kartal, Pendik, Beylikdüzü, Kağıthane, Ümraniye ve diğer tüm İstanbul ilçelerine teslimat yapıyoruz.',
   },
   {
     question: 'Çiçekler ne kadar süre taze kalır?',

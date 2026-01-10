@@ -101,10 +101,10 @@ const localBusinessSchema = {
     latitude: 41.0082,
     longitude: 28.9784,
   },
-  areaServed: {
-    '@type': 'City',
-    name: 'İstanbul',
-  },
+  areaServed: [
+    { '@type': 'City', name: 'İstanbul' },
+    'Kadıköy', 'Beşiktaş', 'Şişli', 'Bakırköy', 'Üsküdar', 'Beyoğlu', 'Ataşehir', 'Sarıyer', 'Fatih', 'Maltepe', 'Kartal', 'Pendik', 'Beylikdüzü', 'Kağıthane', 'Ümraniye', 'Zeytinburnu'
+  ],
   openingHoursSpecification: {
     '@type': 'OpeningHoursSpecification',
     dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
@@ -113,6 +113,19 @@ const localBusinessSchema = {
   },
   paymentAccepted: ['Cash', 'Credit Card', 'Debit Card'],
   currenciesAccepted: 'TRY',
+  hasMerchantReturnPolicy: {
+    '@type': 'MerchantReturnPolicy',
+    applicableCountry: 'TR',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    merchantReturnDays: 2,
+    returnMethod: 'https://schema.org/ReturnByMail',
+    returnFees: 'https://schema.org/ReturnShippingFees',
+    additionalProperty: {
+      '@type': 'PropertyValue',
+      name: 'İade Politikası',
+      value: `${BASE_URL}/iade-politikasi`
+    }
+  }
 };
 
 export const viewport: Viewport = {
