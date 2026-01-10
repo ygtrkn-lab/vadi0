@@ -84,7 +84,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: [product.image],
     },
     alternates: {
-      canonical: `${BASE_URL}/${category}/${slug}`,
+      // Canonical her zaman ürünün kendi ana kategorisine işaret etmeli (duplicate önleme)
+      canonical: `${BASE_URL}/${product.category}/${product.slug}`,
     },
     other: {
       // Fiyatı noktalı ondalık formatında gönder (Google standardı)
