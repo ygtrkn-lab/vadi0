@@ -137,7 +137,8 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    if (!isAnalyticsEnabled || !analyticsDb) {
+    const analyticsEnabled = await getAnalyticsStatus();
+    if (!analyticsEnabled || !analyticsDb) {
       return NextResponse.json({ success: false, error: 'Analytics disabled' }, { status: 503 });
     }
 
@@ -187,7 +188,8 @@ export async function PATCH(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    if (!isAnalyticsEnabled || !analyticsDb) {
+    const analyticsEnabled = await getAnalyticsStatus();
+    if (!analyticsEnabled || !analyticsDb) {
       return NextResponse.json({ pageViews: [], total: 0, limit: 100, offset: 0 });
     }
 

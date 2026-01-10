@@ -201,6 +201,9 @@ export default function SepetClient() {
   const [disabledDistricts, setDisabledDistricts] = useState<string[]>(DEFAULT_DISABLED_DISTRICTS);
   const [disabledNeighborhoodsMap, setDisabledNeighborhoodsMap] = useState<DisabledNeighborhoodsMap>(DEFAULT_DISABLED_NEIGHBORHOODS);
 
+  const currentStepRef = useRef<CheckoutStep>('cart');
+  const reminderLoggedRef = useRef<{ shown?: boolean }>({});
+
   const isEmpty = state.items.length === 0;
   const isLoggedIn = !!customerState.currentCustomer;
 
@@ -229,10 +232,65 @@ export default function SepetClient() {
 
   const deliveryOffDaySet = useMemo(() => new Set(deliveryOffDays), [deliveryOffDays]);
 
+  const recordReminderAction = useCallback(async (action: 'shown' | 'resume' | 'dismiss') => {
+    try {
+      const startedRaw = localStorage.getItem('vadiler_checkout_started');
+      if (!startedRaw) return;
+      const started = JSON.parse(startedRaw);
+      const orderId = started?.orderId;
+      if (!orderId) return;
+
+      const orderRes = await fetch(`/api/orders/${orderId}`);
+      if (!orderRes.ok) return;
+      const orderData = await orderRes.json();
+      const payment = orderData?.payment || {};
+
+      const nowIso = new Date().toISOString();
+      const resumeCount = Number(payment.reminderResumeCount || 0);
+      const dismissCount = Number(payment.reminderDismissCount || 0);
+
+      const updatedPayment = {
+        ...payment,
+        reminderShown: true,
+        reminderShownAt: payment.reminderShownAt || nowIso,
+        reminderChannel: payment.reminderChannel || 'modal',
+      } as Record<string, unknown>;
+
+      if (action === 'resume') {
+        updatedPayment.reminderAction = 'resume_payment';
+        updatedPayment.reminderActionAt = nowIso;
+        updatedPayment.reminderResumeCount = resumeCount + 1;
+      } else if (action === 'dismiss') {
+        updatedPayment.reminderAction = 'dismiss';
+        updatedPayment.reminderActionAt = nowIso;
+        updatedPayment.reminderClosed = true;
+        updatedPayment.reminderClosedAt = nowIso;
+        updatedPayment.reminderDismissCount = dismissCount + 1;
+      } else if (action === 'shown') {
+        if (reminderLoggedRef.current.shown) return;
+        reminderLoggedRef.current.shown = true;
+        updatedPayment.reminderAction = payment.reminderAction || 'shown';
+        updatedPayment.reminderActionAt = payment.reminderActionAt || nowIso;
+      }
+
+      await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment: updatedPayment }),
+      });
+    } catch (err) {
+      console.error('recordReminderAction error', err);
+    }
+  }, []);
+
   // Hydration fix
   useEffect(() => {
     setIsHydrated(true);
   }, []);
+
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
 
   useEffect(() => {
     let isMounted = true;
@@ -306,9 +364,10 @@ export default function SepetClient() {
         // Payment flow started earlier but user is back to cart; treat as abandoned
         setLastPaymentBanner({ status: 'abandoned', message: 'Ödeme işleminiz yarıda kalmış görünüyor.' });
         setShowAbandonedModal(true);
+        recordReminderAction('shown');
       }
     } catch {}
-  }, []);
+  }, [recordReminderAction]);
 
   // handleSelectSavedAddress - useCallback ile optimize edilmiş
   // Kayıtlı adresin desteklenen bölgede olup olmadığını kontrol et
@@ -1328,7 +1387,9 @@ export default function SepetClient() {
     } catch {}
   };
 
+
   const handleResumeAbandonedPayment = () => {
+    recordReminderAction('resume');
     clearAbandonedPaymentFlag();
     setShowAbandonedModal(false);
     setLastPaymentBanner(null);
@@ -1337,6 +1398,7 @@ export default function SepetClient() {
   };
 
   const handleDismissAbandonedPayment = () => {
+    recordReminderAction('dismiss');
     clearAbandonedPaymentFlag();
     setShowAbandonedModal(false);
     setLastPaymentBanner(prev => (prev?.status === 'abandoned' ? null : prev));
@@ -1553,6 +1615,20 @@ export default function SepetClient() {
     [canProceedToRecipient, currentStep, requiresSenderName, senderName, validateRecipientStep]
   );
 
+  const blockBackNavigation = useCallback(
+    (event?: PopStateEvent) => {
+      const step = currentStepRef.current;
+      if (step === 'cart') return; // allow normal back from cart
+      event?.preventDefault?.();
+      event?.stopImmediatePropagation?.();
+      try {
+        window.history.pushState(null, '', window.location.href);
+      } catch {}
+      handleEdgeSwipe('prev');
+    },
+    [handleEdgeSwipe]
+  );
+
   // Mobile edge swipe: navigate steps with left/right flicks from screen edges
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
@@ -1593,6 +1669,21 @@ export default function SepetClient() {
       window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [handleEdgeSwipe]);
+
+  // Prevent mobile edge-swipe from navigating browser history; move to previous checkout step instead
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.history.replaceState(null, '', window.location.href);
+    } catch {}
+
+    const handler = (e: PopStateEvent) => blockBackNavigation(e);
+    window.addEventListener('popstate', handler);
+
+    return () => {
+      window.removeEventListener('popstate', handler);
+    };
+  }, [blockBackNavigation]);
 
   const handleCompleteOrder = async () => {
     const paymentCheck = validatePaymentStep();
