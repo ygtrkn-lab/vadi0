@@ -5,7 +5,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import { Heart, ShoppingCart, ChevronRight, ChevronLeft, Star, Truck, Gift, Clock, Check, Play } from 'lucide-react';
-import type { Product } from '@/data/products';
 import { useCustomer } from '@/context/CustomerContext';
 import { useCart } from '@/context/CartContext';
 
@@ -212,14 +211,22 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
           {/* Add to Cart Button */}
           <button
             onClick={handleAddToCart}
-            disabled={isAddedToCart}
-            className={`w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300
-              ${isAddedToCart 
-                ? 'bg-green-500 text-white' 
-                : 'bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-md hover:shadow-lg'
+            disabled={!product.inStock || isAddedToCart}
+            className={`w-full py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all duration-200
+              focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-300
+              ${!product.inStock
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : isAddedToCart
+                  ? 'bg-gray-100 text-gray-600'
+                  : 'border border-gray-300 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
               }`}
           >
-            {isAddedToCart ? (
+            {!product.inStock ? (
+              <>
+                <ShoppingCart size={16} />
+                Stokta Yok
+              </>
+            ) : isAddedToCart ? (
               <>
                 <Check size={16} />
                 Eklendi
@@ -502,6 +509,79 @@ export function StoryBannerCarousel() {
             </motion.div>
           ))}
         </div>
+      </div>
+    </section>
+  );
+}
+
+// Homepage Category Product Bands - Beautiful Product Sections by Category
+export function HomeCategoryProductBands() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productsRes, categoriesRes] = await Promise.all([
+          fetch('/api/products'),
+          fetch('/api/categories?hasProducts=true')
+        ]);
+        const productsData = await productsRes.json();
+        const categoriesData = await categoriesRes.json();
+        setProducts(productsData.products || productsData.data || []);
+        setCategories(categoriesData.categories || categoriesData.data || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // Filter categories that have products and limit to top 6
+  const categoriesWithProducts = categories
+    .filter(cat => products.some(p => p.category === cat.slug))
+    .slice(0, 6);
+
+  if (loading) {
+    return (
+      <section className="py-8 md:py-12 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="mb-10">
+              <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse mb-4" />
+              <div className="flex gap-4 overflow-hidden">
+                {[...Array(5)].map((_, j) => (
+                  <div key={j} className="w-[200px] flex-shrink-0 bg-gray-200 rounded-2xl animate-pulse h-[320px]" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (categoriesWithProducts.length === 0) return null;
+
+  return (
+    <section className="py-8 md:py-12 bg-gradient-to-b from-gray-50 to-white">
+      <div className="space-y-8 md:space-y-12">
+        {categoriesWithProducts.map((category, index) => (
+          <div 
+            key={category.slug}
+            className={index % 2 === 0 ? 'bg-white' : 'bg-gradient-to-r from-gray-50/80 via-white to-gray-50/80'}
+          >
+            <HomeCategoryProducts
+              categorySlug={category.slug}
+              title={category.name}
+              limit={10}
+              showViewAll={true}
+            />
+          </div>
+        ))}
       </div>
     </section>
   );

@@ -7,6 +7,7 @@ import {
   MobileNavVisibilityGuard,
   FeaturedBannerGrid,
   QuickCategoryPills,
+  HomeCategoryProductBands,
 } from '@/components';
 import FAQSchema from '@/components/FAQSchema';
 
@@ -298,6 +299,9 @@ export default function Home() {
 
         {/* Featured Banner Grid - 8 Popüler Kategoriler */}
         <FeaturedBannerGrid />
+
+        {/* Category Product Bands - Kategorilere Göre Ürün Bantları */}
+        <HomeCategoryProductBands />
 
         {/* Second Marquee */}
         <Marquee 
