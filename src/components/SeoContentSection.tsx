@@ -176,7 +176,7 @@ const SeoContentSection = () => {
                 {ISTANBUL_ILCELERI.avrupa.map((ilce) => (
                   <Link
                     key={ilce.slug}
-                    href={`/sehir/istanbul/${ilce.slug}`}
+                    href={`/sehir/${ilce.slug}`}
                     className="inline-flex items-center justify-center px-3 py-2 rounded-xl text-xs sm:text-sm bg-white border border-gray-200 hover:border-primary-300 hover:bg-primary-50 text-gray-700 hover:text-primary-700 transition shadow-sm hover:shadow"
                   >
                     {ilce.name}
@@ -190,7 +190,7 @@ const SeoContentSection = () => {
                 {ISTANBUL_ILCELERI.anadolu.map((ilce) => (
                   <Link
                     key={ilce.slug}
-                    href={`/sehir/istanbul/${ilce.slug}`}
+                    href={`/sehir/${ilce.slug}`}
                     className="inline-flex items-center justify-center px-3 py-2 rounded-xl text-xs sm:text-sm bg-white border border-gray-200 hover:border-secondary-300 hover:bg-secondary-50 text-gray-700 hover:text-secondary-700 transition shadow-sm hover:shadow"
                   >
                     {ilce.name}
