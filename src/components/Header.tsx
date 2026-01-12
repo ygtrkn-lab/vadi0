@@ -268,8 +268,8 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   <Image
                     src="/logo.webp"
                     alt="Vadiler Çiçek"
-                    width={95}
-                    height={30}
+                    width={120}
+                    height={38}
                     className="object-contain"
                     priority
                   />
