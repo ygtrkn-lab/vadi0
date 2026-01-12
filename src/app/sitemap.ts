@@ -107,7 +107,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     ...ISTANBUL_ILCELERI.map((district) => ({
-      url: `${BASE_URL}/sehir/istanbul/${createCitySlug(district.name)}`,
+      url: `${BASE_URL}/sehir/${createCitySlug(district.name)}`,
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.7,
@@ -161,7 +161,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   })
 
-  // Kombinasyonel sayfalar: Özel Gün × Kategori
+  // Kombinasyonel sayfalar: Özel Gün × Kategori (NOW WITH HEADER, FOOTER, CONTENT)
   const occasionCategoryPages: MetadataRoute.Sitemap = []
   const activeCategorySlugs = categoryPages
     .map((entry) => {
@@ -178,7 +178,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         url: `${BASE_URL}/ozel-gun/${occasion.slug}/${categorySlug}`,
         lastModified: now,
         changeFrequency: 'weekly' as const,
-        priority: 0.7,
+        priority: 0.75,
       })
     })
   })
@@ -188,6 +188,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryPages,
     ...productPages,
     ...cityPages,
+    ...occasionCategoryPages,
     ...specialDayPages,
     ...guidePages,
     ...cityOccasionPages,

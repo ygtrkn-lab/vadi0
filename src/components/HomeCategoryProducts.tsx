@@ -19,6 +19,14 @@ function getMediaType(url: string): 'image' | 'video' | 'unknown' {
   return 'image';
 }
 
+// Optimize poster URL with Cloudinary transformations for responsive sizing
+function optimizePosterUrl(url: string, width: number = 400): string {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  // Add responsive sizing transformation
+  const transformations = `w_${width},h_${width},c_fill,f_auto,q_auto`;
+  return url.replace('/upload/', `/upload/${transformations}/`);
+}
+
 interface HomeCategoryProductsProps {
   categorySlug: string;
   title: string;
@@ -92,6 +100,8 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
                 loop
                 muted
                 playsInline
+                preload="none"
+                poster={optimizePosterUrl(product.hoverImage || product.gallery?.[0] || '', 420)}
                 autoPlay
                 onClick={(e) => {
                   e.preventDefault();
@@ -121,6 +131,7 @@ function ProductCardEnhanced({ product, index }: { product: Product; index: numb
               src={imageError ? '/placeholder-flower.jpg' : product.image}
               alt={product.name}
               fill
+              sizes="(max-width: 640px) 160px, (max-width: 768px) 180px, (max-width: 1024px) 200px, 220px"
               className="object-cover group-hover:scale-110 transition-transform duration-700"
               onError={() => setImageError(true)}
             />
@@ -717,7 +728,7 @@ export function FeaturedBannerGrid() {
                           loop
                           playsInline
                           preload="none"
-                          poster={coverImage || undefined}
+                          poster={optimizePosterUrl(coverImage || '', 400)}
                           loading="lazy"
                           onEnded={(e) => (e.target as HTMLVideoElement).play()}
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"

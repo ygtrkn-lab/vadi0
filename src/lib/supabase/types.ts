@@ -249,6 +249,7 @@ export interface Database {
           tracking_url: string
           order_time_group: string | null
           timeline: Json
+          refund: Json | null
           created_at: string
           updated_at: string
           delivered_at: string | null
@@ -274,6 +275,7 @@ export interface Database {
           tracking_url?: string
           order_time_group?: string | null
           timeline?: Json
+          refund?: Json | null
           created_at?: string
           updated_at?: string
           delivered_at?: string | null
@@ -299,6 +301,7 @@ export interface Database {
           tracking_url?: string
           order_time_group?: string | null
           timeline?: Json
+          refund?: Json | null
           created_at?: string
           updated_at?: string
           delivered_at?: string | null

@@ -33,11 +33,11 @@ const organizationSchema = {
   url: BASE_URL,
   logo: {
     '@type': 'ImageObject',
-    url: `${BASE_URL}/logo.png`,
+    url: `${BASE_URL}/logo.webp`,
     width: 200,
     height: 60,
   },
-  description: 'Vadiler Çiçek ile taze çiçekleri hızlı ve güvenli şekilde İstanbul\'a gönderin. Online çiçek siparişi, hızlı teslimat, uygun fiyatlar.',
+  description: 'İstanbul\'un güvenilir çiçekçisi Vadiler Çiçek. Taze çiçekler, gül, orkide ve buketler aynı gün teslim. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul\'a hızlı teslimat.',
   foundingDate: '2024',
   address: {
     '@type': 'PostalAddress',
@@ -64,7 +64,7 @@ const websiteSchema = {
   '@id': `${BASE_URL}/#website`,
   name: 'Vadiler Çiçek',
   url: BASE_URL,
-  description: 'Online çiçek siparişi ve hızlı teslimat',
+  description: 'İstanbul\'da online çiçek siparişi ve aynı gün teslimat. Güvenilir çiçekçi, taze çiçekler.',
   publisher: {
     '@id': `${BASE_URL}/#organization`,
   },
@@ -101,10 +101,10 @@ const localBusinessSchema = {
     latitude: 41.0082,
     longitude: 28.9784,
   },
-  areaServed: {
-    '@type': 'City',
-    name: 'İstanbul',
-  },
+  areaServed: [
+    { '@type': 'City', name: 'İstanbul' },
+    'Kadıköy', 'Beşiktaş', 'Şişli', 'Bakırköy', 'Üsküdar', 'Beyoğlu', 'Ataşehir', 'Sarıyer', 'Fatih', 'Maltepe', 'Kartal', 'Pendik', 'Beylikdüzü', 'Kağıthane', 'Ümraniye', 'Zeytinburnu'
+  ],
   openingHoursSpecification: {
     '@type': 'OpeningHoursSpecification',
     dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
@@ -113,29 +113,45 @@ const localBusinessSchema = {
   },
   paymentAccepted: ['Cash', 'Credit Card', 'Debit Card'],
   currenciesAccepted: 'TRY',
+  hasMerchantReturnPolicy: {
+    '@type': 'MerchantReturnPolicy',
+    applicableCountry: 'TR',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    merchantReturnDays: 2,
+    returnMethod: 'https://schema.org/ReturnByMail',
+    returnFees: 'https://schema.org/ReturnShippingFees',
+    additionalProperty: {
+      '@type': 'PropertyValue',
+      name: 'İade Politikası',
+      value: `${BASE_URL}/iade-politikasi`
+    }
+  }
 };
 
 export const viewport: Viewport = {
   themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
 };
 
 export const metadata: Metadata = {
   metadataBase: getMetadataBaseUrl(),
   title: {
-    default: "Vadiler Çiçek - Online Çiçek Siparişi İstanbul | Aynı Gün Teslimat",
-    template: "%s | Vadiler Çiçek"
+    default: "İstanbul Çiçek Siparişi | Vadiler Çiçek - Güvenilir Çiçekçi, Aynı Gün Teslimat",
+    template: "%s | Vadiler Çiçek İstanbul"
   },
-  description: "İstanbul'un en güvenilir online çiçekçisi Vadiler Çiçek! Taze çiçekler, gül, orkide, buket ve çiçek aranjmanları aynı gün teslimat. ☎️ 0850 307 4876",
+  description: "İstanbul çiçek siparişi için güvenilir adres Vadiler Çiçek! Taze gül, orkide, buket ve aranjmanlar aynı gün teslim. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul'a teslimat. ☎️ 0850 307 4876",
   keywords: [
     "çiçek siparişi",
     "online çiçek siparişi",
     "çiçek gönder",
     "istanbul çiçek siparişi",
     "çiçekçi istanbul",
+    "istanbul çiçekçi",
+    "güvenilir çiçek gönderme siteleri",
+    "istanbul çiçek gönder",
     "aynı gün çiçek teslimat",
     "gül buketi",
     "orkide",
@@ -149,11 +165,14 @@ export const metadata: Metadata = {
     "beşiktaş çiçekçi",
     "beyoğlu çiçekçi",
     "bakırköy çiçekçi",
+    "şişli çiçekçi",
+    "üsküdar çiçekçi",
     "ucuz çiçek",
     "taze çiçek",
     "vadiler çiçek",
     "vadiler.com",
     "vadiler",
+    "vadilercom",
   ],
   verification: {
     google: 'NdD2A097rf0YcV2o0TULpp__uSTaNmzMvRBhIrZVB2s',
@@ -169,16 +188,20 @@ export const metadata: Metadata = {
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
     other: [
-      { rel: 'mask-icon', url: '/logo.png', color: '#ec4899' },
+      { rel: 'mask-icon', url: '/logo.webp', color: '#ec4899' },
     ],
   },
   manifest: '/manifest.json',
   alternates: {
     canonical: "https://vadiler.com/",
+    languages: {
+      'tr-TR': 'https://vadiler.com/',
+      'x-default': 'https://vadiler.com/',
+    },
   },
   openGraph: {
-    title: "Vadiler Çiçek - Online Çiçek Siparişi İstanbul | Aynı Gün Teslimat",
-    description: "İstanbul'un en güvenilir online çiçekçisi! Taze çiçekler, gül, orkide ve özel aranjmanlar. Aynı gün teslimat, güvenli ödeme. ☎️ 0850 307 4876",
+    title: "İstanbul Çiçek Siparişi | Vadiler Çiçek - Güvenilir Çiçekçi, Aynı Gün Teslimat",
+    description: "İstanbul'da online çiçek siparişi için güvenilir adres! Taze gül, orkide, buket ve aranjmanlar. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul'a aynı gün teslimat. ☎️ 0850 307 4876",
     url: "https://vadiler.com/",
     siteName: "Vadiler Çiçek",
     images: [
@@ -194,8 +217,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vadiler Çiçek - İstanbul Online Çiçek Siparişi",
-    description: "Taze çiçekler, aynı gün teslimat! Gül, orkide, buket ve özel aranjmanlar. ☎️ 0850 307 4876",
+    title: "İstanbul Çiçek Siparişi | Vadiler Çiçek - Güvenilir, Aynı Gün Teslimat",
+    description: "İstanbul'da güvenilir çiçek siparişi! Taze gül, orkide, buket. Kadıköy, Beşiktaş, Şişli'ye aynı gün teslimat. ☎️ 0850 307 4876",
     site: "@vadilercom",
     images: ["https://vadiler.com/og-image.jpg"],
   },
@@ -209,24 +232,36 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
-        {/* Google tag (gtag.js) */}
+        {/* Preconnect to critical origins for faster resource loading */}
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+        <link rel="preconnect" href="https://mpc-prod-16-s6uit34pua-uk.a.run.app" />
+        <link rel="dns-prefetch" href="https://mpc-prod-16-s6uit34pua-uk.a.run.app" />
+        <link rel="preconnect" href="https://connect.facebook.net" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+
+        {/* Google tag (gtag.js) - lazyOnload ile INP optimizasyonu */}
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="gtag-init" strategy="afterInteractive">
+        <Script id="gtag-init" strategy="lazyOnload">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){window.dataLayer.push(arguments);}
             gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');
+            gtag('config', '${GA_MEASUREMENT_ID}', {
+              'send_page_view': false
+            });
+            // Sayfa yüklendikten sonra pageview gönder
+            gtag('event', 'page_view');
           `}
         </Script>
 
-        {/* Meta Pixel (Facebook Pixel) */}
+        {/* Meta Pixel (Facebook Pixel) - lazyOnload ile INP optimizasyonu */}
         {META_PIXEL_ID && (
           <>
-            <Script id="fb-pixel" strategy="afterInteractive">
+            <Script id="fb-pixel" strategy="lazyOnload">
               {`
                 !function(f,b,e,v,n,t,s)
                 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -269,7 +304,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className="antialiased overflow-x-hidden"
+        className="antialiased overflow-x-hidden swipe-guard"
       >
         <ClientRoot>
           <div className="overflow-x-hidden">

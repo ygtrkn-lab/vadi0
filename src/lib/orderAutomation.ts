@@ -363,6 +363,7 @@ export async function processAutomatedUpdates(): Promise<{
                               name: getString(p['name']),
                               quantity: Number(p['quantity'] ?? 0),
                               price: Number(p['price'] ?? 0),
+                              imageUrl: getString(p['image']) || getString(p['imageUrl']) || getString(p['hoverImage']) || undefined,
                             }))
                         : [];
 

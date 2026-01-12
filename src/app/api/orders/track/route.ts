@@ -46,6 +46,20 @@ function maskPhone(phone: string): string {
   return `${last10.slice(0, 3)} ${last10.slice(3, 6)} ** **`;
 }
 
+function normalizeTimeSlot(raw: string, fallback = '11:00-17:00'): string {
+  const value = (raw || '').replace(/\s+/g, '').replace(/–/g, '-');
+  if (!value || value === '00:00-00:00') return fallback;
+  const match = value.match(/^(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
+  if (!match) return fallback;
+  const pad = (t: string) => {
+    const [hh, mm] = t.split(':');
+    return `${String(hh).padStart(2, '0')}:${mm}`;
+  };
+  const normalized = `${pad(match[1])}-${pad(match[2])}`;
+  const allowed = ['11:00-17:00', '17:00-22:00'];
+  return allowed.includes(normalized) ? normalized : fallback;
+}
+
 function mapStatus(dbStatus: string):
   | 'pending'
   | 'confirmed'
@@ -53,9 +67,16 @@ function mapStatus(dbStatus: string):
   | 'on_the_way'
   | 'delivered'
   | 'cancelled'
-  | 'shipped' {
+  | 'shipped'
+  | 'refunded'
+  | 'failed'
+  | 'payment_failed'
+  | 'pending_payment' {
   const s = (dbStatus || '').toLowerCase();
-  if (s === 'pending_payment') return 'pending';
+  if (s === 'refunded') return 'refunded';
+  if (s === 'failed') return 'failed';
+  if (s === 'payment_failed') return 'payment_failed';
+  if (s === 'pending_payment') return 'pending_payment';
   if (s === 'processing') return 'preparing';
   if (s === 'on_the_way') return 'on_the_way';
   if (s === 'preparing') return 'preparing';
@@ -128,6 +149,7 @@ export async function POST(request: NextRequest) {
 
     const delivery = getJsonRecord(row.delivery);
     const message = getJsonRecord(row.message);
+    const refundData = getJsonRecord(row.refund);
 
     const productsRaw = row.products;
     const items = Array.isArray(productsRaw)
@@ -142,13 +164,23 @@ export async function POST(request: NextRequest) {
           }))
       : [];
 
+    // Build refund object if exists
+    const refund = refundData && Object.keys(refundData).length > 0 ? {
+      status: getString(refundData['status']),
+      amount: Number(refundData['amount'] ?? 0),
+      reason: getString(refundData['reason']),
+      notes: getString(refundData['notes']) || undefined,
+      processedAt: getString(refundData['processedAt']),
+      processedBy: getString(refundData['processedBy']) || undefined,
+    } : undefined;
+
     const safeOrder = {
       id: row.id,
       orderNumber: row.order_number,
       status: mapStatus(getString(row.status)),
       createdAt: getString(row.created_at),
       deliveryDate: getString(delivery['deliveryDate']) || getString(row.created_at),
-      deliveryTimeSlot: getString(delivery['deliveryTimeSlot']) || '11:00-17:00',
+      deliveryTimeSlot: normalizeTimeSlot(getString(delivery['deliveryTimeSlot'])),
       recipientName: getString(delivery['recipientName']) || 'Alıcı',
       recipientPhone: maskPhone(getString(delivery['recipientPhone'])),
       deliveryAddress: getString(delivery['fullAddress']) || getString(delivery['recipientAddress']) || '',
@@ -161,6 +193,7 @@ export async function POST(request: NextRequest) {
       paymentMethod: getString(getJsonRecord(row.payment)['method']) || 'credit_card',
       cardMessage: getString(message['content']) || getString(row.notes),
       senderName: getString(message['senderName']),
+      refund,
     };
 
     return NextResponse.json(safeOrder);

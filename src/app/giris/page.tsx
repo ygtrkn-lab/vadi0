@@ -14,11 +14,12 @@ import {
   HiOutlinePhone,
   HiOutlineArrowRight,
   HiOutlineShieldCheck,
+  HiOutlineArrowLeft,
+  HiOutlineHome,
 } from 'react-icons/hi';
-import { Truck, Flower2, ShieldCheck } from 'lucide-react';
-import GradientText from '@/components/ui/GradientText';
+import { Truck, Flower2, ShieldCheck, ChevronLeft } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
-import { Header, Footer, MobileNavBar } from '@/components';
+import GradientText from '@/components/ui/GradientText';
 import { useCustomer } from '@/context/CustomerContext';
 import { slides as heroSlides } from '@/data/products';
 
@@ -36,11 +37,13 @@ export default function GirisPage() {
 }
 
 function GirisContent() {
-    const features = [
-      { icon: <Truck className="w-6 h-6 text-[#e05a4c]" />, text: 'Hızlı Teslimat' },
-      { icon: <Flower2 className="w-6 h-6 text-[#e05a4c]" />, text: 'Taze Çiçek Garantisi' },
-      { icon: <ShieldCheck className="w-6 h-6 text-[#e05a4c]" />, text: 'Güvenli Alışveriş' },
-    ];
+  // Features for desktop left panel
+  const features = [
+    { icon: <Truck className="w-6 h-6 text-[#e05a4c]" />, text: 'Hızlı Teslimat' },
+    { icon: <Flower2 className="w-6 h-6 text-[#e05a4c]" />, text: 'Taze Çiçek Garantisi' },
+    { icon: <ShieldCheck className="w-6 h-6 text-[#e05a4c]" />, text: 'Güvenli Alışveriş' },
+  ];
+  
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -405,6 +408,447 @@ function GirisContent() {
 
   return (
     <div className="min-h-[100dvh] flex flex-col lg:flex-row bg-white">
+      {/* ========== MOBILE VERSION - Apple/Shopify Style ========== */}
+      <div className="lg:hidden min-h-[100dvh] flex flex-col bg-white">
+        {/* Mobile Header - Minimal Apple Style */}
+        <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
+          <div className="flex items-center justify-between px-4 h-14">
+            <Link 
+              href="/" 
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors -ml-1"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              <span className="text-sm font-medium">Geri</span>
+            </Link>
+            <Link href="/" className="flex items-center gap-2">
+              <Image
+                src="/logo.webp"
+                alt="Vadiler Çiçek"
+                width={100}
+                height={28}
+                className="h-7 w-auto"
+                priority
+              />
+            </Link>
+            <div className="w-16" /> {/* Spacer for centering */}
+          </div>
+        </div>
+
+        {/* Mobile Content */}
+        <div className="flex-1 px-5 pt-6 pb-8 overflow-y-auto">
+          {/* Title Section - Compact */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-6"
+          >
+            <h1 className="text-[22px] font-bold text-gray-900 mb-1">
+              {otpStep ? 'Doğrulama Kodu' : activeTab === 'login' ? 'Hoş Geldiniz' : 'Hesap Oluştur'}
+            </h1>
+            <p className="text-[13px] text-gray-500">
+              {otpStep 
+                ? 'E-postanıza gönderilen 6 haneli kodu girin' 
+                : activeTab === 'login' 
+                  ? 'Devam etmek için giriş yapın' 
+                  : 'Hızlı ve güvenli üyelik'}
+            </p>
+          </motion.div>
+
+          {/* Tab Switcher - iOS Segmented Control Style */}
+          {!otpStep && (
+            <div className="flex bg-gray-100 rounded-xl p-1 mb-5">
+              <button
+                onClick={() => { resetOtpFlow(); setActiveTab('login'); setError(''); setSuccess(''); }}
+                className={`flex-1 py-2.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                  activeTab === 'login'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500'
+                }`}
+              >
+                Giriş Yap
+              </button>
+              <button
+                onClick={() => { resetOtpFlow(); setActiveTab('register'); setError(''); setSuccess(''); }}
+                className={`flex-1 py-2.5 rounded-lg text-[13px] font-semibold transition-all duration-200 ${
+                  activeTab === 'register'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500'
+                }`}
+              >
+                Üye Ol
+              </button>
+            </div>
+          )}
+
+          {/* Messages - Compact Apple Style */}
+          <AnimatePresence>
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                className="mb-4 flex items-center gap-2 text-emerald-700 bg-emerald-50 px-3 py-2.5 rounded-xl text-[13px]"
+              >
+                <HiOutlineShieldCheck className="w-4 h-4 shrink-0" />
+                <span className="font-medium">{success}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                className="mb-4 flex items-center gap-2 text-red-700 bg-red-50 px-3 py-2.5 rounded-xl text-[13px]"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium">{error}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Forms */}
+          <AnimatePresence mode="wait">
+            {otpStep ? (
+              /* OTP Verification Form - Mobile */
+              <motion.form
+                key="otp-mobile"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleOtpVerify}
+                className="space-y-4"
+              >
+                <div className="bg-gray-50 rounded-xl p-3 flex items-center justify-between">
+                  <span className="text-[12px] text-gray-500">Gönderildi:</span>
+                  <span className="text-[13px] font-medium text-gray-900 truncate max-w-[200px]">{otpEmail}</span>
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">
+                    Doğrulama Kodu
+                  </label>
+                  <input
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="000000"
+                    className="w-full px-4 py-3.5 bg-gray-50 border-0 rounded-xl text-gray-900 text-center 
+                      text-xl tracking-[0.5em] font-mono placeholder:text-gray-300
+                      focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white transition-all"
+                    autoFocus
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || otpCode.length !== 6}
+                  className="w-full py-3.5 bg-[#e05a4c] text-white rounded-xl font-semibold text-[15px]
+                    active:scale-[0.98] transition-transform disabled:opacity-50 disabled:cursor-not-allowed
+                    flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>Doğrula</>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { resetOtpFlow(); setError(''); setSuccess(''); }}
+                  className="w-full py-2.5 text-[13px] text-gray-500 font-medium"
+                >
+                  ← Geri Dön
+                </button>
+              </motion.form>
+            ) : activeTab === 'login' ? (
+              /* Login Form - Mobile */
+              <motion.form
+                key="login-mobile"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                onSubmit={handleLogin}
+                className="space-y-4"
+              >
+                {/* Email */}
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">
+                    E-posta
+                  </label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="ornek@email.com"
+                    className="w-full px-4 py-3.5 bg-gray-50 border-0 rounded-xl text-gray-900 text-[15px]
+                      placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white transition-all"
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">
+                    Şifre
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-4 py-3.5 bg-gray-50 border-0 rounded-xl text-gray-900 text-[15px]
+                        placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white transition-all pr-12"
+                      autoComplete="current-password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-gray-400"
+                    >
+                      {showPassword ? <HiOutlineEyeOff className="w-5 h-5" /> : <HiOutlineEye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Remember & Forgot */}
+                <div className="flex items-center justify-between py-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-[#e05a4c] focus:ring-[#e05a4c]/30"
+                    />
+                    <span className="text-[13px] text-gray-600">Beni hatırla</span>
+                  </label>
+                  <button 
+                    type="button" 
+                    onClick={handleForgotPassword}
+                    className="text-[13px] text-[#e05a4c] font-medium"
+                  >
+                    Şifremi unuttum
+                  </button>
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 bg-[#e05a4c] text-white rounded-xl font-semibold text-[15px]
+                    active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>Giriş Yap</>
+                  )}
+                </button>
+
+                {/* Divider */}
+                <div className="relative py-3">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-3 bg-white text-[12px] text-gray-400">veya</span>
+                  </div>
+                </div>
+
+                {/* Google */}
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 
+                    bg-white border border-gray-200 rounded-xl active:bg-gray-50 
+                    transition-colors text-[14px] font-medium text-gray-700"
+                >
+                  <FcGoogle className="w-5 h-5" />
+                  Google ile devam et
+                </button>
+              </motion.form>
+            ) : (
+              /* Register Form - Mobile */
+              <motion.form
+                key="register-mobile"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                onSubmit={handleRegister}
+                className="space-y-3"
+              >
+                {/* Name Row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">Ad</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Adınız"
+                      className="w-full px-3 py-3 bg-gray-50 border-0 rounded-xl text-gray-900 text-[14px]
+                        placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">Soyad</label>
+                    <input
+                      type="text"
+                      value={surname}
+                      onChange={(e) => setSurname(e.target.value)}
+                      placeholder="Soyadınız"
+                      className="w-full px-3 py-3 bg-gray-50 border-0 rounded-xl text-gray-900 text-[14px]
+                        placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">Telefon</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[14px]">+90</span>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      placeholder="5XX XXX XXXX"
+                      maxLength={10}
+                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border-0 rounded-xl text-gray-900 text-[14px]
+                        placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">E-posta</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="ornek@email.com"
+                    className="w-full px-4 py-3 bg-gray-50 border-0 rounded-xl text-gray-900 text-[14px]
+                      placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white"
+                    required
+                  />
+                </div>
+
+                {/* Password Row */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">Şifre</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••"
+                      className="w-full px-3 py-3 bg-gray-50 border-0 rounded-xl text-gray-900 text-[14px]
+                        placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">Tekrar</label>
+                    <input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••"
+                      className="w-full px-3 py-3 bg-gray-50 border-0 rounded-xl text-gray-900 text-[14px]
+                        placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Agreement */}
+                <label className="flex items-start gap-2.5 py-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    required
+                    className="w-4 h-4 mt-0.5 rounded border-gray-300 text-[#e05a4c] focus:ring-[#e05a4c]/30"
+                  />
+                  <span className="text-[12px] text-gray-500 leading-relaxed">
+                    <Link href="/uyelik-sozlesmesi" className="text-[#e05a4c]">Üyelik Sözleşmesi</Link>&apos;ni ve{' '}
+                    <Link href="/gizlilik" className="text-[#e05a4c]">Gizlilik Politikası</Link>&apos;nı kabul ediyorum.
+                  </span>
+                </label>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3.5 bg-[#e05a4c] text-white rounded-xl font-semibold text-[15px]
+                    active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>Hesap Oluştur</>
+                  )}
+                </button>
+
+                {/* Divider */}
+                <div className="relative py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-200" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="px-3 bg-white text-[12px] text-gray-400">veya</span>
+                  </div>
+                </div>
+
+                {/* Google */}
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="w-full flex items-center justify-center gap-2.5 px-4 py-3.5 
+                    bg-white border border-gray-200 rounded-xl active:bg-gray-50 
+                    transition-colors text-[14px] font-medium text-gray-700"
+                >
+                  <FcGoogle className="w-5 h-5" />
+                  Google ile devam et
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+
+          {/* Trust Badges - Mobile */}
+          {!otpStep && (
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <div className="flex items-center justify-center gap-6">
+                <div className="flex items-center gap-1.5 text-gray-400">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span className="text-[11px]">256-bit SSL</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-gray-400">
+                  <Truck className="w-4 h-4" />
+                  <span className="text-[11px]">Aynı Gün</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-gray-400">
+                  <Flower2 className="w-4 h-4" />
+                  <span className="text-[11px]">Taze Garanti</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ========== DESKTOP VERSION ========== */}
       {/* Left Side - Image Slider */}
       <div className="hidden lg:block lg:w-1/2 relative overflow-hidden mt-0">
         {/* Slider Images */}
@@ -516,31 +960,13 @@ function GirisContent() {
         </div>
       </div>
 
-      {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-12 bg-white relative overflow-hidden overflow-y-auto pt-60 lg:pt-12">
-        {/* Mobile Hero - Only on mobile */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="lg:hidden w-full max-w-md mb-8 text-center absolute top-24"
-        >
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-            {otpStep ? 'E-posta Doğrulama' : activeTab === 'login' ? 'Hesabınıza Giriş Yapın' : 'Hesap Oluşturun'}
-          </h1>
-          <p className="text-slate-600">
-            {otpStep 
-              ? 'E-postanıza gönderilen kodu girin' 
-              : activeTab === 'login' 
-                ? 'Siparişlerinizi takip edin' 
-                : 'Ücretsiz üye olun'}
-          </p>
-        </motion.div>
-        
+      {/* Right Side - Login Form - Desktop Only */}
+      <div className="hidden lg:flex flex-1 items-center justify-center p-4 sm:p-6 lg:p-12 bg-white relative overflow-hidden overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md relative z-10 lg:mt-0 mt-0"
+          className="w-full max-w-md relative z-10"
         >
                 {/* Tabs */}
                 {!otpStep && (
@@ -1011,47 +1437,192 @@ function GirisContent() {
         </motion.div>
       </div>
 
-      {/* Mobile Footer & Nav */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40">
-        <MobileNavBar />
-      </div>
-
-      {/* Password Reset Modal */}
+      {/* Password Reset Modal - Modern Apple Style */}
       <AnimatePresence>
         {showPasswordResetModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-end lg:items-center justify-center bg-black/40 backdrop-blur-sm"
             onClick={resetPasswordResetFlow}
           >
-            <motion.div initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.98, opacity: 0 }} className="w-full max-w-lg mx-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="bg-white rounded-xl p-6 shadow-lg">
-                <h3 className="text-lg font-semibold mb-2">Şifre Sıfırlama</h3>
-                <p className="text-sm text-slate-600 mb-4">{passwordResetStep === 1 ? 'E-posta adresinizi girin' : 'E-postanıza gönderilen kodu girin ve yeni şifrenizi belirleyin'}</p>
+            <motion.div 
+              initial={{ y: 100, opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }} 
+              exit={{ y: 100, opacity: 0 }} 
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="w-full lg:max-w-md" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-t-3xl lg:rounded-2xl p-6 shadow-2xl max-h-[85vh] overflow-y-auto">
+                {/* Handle Bar - Mobile */}
+                <div className="lg:hidden w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
+                
+                {/* Header */}
+                <div className="text-center mb-6">
+                  <div className="w-14 h-14 bg-[#e05a4c]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <HiOutlineLockClosed className="w-7 h-7 text-[#e05a4c]" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">Şifre Sıfırlama</h3>
+                  <p className="text-sm text-gray-500">
+                    {passwordResetStep === 1 
+                      ? 'E-posta adresinizi girin' 
+                      : otpVerified 
+                        ? 'Yeni şifrenizi belirleyin'
+                        : 'Doğrulama kodunu girin'}
+                  </p>
+                </div>
+
+                {/* Messages */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="mb-4 flex items-center gap-2 text-red-700 bg-red-50 px-3 py-2.5 rounded-xl text-[13px]"
+                    >
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-medium">{error}</span>
+                    </motion.div>
+                  )}
+                  {success && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      className="mb-4 flex items-center gap-2 text-emerald-700 bg-emerald-50 px-3 py-2.5 rounded-xl text-[13px]"
+                    >
+                      <HiOutlineShieldCheck className="w-4 h-4 shrink-0" />
+                      <span className="font-medium">{success}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {passwordResetStep === 1 ? (
                   <div className="space-y-4">
-                    <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="E-posta adresiniz" className="w-full px-4 py-3 border rounded-lg" />
-                    <div className="flex flex-col gap-2">
-                      <button type="button" onClick={async (e) => { e.stopPropagation(); await handlePasswordResetEmailSubmit(e as any); }} disabled={isLoading} className="w-full py-3 bg-[#e05a4c] text-white rounded-lg">{isLoading ? 'Gönderiliyor...' : 'Kodu Gönder'}</button>
-                      <button type="button" onClick={resetPasswordResetFlow} className="w-full py-2 text-sm text-slate-600">İptal</button>
+                    <div>
+                      <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">E-posta</label>
+                      <input 
+                        type="email" 
+                        value={resetEmail} 
+                        onChange={(e) => setResetEmail(e.target.value)} 
+                        placeholder="ornek@email.com" 
+                        className="w-full px-4 py-3.5 bg-gray-50 border-0 rounded-xl text-gray-900 text-[15px]
+                          placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white transition-all"
+                        autoFocus
+                      />
                     </div>
+                    <button 
+                      type="button" 
+                      onClick={async (e) => { e.stopPropagation(); await handlePasswordResetEmailSubmit(e as any); }} 
+                      disabled={isLoading || !resetEmail.trim()} 
+                      className="w-full py-3.5 bg-[#e05a4c] text-white rounded-xl font-semibold text-[15px]
+                        active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>Kodu Gönder</>
+                      )}
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={resetPasswordResetFlow} 
+                      className="w-full py-2.5 text-[13px] text-gray-500 font-medium"
+                    >
+                      İptal
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <input type="text" value={otpCode} onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="Kodu girin" className="w-full px-4 py-3 border rounded-lg text-center" />
-                    {otpVerified && (
+                    {!otpVerified ? (
+                      <div>
+                        <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">Doğrulama Kodu</label>
+                        <input 
+                          type="text" 
+                          value={otpCode} 
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} 
+                          placeholder="000000" 
+                          className="w-full px-4 py-3.5 bg-gray-50 border-0 rounded-xl text-gray-900 text-center 
+                            text-xl tracking-[0.5em] font-mono placeholder:text-gray-300
+                            focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white transition-all"
+                          autoFocus
+                        />
+                      </div>
+                    ) : (
                       <>
-                        <input type="password" value={newPassword} onChange={(e) => handleNewPasswordChange(e.target.value)} placeholder="Yeni şifre" className="w-full px-4 py-3 border rounded-lg" />
-                        <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Yeni şifre (tekrar)" className="w-full px-4 py-3 border rounded-lg" />
+                        <div>
+                          <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">Yeni Şifre</label>
+                          <input 
+                            type="password" 
+                            value={newPassword} 
+                            onChange={(e) => handleNewPasswordChange(e.target.value)} 
+                            placeholder="••••••••" 
+                            className="w-full px-4 py-3.5 bg-gray-50 border-0 rounded-xl text-gray-900 text-[15px]
+                              placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white transition-all"
+                          />
+                          {/* Password Strength */}
+                          {newPassword && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all ${
+                                    passwordStrength < 40 ? 'bg-red-400' : 
+                                    passwordStrength < 70 ? 'bg-yellow-400' : 'bg-emerald-400'
+                                  }`}
+                                  style={{ width: `${passwordStrength}%` }}
+                                />
+                              </div>
+                              <span className={`text-[11px] font-medium ${
+                                passwordStrength < 40 ? 'text-red-500' : 
+                                passwordStrength < 70 ? 'text-yellow-600' : 'text-emerald-600'
+                              }`}>
+                                {passwordStrength < 40 ? 'Zayıf' : passwordStrength < 70 ? 'Orta' : 'Güçlü'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-[12px] font-medium text-gray-600 mb-1.5 ml-1">Şifre Tekrar</label>
+                          <input 
+                            type="password" 
+                            value={confirmNewPassword} 
+                            onChange={(e) => setConfirmNewPassword(e.target.value)} 
+                            placeholder="••••••••" 
+                            className="w-full px-4 py-3.5 bg-gray-50 border-0 rounded-xl text-gray-900 text-[15px]
+                              placeholder:text-gray-400 focus:ring-2 focus:ring-[#e05a4c]/30 focus:bg-white transition-all"
+                          />
+                          {confirmNewPassword && newPassword !== confirmNewPassword && (
+                            <p className="text-[11px] text-red-500 mt-1 ml-1">Şifreler eşleşmiyor</p>
+                          )}
+                        </div>
                       </>
                     )}
-                    <div className="flex flex-col gap-2">
-                      <button type="button" onClick={async (e) => { e.stopPropagation(); await handlePasswordResetVerify(e as any); }} disabled={isLoading} className="w-full py-3 bg-[#e05a4c] text-white rounded-lg">{isLoading ? (otpVerified ? 'Şifre Güncelleniyor...' : 'Doğrulanıyor...') : (otpVerified ? 'Şifremi Güncelle' : 'Kodu Doğrula')}</button>
-                      <button type="button" onClick={() => { setPasswordResetStep(1); setOtpCode(''); setNewPassword(''); setConfirmNewPassword(''); setOtpVerified(false); setError(''); }} className="w-full py-2 text-sm text-slate-600">← Geri Dön</button>
-                    </div>
+                    
+                    <button 
+                      type="button" 
+                      onClick={async (e) => { e.stopPropagation(); await handlePasswordResetVerify(e as any); }} 
+                      disabled={isLoading || (!otpVerified && otpCode.length !== 6) || (otpVerified && (!newPassword || newPassword !== confirmNewPassword))} 
+                      className="w-full py-3.5 bg-[#e05a4c] text-white rounded-xl font-semibold text-[15px]
+                        active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <>{otpVerified ? 'Şifremi Güncelle' : 'Kodu Doğrula'}</>
+                      )}
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => { setPasswordResetStep(1); setOtpCode(''); setNewPassword(''); setConfirmNewPassword(''); setOtpVerified(false); setError(''); }} 
+                      className="w-full py-2.5 text-[13px] text-gray-500 font-medium"
+                    >
+                      ← Geri Dön
+                    </button>
                   </div>
                 )}
               </div>

@@ -27,7 +27,9 @@ export type OrderStatus =
   | 'processing'
   | 'shipped'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'refunded'
+  | 'failed';
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 export type PaymentMethod = 'credit_card' | 'bank_transfer' | 'cash_on_delivery';
 
@@ -57,6 +59,7 @@ export interface OrderDelivery {
 export interface OrderPayment {
   method: PaymentMethod;
   status: PaymentStatus;
+  clientInfo?: OrderClientInfo;
   cardLast4?: string;
   transactionId?: string;
   paidAt?: string;
@@ -68,6 +71,25 @@ export interface OrderPayment {
   errorCode?: unknown;
   errorMessage?: string;
   errorGroup?: unknown;
+  reminderShown?: boolean;
+  reminderShownAt?: string;
+  reminderChannel?: string;
+  reminderType?: string;
+  reminderMessage?: string;
+  reminderClosed?: boolean;
+  reminderClosedAt?: string;
+  reminderAction?: string;
+  reminderActionAt?: string;
+  reminderDismissCount?: number;
+  reminderResumeCount?: number;
+}
+
+export interface OrderClientInfo {
+  userAgent?: string;
+  deviceType?: string;
+  browser?: string;
+  browserVersion?: string;
+  os?: string;
 }
 
 export interface OrderMessage {

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer as supabase } from '@/lib/supabase/server-client';
 import { toCamelCase } from '@/lib/supabase/transformer';
+import { EmailService } from '@/lib/email/emailService';
+
+// Helper to check if status warrants an email notification
+const EMAIL_STATUSES = ['confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'failed', 'payment_failed', 'pending_payment', 'refunded'];
+
+function shouldSendStatusEmail(status: string): boolean {
+  return EMAIL_STATUSES.includes(status);
+}
 
 // GET - Tek sipariş getir
 export async function GET(
@@ -102,6 +110,33 @@ export async function PATCH(
     if (error) {
       console.error('Error updating order status:', error);
       return NextResponse.json({ error: 'Failed to update order status' }, { status: 500 });
+    }
+
+    // Send status email notification for supported statuses
+    if (updated && shouldSendStatusEmail(status)) {
+      try {
+        const delivery = (updated as any).delivery || {};
+        const refund = (updated as any).refund || {};
+        await EmailService.sendOrderStatusUpdate({
+          customerEmail: (updated as any).customer_email || '',
+          customerName: (updated as any).customer_name || 'Değerli Müşterimiz',
+          orderNumber: String((updated as any).order_number || ''),
+          status: status as any,
+          deliveryDate: delivery.deliveryDate || delivery.delivery_date || '',
+          deliveryTime: delivery.deliveryTimeSlot || delivery.delivery_time_slot || '',
+          deliveryAddress: delivery.fullAddress || delivery.full_address || '',
+          district: delivery.district || '',
+          recipientName: delivery.recipientName || delivery.recipient_name || '',
+          recipientPhone: delivery.recipientPhone || delivery.recipient_phone || '',
+          refundAmount: refund.amount || undefined,
+          refundReason: refund.reason || undefined,
+          refundDate: refund.date || undefined,
+        });
+        console.log(`📧 Status email sent for order ${(updated as any).order_number}: ${status}`);
+      } catch (emailError) {
+        console.error('Failed to send status email:', emailError);
+        // Don't fail the request if email fails
+      }
     }
 
     return NextResponse.json(toCamelCase(updated));

@@ -21,6 +21,30 @@ import {
   HiOutlineTruck,
 } from 'react-icons/hi';
 
+// Telefon numarasını normalize et (sadece rakamlar, 10 hane)
+function normalizePhone(phone: string): string {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('90') && digits.length >= 12) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith('0') && digits.length >= 11) {
+    digits = digits.slice(1);
+  }
+  if (digits.length > 10) {
+    digits = digits.slice(0, 10);
+  }
+  return digits;
+}
+
+// Telefon numarasını formatla: 5XXXXXXXXX -> 5XX XXX XX XX
+function formatPhoneNumber(value: string): string {
+  const digits = normalizePhone(value).slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`;
+}
+
 const typeConfig = {
   home: { 
     icon: HiOutlineHome, 
@@ -75,7 +99,7 @@ export default function AdreslerimPage() {
       title: '',
       type: 'home',
       recipientName: customer.name,
-      recipientPhone: customer.phone,
+      recipientPhone: formatPhoneNumber(customer.phone),
       side: '',
       district: '',
       districtId: 0,
@@ -95,7 +119,7 @@ export default function AdreslerimPage() {
         title: address.title,
         type: address.type,
         recipientName: address.recipientName,
-        recipientPhone: address.recipientPhone,
+        recipientPhone: formatPhoneNumber(address.recipientPhone),
         side,
         district: address.district,
         districtId: address.districtId,
@@ -114,7 +138,7 @@ export default function AdreslerimPage() {
       title: formData.title,
       type: formData.type,
       recipientName: formData.recipientName,
-      recipientPhone: formData.recipientPhone,
+      recipientPhone: normalizePhone(formData.recipientPhone),
       province: 'İstanbul',
       provinceId: 34,
       district: formData.district,
@@ -143,6 +167,21 @@ export default function AdreslerimPage() {
     setDeleteConfirm(null);
     setSuccessMessage('Adres silindi');
     setTimeout(() => setSuccessMessage(null), 3000);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const digits = normalizePhone(value);
+    
+    // Maksimum 10 rakam
+    if (digits.length > 10) return;
+    
+    // İlk rakam 5 değilse girişi engelle
+    if (digits.length > 0 && digits[0] !== '5') {
+      return;
+    }
+    
+    setFormData({ ...formData, recipientPhone: formatPhoneNumber(digits) });
   };
 
   return (
@@ -257,7 +296,7 @@ export default function AdreslerimPage() {
                     className="text-black hover:underline font-medium inline-flex items-center gap-1"
                   >
                     <HiOutlinePhone className="w-4 h-4" />
-                    {address.recipientPhone}
+                    {formatPhoneNumber(address.recipientPhone)}
                   </a>
                 </div>
 
@@ -523,13 +562,20 @@ function AddressFormModal({ isOpen, onClose, formData, setFormData, onSubmit, is
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
                     Telefon *
                   </label>
-                  <input
-                    type="tel"
-                    value={formData.recipientPhone}
-                    onChange={(e) => setFormData({ ...formData, recipientPhone: e.target.value })}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e05a4c] focus:border-transparent"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium select-none pointer-events-none">
+                      +90
+                    </span>
+                    <input
+                      type="tel"
+                      value={formData.recipientPhone}
+                      onChange={handlePhoneChange}
+                      placeholder="5XX XXX XX XX"
+                      required
+                      className="w-full pl-[3.5rem] pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#e05a4c] focus:border-transparent"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">5 ile başlayan 10 haneli numara</p>
                 </div>
               </div>
 

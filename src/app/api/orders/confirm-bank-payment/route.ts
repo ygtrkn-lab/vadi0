@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
           name: getString(p.name),
           quantity: Number(p.quantity) || 1,
           price: Number(p.price) || 0,
+          imageUrl: getString(p.image) || getString(p.imageUrl) || getString(p.hoverImage) || undefined,
         })),
         subtotal: Number(order.subtotal) || 0,
         discount: Number(order.discount) || 0,

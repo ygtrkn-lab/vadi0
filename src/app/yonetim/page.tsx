@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import Image from 'next/image';
+import MediaImage from '@/components/MediaImage';
 import { SpotlightCard, AnimatedCounter, FadeContent, StatusBadge } from '@/components/admin';
+import { MiniLineChart } from '@/components/admin/MiniLineChart';
+import { DonutChart } from '@/components/admin/DonutChart';
 import { GradientText, ShinyText, BlurText } from '@/components/ui-kit';
 import { useTheme } from './ThemeContext';
+import { useOrder } from '@/context/OrderContext';
 import { 
   HiOutlineCube, 
   HiOutlineTag, 
@@ -18,11 +21,12 @@ import {
   HiOutlineTrendingDown,
   HiOutlineEye,
   HiOutlineClock,
-  HiOutlineUsers
+  HiOutlineUsers,
+  HiOutlineCheckCircle
 } from 'react-icons/hi';
 
-// Order type
-interface Order {
+// Order type (local - for API response)
+interface LocalOrder {
   id: string;
   customerId: string;
   customer_id?: string;
@@ -36,6 +40,10 @@ interface Order {
     image: string;
   }>;
   total: number;
+  payment?: {
+    status?: string;
+    method?: string;
+  };
   delivery: {
     recipientName?: string;
     recipient_name?: string;
@@ -75,11 +83,13 @@ interface Product {
 
 export default function YonetimDashboard() {
   const [greeting, setGreeting] = useState('');
-  const [orders, setOrders] = useState<Order[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { isDark } = useTheme();
+  
+  // Dinamik sipariş verileri - OrderContext'ten (real-time güncellenir)
+  const { state: orderState } = useOrder();
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -87,25 +97,22 @@ export default function YonetimDashboard() {
     else if (hour < 18) setGreeting('İyi günler');
     else setGreeting('İyi akşamlar');
     
-    // Fetch all data
+    // Fetch products and customers (orders come from context)
     const fetchData = async () => {
       try {
-        const [ordersRes, customersRes, productsRes] = await Promise.all([
-          fetch('/api/orders'),
+        const [customersRes, productsRes] = await Promise.all([
           fetch('/api/customers'),
           fetch('/api/products')
         ]);
         
-        const ordersData = await ordersRes.json();
         const customersData = await customersRes.json();
         const productsData = await productsRes.json();
         
         console.log('🏠 Dashboard API Responses:');
         console.log('  📦 Products:', productsData.products?.length || 0);
-        console.log('  📋 Orders:', ordersData.orders?.length || 0);
         console.log('  👥 Customers:', customersData.customers?.length || 0);
+        console.log('  📋 Orders (from context):', orderState.orders?.length || 0);
         
-        setOrders(ordersData.orders || ordersData.data || []);
         setCustomers(customersData.customers || customersData.data || []);
         setProducts(productsData.products || productsData.data || []);
       } catch (error) {
@@ -118,16 +125,48 @@ export default function YonetimDashboard() {
     fetchData();
   }, []);
 
+  // Dinamik siparişler - context'ten (real-time)
+  const orders = orderState.orders || [];
+
   // Calculate stats from products
   const totalProducts = products.length;
   const categories = [...new Set(products.map(p => p.category))];
   const totalCategories = categories.length;
   
-  // Calculate real order stats
-  const totalOrders = orders.length;
-  const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'preparing').length;
-  const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-  const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+  // ✅ KESİN ÖDENEN SİPARİŞ İSTATİSTİKLERİ (Dinamik - OrderContext'ten)
+  const salesStats = useMemo(() => {
+    // Kesin ödenmiş siparişler (payment.status === 'paid')
+    const paidOrders = orders.filter(o => o.payment?.status === 'paid');
+    const paidRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
+    const paidCount = paidOrders.length;
+    
+    // Toplam ürün adedi (kesin ödenmiş)
+    const paidItemCount = paidOrders.reduce((sum, o) => {
+      const items = o.products || [];
+      return sum + items.reduce((itemSum, item) => itemSum + (item.quantity || 1), 0);
+    }, 0);
+    
+    // Bekleyen siparişler
+    const pendingOrders = orders.filter(o => 
+      o.status === 'pending' || 
+      o.status === 'preparing' || 
+      o.status === 'pending_payment' ||
+      o.status === 'awaiting_payment'
+    ).length;
+    
+    // Ortalama sipariş değeri (sadece ödenmiş)
+    const avgOrderValue = paidCount > 0 ? Math.round(paidRevenue / paidCount) : 0;
+    
+    return {
+      totalOrders: orders.length,
+      paidOrders: paidCount,
+      paidRevenue,
+      paidItemCount,
+      pendingOrders,
+      avgOrderValue
+    };
+  }, [orders]);
+  
   const totalCustomers = customers.length;
 
   const stats = [
@@ -140,19 +179,19 @@ export default function YonetimDashboard() {
       color: 'blue'
     },
     {
-      label: 'Toplam Sipariş',
-      value: totalOrders,
-      change: pendingOrders > 0 ? `${pendingOrders} bekliyor` : 'Bekleyen yok',
-      trend: pendingOrders > 0 ? 'neutral' : 'up',
-      icon: HiOutlineShoppingCart,
+      label: 'Ödenmiş Sipariş',
+      value: salesStats.paidOrders,
+      change: salesStats.pendingOrders > 0 ? `${salesStats.pendingOrders} bekliyor` : 'Bekleyen yok',
+      trend: salesStats.pendingOrders > 0 ? 'neutral' : 'up',
+      icon: HiOutlineCheckCircle,
       color: 'purple',
-      badge: pendingOrders > 0 ? pendingOrders : null
+      badge: salesStats.pendingOrders > 0 ? salesStats.pendingOrders : null
     },
     {
-      label: 'Toplam Gelir',
-      value: totalRevenue,
+      label: 'Kesin Gelir',
+      value: salesStats.paidRevenue,
       prefix: '₺',
-      change: `Ort. ₺${avgOrderValue.toLocaleString('tr-TR')}`,
+      change: `${salesStats.paidItemCount} ürün satıldı`,
       trend: 'up',
       icon: HiOutlineCurrencyDollar,
       color: 'emerald'
@@ -166,6 +205,65 @@ export default function YonetimDashboard() {
       color: 'amber'
     },
   ];
+
+  // Last 7 days sales trend (paid revenue)
+  const salesTrend = useMemo(() => {
+    const days: { label: string; dateKey: string; total: number }[] = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(now.getDate() - i);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const dateKey = `${y}-${m}-${day}`;
+      const label = d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
+      days.push({ label, dateKey, total: 0 });
+    }
+    const paid = orders.filter(o => o.payment?.status === 'paid');
+    paid.forEach(o => {
+      const d = new Date(o.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const item = days.find(x => x.dateKey === key);
+      if (item) item.total += o.total || 0;
+    });
+    const max = Math.max(1, ...days.map(d => d.total));
+    return { days, max };
+  }, [orders]);
+
+  // Top districts by orders (last 100 orders)
+  const topDistricts = useMemo(() => {
+    const map = new Map<string, { district: string; orders: number; revenue: number }>();
+    orders.slice(-100).forEach(o => {
+      const d = (o.delivery?.district || '').trim();
+      if (!d) return;
+      const cur = map.get(d) || { district: d, orders: 0, revenue: 0 };
+      cur.orders += 1;
+      if (o.payment?.status === 'paid') cur.revenue += o.total || 0;
+      map.set(d, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.orders - a.orders).slice(0, 6);
+  }, [orders]);
+
+  // Status breakdown
+  const statusBreakdown = useMemo(() => {
+    const s = {
+      delivered: 0,
+      shipped: 0,
+      processing: 0, // includes confirmed
+      pending: 0,
+      cancelled: 0 // includes payment_failed
+    };
+    orders.forEach(o => {
+      if (o.status === 'delivered') s.delivered++;
+      else if (o.status === 'shipped') s.shipped++;
+      else if (o.status === 'processing' || o.status === 'confirmed') s.processing++;
+      else if (o.status === 'pending') s.pending++;
+      else if (o.status === 'cancelled' || o.status === 'payment_failed') s.cancelled++;
+    });
+    const max = Math.max(1, ...Object.values(s));
+    return { s, max };
+  }, [orders]);
 
   const quickActions = [
     { label: 'Yeni Ürün', href: '/yonetim/urunler', icon: HiOutlinePlus },
@@ -220,16 +318,27 @@ export default function YonetimDashboard() {
     }
   };
 
-  const recentOrders = orders
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5)
-    .map(order => ({
-      id: `#${order.id.replace('ord_', '')}`,
-      customer: order.delivery?.recipientName || getCustomerName(order.customerId),
-      amount: order.total,
-      status: order.status,
-      time: getTimeAgo(order.createdAt)
-    }));
+  // Son siparişler - sadece kesin ödenmiş olanlar önce
+  const recentOrders = useMemo(() => {
+    return [...orders]
+      .sort((a, b) => {
+        // Ödenmiş olanları öne al
+        const aPaid = a.payment?.status === 'paid' ? 1 : 0;
+        const bPaid = b.payment?.status === 'paid' ? 1 : 0;
+        if (bPaid !== aPaid) return bPaid - aPaid;
+        // Sonra tarihe göre sırala
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      })
+      .slice(0, 5)
+      .map(order => ({
+        id: `#${order.orderNumber || order.id.replace('ord_', '')}`,
+        customer: order.delivery?.recipientName || order.customerName || getCustomerName(order.customerId),
+        amount: order.total,
+        status: order.status,
+        isPaid: order.payment?.status === 'paid',
+        time: getTimeAgo(order.createdAt)
+      }));
+  }, [orders, customers]);
 
   // Category distribution
   const categoryStats = categories.map(cat => ({
@@ -336,7 +445,7 @@ export default function YonetimDashboard() {
                 key={action.label}
                 href={action.href}
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 
-                  border rounded-xl text-sm transition-all
+                  border rounded-xl text-sm transition-all transform hover:scale-[1.02]
                   ${isDark 
                     ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:text-white hover:border-neutral-700' 
                     : 'bg-white border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300'
@@ -354,7 +463,7 @@ export default function YonetimDashboard() {
       <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Recent Orders */}
         <FadeContent direction="up" delay={0.2} className="lg:col-span-2">
-          <SpotlightCard className="p-4 sm:p-6">
+          <SpotlightCard className="p-4 sm:p-6 transition-transform hover:scale-[1.01]">
             <div className="flex items-center justify-between mb-5">
               <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Son Siparişler</h2>
               <Link 
@@ -391,11 +500,19 @@ export default function YonetimDashboard() {
                         size="sm"
                         pulse={order.status === 'pending' || order.status === 'preparing'}
                       />
+                      {/* Ödeme durumu badge */}
+                      {order.isPaid && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-400">
+                          ✓ Ödendi
+                        </span>
+                      )}
                     </div>
                     <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{order.customer}</p>
                   </div>
                   <div className="text-right">
-                    <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>₺{order.amount.toLocaleString('tr-TR')}</p>
+                    <p className={`font-semibold ${order.isPaid ? 'text-emerald-400' : isDark ? 'text-white' : 'text-gray-900'}`}>
+                      ₺{order.amount.toLocaleString('tr-TR')}
+                    </p>
                     <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{order.time}</p>
                   </div>
                 </motion.div>
@@ -439,6 +556,94 @@ export default function YonetimDashboard() {
         </FadeContent>
       </div>
 
+      {/* Sales Trend & Status */}
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Sales Trend (7 days) */}
+        <FadeContent direction="up" delay={0.3} className="lg:col-span-2">
+          <SpotlightCard className="p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>7 Günlük Gelir Trendi</h2>
+              <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Kesin ödenmiş siparişler</span>
+            </div>
+            <MiniLineChart
+              points={salesTrend.days.map(d => ({ label: d.label, value: d.total }))}
+              max={salesTrend.max}
+              dark={isDark}
+            />
+          </SpotlightCard>
+        </FadeContent>
+
+        {/* Status Breakdown */}
+        <FadeContent direction="up" delay={0.4}>
+          <SpotlightCard className="p-4 sm:p-6 transition-transform hover:scale-[1.01]">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Durum Dağılımı</h2>
+            </div>
+            <div className="space-y-3">
+              {[
+                { key: 'delivered', label: 'Teslim Edildi', color: 'bg-emerald-500' },
+                { key: 'shipped', label: 'Kargoda', color: 'bg-blue-500' },
+                { key: 'processing', label: 'Hazırlanıyor/Onaylı', color: 'bg-purple-500' },
+                { key: 'pending', label: 'Bekliyor', color: 'bg-amber-500' },
+                { key: 'cancelled', label: 'İptal/Başarısız', color: 'bg-red-500' },
+              ].map((row) => {
+                const count = (statusBreakdown.s as any)[row.key] as number;
+                const pct = Math.round((count / statusBreakdown.max) * 100);
+                return (
+                  <div key={row.key}>
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>{row.label}</span>
+                      <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{count}</span>
+                    </div>
+                    <div className={`h-2 rounded-full ${isDark ? 'bg-neutral-800' : 'bg-gray-200'}`}>
+                      <div className={`h-full ${row.color} rounded-full`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4">
+              <DonutChart
+                dark={isDark}
+                segments={[
+                  { label: 'Teslim', value: statusBreakdown.s.delivered, color: '#10B981' },
+                  { label: 'Kargo', value: statusBreakdown.s.shipped, color: '#3B82F6' },
+                  { label: 'Hazırlanıyor', value: statusBreakdown.s.processing, color: '#8B5CF6' },
+                  { label: 'Bekliyor', value: statusBreakdown.s.pending, color: '#F59E0B' },
+                  { label: 'İptal', value: statusBreakdown.s.cancelled, color: '#EF4444' },
+                ]}
+              />
+            </div>
+          </SpotlightCard>
+        </FadeContent>
+      </div>
+
+      {/* Top Districts */}
+      <FadeContent direction="up" delay={0.5}>
+        <SpotlightCard className="p-4 sm:p-6 transition-transform hover:scale-[1.01]">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Öne Çıkan İlçeler</h2>
+            <span className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Son 100 sipariş</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {topDistricts.length === 0 ? (
+              <div className={`text-center py-8 ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>Veri yok</div>
+            ) : topDistricts.map((d, i) => (
+              <div key={d.district} className={`p-4 rounded-xl border ${isDark ? 'bg-neutral-900/50 border-neutral-800' : 'bg-white border-gray-200'}`}>
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{d.district}</span>
+                  <span className={`text-xs ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>#{i + 1}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className={`text-xs ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>{d.orders} sipariş</span>
+                  <span className={`text-sm font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>₺{d.revenue.toLocaleString('tr-TR')}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SpotlightCard>
+      </FadeContent>
+
       {/* Recent Products */}
       <FadeContent direction="up" delay={0.4}>
         <SpotlightCard className="p-4 sm:p-6">
@@ -464,7 +669,7 @@ export default function YonetimDashboard() {
               >
                 <div className={`relative aspect-square rounded-xl overflow-hidden mb-2
                   ${isDark ? 'bg-neutral-800' : 'bg-gray-100'}`}>
-                  <Image
+                  <MediaImage
                     src={product.image}
                     alt={product.name}
                     fill

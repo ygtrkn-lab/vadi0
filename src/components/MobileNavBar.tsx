@@ -1,6 +1,9 @@
 
 'use client';
 
+// DISABLED: Mobile bottom navigation bar removed site-wide
+// To re-enable, remove the early return at the start of the component
+
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -14,6 +17,8 @@ type MobileNavBarProps = {
 };
 
 export default function MobileNavBar({ showBottomBar = true }: MobileNavBarProps) {
+  // Site genelinde mobil alt nav bar kaldırıldı
+  return null;
   const [isVisible, setIsVisible] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);

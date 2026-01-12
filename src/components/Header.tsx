@@ -25,6 +25,7 @@ import { useCustomer } from '@/context/CustomerContext';
 import { useSetting } from '@/hooks/useSettings';
 import SearchBar from './SearchBar';
 import CategoryAvatar from './ui/CategoryAvatar';
+import MobileCategoryMenu from './MobileCategoryMenu';
 
 interface Category {
   id: number;
@@ -45,6 +46,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isHidden, setIsHidden] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const topBandRef = useRef<HTMLDivElement | null>(null);
   
   // Get cart state
@@ -54,6 +56,11 @@ export default function Header({ hideCategories = false }: HeaderProps) {
   // Get customer favorites count
   const { state: customerState } = useCustomer();
   const wishlistCount = customerState.currentCustomer?.favorites?.length || 0;
+  
+  // Set hydration flag
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
   
   // Get preloader state and logo ref
   const { showHeaderLogo, isPreloaderComplete, logoRef, registerLogoPosition } = usePreloader();
@@ -132,7 +139,244 @@ export default function Header({ hideCategories = false }: HeaderProps) {
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-[20000]" style={{ pointerEvents: 'auto' }}>
-        {/* Top Bar */}
+        {/* ═══════════════════════════════════════════════════════════════════
+            MOBILE HEADER - Ultra Modern Apple/Dribbble/Shopify/Amazon Style
+            ═══════════════════════════════════════════════════════════════════ */}
+        <div className="lg:hidden">
+          {/* Top Info Bar - Same as Desktop */}
+          <AnimatePresence>
+            {!isScrolled && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                className="overflow-hidden border-b border-neutral-800 bg-neutral-950/95 backdrop-blur-xl"
+              >
+                <div className="flex items-center justify-between gap-3 py-2 px-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="topbar-marquee">
+                      <div className="topbar-marquee-track gap-2">
+                        <div className="flex items-center gap-2 pr-3">
+                          <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-primary-500 px-3 py-1">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                              <Truck size={14} className="text-white" />
+                            </span>
+                            <span className="text-xs font-semibold whitespace-nowrap text-white">İstanbul içi ücretsiz kargo</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-primary-500 px-3 py-1">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                              <CreditCard size={14} className="text-white" />
+                            </span>
+                            <span className="text-xs font-semibold whitespace-nowrap text-white">iyzico ile güvenli ödeme</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-secondary-500 px-3 py-1">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                              <BadgeCheck size={14} className="text-white" />
+                            </span>
+                            <span className="text-xs font-semibold whitespace-nowrap text-white">Memnuniyet garantisi</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 pr-3" aria-hidden="true">
+                          <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-primary-500 px-3 py-1">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                              <Truck size={14} className="text-white" />
+                            </span>
+                            <span className="text-xs font-semibold whitespace-nowrap text-white">İstanbul içi ücretsiz kargo</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-primary-500 px-3 py-1">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                              <CreditCard size={14} className="text-white" />
+                            </span>
+                            <span className="text-xs font-semibold whitespace-nowrap text-white">iyzico ile güvenli ödeme</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 rounded-full border border-white/15 bg-secondary-500 px-3 py-1">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/15 border border-white/15">
+                              <BadgeCheck size={14} className="text-white" />
+                            </span>
+                            <span className="text-xs font-semibold whitespace-nowrap text-white">Memnuniyet garantisi</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Main Mobile Header - Premium Glass Card */}
+          <motion.div
+            initial={false}
+            animate={{
+              y: isHidden ? -100 : 0,
+            }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className="relative"
+            style={{
+              background: isScrolled 
+                ? 'rgba(255, 255, 255, 0.72)' 
+                : 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'saturate(180%) blur(20px)',
+              WebkitBackdropFilter: 'saturate(180%) blur(20px)',
+              borderBottom: isScrolled 
+                ? '0.5px solid rgba(0, 0, 0, 0.08)' 
+                : '0.5px solid rgba(0, 0, 0, 0.04)',
+            }}
+          >
+            <div className="flex items-center justify-between px-4 h-[56px]">
+              {/* Left - Hamburger with Micro-interaction */}
+              <motion.button
+                onClick={() => {
+                  window.dispatchEvent(new Event('closeAllOverlays'));
+                  window.dispatchEvent(new CustomEvent('openMobileCategoryMenu'));
+                }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.92 }}
+                className="relative w-11 h-11 flex items-center justify-center rounded-2xl 
+                  transition-all duration-300"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.02) 100%)',
+                }}
+                aria-label="Menü"
+              >
+                <div className="flex flex-col items-center justify-center gap-[5px]">
+                  <motion.span 
+                    className="w-[18px] h-[2px] rounded-full bg-gray-800"
+                    style={{ originX: 0 }}
+                  />
+                  <motion.span 
+                    className="w-[14px] h-[2px] rounded-full bg-gray-600"
+                    style={{ originX: 0 }}
+                  />
+                </div>
+              </motion.button>
+
+              {/* Center - Logo with Premium Animation */}
+              <Link href="/" className="absolute left-1/2 -translate-x-1/2 z-10">
+                <motion.div
+                  ref={logoRef as React.RefObject<HTMLDivElement>}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ 
+                    opacity: showHeaderLogo ? 1 : 0,
+                    y: showHeaderLogo ? 0 : -10
+                  }}
+                  transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                  whileTap={{ scale: 0.96 }}
+                  className="relative"
+                >
+                  <Image
+                    src="/logo.webp"
+                    alt="Vadiler Çiçek"
+                    width={95}
+                    height={30}
+                    className="object-contain"
+                    priority
+                  />
+                </motion.div>
+              </Link>
+
+              {/* Right - Action Cluster (Apple Watch Style) */}
+              <div className="flex items-center gap-2">
+                {/* Search Pill */}
+                <motion.button
+                  onClick={() => setIsSearchOpen(true)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.92 }}
+                  className="w-11 h-11 flex items-center justify-center rounded-2xl
+                    transition-all duration-300"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.02) 100%)',
+                  }}
+                  aria-label="Ara"
+                >
+                  <Search size={18} strokeWidth={2.2} className="text-gray-700" />
+                </motion.button>
+
+                {/* Cart - Hero Button with Glow */}
+                <motion.button
+                  onClick={() => window.location.href = '/sepet'}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.92 }}
+                  className="relative w-11 h-11 flex items-center justify-center rounded-2xl
+                    transition-all duration-300"
+                  style={{ 
+                    background: 'linear-gradient(135deg, #e05a4c 0%, #d64a3c 100%)',
+                    boxShadow: '0 4px 20px rgba(224, 90, 76, 0.35), 0 0 0 1px rgba(255,255,255,0.1) inset',
+                  }}
+                  aria-label="Sepet"
+                >
+                  <ShoppingCart size={17} strokeWidth={2.2} className="text-white" />
+                  <AnimatePresence>
+                    {isHydrated && cartCount > 0 && (
+                      <motion.span
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+                        className="absolute -top-1.5 -right-1.5 min-w-[20px] h-[20px] px-1
+                          bg-white rounded-full flex items-center justify-center
+                          text-[10px] font-bold"
+                        style={{ 
+                          color: '#e05a4c',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15), 0 0 0 2px white',
+                        }}
+                      >
+                        {cartCount > 99 ? '99+' : cartCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            MOBILE SEARCH MODAL - Full Screen Apple Style
+            ═══════════════════════════════════════════════════════════════════ */}
+        <AnimatePresence>
+          {isSearchOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[30000] lg:hidden"
+              style={{
+                background: 'rgba(255, 255, 255, 0.98)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+              }}
+            >
+              {/* Search Header */}
+              <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1, duration: 0.3 }}
+                className="flex items-center gap-3 px-4 h-[60px] border-b border-gray-100"
+              >
+                <div className="flex-1 relative">
+                  <SearchBar 
+                    isMobile 
+                    autoFocus 
+                    onClose={() => setIsSearchOpen(false)} 
+                    onOpenChange={setIsSearchDropdownOpen}
+                  />
+                </div>
+                <motion.button
+                  onClick={() => setIsSearchOpen(false)}
+                  whileTap={{ scale: 0.9 }}
+                  className="text-primary-500 font-medium text-[15px] px-2"
+                >
+                  İptal
+                </motion.button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* DESKTOP Top Bar */}
         <motion.div 
         ref={topBandRef}
         initial={false}
@@ -141,7 +385,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
           opacity: 1,
         }}
         transition={{ duration: 0.2, ease: 'easeOut' }}
-        className="overflow-hidden border-b border-neutral-800 bg-neutral-950/95 backdrop-blur-xl text-white"
+        className="hidden lg:block overflow-hidden border-b border-neutral-800 bg-neutral-950/95 backdrop-blur-xl text-white"
         style={{ pointerEvents: 'auto' }}
       >
         <div className="container-custom">
@@ -207,7 +451,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
         </div>
       </motion.div>
 
-      {/* Main Header */}
+      {/* DESKTOP Main Header */}
       <motion.div
         initial={false}
         animate={{
@@ -225,7 +469,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
           duration: 0.4,
           ease: [0.25, 0.1, 0.25, 1],
         }}
-        className="relative z-[20001]"
+        className="hidden lg:block relative z-[20001]"
       >
         <div className="container-custom">
           <div className="flex items-center justify-between gap-4">
@@ -248,7 +492,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   whileTap={{ scale: 0.98 }}
                 >
                   <Image
-                    src="/logo.png"
+                    src="/logo.webp"
                     alt="Vadiler Çiçek"
                     width={isScrolled ? 120 : 150}
                     height={isScrolled ? 40 : 50}
@@ -260,20 +504,12 @@ export default function Header({ hideCategories = false }: HeaderProps) {
             </Link>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden lg:flex flex-1 max-w-xl mx-8">
+            <div className="flex flex-1 max-w-xl mx-8">
               <SearchBar onOpenChange={setIsSearchDropdownOpen} />
             </div>
 
-            {/* Right Actions */}
-            <div className="flex items-center gap-2 sm:gap-4 relative z-[20002]">
-              {/* Mobile Search Toggle */}
-              <button 
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <Search size={22} className="text-gray-700" />
-              </button>
-
+            {/* Right Actions - Desktop Only */}
+            <div className="flex items-center gap-4 relative z-[20002]">
               {/* User Account */}
               <button 
                 onClick={(e) => {
@@ -281,7 +517,8 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   e.stopPropagation();
                   window.location.href = '/hesabim';
                 }}
-                className="hidden sm:flex items-center gap-2 p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer">
+                className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer"
+                aria-label="Hesabım">
                 <User size={22} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
                 <span className="hidden xl:inline text-sm text-gray-700 group-hover:text-primary-500 transition-colors">
                   Hesabım
@@ -295,9 +532,10 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   e.stopPropagation();
                   window.location.href = '/hesabim/favorilerim';
                 }}
-                className="relative p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer">
+                className="relative p-2 hover:bg-gray-100 rounded-full transition-colors group cursor-pointer"
+                aria-label="Favorilerim">
                 <Heart size={22} className="text-gray-700 group-hover:text-primary-500 transition-colors" />
-                {wishlistCount > 0 && (
+                {isHydrated && wishlistCount > 0 && (
                   <span className="absolute top-0 right-0 min-w-4 h-4 px-1 text-white text-[10px] 
                     rounded-full flex items-center justify-center font-semibold"
                     style={{ backgroundColor: '#e05a4c' }}>
@@ -315,10 +553,11 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                 }}
                 className="relative flex items-center gap-2 p-2 px-3 rounded-full 
                 hover:opacity-90 transition-all group shadow-md cursor-pointer"
-                style={{ backgroundColor: '#e05a4c' }}>
+                style={{ backgroundColor: '#e05a4c' }}
+                aria-label={`Sepet${cartCount > 0 ? ` (${cartCount} ürün)` : ''}`}>
                 <ShoppingCart size={20} className="text-white" />
-                <span className="hidden sm:inline text-sm font-medium text-white">Sepet</span>
-                {cartCount > 0 && (
+                <span className="text-sm font-medium text-white">Sepet</span>
+                {isHydrated && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-white text-xs 
                     rounded-full flex items-center justify-center font-semibold shadow-md"
                     style={{ color: '#e05a4c' }}>
@@ -326,50 +565,8 @@ export default function Header({ hideCategories = false }: HeaderProps) {
                   </span>
                 )}
               </button>
-
-              {/* Mobile Menu Toggle */}
-              <button 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  window.dispatchEvent(new Event('closeAllOverlays'));
-                  window.dispatchEvent(new CustomEvent('openMobileSidebar'));
-                }}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
-                style={{
-                  position: 'relative',
-                  zIndex: 99999,
-                  pointerEvents: 'auto',
-                  cursor: 'pointer',
-                }}
-                aria-label="Menüyü Aç"
-              >
-                <Menu size={24} className="text-gray-700" />
-              </button>
             </div>
           </div>
-
-          {/* Mobile Search */}
-          <AnimatePresence>
-            {isSearchOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="lg:hidden relative z-[9999]"
-              >
-                <div className="pt-4 pb-2">
-                  <SearchBar 
-                    isMobile 
-                    autoFocus 
-                    onClose={() => setIsSearchOpen(false)}
-                    onOpenChange={setIsSearchDropdownOpen}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </motion.div>
 
@@ -481,6 +678,42 @@ export default function Header({ hideCategories = false }: HeaderProps) {
       </nav>
       )}
     </div>
+    
+    {/* Mobile Full Screen Search Modal - Amazon/Shopify Style */}
+    <AnimatePresence>
+      {isSearchOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[30000] bg-white lg:hidden"
+        >
+          {/* Search Header */}
+          <div className="flex items-center gap-3 px-4 h-14 border-b border-gray-100 bg-white">
+            <div className="flex-1">
+              <SearchBar 
+                isMobile 
+                autoFocus 
+                onClose={() => setIsSearchOpen(false)} 
+                onOpenChange={setIsSearchDropdownOpen}
+              />
+            </div>
+            <motion.button
+              onClick={() => setIsSearchOpen(false)}
+              whileTap={{ scale: 0.9 }}
+              className="w-10 h-10 flex items-center justify-center rounded-full
+                bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0"
+            >
+              <X size={20} className="text-gray-600" />
+            </motion.button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
+    {/* Mobile Category Menu - Apple/Shopify Style */}
+    <MobileCategoryMenu />
     </>
   );
 }

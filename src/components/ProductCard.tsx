@@ -9,6 +9,7 @@ import type { Product } from '@/data/products';
 import { useCustomer } from '@/context/CustomerContext';
 import { useCart } from '@/context/CartContext';
 import { useCategoryNames } from '@/hooks/useCategoryNames';
+import { useVideoLazyLoad } from '@/hooks/useVideoLazyLoad';
 
 // URL'den medya türünü belirle
 function getMediaType(url: string): 'image' | 'video' | 'unknown' {
@@ -23,18 +24,28 @@ function getMediaType(url: string): 'image' | 'video' | 'unknown' {
   return 'unknown';
 }
 
+// Optimize poster URL with Cloudinary transformations for responsive sizing
+function optimizePosterUrl(url: string, width: number = 400): string {
+  if (!url || !url.includes('res.cloudinary.com')) return url;
+  // Add responsive sizing transformation
+  const transformations = `w_${width},h_${width},c_fill,f_auto,q_auto`;
+  return url.replace('/upload/', `/upload/${transformations}/`);
+}
+
 interface ProductCardProps {
   product: Product;
   index?: number;
+  priority?: boolean; // İlk görünen ürünler için priority loading
 }
 
-export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+export default function ProductCard({ product, index = 0, priority = false }: ProductCardProps) {
   const { state: customerState, addToFavorites, removeFromFavorites, isFavorite } = useCustomer();
   const { addToCart } = useCart();
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
   const { getName } = useCategoryNames();
+  const { ref: videoRef, shouldLoad: shouldLoadVideo } = useVideoLazyLoad();
 
   const customer = customerState.currentCustomer;
   const isMainVideo = getMediaType(product.image) === 'video';
@@ -95,12 +106,14 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           {/* Weekly campaign badge */}
           {isWeeklyCampaign && (
             <div className="absolute left-2 top-10 sm:top-12 z-20">
-              <Image
-                src="/TR/bugune-ozel.png"
+              <img
+                src="/TR/bugune-ozel.webp"
                 alt="Bugüne Özel"
-                width={72}
-                height={72}
+                width="72"
+                height="72"
                 className="h-14 w-14 sm:h-16 sm:w-16 drop-shadow"
+                loading="lazy"
+                decoding="async"
               />
             </div>
           )}
@@ -109,12 +122,15 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           {isMainVideo ? (
             <div className="relative w-full h-full">
               <video
-                src={product.image}
+                ref={videoRef}
+                src={shouldLoadVideo ? product.image : undefined}
+                poster={product.gallery && product.gallery[0] ? optimizePosterUrl(product.gallery[0], 400) : undefined}
                 className="product-image w-full h-full object-cover rounded-xl cursor-pointer"
                 loop
                 muted
                 playsInline
-                autoPlay
+                preload="none"
+                autoPlay={shouldLoadVideo}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -147,6 +163,8 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="product-image object-cover rounded-xl"
                 onError={() => setImageError(true)}
+                priority={priority} // İlk 4-6 ürün için priority
+                loading={priority ? undefined : 'lazy'}
               />
               
               {/* Hover Image */}
@@ -186,6 +204,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                 ? 'bg-red-500 text-white border-red-500 shadow-glow scale-110 animate-pulse' 
                 : 'bg-white/90 text-gray-700 border-white/60 backdrop-blur-sm hover:bg-red-50 hover:text-red-500 hover:border-red-200'
               }`}
+            aria-label={isWishlisted ? 'Favorilerden çıkar' : 'Favorilere ekle'}
           >
             <Heart 
               size={16} 

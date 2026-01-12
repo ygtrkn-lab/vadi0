@@ -22,8 +22,8 @@ export const ISTANBUL_CONTENT: CityContent = {
   name: "İstanbul",
   title: "İstanbul Çiçek Siparişi",
   description: "İstanbul'un tüm ilçelerine çiçek teslimatı. Online sipariş verin, taze çiçekler kapınıza gelsin.",
-  metaTitle: "İstanbul Çiçek Siparişi | Hızlı Teslimat | Vadiler Çiçek",
-  metaDescription: "İstanbul'a online çiçek siparişi! 39 ilçeye hızlı ve özenli teslimat, taze çiçekler, uygun fiyatlar. Vadiler Çiçek ile İstanbul'a çiçek gönderin!",
+  metaTitle: "İstanbul Çiçek Siparişi ✿ Aynı Gün Teslimat ➜ 499₺'den Başlayan Fiyatlar",
+  metaDescription: "✅ İstanbul'a aynı gün çiçek teslimatı! 39 ilçeye ücretsiz kargo, 499₺'den başlayan fiyatlar. Gül, orkide, lilyum - Taze çiçek garantisi. Hemen sipariş verin!",
   keywords: ["istanbul çiçek siparişi", "istanbul çiçekçi", "istanbul çiçek gönder", "istanbul online çiçek", "istanbul hızlı teslimat"],
   content: `İstanbul, Türkiye'nin kalbi ve en kalabalık şehri olarak milyonlarca insana ev sahipliği yapıyor. Boğaziçi'nin eşsiz güzelliği, tarihi yarımadasının büyüsü ve modern yaşam alanlarıyla İstanbul, her köşesinde farklı bir hikaye barındırıyor.
 
@@ -231,7 +231,52 @@ Fatih'teki oteller için özel anlaşmalarımız mevcuttur. Misafirlerinize hoş
 // Slug'dan ilçe içeriği getir
 export function getDistrictContentBySlug(slug: string): CityContent | undefined {
   if (slug === 'istanbul') return ISTANBUL_CONTENT;
-  return DISTRICT_CONTENTS.find(d => d.slug === slug);
+  
+  // Önce özel içerik var mı kontrol et
+  const customContent = DISTRICT_CONTENTS.find(d => d.slug === slug);
+  if (customContent) return customContent;
+  
+  // Yoksa ISTANBUL_ILCELERI'den dinamik içerik oluştur
+  const { ISTANBUL_ILCELERI } = require('./istanbul-districts');
+  const district = ISTANBUL_ILCELERI.find((d: { name: string }) => 
+    createCitySlug(d.name) === slug
+  );
+  
+  if (!district) return undefined;
+  
+  // Dinamik fallback içerik oluştur
+  return {
+    slug: slug,
+    name: district.name,
+    title: `${district.name} Çiçek Siparişi`,
+    description: `${district.name}'e online çiçek siparişi. Hızlı ve özenli teslimat ile taze çiçekler kapınızda.`,
+    metaTitle: `${district.name} Çiçek Siparişi | Hızlı Teslimat | Vadiler Çiçek`,
+    metaDescription: `${district.name}'e çiçek gönderin! Hızlı ve özenli teslimat, taze çiçekler, uygun fiyatlar. Vadiler Çiçek ile ${district.name}'e çiçek siparişi verin.`,
+    keywords: [
+      `${district.name.toLowerCase()} çiçek`,
+      `${district.name.toLowerCase()} çiçekçi`,
+      `${district.name.toLowerCase()} çiçek siparişi`,
+      `${district.name.toLowerCase()} çiçek gönder`,
+      `${district.name.toLowerCase()} online çiçek`,
+    ],
+    content: `${district.name}, İstanbul'un ${district.side === 'avrupa' ? 'Avrupa' : 'Anadolu'} yakasında yer alan önemli ilçelerinden biridir. 
+
+Vadiler Çiçek olarak ${district.name}'in her köşesine taze ve özenle hazırlanmış çiçekler ulaştırıyoruz. Doğum günleri, yıl dönümleri, sevgililer günü ve tüm özel günleriniz için en güzel çiçekleri ${district.name}'e gönderiyoruz.
+
+${district.name}'e Çiçek Göndermenin En Kolay Yolu
+
+Online sipariş sistemiyle ${district.name}'e çiçek göndermek çok kolay. Geniş ürün yelpazemizden seçiminizi yapın, teslimat adresini ve tarihini belirleyin. Profesyonel ekibimiz siparişinizi özenle hazırlayıp ${district.name}'deki adrese teslim etsin.
+
+Hızlı ve Güvenilir Teslimat
+
+${district.name} bölgesine düzenli teslimat rotalarımız sayesinde çiçekleriniz en taze haliyle ulaştırılır. Teslimat sonrası fotoğraf ile bilgilendirilirsiniz.
+
+Geniş Ürün Seçenekleri
+
+Güller, orkideler, lilyumlar, gerbera, papatya ve mevsim çiçekleriyle her bütçeye uygun aranjmanlar sunuyoruz. ${district.name}'e özel tasarım buketler ve çiçek sepetleri de mevcuttur.`,
+    deliveryInfo: `${district.name} ve çevresine hızlı teslimat. Teslimat süreleri bölgeye göre değişebilir.`,
+    popularAreas: []
+  };
 }
 
 // Tüm ilçe slug'larını getir

@@ -36,7 +36,9 @@ const FALLBACK_SLIDES: HeroSlide[] = [
     subtitle: 'Günün en güzel seçkisi',
     description: 'Özenle hazırlanan buket ve aranjmanlarla sevdiklerinize zarif bir sürpriz yapın.',
     image:
-      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/f_webp,q_70,w_1920,c_limit,dpr_auto/v1765225219/vadiler/products/vadiler-sevginin-gucu-7-kirmizi-guller-aranjmani.jpg',
+    mobileImage:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/f_webp,q_70,w_800,c_limit,dpr_auto/v1766363505/vadiler/slider/slide-1_tgwu5t.jpg',
     buttonText: 'Ürünleri İncele',
     buttonLink: '/kategoriler',
   },
@@ -46,7 +48,9 @@ const FALLBACK_SLIDES: HeroSlide[] = [
     subtitle: 'Zarif ve kalıcı',
     description: 'Minimal ve şık orkide çeşitleriyle ev ve ofisler için harika bir seçim.',
     image:
-      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/f_webp,q_70,w_1920,c_limit,dpr_auto/v1765224480/vadiler/products/vadiler-hayal-adasi-2-dal-tasarim-mor-orkide.jpg',
+    mobileImage:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/f_webp,q_70,w_800,c_limit,dpr_auto/v1766363509/vadiler/slider/slide-5_pydgc1.jpg',
     buttonText: 'Orkideleri Gör',
     buttonLink: '/orkideler',
   },
@@ -56,7 +60,9 @@ const FALLBACK_SLIDES: HeroSlide[] = [
     subtitle: 'Kutlamalara özel',
     description: 'Doğum günü, yıldönümü ve tüm özel anlar için hediye seçkilerini keşfedin.',
     image:
-      'https://res.cloudinary.com/dgdl1vdao/image/upload/v1765225910/vadiler/products/vadiler-teraryum-i-yi-ki-dogdun-canim-arkadasim-mor.jpg',
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/f_webp,q_70,w_1920,c_limit,dpr_auto/v1765225910/vadiler/products/vadiler-teraryum-i-yi-ki-dogdun-canim-arkadasim-mor.jpg',
+    mobileImage:
+      'https://res.cloudinary.com/dgdl1vdao/image/upload/f_webp,q_65,w_800,c_limit,dpr_auto/v1766363510/vadiler/slider/slide-6_vuleoj.jpg',
     buttonText: 'Özel Günlere Git',
     buttonLink: '/ozel-gun',
   },
@@ -191,11 +197,10 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                       {slide.subtitle}
                     </motion.span>
 
-                    {/* Title */}
+                    {/* Title - No animation delay for LCP optimization */}
                     <motion.h1
-                      initial={{ opacity: 0, y: 30 }}
-                      animate={activeIndex === index ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-                      transition={{ duration: 0.6, delay: 0.3 }}
+                      initial={{ opacity: 1, y: 0 }}
+                      animate={{ opacity: 1, y: 0 }}
                       className="text-[32px] leading-[1.08] sm:text-5xl lg:text-5xl xl:text-6xl font-bold mb-4 text-white"
                     >
                       <span className="text-white">{slide.title.split(' ')[0]}</span>{' '}
@@ -293,6 +298,8 @@ export default function HeroSlider({ id }: HeroSliderProps) {
                   onClick={() => goToSlide(index)}
                   className={`relative h-1 rounded-full transition-all duration-500 overflow-hidden
                     ${activeIndex === index ? 'w-10 bg-white' : 'w-6 bg-white/40'}`}
+                  aria-label={`Slayt ${index + 1}`}
+                  aria-current={activeIndex === index ? 'true' : 'false'}
                 >
                   {activeIndex === index && isPlaying && (
                     <motion.div

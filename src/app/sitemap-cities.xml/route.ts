@@ -15,7 +15,7 @@ export async function GET() {
       lastModified: now,
     },
     ...ISTANBUL_ILCELERI.map((district) => ({
-      url: `${BASE_URL}/sehir/istanbul/${createCitySlug(district.name)}`,
+      url: `${BASE_URL}/sehir/${createCitySlug(district.name)}`,
       lastModified: now,
     })),
   ];

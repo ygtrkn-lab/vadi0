@@ -33,7 +33,10 @@ import {
   HiOutlineRefresh,
   HiOutlinePrinter,
   HiOutlineDownload,
-  HiOutlineCalendar
+  HiOutlineCalendar,
+  HiOutlineViewGrid,
+  HiOutlineViewList,
+  HiOutlineUser
 } from 'react-icons/hi';
 
 const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'info' | 'pending' | 'success' | 'error'; icon: React.ReactNode }> = {
@@ -46,11 +49,27 @@ const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'i
   shipped: { label: 'Kargoda', variant: 'pending', icon: <HiOutlineTruck className="w-4 h-4" /> },
   delivered: { label: 'Teslim Edildi', variant: 'success', icon: <HiOutlineCheckCircle className="w-4 h-4" /> },
   cancelled: { label: 'İptal', variant: 'error', icon: <HiOutlineXCircle className="w-4 h-4" /> },
+  refunded: { label: 'İade Edildi', variant: 'info', icon: <HiOutlineCurrencyDollar className="w-4 h-4" /> },
+  failed: { label: 'Başarısız', variant: 'error', icon: <HiOutlineXCircle className="w-4 h-4" /> },
 };
 
 // Türkçe ay ve gün isimleri
 const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+// Telefon numarasını formatla: 5XXXXXXXXX -> 5XX XXX XX XX
+function formatPhoneNumber(phone: string): string {
+  if (!phone) return '';
+  
+  // Sadece rakamları al
+  const digits = phone.replace(/\D/g, '');
+  
+  // 10 haneli değilse olduğu gibi döndür
+  if (digits.length !== 10) return phone;
+  
+  // 5XX XXX XX XX formatına çevir
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`;
+}
 
 // Tarihi okunabilir formata çevir: "3 Ocak Perşembe"
 function formatDeliveryDateFriendly(dateStr: string, timeSlot?: string): string {
@@ -116,7 +135,9 @@ function formatOrderDate(dateStr: string): string {
 // Tarih grup başlığı: "Bugün (7 Ocak 2026)" veya "3 Ocak Perşembe"
 function getDateGroupLabel(dateStr: string): string {
   try {
-    const orderDate = new Date(dateStr);
+    // dateStr: "2026-01-11" formatında (yerel tarih)
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const orderDate = new Date(year, month - 1, day);
     if (isNaN(orderDate.getTime())) return '';
     
     const now = new Date();
@@ -127,7 +148,6 @@ function getDateGroupLabel(dateStr: string): string {
     const dayName = TURKISH_DAYS[orderDate.getDay()];
     const monthName = TURKISH_MONTHS[orderDate.getMonth()];
     const dayOfMonth = orderDate.getDate();
-    const year = orderDate.getFullYear();
     const fullDate = `${dayOfMonth} ${monthName} ${year}`;
     
     if (diffDays === 0) {
@@ -156,16 +176,131 @@ export default function SiparislerPage() {
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
   const calendarButtonRef = useRef<HTMLButtonElement>(null);
   const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0 });
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('vadiler_orders_view_mode');
+      if (saved === 'grid' || saved === 'list') return saved as 'grid' | 'list';
+    }
+    return 'grid';
+  });
+  // Track seen orders (unseen orders are highlighted until clicked)
+  const [seenOrderIds, setSeenOrderIds] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('vadiler_orders_seen');
+        const arr = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(arr)) return new Set<string>(arr);
+      } catch (e) {}
+    }
+    return new Set<string>();
+  });
   
   const { isDark } = useTheme();
   const { state: orderState, updateOrderStatus, deleteOrder } = useOrder();
   const { getCustomerById } = useCustomer();
+
+  // Persist view mode selection across sessions
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('vadiler_orders_view_mode', viewMode);
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [viewMode]);
+
+  // Persist seen orders
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('vadiler_orders_seen', JSON.stringify([...seenOrderIds]));
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [seenOrderIds]);
+
+  // Initialize seen set with current orders so only future orders appear as new
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem('vadiler_orders_seen');
+      if (!raw) {
+        const initialIds = (orderState.orders || []).map(o => o.id);
+        setSeenOrderIds(new Set(initialIds));
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+    // run only when orders list first arrives/changes
+  }, [orderState.orders]);
+
+  const markOrderSeen = (id: string) => {
+    setSeenOrderIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
   
   // Delete confirmation state
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const itemsPerPage = 10;
+  // Pagination - "all" seçeneği ile tüm siparişleri göster
+  const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(25);
+  const itemsPerPageOptions: (number | 'all')[] = [10, 25, 50, 100, 'all'];
+  
+  // Müşterinin kaçıncı siparişi olduğunu hesapla (sadece başarılı ve ödenmiş olanlar)
+  const customerOrderCounts = useMemo(() => {
+    const counts: Record<string, { total: number; orderMap: Record<string, number> }> = {};
+    
+    // Tüm siparişleri tarihe göre sırala (eskiden yeniye)
+    const sortedOrders = [...orderState.orders].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    
+    sortedOrders.forEach(order => {
+      // İptal veya iade edilmiş siparişleri sayma
+      const isCancelledOrRefunded = order.status === 'cancelled' || 
+                                     order.status === 'refunded' || 
+                                     order.status === 'failed' ||
+                                     order.status === 'payment_failed';
+      
+      if (isCancelledOrRefunded) return;
+      
+      // Sadece ödenmiş ve teslim edilmiş/edilecek siparişleri say
+      const isPaid = order.payment?.status === 'paid';
+      const isDelivered = order.status === 'delivered' || order.status === 'shipped';
+      const isSuccessful = isPaid || isDelivered;
+      
+      if (!isSuccessful) return;
+      
+      // Müşteri emaili veya telefonu ile eşleştir
+      const customerKey = order.customerEmail?.toLowerCase() || order.customerPhone || order.customerId || order.id;
+      
+      if (!counts[customerKey]) {
+        counts[customerKey] = { total: 0, orderMap: {} };
+      }
+      
+      counts[customerKey].total += 1;
+      counts[customerKey].orderMap[order.id] = counts[customerKey].total;
+    });
+    
+    return counts;
+  }, [orderState.orders]);
+  
+  // Belirli bir siparişin müşteri için kaçıncı sipariş olduğunu al
+  const getCustomerOrderNumber = (order: Order): { current: number; total: number } => {
+    const customerKey = order.customerEmail?.toLowerCase() || order.customerPhone || order.customerId || order.id;
+    const data = customerOrderCounts[customerKey];
+    if (!data) return { current: 1, total: 1 };
+    return {
+      current: data.orderMap[order.id] || 1,
+      total: data.total
+    };
+  };
 
   // Portal için mount check
   useEffect(() => {
@@ -201,9 +336,18 @@ export default function SiparislerPage() {
         let matchesDate = true;
         if (selectedDate) {
           const orderDate = new Date(order.createdAt);
-          const selectedDateStr = selectedDate.toISOString().split('T')[0];
-          const orderDateStr = orderDate.toISOString().split('T')[0];
-          matchesDate = orderDateStr === selectedDateStr;
+          // Yerel tarihe göre karşılaştır (timezone sorununu önlemek için)
+          const orderYear = orderDate.getFullYear();
+          const orderMonth = orderDate.getMonth();
+          const orderDay = orderDate.getDate();
+          
+          const selectedYear = selectedDate.getFullYear();
+          const selectedMonth = selectedDate.getMonth();
+          const selectedDay = selectedDate.getDate();
+          
+          matchesDate = orderYear === selectedYear && 
+                        orderMonth === selectedMonth && 
+                        orderDay === selectedDay;
         }
         
         return matchesStatus && matchesSearch && matchesDate;
@@ -211,20 +355,31 @@ export default function SiparislerPage() {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [orderState.orders, selectedStatus, searchTerm, selectedDate]);
 
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  // itemsPerPage 'all' olduğunda tüm siparişleri göster
+  const effectiveItemsPerPage = itemsPerPage === 'all' ? filteredOrders.length : itemsPerPage;
+  const totalPages = effectiveItemsPerPage > 0 ? Math.ceil(filteredOrders.length / effectiveItemsPerPage) : 1;
   const paginatedOrders = useMemo(() => {
+    if (itemsPerPage === 'all') {
+      return filteredOrders;
+    }
     return filteredOrders.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
+      (currentPage - 1) * effectiveItemsPerPage,
+      currentPage * effectiveItemsPerPage
     );
-  }, [filteredOrders, currentPage, itemsPerPage]);
+  }, [filteredOrders, currentPage, effectiveItemsPerPage, itemsPerPage]);
 
   // Siparişleri tarihe göre grupla
   const groupedOrders = useMemo(() => {
     const groups: { [key: string]: Order[] } = {};
     
     paginatedOrders.forEach(order => {
-      const dateKey = new Date(order.createdAt).toISOString().split('T')[0];
+      // Yerel tarihe göre grupla (timezone sorununu önlemek için)
+      const orderDate = new Date(order.createdAt);
+      const year = orderDate.getFullYear();
+      const month = String(orderDate.getMonth() + 1).padStart(2, '0');
+      const day = String(orderDate.getDate()).padStart(2, '0');
+      const dateKey = `${year}-${month}-${day}`;
+      
       if (!groups[dateKey]) {
         groups[dateKey] = [];
       }
@@ -289,6 +444,59 @@ export default function SiparislerPage() {
     }
   };
 
+  // Refund state
+  const [refundLoading, setRefundLoading] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundReason, setRefundReason] = useState('');
+  const [refundOrder, setRefundOrder] = useState<Order | null>(null);
+
+  const handleRefund = async () => {
+    if (!refundOrder) return;
+    setRefundLoading(true);
+    try {
+      const res = await fetch('/api/orders/refund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: refundOrder.id,
+          reason: refundReason || 'Müşteri talebi',
+          amount: refundOrder.total,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error('Refund error:', data.error);
+        alert(data.error || 'İade işlemi başarısız.');
+      } else {
+        // Update local state
+        if (selectedOrder?.id === refundOrder.id) {
+          setSelectedOrder(prev => prev ? {
+            ...prev,
+            status: 'refunded' as OrderStatus,
+            refund: data.order?.refund,
+            timeline: data.order?.timeline || prev.timeline,
+          } : null);
+        }
+        setShowRefundModal(false);
+        setRefundOrder(null);
+        setRefundReason('');
+      }
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      alert('İade işlemi başarısız.');
+    } finally {
+      setRefundLoading(false);
+    }
+  };
+
+  // Check if order is eligible for refund
+  const canRefund = (order: Order): boolean => {
+    // Can refund any order that is not already refunded
+    // Bank transfers and credit card payments can all be refunded
+    const isRefunded = order.status === 'refunded';
+    return !isRefunded;
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('tr-TR', {
       day: 'numeric',
@@ -306,6 +514,36 @@ export default function SiparislerPage() {
       minimumFractionDigits: 0,
     }).format(price);
   };
+
+  const getReminderInfo = (payment?: Order['payment']) => {
+    if (!payment) return { shown: false, at: null as string | null, channel: null as string | null };
+    const raw = payment as any;
+    const at = raw.reminderShownAt || raw.reminder_shown_at || raw.reminderLastShownAt || raw.reminder_last_shown_at || null;
+    const channel = raw.reminderChannel || raw.reminder_channel || raw.reminderType || raw.reminder_type || null;
+    const shown = raw.reminderShown === true || raw.reminder_shown === true || raw.reminderAcknowledged === true || !!at;
+    return { shown: !!shown, at: at ? String(at) : null, channel: channel ? String(channel) : null };
+  };
+
+  const reminderInfo = useMemo(() => getReminderInfo(selectedOrder?.payment), [selectedOrder]);
+
+  const getReminderActions = (payment?: Order['payment']) => {
+    if (!payment) return { hasAction: false, lastAction: null as string | null, lastAt: null as string | null, resumeCount: 0, dismissCount: 0 };
+    const raw = payment as any;
+    const lastAction = raw.reminderAction || raw.reminder_action || raw.reminderLastAction || raw.reminder_last_action || null;
+    const lastAt = raw.reminderActionAt || raw.reminder_action_at || raw.reminderLastActionAt || raw.reminder_last_action_at || raw.reminderClosedAt || raw.reminder_closed_at || null;
+    const resumeCount = Number(raw.reminderResumeCount || raw.reminder_resume_count || 0) || 0;
+    const dismissCount = Number(raw.reminderDismissCount || raw.reminder_dismiss_count || 0) || 0;
+    const hasAction = !!(lastAction || lastAt || resumeCount || dismissCount);
+    return {
+      hasAction,
+      lastAction: lastAction ? String(lastAction) : null,
+      lastAt: lastAt ? String(lastAt) : null,
+      resumeCount,
+      dismissCount,
+    };
+  };
+
+  const reminderActions = useMemo(() => getReminderActions(selectedOrder?.payment), [selectedOrder]);
 
   const getNextStatus = (currentStatus: OrderStatus): { status: OrderStatus; label: string } | null => {
     switch (currentStatus) {
@@ -388,6 +626,34 @@ export default function SiparislerPage() {
               >
                 <HiOutlineRefresh className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
+
+              {/* Grid/List View Toggle */}
+              <div className={`flex items-center gap-0.5 p-0.5 rounded-lg sm:rounded-xl backdrop-blur-md ${
+                isDark ? 'bg-white/5 ring-1 ring-white/10' : 'bg-black/5 ring-1 ring-black/5'
+              }`}>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-all ${
+                    viewMode === 'grid'
+                      ? (isDark ? 'bg-purple-500/30 text-purple-300' : 'bg-purple-100 text-purple-700')
+                      : (isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-400 hover:text-gray-900')
+                  }`}
+                  title="Grid Görünüm"
+                >
+                  <HiOutlineViewGrid className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 sm:p-2 rounded-md sm:rounded-lg transition-all ${
+                    viewMode === 'list'
+                      ? (isDark ? 'bg-purple-500/30 text-purple-300' : 'bg-purple-100 text-purple-700')
+                      : (isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-400 hover:text-gray-900')
+                  }`}
+                  title="Liste Görünüm"
+                >
+                  <HiOutlineViewList className="w-4 h-4 sm:w-5 sm:h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -712,12 +978,14 @@ export default function SiparislerPage() {
                   </h3>
                 </motion.div>
 
-                {/* Orders Grid for this date */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5 grid-auto-rows-fr">
-                  {orders.map((order, index) => {
-                    const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
-              const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
-              const paymentStatus = order.payment?.status?.toLowerCase();
+                {/* Orders - Grid veya List View */}
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5 grid-auto-rows-fr">
+                    {orders.map((order, index) => {
+                      const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
+                      const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
+                      const paymentStatus = order.payment?.status?.toLowerCase();
+                      const isSeen = seenOrderIds.has(order.id);
 
               return (
                 <motion.div
@@ -725,7 +993,7 @@ export default function SiparislerPage() {
                   initial={{ opacity: 0, y: 20, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   transition={{ delay: index * 0.025, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  onClick={() => setSelectedOrder(order)}
+                  onClick={() => { markOrderSeen(order.id); setSelectedOrder(order); }}
                   className="cursor-pointer group h-full"
                 >
                   {/* Premium Card - Modern Design System */}
@@ -733,7 +1001,7 @@ export default function SiparislerPage() {
                     isDark 
                       ? 'bg-gradient-to-br from-white/[0.07] to-white/[0.02] hover:from-white/[0.12] hover:to-white/[0.04] border border-white/[0.12] hover:border-white/[0.2] shadow-[0_4px_24px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.4)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_4px_12px_rgba(0,0,0,0.3)]' 
                       : 'bg-gradient-to-br from-white via-white/95 to-white/80 hover:from-white hover:to-white/95 border border-black/[0.06] hover:border-black/[0.12] shadow-[0_2px_16px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]'
-                  }`}>
+                  } ${!isSeen ? 'ring-2 ring-purple-400/50' : ''}`}>
                     
                     {/* Subtle Gradient Overlay */}
                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none ${
@@ -827,15 +1095,56 @@ export default function SiparislerPage() {
                       <div className={`flex items-center gap-2.5 sm:gap-3.5 p-2.5 sm:p-4 rounded-xl sm:rounded-[18px] mb-3 sm:mb-4 backdrop-blur-sm transition-all duration-300 ${
                         isDark ? 'bg-white/[0.04] hover:bg-white/[0.06] ring-1 ring-white/[0.06]' : 'bg-black/[0.02] hover:bg-black/[0.03] ring-1 ring-black/[0.04]'
                       }`}>
-                        <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-[14px] flex items-center justify-center text-xs sm:text-[15px] font-bold bg-gradient-to-br shadow-lg transition-transform group-hover:scale-105 ${
-                          isDark ? 'from-purple-500/40 via-purple-400/30 to-pink-500/40 text-white shadow-purple-500/20' : 'from-purple-100 via-purple-50 to-pink-100 text-purple-700 shadow-purple-200/50'
-                        }`}>
-                          {displayCustomerName.charAt(0).toUpperCase()}
+                        <div className="relative">
+                          <div className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl sm:rounded-[14px] flex items-center justify-center text-xs sm:text-[15px] font-bold bg-gradient-to-br shadow-lg transition-transform group-hover:scale-105 ${
+                            isDark ? 'from-purple-500/40 via-purple-400/30 to-pink-500/40 text-white shadow-purple-500/20' : 'from-purple-100 via-purple-50 to-pink-100 text-purple-700 shadow-purple-200/50'
+                          }`}>
+                            {displayCustomerName.charAt(0).toUpperCase()}
+                          </div>
+                          {/* Müşterinin kaçıncı siparişi badge */}
+                          {(() => {
+                            const orderNum = getCustomerOrderNumber(order);
+                            if (orderNum.total > 1) {
+                              return (
+                                <div className={`absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] sm:min-w-[20px] sm:h-[20px] px-1 flex items-center justify-center rounded-full text-[8px] sm:text-[9px] font-bold shadow-md ${
+                                  orderNum.total >= 5
+                                    ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white ring-2 ring-amber-300/50'
+                                    : orderNum.total >= 3
+                                    ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white ring-2 ring-purple-300/50'
+                                    : isDark
+                                    ? 'bg-blue-500/90 text-white ring-2 ring-blue-400/30'
+                                    : 'bg-blue-500 text-white ring-2 ring-blue-200'
+                                }`} title={`Bu müşterinin ${orderNum.current}. siparişi (Toplam: ${orderNum.total})`}>
+                                  {orderNum.current}/{orderNum.total}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-xs sm:text-[14px] font-semibold truncate tracking-[-0.01em] mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                            {displayCustomerName}
-                          </p>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <p className={`text-xs sm:text-[14px] font-semibold truncate tracking-[-0.01em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                              {displayCustomerName}
+                            </p>
+                            {(() => {
+                              const orderNum = getCustomerOrderNumber(order);
+                              if (orderNum.total > 1) {
+                                return (
+                                  <span className={`flex-shrink-0 text-[8px] sm:text-[9px] font-medium px-1.5 py-0.5 rounded-full ${
+                                    orderNum.total >= 5 
+                                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
+                                      : orderNum.total >= 3
+                                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400'
+                                      : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400'
+                                  }`}>
+                                    {orderNum.total >= 5 ? '⭐ Sadık' : orderNum.total >= 3 ? '💎 VIP' : `${orderNum.total}. sipariş`}
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
                           {order.delivery?.deliveryDate && (
                             <p className={`text-[10px] sm:text-[11.5px] font-medium flex items-center gap-1 sm:gap-1.5 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
                               <span className="text-xs sm:text-[13px]">📅</span>
@@ -905,6 +1214,161 @@ export default function SiparislerPage() {
               );
             })}
           </div>
+        ) : (
+          /* List View - Tablo */
+          <div className={`overflow-x-auto rounded-xl border ${isDark ? 'bg-neutral-900/50 border-neutral-800' : 'bg-white border-gray-200'}`}>
+            <table className="w-full min-w-[900px]">
+              <thead>
+                <tr className={`text-left text-xs uppercase tracking-wider ${isDark ? 'text-neutral-500 border-b border-neutral-800' : 'text-gray-500 border-b border-gray-200'}`}>
+                  <th className="px-4 py-3 font-medium">Sipariş</th>
+                  <th className="px-4 py-3 font-medium">Tarih</th>
+                  <th className="px-4 py-3 font-medium">Müşteri</th>
+                  <th className="px-4 py-3 font-medium">Ürünler</th>
+                  <th className="px-4 py-3 font-medium">Teslimat</th>
+                  <th className="px-4 py-3 font-medium">Durum</th>
+                  <th className="px-4 py-3 font-medium">Ödeme</th>
+                  <th className="px-4 py-3 font-medium text-right">Tutar</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-gray-100'}`}>
+                {orders.map((order, index) => {
+                  const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
+                  const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
+                  const paymentStatus = order.payment?.status?.toLowerCase();
+                  const orderDate = new Date(order.createdAt);
+                  const firstProduct = order.products[0];
+                  const isSeen = seenOrderIds.has(order.id);
+
+                  return (
+                    <motion.tr
+                      key={order.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.02 }}
+                      onClick={() => { markOrderSeen(order.id); setSelectedOrder(order); }}
+                      className={`cursor-pointer transition-colors ${isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-gray-50'} ${!isSeen ? 'outline outline-2 outline-purple-400/50' : ''}`}
+                    >
+                      {/* Sipariş No */}
+                      <td className="px-4 py-3">
+                        <span className={`font-mono font-semibold ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>#{order.orderNumber}</span>
+                      </td>
+
+                      {/* Tarih */}
+                      <td className={`${isDark ? 'text-neutral-300' : 'text-gray-700'} px-4 py-3`}>
+                        <div className="text-sm">{orderDate.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}</div>
+                        <div className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{orderDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</div>
+                      </td>
+
+                      {/* Müşteri */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isDark ? 'bg-neutral-800' : 'bg-gray-100'}`}>
+                              <HiOutlineUser className={`w-4 h-4 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`} />
+                            </div>
+                            {/* Müşteri sipariş sayısı badge */}
+                            {(() => {
+                              const orderNum = getCustomerOrderNumber(order);
+                              if (orderNum.total > 1) {
+                                return (
+                                  <div className={`absolute -top-1 -right-1 min-w-[16px] h-[16px] px-0.5 flex items-center justify-center rounded-full text-[8px] font-bold ${
+                                    orderNum.total >= 5
+                                      ? 'bg-amber-500 text-white'
+                                      : orderNum.total >= 3
+                                      ? 'bg-purple-500 text-white'
+                                      : 'bg-blue-500 text-white'
+                                  }`} title={`${orderNum.current}/${orderNum.total}`}>
+                                    {orderNum.total}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`font-medium text-sm truncate max-w-[140px] ${isDark ? 'text-white' : 'text-gray-900'}`}>{displayCustomerName}</p>
+                            <p className={`text-xs truncate max-w-[140px] ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{order.customerPhone ? formatPhoneNumber(order.customerPhone) : '-'}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Ürünler */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {firstProduct && (
+                            <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0">
+                              {firstProduct.image ? (
+                                getMediaType(firstProduct.image) === 'video' ? (
+                                  <video src={firstProduct.image} className="w-full h-full object-cover" muted />
+                                ) : (
+                                  <Image src={firstProduct.image} alt={firstProduct.name} fill className="object-cover" sizes="40px" />
+                                )
+                              ) : (
+                                <div className={`w-full h-full flex items-center justify-center ${isDark ? 'bg-neutral-800' : 'bg-gray-100'}`}>
+                                  <HiOutlineClipboardList className="w-4 h-4 text-neutral-500" />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className={`text-sm truncate max-w-[140px] ${isDark ? 'text-white' : 'text-gray-900'}`}>{firstProduct?.name || 'Ürün yok'}</p>
+                            {order.products.length > 1 && (
+                              <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>+{order.products.length - 1} ürün daha</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Teslimat */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          <HiOutlineLocationMarker className={`w-4 h-4 shrink-0 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`} />
+                          <span className={`text-sm truncate max-w-[120px] ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>{order.delivery?.district || '-'}</span>
+                        </div>
+                        {order.delivery?.deliveryDate && (
+                          <p className={`text-xs mt-0.5 ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{formatDeliveryDateFriendly(order.delivery.deliveryDate, order.delivery.deliveryTimeSlot)}</p>
+                        )}
+                      </td>
+
+                      {/* Durum */}
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                          order.status === 'delivered' ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700') :
+                          order.status === 'shipped' ? (isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700') :
+                          order.status === 'processing' || order.status === 'confirmed' ? (isDark ? 'bg-purple-500/20 text-purple-400' : 'bg-purple-100 text-purple-700') :
+                          order.status === 'pending' ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700') :
+                          order.status === 'cancelled' || order.status === 'payment_failed' ? (isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700') :
+                          (isDark ? 'bg-neutral-700 text-neutral-300' : 'bg-gray-100 text-gray-700')
+                        }`}>
+                          {statusConfig[order.status]?.icon}
+                          {statusConfig[order.status]?.label || order.status}
+                        </span>
+                      </td>
+
+                      {/* Ödeme */}
+                      <td className="px-4 py-3">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          paymentStatus === 'paid' 
+                            ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
+                            : paymentStatus === 'pending' || paymentStatus === 'awaiting_payment'
+                              ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
+                              : (isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700')
+                        }`}>
+                          {paymentStatus === 'paid' ? '✓ Ödendi' : paymentStatus === 'pending' ? 'Bekliyor' : paymentStatus === 'awaiting_payment' ? 'Havale' : 'Başarısız'}
+                        </span>
+                      </td>
+
+                      {/* Tutar */}
+                      <td className="px-4 py-3 text-right">
+                        <span className={`font-semibold ${paymentStatus === 'paid' ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-white' : 'text-gray-900')}`}>{formatPrice(order.total)}</span>
+                      </td>
+                    </motion.tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
         </div>
       ))}
     </div>
@@ -945,71 +1409,94 @@ export default function SiparislerPage() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <FadeContent direction="up" delay={0.3}>
-          <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl ${
-            isDark ? 'bg-neutral-900/50 border border-neutral-800' : 'bg-white border border-gray-200 shadow-sm'
-          }`}>
-            <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
-              Sayfa <span className="font-semibold">{currentPage}</span> / <span className="font-semibold">{totalPages}</span>
-              <span className={`ml-2 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
-                ({filteredOrders.length} sipariş)
-              </span>
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className={`p-2.5 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105
-                  ${isDark 
-                    ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-                    : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+      <FadeContent direction="up" delay={0.3}>
+        <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl ${
+          isDark ? 'bg-neutral-900/50 border border-neutral-800' : 'bg-white border border-gray-200 shadow-sm'
+        }`}>
+          {/* Sol: Sayfa başına göster */}
+          <div className="flex items-center gap-2">
+            <span className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>Göster:</span>
+            <div className={`flex items-center gap-1 p-1 rounded-lg ${isDark ? 'bg-neutral-800' : 'bg-gray-100'}`}>
+              {itemsPerPageOptions.map(option => (
+                <button
+                  key={String(option)}
+                  onClick={() => { setItemsPerPage(option as number | 'all'); setCurrentPage(1); }}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-all ${
+                    itemsPerPage === option
+                      ? isDark ? 'bg-purple-500 text-white' : 'bg-purple-600 text-white shadow-sm'
+                      : isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-700' : 'text-gray-600 hover:text-gray-900 hover:bg-white'
                   }`}
-              >
-                <HiOutlineChevronLeft className="w-5 h-5" />
-              </button>
-              
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let page;
-                if (totalPages <= 5) {
-                  page = i + 1;
-                } else if (currentPage <= 3) {
-                  page = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  page = totalPages - 4 + i;
-                } else {
-                  page = currentPage - 2 + i;
-                }
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`min-w-11 h-11 px-3 rounded-xl font-semibold transition-all hover:scale-105
-                      ${currentPage === page 
-                        ? (isDark ? 'bg-purple-500 text-white' : 'bg-purple-600 text-white shadow-lg shadow-purple-500/30')
-                        : (isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100')
-                      }`}
-                  >
-                    {page}
-                  </button>
-                );
-              })}
-              
-              <button
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className={`p-2.5 rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105
-                  ${isDark 
-                    ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
-                    : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-              >
-                <HiOutlineChevronRight className="w-5 h-5" />
-              </button>
+                >
+                  {option === 'all' ? 'Tümü' : option}
+                </button>
+              ))}
             </div>
+            <span className={`text-sm ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+              ({filteredOrders.length} sipariş)
+            </span>
           </div>
-        </FadeContent>
-      )}
+          
+          {/* Sağ: Sayfa numaraları - sadece pagination aktifse göster */}
+          {totalPages > 1 && itemsPerPage !== 'all' && (
+            <div className="flex items-center gap-2">
+              <p className={`text-sm mr-2 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+                Sayfa <span className="font-semibold">{currentPage}</span> / <span className="font-semibold">{totalPages}</span>
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className={`p-2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105
+                    ${isDark 
+                      ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
+                      : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                >
+                  <HiOutlineChevronLeft className="w-4 h-4" />
+                </button>
+                
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let page;
+                  if (totalPages <= 5) {
+                    page = i + 1;
+                  } else if (currentPage <= 3) {
+                    page = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    page = totalPages - 4 + i;
+                  } else {
+                    page = currentPage - 2 + i;
+                  }
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-9 h-9 px-2.5 rounded-lg text-sm font-medium transition-all hover:scale-105
+                        ${currentPage === page 
+                          ? (isDark ? 'bg-purple-500 text-white' : 'bg-purple-600 text-white shadow-sm')
+                          : (isDark ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100')
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                })}
+                
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className={`p-2 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:scale-105
+                    ${isDark 
+                      ? 'text-neutral-400 hover:text-white hover:bg-neutral-800' 
+                      : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                >
+                  <HiOutlineChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </FadeContent>
       
       {/* Fullscreen order detail - Portal ile body'ye render et */}
       {isMounted && selectedOrder && createPortal(
@@ -1119,9 +1606,28 @@ export default function SiparislerPage() {
                     }`}>
                       <div className="flex items-center justify-between mb-2">
                         <p className={`text-sm font-semibold ${isDark ? 'text-neutral-200' : 'text-gray-700'}`}>Müşteri</p>
-                        <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${selectedOrder.isGuest ? (isDark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-700') : (isDark ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700')}`}>
-                          {selectedOrder.isGuest ? 'Misafir' : 'Üye'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const orderNum = getCustomerOrderNumber(selectedOrder);
+                            if (orderNum.total > 1) {
+                              return (
+                                <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                                  orderNum.total >= 5 
+                                    ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30'
+                                    : orderNum.total >= 3
+                                    ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30'
+                                    : isDark ? 'bg-blue-500/15 text-blue-300' : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {orderNum.total >= 5 ? '⭐ Sadık Müşteri' : orderNum.total >= 3 ? '💎 VIP' : `${orderNum.current}. Sipariş`} ({orderNum.total} toplam)
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                          <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${selectedOrder.isGuest ? (isDark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-700') : (isDark ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700')}`}>
+                            {selectedOrder.isGuest ? 'Misafir' : 'Üye'}
+                          </span>
+                        </div>
                       </div>
                       {(() => {
                         const customer = selectedOrder.customerId ? getCustomerById(selectedOrder.customerId) : undefined;
@@ -1135,7 +1641,7 @@ export default function SiparislerPage() {
                       )}
                       {selectedOrder.customerPhone && (
                         <a href={`tel:${selectedOrder.customerPhone}`} className={`flex items-center gap-2 text-sm ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-                          <HiOutlinePhone className="w-4 h-4" /> {selectedOrder.customerPhone}
+                          <HiOutlinePhone className="w-4 h-4" /> {formatPhoneNumber(selectedOrder.customerPhone)}
                         </a>
                       )}
                       {selectedOrder.customerId && (
@@ -1163,7 +1669,7 @@ export default function SiparislerPage() {
                           <p className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedOrder.delivery.recipientName || '-'}</p>
                           {selectedOrder.delivery.recipientPhone && (
                             <a href={`tel:${selectedOrder.delivery.recipientPhone}`} className={`flex items-center gap-2 text-sm mt-1 ${isDark ? 'text-neutral-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}>
-                              <HiOutlinePhone className="w-4 h-4" /> {selectedOrder.delivery.recipientPhone}
+                              <HiOutlinePhone className="w-4 h-4" /> {formatPhoneNumber(selectedOrder.delivery.recipientPhone)}
                             </a>
                           )}
                         </div>
@@ -1212,6 +1718,102 @@ export default function SiparislerPage() {
                         </p>
                         {selectedOrder.payment.transactionId && (
                           <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>İşlem: {selectedOrder.payment.transactionId}</p>
+                        )}
+                        <div className={`p-3 rounded-xl ${isDark ? 'bg-neutral-950 border border-neutral-800' : 'bg-gray-50 border border-gray-200'}`}>
+                          <p className={`text-xs font-semibold mb-2 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                            Cihaz & Tarayıcı
+                          </p>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {/* Cihaz Tipi */}
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                              selectedOrder.payment.clientInfo?.deviceType === 'mobile' 
+                                ? 'bg-blue-500/15 text-blue-400' 
+                                : selectedOrder.payment.clientInfo?.deviceType === 'tablet'
+                                ? 'bg-purple-500/15 text-purple-400'
+                                : 'bg-gray-500/15 text-gray-400'
+                            }`}>
+                              {selectedOrder.payment.clientInfo?.deviceType === 'mobile' ? '📱' : 
+                               selectedOrder.payment.clientInfo?.deviceType === 'tablet' ? '📱' : '💻'}
+                              {(selectedOrder.payment.clientInfo?.deviceType || 'Bilinmiyor').replace(/^(\w)/, (m: string) => m.toUpperCase())}
+                            </span>
+                            
+                            {/* İşletim Sistemi */}
+                            {selectedOrder.payment.clientInfo?.os && selectedOrder.payment.clientInfo.os !== 'Bilinmiyor' && (
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                                selectedOrder.payment.clientInfo.os.toLowerCase().includes('ios') 
+                                  ? 'bg-gray-500/15 text-gray-300' 
+                                  : selectedOrder.payment.clientInfo.os.toLowerCase().includes('android')
+                                  ? 'bg-green-500/15 text-green-400'
+                                  : selectedOrder.payment.clientInfo.os.toLowerCase().includes('windows')
+                                  ? 'bg-blue-500/15 text-blue-400'
+                                  : selectedOrder.payment.clientInfo.os.toLowerCase().includes('mac')
+                                  ? 'bg-gray-500/15 text-gray-300'
+                                  : 'bg-neutral-500/15 text-neutral-400'
+                              }`}>
+                                {selectedOrder.payment.clientInfo.os.toLowerCase().includes('ios') ? '🍎' :
+                                 selectedOrder.payment.clientInfo.os.toLowerCase().includes('android') ? '🤖' :
+                                 selectedOrder.payment.clientInfo.os.toLowerCase().includes('windows') ? '🪟' :
+                                 selectedOrder.payment.clientInfo.os.toLowerCase().includes('mac') ? '🍎' : '💿'}
+                                {selectedOrder.payment.clientInfo.os}
+                              </span>
+                            )}
+                            
+                            {/* Cihaz Modeli */}
+                            {selectedOrder.payment.clientInfo?.deviceModel && (
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                                isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                📲 {selectedOrder.payment.clientInfo.deviceModel}
+                              </span>
+                            )}
+                            
+                            {/* Tarayıcı */}
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                              isDark ? 'bg-cyan-500/15 text-cyan-400' : 'bg-cyan-100 text-cyan-700'
+                            }`}>
+                              🌐 {selectedOrder.payment.clientInfo?.browser || 'Bilinmiyor'}
+                              {selectedOrder.payment.clientInfo?.browserVersion ? ` v${selectedOrder.payment.clientInfo.browserVersion}` : ''}
+                            </span>
+                          </div>
+                          <details className="group">
+                            <summary className={`text-[10px] cursor-pointer hover:underline ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                              User Agent detayı
+                            </summary>
+                            <p className={`text-[10px] mt-1 leading-snug break-all ${isDark ? 'text-neutral-600' : 'text-gray-400'}`}>
+                              {selectedOrder.payment.clientInfo?.userAgent || 'Kullanıcı aracısı yok'}
+                            </p>
+                          </details>
+                        </div>
+                        {reminderInfo.shown && (
+                          <div className={`p-3 rounded-xl border ${isDark ? 'bg-amber-500/5 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
+                            <p className={`text-xs font-semibold ${isDark ? 'text-amber-200' : 'text-amber-700'}`}>Hatırlatma Gösterildi</p>
+                            <p className={`text-sm mt-1 ${isDark ? 'text-neutral-100' : 'text-gray-800'}`}>
+                              Ödeme adımına dönüş için kullanıcıya hatırlatma penceresi gösterildi.
+                            </p>
+                            {(reminderInfo.at || reminderInfo.channel) && (
+                              <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+                                {reminderInfo.at ? `Gösterim: ${formatDate(reminderInfo.at)}` : ''}
+                                {reminderInfo.at && reminderInfo.channel ? ' • ' : ''}
+                                {reminderInfo.channel ? `Kanal: ${reminderInfo.channel}` : ''}
+                              </p>
+                            )}
+                            {reminderActions.hasAction && (
+                              <div className={`mt-2 p-2 rounded-lg ${isDark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-amber-100'}`}>
+                                <p className={`text-xs font-semibold ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>Kullanıcı Etkileşimi</p>
+                                <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-700'}`}>
+                                  {reminderActions.lastAction ? `Son aksiyon: ${reminderActions.lastAction}` : 'Son aksiyon kaydı yok.'}
+                                  {reminderActions.lastAt ? ` • Zaman: ${formatDate(reminderActions.lastAt)}` : ''}
+                                </p>
+                                {(reminderActions.resumeCount > 0 || reminderActions.dismissCount > 0) && (
+                                  <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-700'}`}>
+                                    {reminderActions.resumeCount > 0 ? `Ödemeye geç: ${reminderActions.resumeCount}×` : ''}
+                                    {reminderActions.resumeCount > 0 && reminderActions.dismissCount > 0 ? ' • ' : ''}
+                                    {reminderActions.dismissCount > 0 ? `Sepete dön/kapat: ${reminderActions.dismissCount}×` : ''}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         )}
                         <div className={`p-3 rounded-xl ${isDark ? 'bg-neutral-950 border border-neutral-800' : 'bg-gray-50 border border-gray-200'}`}>
                           <div className="flex justify-between text-sm mb-1">
@@ -1454,6 +2056,30 @@ export default function SiparislerPage() {
                         >
                           İptal Et
                         </button>
+                        {canRefund(selectedOrder) && (
+                          <button
+                            onClick={() => {
+                              setRefundOrder(selectedOrder);
+                              setShowRefundModal(true);
+                            }}
+                            className="col-span-2 px-4 py-2.5 rounded-xl font-semibold bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 hover:scale-105 hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-300"
+                          >
+                            💰 İade Yap
+                          </button>
+                        )}
+                        {selectedOrder.status === 'refunded' && (
+                          <div className="col-span-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                            <div className="flex items-center gap-2 text-emerald-400">
+                              <span>✓</span>
+                              <span className="text-sm font-semibold">İade Tamamlandı</span>
+                            </div>
+                            {(selectedOrder as any).refund?.amount && (
+                              <p className="text-xs text-emerald-400/70 mt-1">
+                                Tutar: ₺{((selectedOrder as any).refund.amount || 0).toLocaleString('tr-TR')}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1629,6 +2255,131 @@ export default function SiparislerPage() {
                     <>
                       <HiOutlineTrash className="w-4 h-4" />
                       Sil
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Refund Modal */}
+      {isMounted && showRefundModal && refundOrder && createPortal(
+        <AnimatePresence>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100001] flex items-center justify-center p-4"
+          >
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => !refundLoading && setShowRefundModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              className={`relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl ${
+                isDark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-gray-200'
+              }`}
+            >
+              <div className={`p-6 border-b ${isDark ? 'border-neutral-800' : 'border-gray-200'}`}>
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-amber-500/20">
+                    <span className="text-xl">💰</span>
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>İade İşlemi</h3>
+                    <p className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                      Sipariş #{refundOrder.orderNumber}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6 space-y-4">
+                <div className={`p-4 rounded-xl ${isDark ? 'bg-neutral-800/50' : 'bg-gray-50'}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Müşteri</span>
+                    <span className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {refundOrder.customerName || 'Müşteri'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>İade Tutarı</span>
+                    <span className="font-bold text-lg text-amber-500">
+                      {formatPrice(refundOrder.total)}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+                    İade Sebebi
+                  </label>
+                  <select
+                    value={refundReason}
+                    onChange={(e) => setRefundReason(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                      isDark 
+                        ? 'bg-neutral-800 border-neutral-700 text-white focus:border-amber-500' 
+                        : 'bg-white border-gray-200 text-gray-900 focus:border-amber-500'
+                    } outline-none`}
+                  >
+                    <option value="">Sebep seçin...</option>
+                    <option value="Müşteri talebi">Müşteri talebi</option>
+                    <option value="Ürün hasarlı">Ürün hasarlı</option>
+                    <option value="Yanlış ürün gönderildi">Yanlış ürün gönderildi</option>
+                    <option value="Teslimat yapılamadı">Teslimat yapılamadı</option>
+                    <option value="Ödeme hatası">Ödeme hatası</option>
+                    <option value="Sipariş iptal edildi">Sipariş iptal edildi</option>
+                    <option value="Diğer">Diğer</option>
+                  </select>
+                </div>
+
+                <div className={`p-3 rounded-xl ${isDark ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-amber-50 border border-amber-200'}`}>
+                  <p className={`text-sm ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                    ⚠️ İade işlemi geri alınamaz. Müşteriye otomatik e-posta bildirimi gönderilecektir.
+                  </p>
+                </div>
+              </div>
+
+              <div className={`flex gap-3 p-6 pt-0`}>
+                <button
+                  onClick={() => setShowRefundModal(false)}
+                  disabled={refundLoading}
+                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
+                    isDark 
+                      ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  } ${refundLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  İptal
+                </button>
+                <button
+                  onClick={handleRefund}
+                  disabled={refundLoading || !refundReason}
+                  className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                    isDark 
+                      ? 'bg-amber-500/80 text-white hover:bg-amber-500' 
+                      : 'bg-amber-600 text-white hover:bg-amber-700'
+                  } ${refundLoading || !refundReason ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  {refundLoading ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      İşleniyor...
+                    </>
+                  ) : (
+                    <>
+                      💰 İade Yap
                     </>
                   )}
                 </button>

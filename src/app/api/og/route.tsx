@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
+// Switch to Node.js runtime to avoid Turbopack edge bundling conflicts
+export const runtime = 'nodejs';
 
 export async function GET(request: Request) {
   try {

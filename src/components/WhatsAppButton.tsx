@@ -87,7 +87,7 @@ export default function WhatsAppButton() {
   const pathname = usePathname();
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
-  const shouldHide = pathname === '/sepet' || pathname.startsWith('/yonetim');
+  const shouldHide = pathname === '/sepet' || pathname.startsWith('/yonetim') || pathname.startsWith('/hesabim');
 
   useEffect(() => {
     if (shouldHide) return;

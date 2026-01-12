@@ -21,6 +21,30 @@ import {
   HiOutlineChartBar,
 } from 'react-icons/hi';
 
+// Telefon numarasını normalize et (sadece rakamlar, 10 hane)
+function normalizePhone(phone: string): string {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('90') && digits.length >= 12) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith('0') && digits.length >= 11) {
+    digits = digits.slice(1);
+  }
+  if (digits.length > 10) {
+    digits = digits.slice(0, 10);
+  }
+  return digits;
+}
+
+// Telefon numarasını formatla: 5XXXXXXXXX -> 5XX XXX XX XX
+function formatPhoneNumber(value: string): string {
+  const digits = normalizePhone(value).slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`;
+  return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8, 10)}`;
+}
+
 export default function AyarlarPage() {
   const { state: customerState, updateProfile, changePassword } = useCustomer();
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
@@ -28,7 +52,7 @@ export default function AyarlarPage() {
   // Profile form state
   const [profileData, setProfileData] = useState({
     name: customerState.currentCustomer?.name || '',
-    phone: customerState.currentCustomer?.phone || '',
+    phone: formatPhoneNumber(customerState.currentCustomer?.phone || ''),
     email: customerState.currentCustomer?.email || '',
   });
   const [profileLoading, setProfileLoading] = useState(false);
@@ -56,9 +80,12 @@ export default function AyarlarPage() {
     setProfileLoading(true);
     setProfileMessage(null);
 
+    // Telefonu normalize et (sadece 10 haneli rakamlar)
+    const normalizedPhone = normalizePhone(profileData.phone);
+
     const result = await updateProfile(customer.id, {
       name: profileData.name,
-      phone: profileData.phone,
+      phone: normalizedPhone,
       email: profileData.email,
     });
 
@@ -71,6 +98,21 @@ export default function AyarlarPage() {
     }
 
     setTimeout(() => setProfileMessage(null), 3000);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const digits = normalizePhone(value);
+    
+    // Maksimum 10 rakam
+    if (digits.length > 10) return;
+    
+    // İlk rakam 5 değilse girişi engelle
+    if (digits.length > 0 && digits[0] !== '5') {
+      return;
+    }
+    
+    setProfileData({ ...profileData, phone: formatPhoneNumber(digits) });
   };
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -228,16 +270,20 @@ export default function AyarlarPage() {
                     </label>
                     <div className="relative">
                       <HiOutlinePhone className="absolute left-0 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <span className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-base select-none pointer-events-none">
+                        +90
+                      </span>
                       <input
                         type="tel"
                         value={profileData.phone}
-                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                        className="w-full pl-8 py-2 bg-transparent border-0 text-gray-900 text-base
+                        onChange={handlePhoneChange}
+                        className="w-full pl-[4.5rem] py-2 bg-transparent border-0 text-gray-900 text-base
                           focus:outline-none focus:ring-0 placeholder-gray-400"
-                        placeholder="(5XX) XXX XX XX"
+                        placeholder="5XX XXX XX XX"
                         required
                       />
                     </div>
+                    <p className="text-xs text-gray-400 mt-1 ml-8">5 ile başlayan 10 haneli numara</p>
                   </div>
 
                   {/* Submit Button - Full Width Native Style */}

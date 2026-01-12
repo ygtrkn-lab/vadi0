@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
-import Image from 'next/image';
+import MediaImage from '@/components/MediaImage';
 import Link from 'next/link';
 
 export default function CartButton() {
@@ -67,7 +67,7 @@ export default function CartButton() {
                   className="flex gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                 >
                   <div className="w-16 h-16 relative rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
+                    <MediaImage
                       src={item.product.image}
                       alt={item.product.name}
                       fill

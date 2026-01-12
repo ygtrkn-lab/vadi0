@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabaseAdmin
       .from('delivery_off_days')
+      // @ts-expect-error - Supabase type inference issue with delivery_off_days table
       .insert([
         {
           off_date: offDate,

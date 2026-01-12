@@ -33,6 +33,21 @@ function hasStatusEmailNotification(timeline: unknown, status: string): boolean 
   });
 }
 
+// Normalize Turkish phone numbers to 10 digits (5XXXXXXXXX)
+function normalizePhone(phone: string): string {
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('90') && digits.length >= 12) {
+    digits = digits.slice(2);
+  }
+  if (digits.startsWith('0') && digits.length >= 11) {
+    digits = digits.slice(1);
+  }
+  if (digits.length > 10) {
+    digits = digits.slice(0, 10);
+  }
+  return digits;
+}
+
 function getDeliveryFields(delivery: unknown): {
   deliveryDate?: string;
   deliveryTime?: string;
@@ -42,14 +57,195 @@ function getDeliveryFields(delivery: unknown): {
   recipientPhone?: string;
 } {
   if (!isRecord(delivery)) return {};
+  const rawPhone = getString(delivery['recipientPhone']);
   return {
     deliveryDate: getString(delivery['deliveryDate']) || undefined,
     deliveryTime: getString(delivery['deliveryTimeSlot']) || undefined,
     deliveryAddress: getString(delivery['fullAddress']) || undefined,
     district: getString(delivery['district']) || undefined,
     recipientName: getString(delivery['recipientName']) || undefined,
-    recipientPhone: getString(delivery['recipientPhone']) || undefined,
+    recipientPhone: rawPhone ? normalizePhone(rawPhone) : undefined,
   };
+}
+
+function detectDeviceType(userAgent: string): 'mobile' | 'tablet' | 'desktop' {
+  const ua = userAgent.toLowerCase();
+  if (!ua) return 'desktop';
+  
+  // Tablet detection (must come before mobile)
+  if (ua.includes('ipad') || 
+      ua.includes('tablet') || 
+      (ua.includes('android') && !ua.includes('mobile')) ||
+      ua.includes('kindle') ||
+      ua.includes('silk') ||
+      ua.includes('playbook')) {
+    return 'tablet';
+  }
+  
+  // Mobile detection
+  if (ua.includes('mobi') || 
+      ua.includes('iphone') || 
+      ua.includes('ipod') ||
+      (ua.includes('android') && ua.includes('mobile')) ||
+      ua.includes('blackberry') ||
+      ua.includes('windows phone') ||
+      ua.includes('opera mini') ||
+      ua.includes('iemobile')) {
+    return 'mobile';
+  }
+  
+  return 'desktop';
+}
+
+function detectBrowser(userAgent: string): { browser: string; version: string } {
+  const ua = userAgent;
+  if (!ua) return { browser: 'Bilinmiyor', version: '' };
+  
+  const matchers: Array<{ name: string; regex: RegExp }> = [
+    { name: 'Samsung Internet', regex: /SamsungBrowser\/([\d.]+)/ },
+    { name: 'Edge', regex: /Edg\/([\d.]+)/ },
+    { name: 'Opera', regex: /OPR\/([\d.]+)/ },
+    { name: 'Chrome', regex: /Chrome\/([\d.]+)/ },
+    { name: 'Firefox', regex: /Firefox\/([\d.]+)/ },
+    { name: 'Safari', regex: /Version\/([\d.]+).*Safari/ },
+    { name: 'Instagram', regex: /Instagram\s?([\d.]+)?/ },
+    { name: 'Facebook', regex: /FB[A-Z]{2}\/([\d.]+)?|FBAN/ },
+    { name: 'TikTok', regex: /BytedanceWebview|TikTok/ },
+    { name: 'Twitter', regex: /Twitter/ },
+    { name: 'UC Browser', regex: /UCBrowser\/([\d.]+)/ },
+    { name: 'Yandex', regex: /YaBrowser\/([\d.]+)/ },
+  ];
+
+  for (const { name, regex } of matchers) {
+    const match = ua.match(regex);
+    if (match) return { browser: name, version: match[1] || '' };
+  }
+  return { browser: 'Bilinmiyor', version: '' };
+}
+
+function detectOS(userAgent: string, platform?: string): string {
+  const ua = userAgent.toLowerCase();
+  if (!ua) return platform || 'Bilinmiyor';
+  
+  // iOS detection
+  if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) {
+    const match = ua.match(/os ([\d_]+)/);
+    if (match) {
+      return `iOS ${match[1].replace(/_/g, '.')}`;
+    }
+    return 'iOS';
+  }
+  
+  // Android detection
+  if (ua.includes('android')) {
+    const match = ua.match(/android ([\d.]+)/);
+    if (match) {
+      return `Android ${match[1]}`;
+    }
+    return 'Android';
+  }
+  
+  // Windows detection
+  if (ua.includes('windows')) {
+    if (ua.includes('windows nt 10')) return 'Windows 10/11';
+    if (ua.includes('windows nt 6.3')) return 'Windows 8.1';
+    if (ua.includes('windows nt 6.2')) return 'Windows 8';
+    if (ua.includes('windows nt 6.1')) return 'Windows 7';
+    return 'Windows';
+  }
+  
+  // Mac detection
+  if (ua.includes('macintosh') || ua.includes('mac os')) {
+    const match = ua.match(/mac os x ([\d_]+)/);
+    if (match) {
+      return `macOS ${match[1].replace(/_/g, '.')}`;
+    }
+    return 'macOS';
+  }
+  
+  // Linux detection
+  if (ua.includes('linux')) {
+    if (ua.includes('ubuntu')) return 'Ubuntu';
+    if (ua.includes('fedora')) return 'Fedora';
+    return 'Linux';
+  }
+  
+  // ChromeOS
+  if (ua.includes('cros')) return 'Chrome OS';
+  
+  return platform || 'Bilinmiyor';
+}
+
+function detectDeviceModel(userAgent: string): string {
+  const ua = userAgent;
+  if (!ua) return '';
+  
+  // iPhone models
+  const iphoneMatch = ua.match(/iPhone/i);
+  if (iphoneMatch) {
+    return 'iPhone';
+  }
+  
+  // iPad models
+  const ipadMatch = ua.match(/iPad/i);
+  if (ipadMatch) {
+    return 'iPad';
+  }
+  
+  // Samsung models
+  const samsungMatch = ua.match(/SM-([A-Z]\d{3}[A-Z]?)/i) || ua.match(/Samsung\s?(GT-[A-Z0-9]+|Galaxy\s?[^\s;)]+)?/i);
+  if (samsungMatch) {
+    const model = samsungMatch[1] || samsungMatch[0];
+    if (model.toLowerCase().includes('galaxy')) return model;
+    // Map common Samsung model codes
+    if (model.startsWith('SM-S9')) return 'Samsung Galaxy S24';
+    if (model.startsWith('SM-S91')) return 'Samsung Galaxy S23';
+    if (model.startsWith('SM-G99')) return 'Samsung Galaxy S21';
+    if (model.startsWith('SM-A')) return 'Samsung Galaxy A Series';
+    return `Samsung ${model}`;
+  }
+  
+  // Xiaomi/Redmi models
+  const xiaomiMatch = ua.match(/Redmi\s?([^\s;)]+)|Mi\s?(\d+[^\s;)]*)|POCO\s?([^\s;)]+)|Xiaomi/i);
+  if (xiaomiMatch) {
+    if (xiaomiMatch[1]) return `Redmi ${xiaomiMatch[1]}`;
+    if (xiaomiMatch[2]) return `Xiaomi Mi ${xiaomiMatch[2]}`;
+    if (xiaomiMatch[3]) return `POCO ${xiaomiMatch[3]}`;
+    return 'Xiaomi';
+  }
+  
+  // Huawei models
+  const huaweiMatch = ua.match(/HUAWEI\s?([^\s;)]+)|Honor\s?([^\s;)]+)/i);
+  if (huaweiMatch) {
+    if (huaweiMatch[1]) return `Huawei ${huaweiMatch[1]}`;
+    if (huaweiMatch[2]) return `Honor ${huaweiMatch[2]}`;
+    return 'Huawei';
+  }
+  
+  // Oppo/Realme/OnePlus
+  const oppoMatch = ua.match(/OPPO\s?([^\s;)]+)|Realme\s?([^\s;)]+)|OnePlus\s?([^\s;)]+)/i);
+  if (oppoMatch) {
+    if (oppoMatch[1]) return `OPPO ${oppoMatch[1]}`;
+    if (oppoMatch[2]) return `Realme ${oppoMatch[2]}`;
+    if (oppoMatch[3]) return `OnePlus ${oppoMatch[3]}`;
+  }
+  
+  // Generic Android device
+  if (ua.toLowerCase().includes('android')) {
+    const buildMatch = ua.match(/Build\/([^\s;)]+)/);
+    if (buildMatch) {
+      return `Android Device`;
+    }
+    return 'Android';
+  }
+  
+  // Mac
+  if (ua.includes('Macintosh')) return 'Mac';
+  
+  // Windows PC
+  if (ua.includes('Windows')) return 'Windows PC';
+  
+  return '';
 }
 
 // GET - Fetch orders (with optional customer filter)
@@ -144,6 +340,11 @@ export async function POST(request: NextRequest) {
     customerName = customerName || newOrder.delivery?.recipientName || '';
     customerEmail = customerEmail || '';
     customerPhone = customerPhone || newOrder.delivery?.recipientPhone || '';
+    
+    // Normalize customer phone to ensure consistent format (10 digits: 5XXXXXXXXX)
+    if (customerPhone) {
+      customerPhone = normalizePhone(customerPhone);
+    }
 
     // Guest flag: respect explicit is_guest if provided; otherwise infer from missing customer_id
     const isGuest: boolean = typeof newOrder.is_guest === 'boolean' ? newOrder.is_guest : !customerId;
@@ -192,6 +393,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Build order data with only valid Supabase columns
+    const userAgent = request.headers.get('user-agent') || '';
+    const platform = request.headers.get('sec-ch-ua-platform')?.replace(/"/g, '') || '';
+    const { browser, version } = detectBrowser(userAgent);
+    const deviceType = detectDeviceType(userAgent);
+    const os = detectOS(userAgent, platform);
+    const deviceModel = detectDeviceModel(userAgent);
+
+    const paymentWithClient = {
+      ...(newOrder.payment || {}),
+      clientInfo: {
+        ...(newOrder.payment?.clientInfo || newOrder.payment?.client_info),
+        userAgent: userAgent || undefined,
+        deviceType,
+        deviceModel: deviceModel || undefined,
+        browser,
+        browserVersion: version || undefined,
+        os: os || undefined,
+      },
+    };
+
     const orderData = {
       customer_id: customerId,
       customer_name: customerName,
@@ -200,7 +421,7 @@ export async function POST(request: NextRequest) {
       is_guest: isGuest,
       products: trustedProducts,
       delivery: newOrder.delivery,
-      payment: newOrder.payment || {},
+      payment: paymentWithClient,
       message: newOrder.message || null,
       subtotal: trustedSubtotal,
       discount,
@@ -243,10 +464,11 @@ export async function POST(request: NextRequest) {
           customerPhone,
           verificationType: 'email' as const,
           verificationValue: customerEmail,
-          items: trustedProducts.map((p: { name: string; quantity: number; price: number }) => ({
+          items: trustedProducts.map((p: { name: string; quantity: number; price: number; image?: string }) => ({
             name: p.name,
             quantity: p.quantity,
             price: p.price,
+            imageUrl: p.image || undefined,
           })),
           subtotal: trustedSubtotal,
           discount,

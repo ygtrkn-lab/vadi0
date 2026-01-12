@@ -22,9 +22,11 @@ function ThreeDSContent() {
   const iyzicoContainerRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const hasMarkedPendingRef = useRef(false);
 
   useEffect(() => {
     const htmlContent = searchParams.get('html');
+    const orderId = searchParams.get('orderId');
     
     if (!htmlContent) {
       setError('3DS doğrulama bilgileri eksik');
@@ -101,6 +103,26 @@ function ThreeDSContent() {
         }));
         localStorage.removeItem('vadiler_checkout_started');
       } catch {}
+    }
+
+    // Grace period before marking payment as "pending_payment"
+    if (orderId && !hasMarkedPendingRef.current) {
+      const timer = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/orders/${orderId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'pending_payment' }),
+          });
+          if (res.ok) {
+            hasMarkedPendingRef.current = true;
+          }
+        } catch (markErr) {
+          console.error('Pending status grace update failed', markErr);
+        }
+      }, 20000); // 20s minimum dwell
+
+      return () => clearTimeout(timer);
     }
   }, [searchParams, router]);
 

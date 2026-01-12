@@ -106,6 +106,16 @@ body {
   overflow-x: hidden;
 }
 
+.swipe-guard {
+  overscroll-behavior-x: contain;
+}
+
+@media screen and (max-width: 768px) {
+  .swipe-guard {
+    touch-action: pan-y pinch-zoom;
+  }
+}
+
 /* Prevent iOS zoom on input focus - minimum 16px font-size */
 @media screen and (max-width: 768px) {
   input[type="text"],
@@ -489,6 +499,121 @@ button:focus-visible {
 
 .star-empty {
   color: #d1d1d1;
+}
+
+/* Mobile Menu Animations - Apple/Shopify Style */
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeInBackdrop {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpFade {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.mobile-menu-enter {
+  animation: slideInFromLeft 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.mobile-menu-exit {
+  animation: slideOutToLeft 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.mobile-backdrop-enter {
+  animation: fadeInBackdrop 0.3s ease-out forwards;
+}
+
+/* Stagger animation for list items */
+.mobile-menu-item {
+  animation: slideUpFade 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+.mobile-menu-item:nth-child(1) { animation-delay: 0.05s; }
+.mobile-menu-item:nth-child(2) { animation-delay: 0.08s; }
+.mobile-menu-item:nth-child(3) { animation-delay: 0.11s; }
+.mobile-menu-item:nth-child(4) { animation-delay: 0.14s; }
+.mobile-menu-item:nth-child(5) { animation-delay: 0.17s; }
+.mobile-menu-item:nth-child(6) { animation-delay: 0.20s; }
+.mobile-menu-item:nth-child(7) { animation-delay: 0.23s; }
+.mobile-menu-item:nth-child(8) { animation-delay: 0.26s; }
+.mobile-menu-item:nth-child(9) { animation-delay: 0.29s; }
+.mobile-menu-item:nth-child(10) { animation-delay: 0.32s; }
+
+/* Header scroll transition */
+.mobile-header-glass {
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Apple-style active states */
+.mobile-tap-active {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.mobile-tap-active:active {
+  transform: scale(0.97);
+}
+
+/* Category card hover effect */
+.category-card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.category-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 1024px) {
+  .category-card-hover:active {
+    transform: scale(0.98);
+  }
 }
 
 @theme inline {

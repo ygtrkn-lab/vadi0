@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { SPECIAL_DAYS, getSpecialDayBySlug, getAllSpecialDaySlugs } from '@/data/special-days'
+import { getOccasionFAQs } from '@/data/occasion-faqs'
 import ProductCard from '@/components/ProductCard'
 import supabaseAdmin from '@/lib/supabase/admin'
 import { transformProducts, type Product } from '@/lib/transformers'
@@ -149,14 +150,71 @@ export default async function SpecialDayPage({ params }: PageProps) {
         item: {
           '@type': 'Product',
           name: product.name,
+          description: product.description || product.name,
           url: `${BASE_URL}/${product.category}/${product.slug}`,
-          image: product.image,
+          image: product.image || 'https://vadiler.com/placeholder.jpg',
+          sku: product.sku || `VAD-${product.id}`,
+          brand: {
+            '@type': 'Brand',
+            name: 'Vadiler Çiçek',
+          },
           offers: {
             '@type': 'Offer',
-            price: product.price,
+            // Fiyatı noktalı ondalık formatında gönder (Google standardı)
+            price: Number(product.price).toFixed(2),
             priceCurrency: 'TRY',
+            priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             availability: product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            seller: {
+              '@type': 'Organization',
+              name: 'Vadiler Çiçek',
+            },
+            hasMerchantReturnPolicy: {
+              '@type': 'MerchantReturnPolicy',
+              applicableCountry: 'TR',
+              returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+              merchantReturnDays: 2,
+              returnMethod: 'https://schema.org/ReturnByMail',
+              returnFees: 'https://schema.org/FreeReturn',
+            },
+            shippingDetails: {
+              '@type': 'OfferShippingDetails',
+              shippingRate: {
+                '@type': 'MonetaryAmount',
+                value: '0',
+                currency: 'TRY',
+              },
+              shippingDestination: {
+                '@type': 'DefinedRegion',
+                addressCountry: 'TR',
+                addressRegion: 'İstanbul',
+              },
+              deliveryTime: {
+                '@type': 'ShippingDeliveryTime',
+                handlingTime: {
+                  '@type': 'QuantitativeValue',
+                  minValue: 0,
+                  maxValue: 1,
+                  unitCode: 'DAY',
+                },
+                transitTime: {
+                  '@type': 'QuantitativeValue',
+                  minValue: 0,
+                  maxValue: 1,
+                  unitCode: 'DAY',
+                },
+              },
+            },
           },
+          ...(product.rating > 0 && product.reviewCount > 0 && {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: product.rating,
+              reviewCount: product.reviewCount,
+              bestRating: 5,
+              worstRating: 1,
+            },
+          }),
         },
       })),
     },
@@ -191,6 +249,21 @@ export default async function SpecialDayPage({ params }: PageProps) {
   // Diğer özel günler
   const otherSpecialDays = SPECIAL_DAYS.filter(day => day.slug !== occasion).slice(0, 6)
 
+  // FAQ Schema - Özel gün bazlı sorular
+  const occasionFaqs = getOccasionFAQs(occasion);
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: occasionFaqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
+
   return (
     <>
       <script
@@ -200,6 +273,11 @@ export default async function SpecialDayPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      {/* FAQ Schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
       <main className="min-h-screen bg-gray-50">

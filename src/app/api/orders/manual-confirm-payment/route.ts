@@ -123,6 +123,7 @@ export async function POST(request: NextRequest) {
                 name: (p.name as string) || '',
                 quantity: Number(p.quantity ?? 0),
                 price: Number(p.price ?? 0),
+                imageUrl: (p.image as string) || (p.imageUrl as string) || (p.hoverImage as string) || undefined,
               }))
           : [];
 

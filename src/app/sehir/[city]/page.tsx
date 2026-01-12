@@ -1,13 +1,34 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Flower, Star, Truck } from 'lucide-react'
+import { 
+  Flower2, 
+  Star, 
+  Truck, 
+  Clock, 
+  ShieldCheck, 
+  Heart,
+  Sparkles,
+  MapPin,
+  Gift,
+  ArrowRight,
+  CheckCircle
+} from 'lucide-react'
 import { Footer, Header, MobileNavBar } from '@/components'
 import { DISTRICT_CONTENTS, getDistrictContentBySlug, createCitySlug } from '@/data/city-content'
 import { ISTANBUL_ILCELERI } from '@/data/istanbul-districts'
 import ProductCard from '@/components/ProductCard'
+import CategoryCarousel from '@/components/CategoryCarousel'
 import supabaseAdmin from '@/lib/supabase/admin'
 import { transformProducts } from '@/lib/transformers'
+
+// Özel günler
+const SPECIAL_DAYS = [
+  { slug: 'sevgililer-gunu', name: 'Sevgililer Günü', icon: Heart, color: 'from-rose-500 to-pink-500' },
+  { slug: 'anneler-gunu', name: 'Anneler Günü', icon: Heart, color: 'from-pink-500 to-fuchsia-500' },
+  { slug: 'dogum-gunu', name: 'Doğum Günü', icon: Gift, color: 'from-amber-500 to-orange-500' },
+  { slug: 'yildonumu', name: 'Yıldönümü', icon: Sparkles, color: 'from-purple-500 to-violet-500' },
+]
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com'
 
@@ -15,11 +36,11 @@ interface PageProps {
   params: Promise<{ city: string }>
 }
 
-// Statik sayfaları oluştur
+// Statik sayfaları oluştur - tüm 39 ilçe
 export async function generateStaticParams() {
   const params = [
     { city: 'istanbul' },
-    ...DISTRICT_CONTENTS.map(d => ({ city: d.slug })),
+    ...ISTANBUL_ILCELERI.map(d => ({ city: createCitySlug(d.name) })),
   ]
   return params
 }
@@ -168,87 +189,200 @@ export default async function CityPage({ params }: PageProps) {
 
       <Header />
       <div className="h-0 lg:h-40" />
-      <main className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-white">
-        {/* Hero Section */}
-        <section className="pt-10 pb-8 sm:pt-14 sm:pb-10">
-          <div className="container mx-auto px-4">
-            {/* Breadcrumb */}
-            <nav className="mb-4 text-xs text-dark-600 sm:text-sm">
+      
+      <main className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
+        
+        {/* � Breadcrumb - EN ÜSTTE */}
+        <section className="bg-white border-b border-gray-200">
+          <div className="container mx-auto px-4 py-4">
+            <nav className="text-xs text-gray-600 sm:text-sm">
               <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <li><Link href="/" className="hover:text-primary-700">Ana Sayfa</Link></li>
-                <li className="text-dark-300">/</li>
+                <li><Link href="/" className="hover:text-gray-900 transition-colors">Ana Sayfa</Link></li>
+                <li className="text-gray-400">/</li>
+                <li><Link href="/sehir" className="hover:text-gray-900 transition-colors">Şehirler</Link></li>
+                <li className="text-gray-400">/</li>
                 {!isIstanbul && (
                   <>
-                    <li><Link href="/sehir/istanbul" className="hover:text-primary-700">İstanbul</Link></li>
-                    <li className="text-dark-300">/</li>
+                    <li><Link href="/sehir/istanbul" className="hover:text-gray-900 transition-colors">İstanbul</Link></li>
+                    <li className="text-gray-400">/</li>
                   </>
                 )}
-                <li className="font-medium text-dark-900">{content.name}</li>
+                <li className="font-medium text-gray-900">{content.name}</li>
               </ol>
             </nav>
+          </div>
+        </section>
 
-            <div className="relative overflow-hidden rounded-3xl bg-white p-6 shadow-soft-lg ring-1 ring-black/5 sm:p-10">
-              <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-gradient-to-br from-primary-100 to-transparent opacity-80" />
-              <div className="absolute -bottom-28 -left-28 h-80 w-80 rounded-full bg-gradient-to-tr from-secondary-100 to-transparent opacity-60" />
-              <div className="relative">
-                <h1 className="text-3xl font-bold tracking-tight text-dark-950 sm:text-4xl">{content.title}</h1>
-                <p className="mt-3 max-w-2xl text-base text-dark-700 sm:text-lg">{content.description}</p>
+        {/* 🎁 Haftanın Kampanyalı Ürünler - HERO ALANINDA */}
+        <CategoryCarousel variant="city" />
 
-                <div className="mt-6 -mx-2 flex gap-3 overflow-x-auto px-2 pb-1">
-                  <div className="shrink-0 flex items-center gap-2 rounded-2xl bg-primary-50 px-4 py-2 text-xs font-medium text-primary-700 ring-1 ring-primary-100 sm:text-sm">
-                    <Truck className="h-4 w-4" aria-hidden="true" />
-                    <span>{content.deliveryInfo}</span>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-2 rounded-2xl bg-primary-50 px-4 py-2 text-xs font-medium text-primary-700 ring-1 ring-primary-100 sm:text-sm">
-                    <Flower className="h-4 w-4" aria-hidden="true" />
-                    <span>1000+ Çiçek Seçeneği</span>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-2 rounded-2xl bg-primary-50 px-4 py-2 text-xs font-medium text-primary-700 ring-1 ring-primary-100 sm:text-sm">
-                    <Star className="h-4 w-4" aria-hidden="true" />
-                    <span>4.9 Müşteri Puanı</span>
-                  </div>
+        {/* ✨ Apple-Inspired Hero Section - Minimalist & Elegant & Compact */}
+        <section className="relative bg-white overflow-hidden">
+          {/* Subtle gradient background */}
+          <div className="absolute inset-0">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gradient-to-b from-primary-50/30 to-transparent blur-3xl pointer-events-none" />
+          </div>
+
+          {/* Main content */}
+          <div className="container mx-auto px-4 relative z-10 py-16 md:py-20">
+            <div className="max-w-3xl">
+              {/* Subtle badge */}
+              <div className="mb-5 inline-block">
+                <span className="text-xs font-semibold text-primary-600 uppercase tracking-widest">İstanbul'da Çiçek Teslimatı</span>
+              </div>
+
+              {/* Main headline - Apple style */}
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.15] mb-6">
+                <span className="block text-gray-900">Taze Çiçekler</span>
+                <span className="block bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">Kapınıza Gelsin</span>
+              </h1>
+
+              {/* Descriptive subtitle */}
+              <p className="text-lg md:text-xl text-gray-600 leading-relaxed mb-8 max-w-2xl font-light">
+                İstanbul'un tüm ilçelerine hızlı ve özenli çiçek teslimatı.
+              </p>
+
+              {/* CTA Buttons - Minimal style */}
+              <div className="flex flex-col sm:flex-row gap-3 items-start">
+                <Link
+                  href="/kategoriler"
+                  className="group px-7 py-3 bg-gray-900 text-white rounded-full font-semibold text-base transition-all duration-300 hover:bg-gray-800 hover:shadow-lg hover:shadow-gray-900/20 active:scale-95"
+                >
+                  <span className="flex items-center gap-2">
+                    Çiçekleri İncele
+                    <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                </Link>
+                <Link
+                  href="/ozel-gun"
+                  className="group px-7 py-3 bg-gray-100 text-gray-900 rounded-full font-semibold text-base transition-all duration-300 hover:bg-gray-200 hover:shadow-lg hover:shadow-gray-900/10 active:scale-95"
+                >
+                  <span className="flex items-center gap-2">
+                    Özel Günler
+                    <Sparkles className="h-4 w-4" />
+                  </span>
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Trust indicators - Subtle line under hero */}
+          <div className="border-t border-gray-200">
+            <div className="container mx-auto px-4 py-12 md:py-16">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+                {/* Indicator 1 */}
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Teslimat</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">{content.deliveryInfo}</p>
+                  <p className="text-sm text-gray-600">Garanti ile kapınıza</p>
+                </div>
+
+                {/* Indicator 2 */}
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Memnuniyet</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">4.9 <span className="text-sm text-primary-600">★</span></p>
+                  <p className="text-sm text-gray-600">12.000+ değerlendirme</p>
+                </div>
+
+                {/* Indicator 3 */}
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Seçenek</p>
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">1000+</p>
+                  <p className="text-sm text-gray-600">Çiçek ve aranjman</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* İlçeler Grid (sadece İstanbul ana sayfasında) */}
+        {/* � Özel Günler (haftanın kampanyalarından hemen sonra) */}
+        <section className="py-10 sm:py-14">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                {content.name} İçin <span className="text-primary-600">Özel Günler</span>
+              </h2>
+              <Link href="/ozel-gun" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                Tümünü Gör <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {SPECIAL_DAYS.map((day) => {
+                const Icon = day.icon
+                return (
+                  <Link
+                    key={day.slug}
+                    href={`/sehir/${city}/${day.slug}`}
+                    className="group relative overflow-hidden rounded-3xl bg-white p-6 shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-xl hover:ring-primary-500/50 hover:-translate-y-1"
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${day.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`} />
+                    <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${day.color} shadow-lg mb-4`}>
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">{day.name}</h3>
+                    <p className="text-sm text-gray-600">{content.name} teslimat</p>
+                    <ArrowRight className="absolute bottom-6 right-6 h-5 w-5 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* 🎯 İlçeler Grid (sadece İstanbul ana sayfasında) */}
         {isIstanbul && (
-          <section className="pb-10 sm:pb-12">
+          <section className="py-12 sm:py-16">
             <div className="container mx-auto px-4">
-              <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-black/5">
-                <h2 className="text-xl font-bold text-dark-950 sm:text-2xl mb-6">İstanbul İlçelerine Çiçek Gönder</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                  {ISTANBUL_ILCELERI.map((district) => (
-                    <Link
-                      key={district.id}
-                      href={`/sehir/istanbul/${createCitySlug(district.name)}`}
-                      className="bg-white hover:bg-primary-50 border border-dark-200 hover:border-primary-200 rounded-2xl px-4 py-3 text-center transition-colors shadow-soft"
-                    >
-                      <span className="text-sm font-medium text-dark-800 hover:text-primary-700">
-                        {district.name}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
+              <div className="text-center mb-10">
+                <span className="inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-1.5 text-xs font-semibold text-primary-700 mb-4">
+                  <MapPin className="h-3.5 w-3.5" />
+                  39 İLÇEDE HİZMET
+                </span>
+                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+                  İstanbul İlçelerine <span className="bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">Çiçek Gönder</span>
+                </h2>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Tüm İstanbul ilçelerine aynı gün taze çiçek teslimatı yapıyoruz
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {ISTANBUL_ILCELERI.map((district) => (
+                  <Link
+                    key={district.id}
+                    href={`/sehir/${createCitySlug(district.name)}`}
+                    className="group relative overflow-hidden rounded-2xl bg-white p-4 text-center shadow-lg ring-1 ring-gray-200 transition-all duration-300 hover:shadow-xl hover:ring-primary-500/50 hover:-translate-y-1"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500/0 to-primary-500/0 group-hover:from-primary-500/10 group-hover:to-primary-600/15 transition-all duration-300" />
+                    <span className="relative text-sm font-medium text-gray-900 group-hover:text-primary-600 transition-colors">
+                      {district.name}
+                    </span>
+                  </Link>
+                ))}
               </div>
             </div>
           </section>
         )}
 
-        {/* Popüler Bölgeler (ilçe sayfalarında) */}
+        {/* 📦 Popüler Bölgeler (ilçe sayfalarında) */}
         {!isIstanbul && content.popularAreas && content.popularAreas.length > 0 && (
-          <section className="pb-8">
+          <section className="py-8">
             <div className="container mx-auto px-4">
-              <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-black/5">
-                <h2 className="text-base font-semibold text-dark-950 mb-4">Popüler Bölgeler</h2>
+              <div className="rounded-3xl bg-white p-6 sm:p-8 shadow-xl ring-1 ring-gray-200">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-secondary-500 to-teal-600 shadow-lg">
+                    <MapPin className="h-5 w-5 text-white" />
+                  </div>
+                  <h2 className="text-lg font-bold text-gray-900">{content.name} Popüler Bölgeler</h2>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {content.popularAreas.map((area, index) => (
                     <span
                       key={index}
-                      className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-xs font-medium ring-1 ring-primary-100 sm:text-sm"
+                      className="inline-flex items-center gap-1.5 bg-gray-50 px-4 py-2 rounded-full text-sm font-medium text-gray-700 shadow-md ring-1 ring-gray-200 transition-all hover:bg-gray-100 hover:ring-primary-500/50"
                     >
+                      <CheckCircle className="h-3.5 w-3.5 text-primary-600" />
                       {area}
                     </span>
                   ))}
@@ -258,47 +392,77 @@ export default async function CityPage({ params }: PageProps) {
           </section>
         )}
 
-        {/* İçerik Section */}
-        <section className="py-10 sm:py-12">
+        {/* 📝 BİLGİLENDİRMELER - İçerik Section */}
+        <section className="py-12 sm:py-16">
           <div className="container mx-auto px-4">
-            <div className="grid gap-6 lg:grid-cols-12">
+            <div className="grid gap-8 lg:grid-cols-12">
+              {/* Main Content */}
               <div className="lg:col-span-8">
-                <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-black/5 sm:p-8">
-                  <h2 className="text-xl font-bold text-dark-950 sm:text-2xl mb-5">
+                <div className="rounded-3xl bg-white p-8 sm:p-10 shadow-xl ring-1 ring-gray-200">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
                     {isIstanbul ? 'İstanbul\'da Online Çiçek Siparişi' : `${content.name}'de Çiçek Siparişi`}
                   </h2>
-                  <div className="prose prose-lg max-w-none text-dark-700">
+                  <div className="prose prose-lg max-w-none text-gray-600 leading-relaxed">
                     {content.content.split('\n\n').map((paragraph, index) => (
-                      <p key={index} className="mb-4">{paragraph}</p>
+                      <p key={index} className="mb-5 last:mb-0">{paragraph}</p>
                     ))}
                   </div>
                 </div>
               </div>
 
+              {/* Sidebar */}
               <aside className="lg:col-span-4">
-                <div className="rounded-3xl bg-white p-6 shadow-soft ring-1 ring-black/5">
-                  <h3 className="text-base font-semibold text-dark-950 mb-4">Hızlı Bilgi</h3>
-                  <ul className="space-y-3 text-sm text-dark-700">
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 h-2 w-2 rounded-full bg-primary-500" />
-                      <span>Saat 16:00&apos;ya kadar aynı gün teslimat</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 h-2 w-2 rounded-full bg-primary-500" />
-                      <span>Güvenli ödeme ve hızlı destek</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5 h-2 w-2 rounded-full bg-primary-500" />
-                      <span>Taze çiçek, özenli paketleme</span>
-                    </li>
-                  </ul>
-                  <div className="mt-5">
+                <div className="sticky top-32 space-y-6">
+                  {/* Quick Info Card */}
+                  <div className="rounded-3xl bg-white p-6 shadow-xl ring-1 ring-gray-200">
+                    <h3 className="text-lg font-bold text-gray-900 mb-5">Neden Vadiler?</h3>
+                    <ul className="space-y-4">
+                      <li className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20">
+                          <Clock className="h-4 w-4 text-emerald-400" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-gray-900">Aynı Gün Teslimat</span>
+                          <p className="text-xs text-gray-500 mt-0.5">16:00&apos;a kadar sipariş</p>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-500/20">
+                          <ShieldCheck className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-gray-900">Güvenli Ödeme</span>
+                          <p className="text-xs text-gray-500 mt-0.5">256-bit SSL şifreleme</p>
+                        </div>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-purple-500/20">
+                          <Flower2 className="h-4 w-4 text-purple-400" />
+                        </div>
+                        <div>
+                          <span className="text-sm font-semibold text-gray-900">Taze Çiçek</span>
+                          <p className="text-xs text-gray-500 mt-0.5">Her gün taze kesim</p>
+                        </div>
+                      </li>
+                    </ul>
                     <Link
                       href="/kategoriler"
-                      className="inline-flex h-10 w-full items-center justify-center rounded-2xl bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"
+                      className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-600 text-sm font-semibold text-white shadow-xl shadow-primary-500/30 transition-all hover:shadow-2xl hover:shadow-primary-500/40 hover:scale-[1.02]"
                     >
+                      <Sparkles className="h-4 w-4" />
                       Çiçek Seç
                     </Link>
+                  </div>
+
+                  {/* Trust Badge */}
+                  <div className="rounded-2xl bg-gradient-to-br from-primary-50 to-secondary-50 p-5 text-center ring-1 ring-primary-100">
+                    <div className="flex justify-center gap-2 mb-3">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-5 w-5 fill-amber-400 text-amber-400" />
+                      ))}
+                    </div>
+                    <p className="text-gray-900 font-semibold">4.9 / 5 Müşteri Puanı</p>
+                    <p className="text-gray-600 text-xs mt-1">12.000+ değerlendirme</p>
                   </div>
                 </div>
               </aside>
@@ -306,20 +470,28 @@ export default async function CityPage({ params }: PageProps) {
           </div>
         </section>
 
-        {/* Ürünler Section */}
-        <section className="py-10 sm:py-12">
+        {/* 🌸 Popüler Çiçekler Section - EN SONDA */}
+        <section className="py-12 sm:py-16 bg-gray-50">
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-xl font-bold text-dark-950 sm:text-2xl">
-                {content.name} İçin Popüler Çiçekler
-              </h2>
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+              <div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-1.5 text-xs font-semibold text-primary-700 mb-3">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  EN ÇOK TERCİH EDİLEN
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  {content.name} İçin <span className="text-primary-600">Popüler Çiçekler</span>
+                </h2>
+              </div>
               <Link
                 href="/kategoriler"
-                className="text-primary-700 hover:text-primary-800 font-medium"
+                className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-semibold transition-colors"
               >
-                Tüm Ürünler →
+                Tüm Ürünler
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
+            
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {shuffledProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
@@ -328,22 +500,38 @@ export default async function CityPage({ params }: PageProps) {
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-12 sm:py-16">
-          <div className="container mx-auto px-4 text-center">
-            <div className="mx-auto max-w-3xl overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 to-primary-800 p-8 text-white shadow-soft-xl ring-1 ring-black/5">
-              <h2 className="text-2xl font-bold sm:text-3xl mb-3">
-                {content.name}&apos;e Hemen Çiçek Gönderin
-              </h2>
-              <p className="text-base text-white/90 sm:text-lg mb-6">
-                Aynı gün teslimat garantisiyle sevdiklerinizi mutlu edin.
-              </p>
-              <Link
-                href="/kategoriler"
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-white px-6 text-sm font-semibold text-primary-700 hover:bg-primary-50"
-              >
-                Çiçek Seç
-              </Link>
+        {/* 🚀 CTA Section */}
+        <section className="py-16 sm:py-20">
+          <div className="container mx-auto px-4">
+            <div className="relative overflow-hidden rounded-[2.5rem] bg-white p-10 sm:p-16 text-center shadow-2xl ring-1 ring-gray-200">
+              {/* Decorative Elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary-100 blur-3xl" />
+                <div className="absolute -bottom-20 -left-20 h-60 w-60 rounded-full bg-primary-50 blur-3xl" />
+              </div>
+              
+              <div className="relative">
+                <div className="inline-flex items-center gap-2 rounded-full bg-primary-100 px-5 py-2 text-sm font-medium text-primary-700 ring-1 ring-primary-200 mb-6">
+                  <Heart className="h-4 w-4" />
+                  <span>Sevdiklerinizi Mutlu Edin</span>
+                </div>
+                
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+                  {content.name}&apos;e Hemen <br className="sm:hidden" />Çiçek Gönderin
+                </h2>
+                <p className="text-lg text-gray-600 max-w-xl mx-auto mb-8">
+                  Aynı gün teslimat garantisiyle sevdiklerinize özel anlar yaratın.
+                </p>
+                
+                <Link
+                  href="/kategoriler"
+                  className="inline-flex items-center gap-3 rounded-2xl bg-gradient-to-r from-primary-600 to-primary-700 px-10 py-5 text-lg font-bold text-white shadow-2xl transition-all hover:shadow-3xl hover:scale-[1.03] active:scale-[0.98]"
+                >
+                  <Sparkles className="h-5 w-5" />
+                  Çiçek Seç
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </div>
             </div>
           </div>
         </section>

@@ -108,7 +108,7 @@ function PaymentCompleteContent() {
           message: 'Ödeme başarıyla tamamlandı',
         });
         setLoading(false);
-        // Keep cart/form data per retention requirement; clear flags only
+        // Checkout flag'i temizle, sepet ve form verilerini koru
         try {
           localStorage.removeItem('vadiler_checkout_started');
         } catch {}
@@ -155,7 +155,7 @@ function PaymentCompleteContent() {
 
             if (data?.success) {
               setPaymentResult(data);
-              // Keep cart/form data; clear checkout started flag and record success
+              // Checkout flag'i temizle, sepet ve form verilerini koru
               try {
                 localStorage.removeItem('vadiler_checkout_started');
                 localStorage.setItem('vadiler_last_payment_status', JSON.stringify({

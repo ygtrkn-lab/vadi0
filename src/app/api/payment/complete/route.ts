@@ -298,6 +298,7 @@ export async function POST(request: NextRequest) {
                   name: getStringProp(p, 'name') || '',
                   quantity: Number(p['quantity'] ?? 0),
                   price: Number(p['price'] ?? 0),
+                  imageUrl: getStringProp(p, 'image') || getStringProp(p, 'imageUrl') || getStringProp(p, 'hoverImage') || undefined,
                 }))
             : [];
 
@@ -652,6 +653,7 @@ export async function GET(request: NextRequest) {
                   name: getStringProp(p, 'name') || '',
                   quantity: Number(p['quantity'] ?? 0),
                   price: Number(p['price'] ?? 0),
+                  imageUrl: getStringProp(p, 'image') || getStringProp(p, 'imageUrl') || getStringProp(p, 'hoverImage') || undefined,
                 }))
             : [];
 

@@ -16,7 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     ...ISTANBUL_ILCELERI.map((district) => ({
-      url: `${BASE_URL}/sehir/istanbul/${createCitySlug(district.name)}`,
+      url: `${BASE_URL}/sehir/${createCitySlug(district.name)}`,
       lastModified: now,
       changeFrequency: 'weekly' as const,
       priority: 0.7,

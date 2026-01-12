@@ -24,16 +24,18 @@ const supabase = createClient(
  * - customer: { id, name, email, phone, createdAt? }
  * - deliveryInfo: DeliveryInfo
  * - totalAmount: number
+ * 
+ * Alternatif: Sadece orderId gönderilirse, siparişteki müşteri bilgileri kullanılır (sipariş takip sayfasından ödeme için)
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { orderId, cartItems, customer, deliveryInfo, totalAmount } = body;
+    let { orderId, cartItems, customer, deliveryInfo, totalAmount } = body;
 
-    // Validate required fields (allow guest without customer.id)
-    if (!orderId || !customer || !customer.name || !customer.email || !customer.phone) {
+    // orderId zorunlu
+    if (!orderId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing orderId' },
         { status: 400 }
       );
     }
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Load order to use server-trusted totals/products
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, status, products, delivery, subtotal, discount, delivery_fee, total, payment')
+      .select('id, status, products, delivery, subtotal, discount, delivery_fee, total, payment, customer_name, customer_email, customer_phone, customer_id, created_at')
       .eq('id', orderId)
       .single();
 
@@ -50,6 +52,35 @@ export async function POST(request: NextRequest) {
         { error: 'Order not found' },
         { status: 404 }
       );
+    }
+
+    // Eğer customer bilgisi gönderilmemişse, mevcut siparişten al (sipariş takip sayfasından ödeme senaryosu)
+    if (!customer || !customer.name || !customer.email || !customer.phone) {
+      // Delivery bilgilerinden alıcı bilgilerini de kontrol et (fallback)
+      const delivery = order.delivery as any;
+      const recipientName = delivery?.recipientName || delivery?.recipient_name || '';
+      const recipientPhone = delivery?.recipientPhone || delivery?.recipient_phone || '';
+      
+      customer = {
+        id: order.customer_id || `guest_${orderId.slice(0, 8)}`,
+        name: order.customer_name || recipientName || 'Müşteri',
+        email: order.customer_email || '',
+        phone: order.customer_phone || recipientPhone || '',
+        createdAt: order.created_at,
+      };
+      
+      // Hala gerekli bilgiler yoksa hata ver - email zorunlu, phone fallback olabilir
+      if (!customer.email) {
+        return NextResponse.json(
+          { error: 'Siparişte e-posta bilgisi eksik. Lütfen bizimle iletişime geçin.' },
+          { status: 400 }
+        );
+      }
+      
+      // Telefon yoksa varsayılan değer ata (iyzico için gerekli)
+      if (!customer.phone) {
+        customer.phone = '5000000000'; // Placeholder - iyzico için gerekli
+      }
     }
 
     // Basic guard: do not initialize payment for already-paid orders
@@ -117,6 +148,24 @@ export async function POST(request: NextRequest) {
     const buyerFirstName = nameParts[0] || 'Müşteri';
     const buyerSurname = nameParts.slice(1).join(' ') || buyerFirstName; // Use first name as surname if only one word
 
+    // Normalize phone: remove all non-digits, handle +90/90/0 prefixes, ensure 10 digits
+    const normalizePhone = (phone: string): string => {
+      let digits = phone.replace(/\D/g, '');
+      if (digits.startsWith('90') && digits.length >= 12) {
+        digits = digits.slice(2);
+      }
+      if (digits.startsWith('0') && digits.length >= 11) {
+        digits = digits.slice(1);
+      }
+      if (digits.length > 10) {
+        digits = digits.slice(0, 10);
+      }
+      return digits;
+    };
+
+    const normalizedPhone = normalizePhone(customer.phone);
+    const gsmNumber = normalizedPhone.length === 10 ? `+90${normalizedPhone}` : `+90${customer.phone.replace(/\D/g, '')}`;
+
     // Build iyzico checkout form request (hosted payment) using trusted order data and verified basket items
     const paymentRequest = {
       locale: 'tr',
@@ -132,11 +181,7 @@ export async function POST(request: NextRequest) {
         id: buyerId,
         name: buyerFirstName,
         surname: buyerSurname,
-        gsmNumber: customer.phone.replace(/\s/g, '').startsWith('+')
-          ? customer.phone.replace(/\s/g, '')
-          : '+90' + (customer.phone.replace(/\s/g, '').startsWith('0')
-              ? customer.phone.replace(/\s/g, '').substring(1)
-              : customer.phone.replace(/\s/g, '')),
+        gsmNumber: gsmNumber,
         email: customer.email,
         identityNumber: '11111111111',
         registrationAddress: (order.delivery as any)?.fullAddress || 'Istanbul, Turkey',
@@ -206,12 +251,18 @@ export async function POST(request: NextRequest) {
       let lastError: any = null;
       const tokenCreatedAt = new Date().toISOString();
       
+      // Get existing payment to preserve clientInfo and other fields
+      const existingPayment = (order.payment && typeof order.payment === 'object') 
+        ? order.payment as Record<string, unknown> 
+        : {};
+      
       for (let attempt = 1; attempt <= 3 && !tokenPersisted; attempt++) {
         try {
           const { error: updateError } = await supabase
             .from('orders')
             .update({
               payment: {
+                ...existingPayment, // Preserve existing fields like clientInfo
                 method: 'credit_card',
                 status: 'pending',
                 token: result.token,

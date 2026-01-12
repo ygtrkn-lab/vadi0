@@ -22,7 +22,7 @@ export default function GiftMessagePreview({ message, senderName }: GiftMessageP
             <div className="flex justify-center mb-3">
               <div className="relative h-7 w-auto">
                 <Image 
-                  src="/logo.png" 
+                  src="/logo.webp" 
                   alt="Vadiler" 
                   width={100} 
                   height={28}

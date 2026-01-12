@@ -71,7 +71,7 @@ export interface ReviewFilters {
 export interface CreateReviewInput {
   productId: number;
   customerId: string;
-  orderId?: string; // Opsiyonel - otomatik doğrulanıyor
+  orderId: string;
   rating: number;
   title: string;
   comment: string;

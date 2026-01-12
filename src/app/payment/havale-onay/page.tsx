@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, Suspense } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import QRCode from "react-qr-code";
 import { downloadPdfClientSide } from "@/lib/print";
+import { useCart } from "@/context/CartContext";
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat("tr-TR", {
@@ -17,14 +18,16 @@ function formatPrice(amount: number): string {
   }).format(amount);
 }
 
-export default function BankTransferConfirmPage() {
+function BankTransferConfirmPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { clearCart } = useCart();
   const [data, setData] = useState<{
     orderNumber: number | null;
     amount: number | null;
     items: { name: string; quantity: number; unitPrice: number; total: number }[];
   }>({ orderNumber: null, amount: null, items: [] });
+  const [isLoading, setIsLoading] = useState(true);
   const pdfRef = useRef<HTMLDivElement | null>(null);
 
   const formatDate = (d: Date) =>
@@ -47,6 +50,10 @@ export default function BankTransferConfirmPage() {
     const fromQueryOrderNumber = searchParams.get("orderNumber");
     const fromQueryAmount = searchParams.get("amount");
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Havale page - Query params:', { fromQueryOrderNumber, fromQueryAmount });
+    }
+
     const normalizeItems = (raw: any) =>
       Array.isArray(raw)
         ? raw
@@ -62,8 +69,14 @@ export default function BankTransferConfirmPage() {
     let storedInfo: any = null;
     try {
       const stored = localStorage.getItem("vadiler_bank_transfer_info");
-      if (stored) storedInfo = JSON.parse(stored);
-    } catch {
+      if (stored) {
+        storedInfo = JSON.parse(stored);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Havale page - localStorage data:', storedInfo);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse localStorage:', e);
       storedInfo = null;
     }
 
@@ -77,12 +90,27 @@ export default function BankTransferConfirmPage() {
 
     const resolvedItems = normalizeItems(storedInfo?.items);
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Havale page - Resolved:', { resolvedOrderNumber, resolvedAmount });
+    }
+
     if (resolvedOrderNumber !== null && resolvedAmount !== null) {
       setData({ orderNumber: resolvedOrderNumber, amount: resolvedAmount, items: resolvedItems });
+      setIsLoading(false);
+      
+      // Checkout flag'i temizle, sepet ve form verilerini koru
+      try {
+        localStorage.removeItem('vadiler_checkout_started');
+      } catch {}
+      
       return;
     }
 
     // Fallback to cart if nothing usable
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Havale page - No data found, redirecting to cart');
+    }
+    setIsLoading(false);
     router.push("/sepet");
   }, [router, searchParams]);
 
@@ -91,6 +119,17 @@ export default function BankTransferConfirmPage() {
       ? formatPrice(data.amount)
       : "Tutar alınamadı"
   , [data.amount]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
+        <div className="bg-white shadow-sm rounded-2xl p-8 text-center max-w-md w-full">
+          <Loader2 className="w-10 h-10 text-[#e05a4c] mx-auto mb-3 animate-spin" />
+          <p className="text-sm text-gray-700">Sipariş bilgileriniz yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (data.orderNumber === null) {
     return (
@@ -297,3 +336,19 @@ export default function BankTransferConfirmPage() {
     </div>
   );
 }
+
+export default function BankTransferConfirmPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
+        <div className="bg-white shadow-sm rounded-2xl p-8 text-center max-w-md w-full">
+          <Loader2 className="w-10 h-10 text-[#e05a4c] mx-auto mb-3 animate-spin" />
+          <p className="text-sm text-gray-700">Yükleniyor...</p>
+        </div>
+      </div>
+    }>
+      <BankTransferConfirmPageContent />
+    </Suspense>
+  );
+}
+

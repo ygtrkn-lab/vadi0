@@ -143,8 +143,8 @@ export async function POST(request: NextRequest) {
   try {
     const input: CreateReviewInput = await request.json();
 
-    // Validate required fields (orderId artık opsiyonel)
-    if (!input.productId || !input.customerId || !input.rating || !input.title || !input.comment) {
+    // Validate required fields
+    if (!input.productId || !input.customerId || !input.orderId || !input.rating || !input.title || !input.comment) {
       return NextResponse.json(
         { success: false, error: 'Tüm zorunlu alanları doldurun' },
         { status: 400 }
@@ -174,29 +174,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Otomatik olarak müşterinin bu ürünü satın alıp almadığını kontrol et
-    let isVerifiedPurchase = false;
-    let verifiedOrderId: string | null = null;
-
-    // Müşterinin tüm siparişlerini kontrol et
-    const { data: customerOrders } = await supabaseAdmin
+    // Verify purchase - check if order exists and contains this product
+    const { data: order } = await supabaseAdmin
       .from('orders')
-      .select('id, products')
+      .select('products')
+      .eq('id', input.orderId)
       .eq('customer_id', input.customerId)
-      .in('status', ['delivered', 'shipped', 'confirmed', 'processing']);
+      .single();
 
-    if (customerOrders && customerOrders.length > 0) {
-      for (const order of customerOrders) {
-        const products = order.products as any[];
-        const hasProduct = products?.some((p: any) => 
-          (p.productId === input.productId || p.product_id === input.productId || p.id === input.productId || Number(p.productId) === input.productId || Number(p.id) === input.productId)
-        );
-        if (hasProduct) {
-          isVerifiedPurchase = true;
-          verifiedOrderId = order.id;
-          break;
-        }
-      }
+    if (!order) {
+      return NextResponse.json(
+        { success: false, error: 'Sipariş bulunamadı' },
+        { status: 404 }
+      );
+    }
+
+    // Check if product is in order
+    const products = order.products as any[];
+    const hasProduct = products.some((p: any) => 
+      (p.productId === input.productId || p.product_id === input.productId || p.id === input.productId)
+    );
+
+    if (!hasProduct) {
+      return NextResponse.json(
+        { success: false, error: 'Bu ürünü satın almadınız' },
+        { status: 403 }
+      );
     }
 
     // Insert review
@@ -205,14 +208,14 @@ export async function POST(request: NextRequest) {
       .insert({
         product_id: input.productId,
         customer_id: input.customerId,
-        order_id: verifiedOrderId, // Otomatik bulunan sipariş ID'si
+        order_id: input.orderId,
         rating: input.rating,
         title: input.title,
         comment: input.comment,
         pros: input.pros || [],
         cons: input.cons || [],
         photos: input.photos || [],
-        is_verified_purchase: isVerifiedPurchase,
+        is_verified_purchase: true,
         is_approved: false, // Requires admin approval
         helpful_count: 0,
         unhelpful_count: 0,

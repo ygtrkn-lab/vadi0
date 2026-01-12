@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
+import MediaImage from '@/components/MediaImage';
 import { useCustomer } from '@/context/CustomerContext';
 import { useCart } from '@/context/CartContext';
 import { FadeIn, SpotlightCard, GlassCard, ShimmerButton } from '@/components/ui-kit/premium';
@@ -249,7 +250,7 @@ export default function FavorilerimPage() {
                         <div className="relative aspect-square bg-gray-100">
                           <Link href={`/${product.slug}`}>
                             {product.image ? (
-                              <Image
+                              <MediaImage
                                 src={product.image}
                                 alt={product.name}
                                 fill
@@ -369,7 +370,7 @@ export default function FavorilerimPage() {
                         <Link href={`/${product.slug}`} className="flex-shrink-0">
                           <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-xl overflow-hidden bg-gray-100">
                             {product.image ? (
-                              <Image
+                              <MediaImage
                                 src={product.image}
                                 alt={product.name}
                                 fill

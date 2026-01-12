@@ -124,7 +124,7 @@ export default function Preloader({ isLoading, targetPosition, onLogoArrived }: 
             }}
           >
             <Image
-              src="/logo.png"
+              src="/logo.webp"
               alt="Vadiler Çiçek"
               width={preloaderLogoWidth}
               height={preloaderLogoHeight}

@@ -3,6 +3,12 @@
  * SEO için bilgilendirici içerikler
  */
 
+export interface HowToStep {
+  name: string;
+  text: string;
+  image?: string;
+}
+
 export interface GuideContent {
   slug: string;
   title: string;
@@ -22,6 +28,8 @@ export interface GuideContent {
     question: string;
     answer: string;
   }[];
+  // HowTo Schema için adımlar (bakım rehberleri için)
+  howToSteps?: HowToStep[];
 }
 
 export const GUIDE_CONTENTS: GuideContent[] = [
@@ -422,6 +430,33 @@ Vadiler Çiçek olarak, size ulaşan her çiçeğin en taze haliyle gelmesi içi
       {
         question: 'Kesme çiçekler neden çabuk soluyor?',
         answer: 'Sapların düzgün kesilmemesi, su değişiminin yapılmaması, ortamın çok sıcak olması veya bakterili su en yaygın nedenlerdir.',
+      },
+    ],
+    // HowTo Schema için adımlar
+    howToSteps: [
+      {
+        name: 'Vazoyu Temizleyin',
+        text: 'Vazoyu sabun ve ılık suyla iyice yıkayın. Bakteriler çiçeklerin ömrünü kısaltır, temiz vazo şarttır.',
+      },
+      {
+        name: 'Sapları 45 Derece Kesin',
+        text: 'Keskin bir bıçak veya makasla sapları 45 derece açıyla kesin. Su altında kesmek en iyisidir, her 2-3 günde tekrarlayın.',
+      },
+      {
+        name: 'Alt Yaprakları Temizleyin',
+        text: 'Su seviyesinin altında kalacak tüm yaprakları temizleyin. Suda çürüyen yapraklar bakteri üretir ve çiçeklerin ömrünü kısaltır.',
+      },
+      {
+        name: 'Oda Sıcaklığında Su Koyun',
+        text: '1 litre oda sıcaklığında temiz suya 1 çay kaşığı şeker ve birkaç damla sirke ekleyin. Varsa çiçek besini kullanın.',
+      },
+      {
+        name: 'Doğru Konuma Yerleştirin',
+        text: 'Çiçekleri direkt güneş ışığından uzak, 18-22°C sıcaklıkta, meyvelerden ve klimadan uzak bir yere koyun.',
+      },
+      {
+        name: 'Günlük Bakım Yapın',
+        text: 'Her gün veya en az 2 günde bir suyu değiştirin. Solmuş çiçekleri ve sararan yaprakları temizleyin.',
       },
     ],
   },

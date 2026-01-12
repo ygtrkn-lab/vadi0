@@ -141,7 +141,7 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-3 lg:col-span-2 space-y-4 sm:space-y-6">
             <Link href="/" className="inline-block group">
               <Image
-                src="/logo.png"
+                src="/logo.webp"
                 alt="Vadiler Çiçek"
                 width={140}
                 height={45}

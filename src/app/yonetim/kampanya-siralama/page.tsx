@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import MediaImage from '@/components/MediaImage';
 import Link from 'next/link';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { SpotlightCard, FadeContent } from '@/components/admin';
@@ -412,19 +412,13 @@ export default function KampanyaSiralamaPage() {
 
                   {/* Product image */}
                   <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-gray-100 relative">
-                    {product.image ? (
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        sizes="56px"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <HiOutlinePhotograph size={20} />
-                      </div>
-                    )}
+                    <MediaImage
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
                     {product.discount > 0 && (
                       <div className="absolute top-0.5 right-0.5 px-1 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded">
                         -{product.discount}%

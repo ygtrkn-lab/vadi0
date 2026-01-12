@@ -10,7 +10,7 @@ import { Header, Footer, MobileNavBar } from '@/components';
 import { getMediaType } from '@/components/admin/MediaUpload';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   ShoppingBag, 
   Trash2, 
@@ -106,9 +106,15 @@ export default function SepetClient() {
   const { createOrder } = useOrder();
   const { trackEvent, trackBeginCheckout } = useAnalytics();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('cart');
   const [isProcessing, setIsProcessing] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<{ orderNumber: number; id: string } | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
+  
+  // Resume order state (ödeme bekleyen sipariş devam ettirme)
+  const [resumeOrderId, setResumeOrderId] = useState<string | null>(null);
+  const [resumeOrderData, setResumeOrderData] = useState<any>(null);
   
   // Form states
   const [recipientName, setRecipientName] = useState('');
@@ -126,7 +132,8 @@ export default function SepetClient() {
   const [apartmentNo, setApartmentNo] = useState('');
   const [deliveryDate, setDeliveryDate] = useState('');
   const [deliveryDateNotice, setDeliveryDateNotice] = useState<string | null>(null);
-  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
+  const DEFAULT_DELIVERY_TIME_SLOT = '11:00-17:00';
+  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState(DEFAULT_DELIVERY_TIME_SLOT);
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const isGift = true; // tüm siparişler hediye kabul edilir
   const [senderName, setSenderName] = useState('');
@@ -167,6 +174,7 @@ export default function SepetClient() {
   const [neighborhoodSuggestions, setNeighborhoodSuggestions] = useState<Neighborhood[]>([]);
   const [loadingNeighborhoods, setLoadingNeighborhoods] = useState(false);
   const [lastPaymentBanner, setLastPaymentBanner] = useState<null | { status: 'failed' | 'abandoned'; message?: string }>(null);
+  const [showAbandonedModal, setShowAbandonedModal] = useState(false);
   const [deliveryOffDayDialog, setDeliveryOffDayDialog] = useState<string | null>(null);
   
   // Inline login/register states
@@ -188,12 +196,18 @@ export default function SepetClient() {
   const [neighborhoodSearchOpen, setNeighborhoodSearchOpen] = useState(false);
   const [neighborhoodSearch, setNeighborhoodSearch] = useState('');
   const neighborhoodInputRef = useRef<HTMLInputElement>(null);
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const touchActiveRef = useRef(false);
 
   const [deliveryOffDays, setDeliveryOffDays] = useState<string[]>([]);
 
   // Dynamic region blocks from admin settings
   const [disabledDistricts, setDisabledDistricts] = useState<string[]>(DEFAULT_DISABLED_DISTRICTS);
   const [disabledNeighborhoodsMap, setDisabledNeighborhoodsMap] = useState<DisabledNeighborhoodsMap>(DEFAULT_DISABLED_NEIGHBORHOODS);
+
+  const currentStepRef = useRef<CheckoutStep>('cart');
+  const reminderLoggedRef = useRef<{ shown?: boolean }>({});
 
   const isEmpty = state.items.length === 0;
   const isLoggedIn = !!customerState.currentCustomer;
@@ -222,6 +236,91 @@ export default function SepetClient() {
   const MAX_DELIVERY_DATE = getMaxDeliveryDate();
 
   const deliveryOffDaySet = useMemo(() => new Set(deliveryOffDays), [deliveryOffDays]);
+
+  const recordReminderAction = useCallback(async (action: 'shown' | 'resume' | 'dismiss') => {
+    try {
+      const startedRaw = localStorage.getItem('vadiler_checkout_started');
+      if (!startedRaw) return;
+      const started = JSON.parse(startedRaw);
+      const orderId = started?.orderId;
+      if (!orderId) return;
+
+      const orderRes = await fetch(`/api/orders/${orderId}`);
+      if (!orderRes.ok) return;
+      const orderData = await orderRes.json();
+      const payment = orderData?.payment || {};
+
+      const nowIso = new Date().toISOString();
+      const resumeCount = Number(payment.reminderResumeCount || 0);
+      const dismissCount = Number(payment.reminderDismissCount || 0);
+
+      const updatedPayment = {
+        ...payment,
+        reminderShown: true,
+        reminderShownAt: payment.reminderShownAt || nowIso,
+        reminderChannel: payment.reminderChannel || 'modal',
+      } as Record<string, unknown>;
+
+      if (action === 'resume') {
+        updatedPayment.reminderAction = 'resume_payment';
+        updatedPayment.reminderActionAt = nowIso;
+        updatedPayment.reminderResumeCount = resumeCount + 1;
+      } else if (action === 'dismiss') {
+        updatedPayment.reminderAction = 'dismiss';
+        updatedPayment.reminderActionAt = nowIso;
+        updatedPayment.reminderClosed = true;
+        updatedPayment.reminderClosedAt = nowIso;
+        updatedPayment.reminderDismissCount = dismissCount + 1;
+      } else if (action === 'shown') {
+        if (reminderLoggedRef.current.shown) return;
+        reminderLoggedRef.current.shown = true;
+        updatedPayment.reminderAction = payment.reminderAction || 'shown';
+        updatedPayment.reminderActionAt = payment.reminderActionAt || nowIso;
+      }
+
+      await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment: updatedPayment }),
+      });
+    } catch (err) {
+      console.error('recordReminderAction error', err);
+    }
+  }, []);
+
+  // Hydration fix
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // Resume Order - Sipariş takipten gelen ödeme bekleyen sipariş
+  useEffect(() => {
+    const resumeId = searchParams.get('resumeOrder');
+    if (!resumeId) return;
+    
+    setResumeOrderId(resumeId);
+    
+    // localStorage'dan sipariş bilgilerini al
+    const savedData = localStorage.getItem('vadiler-resume-order');
+    if (savedData) {
+      try {
+        const data = JSON.parse(savedData);
+        if (data.orderId === resumeId) {
+          setResumeOrderData(data);
+          // Ödeme adımına git
+          setCurrentStep('payment');
+          // Guest checkout modunu seç (siparişte zaten bilgiler var)
+          setCheckoutMode('guest');
+        }
+      } catch (err) {
+        console.error('Resume order parse error:', err);
+      }
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
 
   useEffect(() => {
     let isMounted = true;
@@ -277,7 +376,7 @@ export default function SepetClient() {
     };
   }, []);
 
-  // Detect last payment status and show resume banner
+  // Detect last payment status and show resume banner (without forcing step change)
   useEffect(() => {
     try {
       const last = localStorage.getItem('vadiler_last_payment_status');
@@ -285,7 +384,6 @@ export default function SepetClient() {
         const parsed = JSON.parse(last);
         if (parsed?.status === 'failed') {
           setLastPaymentBanner({ status: 'failed', message: parsed?.message || 'Ödeme işlemi tamamlanamadı' });
-          setCurrentStep('payment');
         }
         localStorage.removeItem('vadiler_last_payment_status');
         return;
@@ -295,10 +393,11 @@ export default function SepetClient() {
       if (started) {
         // Payment flow started earlier but user is back to cart; treat as abandoned
         setLastPaymentBanner({ status: 'abandoned', message: 'Ödeme işleminiz yarıda kalmış görünüyor.' });
-        setCurrentStep('payment');
+        setShowAbandonedModal(true);
+        recordReminderAction('shown');
       }
     } catch {}
-  }, []);
+  }, [recordReminderAction]);
 
   // handleSelectSavedAddress - useCallback ile optimize edilmiş
   // Kayıtlı adresin desteklenen bölgede olup olmadığını kontrol et
@@ -805,21 +904,52 @@ export default function SepetClient() {
         const parsed = JSON.parse(savedData);
         // Sadece kullanıcı giriş yapmamışsa veya kayıtlı adres seçilmemişse yükle
         if (!customerState.currentCustomer || !selectedSavedAddress) {
+          // Alıcı bilgileri
           if (parsed.recipientName) setRecipientName(parsed.recipientName);
           if (parsed.recipientPhone) setRecipientPhone(parsed.recipientPhone);
           if (parsed.recipientAddress) setRecipientAddress(parsed.recipientAddress);
+          
+          // Konum bilgileri
           if (parsed.istanbulSide) setIstanbulSide(parsed.istanbulSide);
           if (parsed.district) setDistrict(parsed.district);
           if (parsed.districtId) setDistrictId(parsed.districtId);
           if (parsed.neighborhood) setNeighborhood(parsed.neighborhood);
           if (parsed.selectedLocation) setSelectedLocation(parsed.selectedLocation);
+          
+          // Detaylı adres alanları
+          if (parsed.streetName) setStreetName(parsed.streetName);
+          if (parsed.buildingNo) setBuildingNo(parsed.buildingNo);
+          if (parsed.apartmentNo) setApartmentNo(parsed.apartmentNo);
+          
+          // Teslimat bilgileri
           if (parsed.deliveryDate) setDeliveryDate(parsed.deliveryDate);
-          if (parsed.deliveryTimeSlot) setDeliveryTimeSlot(parsed.deliveryTimeSlot);
+          if (parsed.deliveryTimeSlot) {
+            const normalized = normalizeDeliveryTimeSlot(parsed.deliveryTimeSlot);
+            setDeliveryTimeSlot(isValidDeliveryTimeSlot(normalized) ? normalized : DEFAULT_DELIVERY_TIME_SLOT);
+          }
           if (parsed.deliveryNotes) setDeliveryNotes(parsed.deliveryNotes);
+          
+          // Mesaj kartı bilgileri
           if (parsed.senderName) setSenderName(parsed.senderName);
           if (parsed.messageCard) setMessageCard(parsed.messageCard);
+          if (parsed.selectedMessage) setSelectedMessage(parsed.selectedMessage);
+          
+          // Misafir checkout bilgileri
           if (parsed.guestEmail) setGuestEmail(parsed.guestEmail);
           if (parsed.guestPhone) setGuestPhone(parsed.guestPhone);
+          if (parsed.checkoutMode && ['guest', 'login', 'register'].includes(parsed.checkoutMode)) {
+            setCheckoutMode(parsed.checkoutMode);
+          }
+          
+          // Ödeme tercihleri
+          if (parsed.selectedPaymentMethod && ['credit_card', 'bank_transfer'].includes(parsed.selectedPaymentMethod)) {
+            setSelectedPaymentMethod(parsed.selectedPaymentMethod);
+          }
+          if (typeof parsed.acceptTerms === 'boolean') setAcceptTerms(parsed.acceptTerms);
+          
+          // Adres kaydetme tercihi
+          if (typeof parsed.saveAddressToBook === 'boolean') setSaveAddressToBook(parsed.saveAddressToBook);
+          if (parsed.addressTitle) setAddressTitle(parsed.addressTitle);
         }
       }
     } catch (error) {
@@ -855,21 +985,47 @@ export default function SepetClient() {
 
     try {
       const formData = {
+        // Alıcı bilgileri
         recipientName,
         recipientPhone,
         recipientAddress,
+        
+        // Konum bilgileri
         istanbulSide,
         district,
         districtId,
         neighborhood,
         selectedLocation,
+        
+        // Detaylı adres alanları
+        streetName,
+        buildingNo,
+        apartmentNo,
+        
+        // Teslimat bilgileri
         deliveryDate,
         deliveryTimeSlot,
         deliveryNotes,
+        
+        // Mesaj kartı bilgileri
         senderName,
         messageCard,
+        selectedMessage,
+        
+        // Misafir checkout bilgileri
         guestEmail,
         guestPhone,
+        checkoutMode: checkoutMode !== 'undecided' ? checkoutMode : undefined,
+        
+        // Ödeme tercihleri
+        selectedPaymentMethod,
+        acceptTerms,
+        
+        // Adres kaydetme tercihi
+        saveAddressToBook,
+        addressTitle,
+        
+        // Meta
         timestamp: Date.now()
       };
       localStorage.setItem('vadiler_sepet_form', JSON.stringify(formData));
@@ -877,21 +1033,47 @@ export default function SepetClient() {
       console.error('Form verilerini kaydederken hata:', error);
     }
   }, [
+    // Alıcı bilgileri
     recipientName,
     recipientPhone,
     recipientAddress,
+    
+    // Konum bilgileri
     istanbulSide,
     district,
     districtId,
     neighborhood,
     selectedLocation,
+    
+    // Detaylı adres alanları
+    streetName,
+    buildingNo,
+    apartmentNo,
+    
+    // Teslimat bilgileri
     deliveryDate,
     deliveryTimeSlot,
     deliveryNotes,
+    
+    // Mesaj kartı bilgileri
     senderName,
     messageCard,
+    selectedMessage,
+    
+    // Misafir checkout bilgileri
     guestEmail,
     guestPhone,
+    checkoutMode,
+    
+    // Ödeme tercihleri
+    selectedPaymentMethod,
+    acceptTerms,
+    
+    // Adres kaydetme tercihi
+    saveAddressToBook,
+    addressTitle,
+    
+    // Meta
     state.items.length,
     currentStep
   ]);
@@ -975,6 +1157,7 @@ export default function SepetClient() {
     d.toLowerCase().includes(locationSearch.toLowerCase())
   ) || [];
 
+
   // Türkiye telefon numarası validasyonu
   const validatePhoneNumber = (phone: string): boolean => {
     const digits = normalizeTrMobileDigits(phone);
@@ -1032,6 +1215,12 @@ export default function SepetClient() {
     // Maksimum 10 rakam
     if (digits.length > 10) return;
 
+    // İlk rakam 5 değilse girişi engelle
+    if (digits.length > 0 && digits[0] !== '5') {
+      setGuestPhoneError('Telefon numarası 5 ile başlamalıdır');
+      return;
+    }
+
     setGuestPhone(formatPhoneNumber(digits));
 
     if (digits.length === 0) {
@@ -1039,17 +1228,35 @@ export default function SepetClient() {
       return;
     }
 
-    if (digits[0] !== '5') {
-      setGuestPhoneError('Telefon numarası 5 ile başlamalıdır');
+    // 1-9 hane arası: devam edebilir
+    if (digits.length < 10) {
+      setGuestPhoneError('');
       return;
     }
 
-    if (digits.length === 10 && !validatePhoneNumber(digits)) {
-      setGuestPhoneError('Geçersiz telefon numarası');
+    // 10 hane: tam validasyon
+    if (digits.length === 10) {
+      if (!validatePhoneNumber(digits)) {
+        setGuestPhoneError('Geçersiz telefon numarası');
+        return;
+      }
+      setGuestPhoneError('');
+    }
+  };
+
+  const handleInlineRegisterPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const digits = normalizeTrMobileDigits(value);
+    
+    // Maksimum 10 rakam
+    if (digits.length > 10) return;
+
+    // İlk rakam 5 değilse girişi engelle
+    if (digits.length > 0 && digits[0] !== '5') {
       return;
     }
-
-    setGuestPhoneError('');
+    
+    setInlineRegisterPhone(formatPhoneNumber(digits));
   };
 
   const predefinedMessages = [
@@ -1241,8 +1448,8 @@ export default function SepetClient() {
 
   const isPhoneValid = validatePhoneNumber(recipientPhone);
   const canProceedToRecipient = state.items.length > 0;
-  const requiresSenderName = isGift;
-  
+  const requiresSenderName = false;
+
   // Detaylı adres alanlarından tam adresi oluştur
   const fullAddress = useMemo(() => {
     const parts = [];
@@ -1306,6 +1513,29 @@ export default function SepetClient() {
       document.documentElement?.scrollTo?.({ top: 0, behavior: 'smooth' } as any);
       document.body?.scrollTo?.({ top: 0, behavior: 'smooth' } as any);
     } catch (_) {}
+  };
+
+  const clearAbandonedPaymentFlag = () => {
+    try {
+      localStorage.removeItem('vadiler_checkout_started');
+    } catch {}
+  };
+
+
+  const handleResumeAbandonedPayment = () => {
+    recordReminderAction('resume');
+    clearAbandonedPaymentFlag();
+    setShowAbandonedModal(false);
+    setLastPaymentBanner(null);
+    setCurrentStep('payment');
+    scrollToTop();
+  };
+
+  const handleDismissAbandonedPayment = () => {
+    recordReminderAction('dismiss');
+    clearAbandonedPaymentFlag();
+    setShowAbandonedModal(false);
+    setLastPaymentBanner(prev => (prev?.status === 'abandoned' ? null : prev));
   };
 
   const validateRecipientStep = (options?: { skipScroll?: boolean }): ValidationResult => {
@@ -1381,7 +1611,9 @@ export default function SepetClient() {
       }
     }
     if (!isValidDeliveryTimeSlot(deliveryTimeSlot)) {
-      setErr('delivery-time', 'time', 'Teslimat saat dilimini seçin');
+      // Otomatik olarak varsayılan aralığa çek ve ilerlemeye izin ver
+      setDeliveryTimeSlot(DEFAULT_DELIVERY_TIME_SLOT);
+      setErr('delivery-time', 'time', undefined);
     }
     // senderName kontrolü message adımına taşındı - recipient adımında kontrol edilmemeli
 
@@ -1464,15 +1696,191 @@ export default function SepetClient() {
     return { ok: true };
   };
 
+  const handleEdgeSwipe = useCallback(
+    (direction: 'next' | 'prev') => {
+      if (direction === 'prev') {
+        if (currentStep === 'payment') {
+          setCurrentStep('message');
+          scrollToTop();
+          return;
+        }
+        if (currentStep === 'message') {
+          setCurrentStep('recipient');
+          scrollToTop();
+          return;
+        }
+        if (currentStep === 'recipient') {
+          setCurrentStep('cart');
+          scrollToTop();
+          return;
+        }
+        return;
+      }
+
+      // direction === 'next'
+      if (currentStep === 'cart') {
+        if (canProceedToRecipient) {
+          setCurrentStep('recipient');
+          scrollToTop();
+        }
+        return;
+      }
+
+      if (currentStep === 'recipient') {
+        const check = validateRecipientStep();
+        if (!check.ok) return;
+        setCurrentStep('message');
+        scrollToTop();
+        return;
+      }
+
+      if (currentStep === 'message') {
+        if (requiresSenderName && senderName.trim().length < 2) {
+          setRecipientErrors(prev => ({ ...prev, sender: 'Gönderen adı en az 2 karakter olmalıdır' }));
+          scrollToElement('sender-name');
+          return;
+        }
+        setRecipientErrors(prev => ({ ...prev, sender: undefined }));
+        setCurrentStep('payment');
+        scrollToTop();
+        return;
+      }
+    },
+    [canProceedToRecipient, currentStep, requiresSenderName, senderName, validateRecipientStep]
+  );
+
+  const blockBackNavigation = useCallback(
+    (event?: PopStateEvent) => {
+      const step = currentStepRef.current;
+      if (step === 'cart') return; // allow normal back from cart
+      event?.preventDefault?.();
+      event?.stopImmediatePropagation?.();
+      try {
+        window.history.pushState(null, '', window.location.href);
+      } catch {}
+      handleEdgeSwipe('prev');
+    },
+    [handleEdgeSwipe]
+  );
+
+  // Mobile edge swipe: navigate steps with left/right flicks from screen edges
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      if (window.innerWidth > 1024) return; // only mobile/tablet
+      if (!e.touches || e.touches.length === 0) return;
+      const t = e.touches[0];
+      const edgeZone = 28;
+      const isEdge = t.clientX <= edgeZone || t.clientX >= window.innerWidth - edgeZone;
+      if (!isEdge) return;
+      touchActiveRef.current = true;
+      touchStartXRef.current = t.clientX;
+      touchStartYRef.current = t.clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!touchActiveRef.current) return;
+      touchActiveRef.current = false;
+      if (window.innerWidth > 1024) return;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - touchStartXRef.current;
+      const dy = t.clientY - touchStartYRef.current;
+      const minDistance = 70;
+      const maxOffAxis = 50;
+      if (Math.abs(dx) < minDistance || Math.abs(dy) > maxOffAxis) return;
+      if (dx > 0) {
+        handleEdgeSwipe('prev');
+      } else {
+        handleEdgeSwipe('next');
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [handleEdgeSwipe]);
+
+  // Prevent mobile edge-swipe from navigating browser history; move to previous checkout step instead
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.history.replaceState(null, '', window.location.href);
+    } catch {}
+
+    const handler = (e: PopStateEvent) => blockBackNavigation(e);
+    window.addEventListener('popstate', handler);
+
+    return () => {
+      window.removeEventListener('popstate', handler);
+    };
+  }, [blockBackNavigation]);
+
+  // Resume Order - Mevcut siparişin ödemesini tamamla
+  const handleResumePayment = async () => {
+    if (!resumeOrderData || !resumeOrderId) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      if (selectedPaymentMethod === 'bank_transfer') {
+        // Havale yönlendirmesi
+        const url = `/payment/havale-onay?orderNumber=${resumeOrderData.orderNumber}&amount=${resumeOrderData.total}`;
+        window.location.href = url;
+        return;
+      }
+      
+      // Kredi kartı ile ödeme - mevcut siparişi kullan
+      const paymentResponse = await fetch('/api/payment/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: resumeOrderId,
+        }),
+      });
+
+      const paymentData = await paymentResponse.json();
+
+      if (!paymentData.success) {
+        throw new Error(paymentData.error || 'Ödeme başlatılamadı');
+      }
+
+      // localStorage'dan resume bilgisini temizle
+      localStorage.removeItem('vadiler-resume-order');
+
+      // 3DS sayfasına yönlendir
+      const threeDSUrl = new URL('/payment/3ds', window.location.origin);
+      threeDSUrl.searchParams.set('html', paymentData.threeDSHtmlContent);
+      threeDSUrl.searchParams.set('orderId', resumeOrderId);
+      
+      window.location.href = threeDSUrl.toString();
+    } catch (error) {
+      console.error('Resume payment error:', error);
+      const message = error instanceof Error ? error.message : 'Bir hata oluştu';
+      alert('Ödeme hatası: ' + message);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleCompleteOrder = async () => {
+    console.log('handleCompleteOrder called');
+    
     const paymentCheck = validatePaymentStep();
+    console.log('paymentCheck:', paymentCheck);
     if (!paymentCheck.ok) {
+      console.log('Payment validation failed:', paymentCheck.message);
       setCurrentStep('payment');
       return;
     }
 
     const recipientCheck = validateRecipientStep({ skipScroll: true });
+    console.log('recipientCheck:', recipientCheck);
     if (!recipientCheck.ok) {
+      console.log('Recipient validation failed:', recipientCheck.message);
       setCurrentStep('recipient');
       if (recipientCheck.firstId) {
         setTimeout(() => scrollToElement(recipientCheck.firstId as string), 150);
@@ -1480,7 +1888,10 @@ export default function SepetClient() {
       return;
     }
     
+    console.log('Validations passed, starting order creation...');
     setIsProcessing(true);
+    
+    let isRedirecting = false;
 
     try {
       // Adresi defterime kaydet (sadece giriş yapmış kullanıcılar için ve yeni adres ise)
@@ -1514,7 +1925,7 @@ export default function SepetClient() {
         id: isLoggedIn && customerState.currentCustomer?.id ? customerState.currentCustomer.id : null,
         name: isLoggedIn && customerState.currentCustomer?.name ? customerState.currentCustomer.name : recipientName,
         email: isLoggedIn && customerState.currentCustomer?.email ? customerState.currentCustomer.email : (guestEmail || 'guest@vadiler.com'),
-        phone: isLoggedIn && customerState.currentCustomer?.phone ? customerState.currentCustomer.phone : (guestPhone || recipientPhone),
+        phone: isLoggedIn && customerState.currentCustomer?.phone ? normalizeTrMobileDigits(customerState.currentCustomer.phone) : normalizeTrMobileDigits(guestPhone || recipientPhone),
       };
 
       // For guest checkout, we don't create a customer record
@@ -1528,6 +1939,12 @@ export default function SepetClient() {
       // Create order with pending_payment status
       // Tam adresi oluştur
       const completeDeliveryAddress = `${neighborhood} Mah. ${fullAddress}, ${district}/İstanbul`;
+      console.log('Creating order with data:', { 
+        customerId: customerInfo.id, 
+        selectedPaymentMethod,
+        itemsCount: state.items.length 
+      });
+      
       const orderResult = await createOrder({
         customerId: customerInfo.id,
         customerName: customerInfo.name,
@@ -1537,7 +1954,7 @@ export default function SepetClient() {
         items: state.items,
         delivery: {
           recipientName,
-          recipientPhone,
+          recipientPhone: normalizeTrMobileDigits(recipientPhone),
           province: 'İstanbul (Avrupa)',
           district,
           neighborhood,
@@ -1555,16 +1972,15 @@ export default function SepetClient() {
           senderName: senderName || '',
           isGift,
         } : null,
-        status: selectedPaymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'pending_payment',
+        status: selectedPaymentMethod === 'bank_transfer' ? 'awaiting_payment' : 'pending',
       });
 
       if (!orderResult.success || !orderResult.order) {
+        console.error('Order creation failed:', orderResult);
         throw new Error(orderResult.error || 'Sipariş oluşturulamadı');
       }
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Order created:', orderResult.order.id);
-      }
+      console.log('✅ Order created successfully:', orderResult.order.id, orderResult.order.orderNumber);
 
       // Handle payment based on selected method
       if (selectedPaymentMethod === 'bank_transfer') {
@@ -1588,7 +2004,18 @@ export default function SepetClient() {
             createdAt: Date.now(),
           }));
         } catch {}
-        router.push(`/payment/havale-onay?orderNumber=${orderResult.order.orderNumber}&amount=${encodeURIComponent(totalAmount)}`);
+        
+        // Redirect to havale-onay page with proper parameters
+        const url = `/payment/havale-onay?orderNumber=${String(orderResult.order.orderNumber)}&amount=${String(totalAmount)}`;
+        console.log('🚀 Navigating to havale page:', url);
+        
+        isRedirecting = true;
+        
+        // Use setTimeout to allow current execution to complete before navigation
+        setTimeout(() => {
+          window.location.href = url;
+        }, 100);
+        return; // Stop execution after scheduling redirect
         
         // Not clearing cart or form data per retention requirement
         
@@ -1639,17 +2066,25 @@ export default function SepetClient() {
         // This is e-commerce standard - callback will return to our site
         const threeDSUrl = new URL('/payment/3ds', window.location.origin);
         threeDSUrl.searchParams.set('html', paymentData.threeDSHtmlContent);
+        if (orderResult?.order?.id) {
+          threeDSUrl.searchParams.set('orderId', orderResult.order.id);
+        }
+        
+        isRedirecting = true;
         
         // Navigate to 3DS page
         window.location.href = threeDSUrl.toString();
       }
       
     } catch (error: unknown) {
-      console.error('Order error:', error);
+      console.error('❌ Order error:', error);
       const message = error instanceof Error ? error.message : 'Bir hata oluştu. Lütfen tekrar deneyin.';
-      alert(message);
+      alert('Sipariş hatası: ' + message);
     } finally {
-      setIsProcessing(false);
+      // Only reset processing state if not redirecting
+      if (!isRedirecting) {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -1785,7 +2220,82 @@ export default function SepetClient() {
   return (
     <>
       <Header />
-      <main className="min-h-screen bg-white pt-32 lg:pt-52 pb-32">
+      <main className="min-h-screen bg-white pt-32 lg:pt-52 pb-32" suppressHydrationWarning>
+        <AnimatePresence>
+          {showAbandonedModal && lastPaymentBanner?.status === 'abandoned' && (
+            <motion.div
+              className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                aria-hidden
+                onClick={handleDismissAbandonedPayment}
+              />
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                transition={{ type: 'spring', duration: 0.35 }}
+                className="relative z-[1] w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-gray-200 p-6 space-y-4"
+              >
+                <button
+                  type="button"
+                  onClick={handleDismissAbandonedPayment}
+                  className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 text-gray-500"
+                  aria-label="Kapat"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#e05a4c]/10 border border-[#e05a4c]/30 flex items-center justify-center">
+                    <CreditCard className="w-6 h-6 text-[#e05a4c]" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-bold text-gray-900">Ödeme İşleminizi Tamamlayın</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Siparişinizi tamamlamak için ödeme adımına geçin. Teslimat tarihiniz ve seçtiğiniz ürünler rezerve edilmiştir.
+                    </p>
+                    <ul className="text-xs text-gray-700 space-y-1">
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
+                        <span>SSL sertifikalı güvenli ödeme altyapısı</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
+                        <span>Teslimat tarihi ve ürünleriniz rezerve edildi</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 mt-0.5" />
+                        <span>1 dakikadan kısa güvenli ödeme süreci</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={handleResumeAbandonedPayment}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-[#e05a4c] to-[#ff6b5a] text-white font-semibold shadow-lg shadow-[#e05a4c]/25 hover:brightness-105 transition-all"
+                  >
+                    Ödemeye devam et
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDismissAbandonedPayment}
+                    className="w-full py-3 rounded-xl border border-gray-200 font-semibold text-gray-700 hover:bg-gray-50 transition-all"
+                  >
+                    Sepete geri dön
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="max-w-2xl mx-auto px-4">
           
           {/* Step Indicator - Apple Premium Style */}
@@ -1798,16 +2308,14 @@ export default function SepetClient() {
                 
                 return (
                   <React.Fragment key={step.id}>
-                    <motion.button
+                    <button
                       onClick={() => {
                         if (index < currentStepIndex) {
                           setCurrentStep(step.id as CheckoutStep);
                         }
                       }}
                       disabled={index > currentStepIndex}
-                      whileHover={index <= currentStepIndex ? { scale: 1.05 } : {}}
-                      whileTap={index <= currentStepIndex ? { scale: 0.95 } : {}}
-                      className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-sm ${
+                      className={`relative flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all shadow-sm hover:scale-105 active:scale-95 ${
                         isActive
                           ? 'bg-gradient-to-r from-[#e05a4c] to-[#ff6b5a] text-white shadow-lg shadow-[#e05a4c]/30'
                           : isCompleted
@@ -1835,7 +2343,7 @@ export default function SepetClient() {
                           transition={{ duration: 1.5, repeat: Infinity }}
                         />
                       )}
-                    </motion.button>
+                    </button>
                     {index < steps.length - 1 && (
                       <motion.div 
                         className={`h-0.5 ${index < currentStepIndex ? 'bg-gradient-to-r from-emerald-500 to-teal-600' : 'bg-gray-200'}`}
@@ -2194,6 +2702,9 @@ export default function SepetClient() {
                         </label>
                         <div className="relative">
                           <Phone size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <span className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-500 font-medium select-none pointer-events-none">
+                            +90
+                          </span>
                           <input
                             id="recipient-phone"
                             type="tel"
@@ -2203,15 +2714,23 @@ export default function SepetClient() {
                             autoComplete="tel"
                             maxLength={13}
                             placeholder="5XX XXX XX XX"
-                            className={`w-full pl-10 pr-4 py-3 bg-gray-50 border rounded-xl text-base focus:outline-none focus:ring-2 transition-all ${
+                            className={`w-full pl-[4.5rem] pr-4 py-3 bg-gray-50 border rounded-xl text-base focus:outline-none focus:ring-2 transition-all ${
                               phoneError ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : 'border-gray-200 focus:ring-[#e05a4c]/20 focus:border-[#e05a4c]'
                             }`}
                           />
                         </div>
                         {phoneError ? (
-                          <p className="text-[10px] text-red-500 mt-1">{phoneError}</p>
+                          <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1">
+                            <span className="inline-block w-1 h-1 bg-red-500 rounded-full"></span>
+                            {phoneError}
+                          </p>
+                        ) : recipientPhone.length > 0 ? (
+                          <p className="text-[10px] text-green-600 mt-1 flex items-center gap-1">
+                            <span className="inline-block w-1 h-1 bg-green-600 rounded-full"></span>
+                            Geçerli telefon numarası
+                          </p>
                         ) : (
-                          <p className="text-[10px] text-gray-400 mt-1">Teslimat için alıcıyla iletişime geçeceğiz</p>
+                          <p className="text-[10px] text-gray-400 mt-1">5 ile başlayan 10 haneli numara giriniz</p>
                         )}
                       </div>
 
@@ -2875,7 +3394,7 @@ export default function SepetClient() {
                 {/* Sender Name */}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                    Gönderen Adı (Kartta görünecek) *
+                    Gönderen Adı (Kartta görünecek)
                   </label>
                   <input
                     id="sender-name"
@@ -2965,10 +3484,47 @@ export default function SepetClient() {
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-5"
               >
+                {/* Resume Order Banner - Ödeme bekleyen sipariş */}
+                {resumeOrderData && (
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5 mb-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <Package className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 mb-1">
+                          Sipariş #{resumeOrderData.orderNumber} - Ödeme Bekleniyor
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Siparişiniz hazır, sadece ödeme adımını tamamlayın.
+                        </p>
+                        <div className="bg-white/80 rounded-xl p-3 space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Alıcı:</span>
+                            <span className="font-medium text-gray-900">{resumeOrderData.delivery?.recipientName}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Teslimat:</span>
+                            <span className="font-medium text-gray-900">{resumeOrderData.delivery?.district}</span>
+                          </div>
+                          <div className="flex justify-between border-t pt-2 mt-2">
+                            <span className="text-gray-700 font-semibold">Toplam:</span>
+                            <span className="font-bold text-lg text-emerald-600">{formatPrice(resumeOrderData.total)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-center mb-6 space-y-3">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Sipariş Özeti</h2>
-                    <p className="text-sm text-gray-500">Son adım! Siparişinizi tamamlayın</p>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                      {resumeOrderData ? 'Ödemeyi Tamamla' : 'Sipariş Özeti'}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      {resumeOrderData ? 'Ödeme yönteminizi seçin ve siparişinizi tamamlayın' : 'Son adım! Siparişinizi tamamlayın'}
+                    </p>
                   </div>
                   {lastPaymentBanner && (
                     <div
@@ -2989,7 +3545,26 @@ export default function SepetClient() {
                         <div className="flex flex-wrap gap-2 pt-1">
                           <button
                             type="button"
-                            onClick={() => setLastPaymentBanner(null)}
+                            onClick={() => {
+                              setCurrentStep('payment');
+                              setLastPaymentBanner(null);
+                              scrollToTop();
+                              try {
+                                localStorage.removeItem('vadiler_checkout_started');
+                              } catch {}
+                            }}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-900 text-white hover:bg-gray-800"
+                          >
+                            Ödemeye dön
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setLastPaymentBanner(null);
+                              try {
+                                localStorage.removeItem('vadiler_checkout_started');
+                              } catch {}
+                            }}
                             className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100"
                           >
                             Gizle
@@ -3000,8 +3575,8 @@ export default function SepetClient() {
                   )}
                 </div>
 
-                {/* Üye / Misafir Seçimi - Sadece giriş yapmamışsa göster */}
-                {!isLoggedIn && (
+                {/* Üye / Misafir Seçimi - Sadece giriş yapmamışsa ve resumeOrder değilse göster */}
+                {!isLoggedIn && !resumeOrderData && (
                   <div id="checkout-mode" className="space-y-3">
                     {/* Önemli Başlık */}
                     <div className={`p-4 rounded-xl border-2 transition-all ${
@@ -3166,22 +3741,30 @@ export default function SepetClient() {
                                   guestEmailError ? 'border-red-300' : 'border-blue-200'
                                 }`}
                               />
-                              <input
-                                type="tel"
-                                id="guest-phone"
-                                value={guestPhone}
-                                onChange={handleGuestPhoneChange}
-                                inputMode="numeric"
-                                autoComplete="tel"
-                                maxLength={13}
-                                placeholder="Telefon numaranız *"
-                                className={`w-full px-4 py-3 bg-white border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
-                                  guestPhoneError ? 'border-red-300' : 'border-blue-200'
-                                }`}
-                              />
+                              <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm select-none pointer-events-none">
+                                  +90
+                                </span>
+                                <input
+                                  type="tel"
+                                  id="guest-phone"
+                                  value={guestPhone}
+                                  onChange={handleGuestPhoneChange}
+                                  inputMode="numeric"
+                                  autoComplete="tel"
+                                  maxLength={13}
+                                  placeholder="5XX XXX XX XX"
+                                  className={`w-full pl-[3.5rem] pr-4 py-3 bg-white border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${
+                                    guestPhoneError ? 'border-red-300' : 'border-blue-200'
+                                  }`}
+                                />
+                              </div>
                             </div>
                             {(guestEmailError || guestPhoneError) && (
-                              <p className="text-[11px] text-red-600">{guestEmailError || guestPhoneError}</p>
+                              <p className="text-[11px] text-red-600 flex items-center gap-1">
+                                <span className="inline-block w-1 h-1 bg-red-600 rounded-full"></span>
+                                {guestEmailError || guestPhoneError}
+                              </p>
                             )}
                           </div>
                         </motion.div>
@@ -3307,20 +3890,20 @@ export default function SepetClient() {
                                   placeholder="E-posta adresiniz"
                                   className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                 />
-                                <input
-                                  type="tel"
-                                  value={inlineRegisterPhone}
-                                  onChange={(e) => {
-                                    let val = e.target.value.replace(/\D/g, '');
-                                    if (val.length > 0 && !val.startsWith('0')) val = '0' + val;
-                                    if (val.length > 4) val = val.slice(0, 4) + ' ' + val.slice(4);
-                                    if (val.length > 8) val = val.slice(0, 8) + ' ' + val.slice(8);
-                                    if (val.length > 11) val = val.slice(0, 11) + ' ' + val.slice(11);
-                                    setInlineRegisterPhone(val.slice(0, 13));
-                                  }}
-                                  placeholder="Telefon (05XX XXX XX XX)"
-                                  className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-                                />
+                                <div className="relative">
+                                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium text-sm select-none pointer-events-none">
+                                    +90
+                                  </span>
+                                  <input
+                                    type="tel"
+                                    value={inlineRegisterPhone}
+                                    onChange={handleInlineRegisterPhoneChange}
+                                    inputMode="numeric"
+                                    maxLength={13}
+                                    placeholder="5XX XXX XX XX"
+                                    className="w-full pl-[3.5rem] pr-4 py-3 bg-white border border-emerald-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                  />
+                                </div>
                                 <input
                                   type="password"
                                   value={inlineRegisterPassword}
@@ -3348,7 +3931,7 @@ export default function SepetClient() {
                                         body: JSON.stringify({
                                           name: inlineRegisterName,
                                           email: inlineRegisterEmail,
-                                          phone: inlineRegisterPhone.replace(/\s/g, ''),
+                                          phone: normalizeTrMobileDigits(inlineRegisterPhone),
                                           password: inlineRegisterPassword,
                                         }),
                                       });
@@ -3390,7 +3973,7 @@ export default function SepetClient() {
                                   onChange={(e) => setInlineOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                   placeholder="6 haneli kod"
                                   maxLength={6}
-                                  className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-xl text-sm text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                                  className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-xl text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                 />
                                 <button
                                   type="button"
@@ -3450,9 +4033,33 @@ export default function SepetClient() {
 
                 {/* Order Summary */}
                 <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  {/* Products */}
+                  {/* Products - resumeOrderData varsa ondan, yoksa sepetten göster */}
                   <div className="space-y-2">
-                    {state.items.map((item) => (
+                    {resumeOrderData ? (
+                      // Resume Order: Mevcut siparişteki ürünler
+                      resumeOrderData.items.map((item: any) => (
+                        <div key={item.productId} className="flex items-center gap-3">
+                          <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                            {item.image ? (
+                              <Image src={item.image} alt={item.productName} fill className="object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="w-5 h-5 text-gray-300" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{item.productName}</p>
+                            <p className="text-xs text-gray-500">{item.quantity} adet</p>
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {formatPrice(item.price * item.quantity)}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      // Normal sepet: Sepetteki ürünler
+                      state.items.map((item) => (
                       <div key={item.product.id} className="flex items-center gap-3">
                         <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
                           {getMediaType(item.product.image) === 'video' ? (
@@ -3476,13 +4083,14 @@ export default function SepetClient() {
                           {formatPrice(item.product.price * item.quantity)}
                         </span>
                       </div>
-                    ))}
+                    ))
+                    )}
                   </div>
 
                   <div className="border-t border-gray-200 pt-3 space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Ara Toplam</span>
-                      <span className="text-gray-900">{formatPrice(getTotalPrice())}</span>
+                      <span className="text-gray-900">{formatPrice(resumeOrderData?.subtotal || getTotalPrice())}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">Teslimat</span>
@@ -3493,41 +4101,44 @@ export default function SepetClient() {
                   <div className="border-t border-gray-200 pt-3">
                     <div className="flex justify-between">
                       <span className="font-semibold text-gray-900">Toplam</span>
-                      <span className="text-lg font-bold text-[#e05a4c]">{formatPrice(getTotalPrice())}</span>
+                      <span className="text-lg font-bold text-[#e05a4c]">{formatPrice(resumeOrderData?.total || getTotalPrice())}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Delivery Info Summary */}
-                <div className="space-y-2">
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                    <MapPin size={16} className="text-gray-400 mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-xs text-gray-500">Teslimat Adresi</p>
-                      <p className="text-sm font-medium text-gray-900">{recipientName}</p>
-                      <p className="text-xs text-gray-600">{recipientAddress}</p>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setCurrentStep('recipient');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }} 
-                      className="text-xs text-[#e05a4c] hover:text-[#cd3f31] font-medium transition-colors"
-                    >
-                      Düzenle
-                    </button>
-                  </div>
-
-                  {messageCard && (
+                {/* Delivery Info Summary - resumeOrderData varsa ondan göster */}
+                {resumeOrderData ? (
+                  <div className="space-y-2">
                     <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
-                      <MessageSquare size={16} className="text-gray-400 mt-0.5" />
+                      <MapPin size={16} className="text-gray-400 mt-0.5" />
                       <div className="flex-1">
-                        <p className="text-xs text-gray-500">Mesaj Kartı</p>
-                        <p className="text-sm text-gray-700 italic truncate">&ldquo;{messageCard}&rdquo;</p>
+                        <p className="text-xs text-gray-500">Teslimat Adresi</p>
+                        <p className="text-sm font-medium text-gray-900">{resumeOrderData.delivery?.recipientName}</p>
+                        <p className="text-xs text-gray-600">{resumeOrderData.delivery?.address}</p>
+                      </div>
+                    </div>
+                    {resumeOrderData.cardMessage && (
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <MessageSquare size={16} className="text-gray-400 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500">Mesaj Kartı</p>
+                          <p className="text-sm text-gray-700 italic truncate">&ldquo;{resumeOrderData.cardMessage}&rdquo;</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                      <MapPin size={16} className="text-gray-400 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500">Teslimat Adresi</p>
+                        <p className="text-sm font-medium text-gray-900">{recipientName}</p>
+                        <p className="text-xs text-gray-600">{recipientAddress}</p>
                       </div>
                       <button 
                         onClick={() => {
-                          setCurrentStep('message');
+                          setCurrentStep('recipient');
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }} 
                         className="text-xs text-[#e05a4c] hover:text-[#cd3f31] font-medium transition-colors"
@@ -3535,8 +4146,27 @@ export default function SepetClient() {
                         Düzenle
                       </button>
                     </div>
-                  )}
-                </div>
+
+                    {messageCard && (
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                        <MessageSquare size={16} className="text-gray-400 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-xs text-gray-500">Mesaj Kartı</p>
+                          <p className="text-sm text-gray-700 italic truncate">&ldquo;{messageCard}&rdquo;</p>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            setCurrentStep('message');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }} 
+                          className="text-xs text-[#e05a4c] hover:text-[#cd3f31] font-medium transition-colors"
+                        >
+                          Düzenle
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Payment Method */}
                 <div>
@@ -3749,17 +4379,30 @@ export default function SepetClient() {
                   <div className="mt-6">
                     <div className="max-w-2xl mx-auto">
                       <div className="flex gap-3">
+                        {/* Geri butonu - resumeOrder varsa sipariş takibe dön */}
+                        {resumeOrderData ? (
+                          <button
+                            onClick={() => {
+                              localStorage.removeItem('vadiler-resume-order');
+                              window.location.href = `/siparis-takip?order=${resumeOrderData.orderNumber}`;
+                            }}
+                            className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all active:scale-95"
+                          >
+                            İptal
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setCurrentStep('message');
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all active:scale-95"
+                          >
+                            Geri
+                          </button>
+                        )}
                         <button
-                          onClick={() => {
-                            setCurrentStep('message');
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className="px-5 py-3 border border-gray-200 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-all active:scale-95"
-                        >
-                          Geri
-                        </button>
-                        <button
-                          onClick={handleCompleteOrder}
+                          onClick={resumeOrderData ? handleResumePayment : handleCompleteOrder}
                           disabled={isProcessing}
                           className={`relative flex-1 py-3.5 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                             selectedPaymentMethod === 'bank_transfer' 

@@ -21,7 +21,9 @@ import {
   HiOutlineMoon,
   HiOutlineSun,
   HiOutlineUsers,
-  HiOutlineChartBar
+  HiOutlineChartBar,
+  HiOutlineChatAlt2,
+  HiOutlineTrendingUp
 } from 'react-icons/hi';
 import { ShinyText } from '@/components/ui-kit';
 import DarkVeil from '@/components/DarkVeil';
@@ -114,8 +116,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/yonetim/urunler', label: 'Ürünler', icon: HiOutlineCube },
     { href: '/yonetim/kategoriler', label: 'Kategoriler', icon: HiOutlineTag },
     { href: '/yonetim/siparisler', label: 'Siparişler', icon: HiOutlineClipboardList, badge: pendingOrdersCount > 0 ? pendingOrdersCount : undefined },
+    { href: '/yonetim/satis-raporu', label: 'Satış Raporu', icon: HiOutlineTrendingUp },
+    { href: '/yonetim/degerlendirmeler', label: 'Değerlendirmeler', icon: HiOutlineChatAlt2 },
     { href: '/yonetim/musteriler', label: 'Müşteriler', icon: HiOutlineUsers },
     { href: '/yonetim/analizler', label: 'Analizler', icon: HiOutlineChartBar },
+    { href: '/yonetim/analizler-v2', label: 'Analytics v2', icon: HiOutlineChartBar },
     { href: '/yonetim/bolge-kapatma', label: 'Bölge Kapatma', icon: HiOutlineTag },
     { href: '/yonetim/ayarlar', label: 'Ayarlar', icon: HiOutlineCog },
   ], [pendingOrdersCount]);
@@ -221,7 +226,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         
         <div className="flex flex-col items-center gap-6 relative z-10">
           <Image
-            src="/logo.png"
+            src="/logo.webp"
             alt="Vadiler"
             width={150}
             height={50}
@@ -340,7 +345,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             <div className={`relative z-10 h-16 flex items-center justify-between px-5 border-b ${isDark ? 'border-neutral-800/30' : 'border-gray-200/50'}`}>
               <Link href="/yonetim" className="flex items-center gap-3 group">
                 <Image
-                  src="/logo.png"
+                  src="/logo.webp"
                   alt="Vadiler"
                   width={120}
                   height={40}

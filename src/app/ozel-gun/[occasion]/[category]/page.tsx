@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
+import { Header, Footer, MobileNavBar } from '@/components';
 import { SPECIAL_DAYS } from '@/data/special-days';
 import supabaseAdmin from '@/lib/supabase/admin';
 
@@ -195,15 +196,72 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
         item: {
           '@type': 'Product',
           name: product.name,
-          image: product.image,
+          description: product.description || product.name,
+          image: product.image || 'https://vadiler.com/placeholder.jpg',
+          sku: product.sku || `VAD-${product.id}`,
+          brand: {
+            '@type': 'Brand',
+            name: 'Vadiler Çiçek',
+          },
           offers: {
             '@type': 'Offer',
-            price: product.price,
+            // Fiyatı noktalı ondalık formatında gönder (Google standardı)
+            price: Number(product.price).toFixed(2),
             priceCurrency: 'TRY',
+            priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             availability: product.inStock
               ? 'https://schema.org/InStock'
               : 'https://schema.org/OutOfStock',
+            seller: {
+              '@type': 'Organization',
+              name: 'Vadiler Çiçek',
+            },
+            hasMerchantReturnPolicy: {
+              '@type': 'MerchantReturnPolicy',
+              applicableCountry: 'TR',
+              returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+              merchantReturnDays: 2,
+              returnMethod: 'https://schema.org/ReturnByMail',
+              returnFees: 'https://schema.org/FreeReturn',
+            },
+            shippingDetails: {
+              '@type': 'OfferShippingDetails',
+              shippingRate: {
+                '@type': 'MonetaryAmount',
+                value: '0',
+                currency: 'TRY',
+              },
+              shippingDestination: {
+                '@type': 'DefinedRegion',
+                addressCountry: 'TR',
+                addressRegion: 'İstanbul',
+              },
+              deliveryTime: {
+                '@type': 'ShippingDeliveryTime',
+                handlingTime: {
+                  '@type': 'QuantitativeValue',
+                  minValue: 0,
+                  maxValue: 1,
+                  unitCode: 'DAY',
+                },
+                transitTime: {
+                  '@type': 'QuantitativeValue',
+                  minValue: 0,
+                  maxValue: 1,
+                  unitCode: 'DAY',
+                },
+              },
+            },
           },
+          ...(product.rating > 0 && product.reviewCount > 0 && {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: product.rating,
+              reviewCount: product.reviewCount,
+              bestRating: 5,
+              worstRating: 1,
+            },
+          }),
         },
       })),
     },
@@ -219,6 +277,8 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
       />
+      
+      <Header />
       
       <main className="container mx-auto px-4 py-8 mt-20">
         {/* Hero Section */}
@@ -383,6 +443,9 @@ export default async function OccasionCategoryPage({ params }: PageProps) {
           </div>
         </div>
       </main>
+
+      <Footer />
+      <MobileNavBar />
     </>
   );
 }

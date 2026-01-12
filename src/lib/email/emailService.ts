@@ -16,6 +16,14 @@ interface EmailOptions {
   text?: string;
 }
 
+// E-posta gönderim sonucu için detaylı arayüz
+export interface EmailSendResult {
+  success: boolean;
+  error?: string;
+  errorCode?: 'INVALID_EMAIL' | 'SMTP_ERROR' | 'CONNECTION_ERROR' | 'UNKNOWN';
+  messageId?: string;
+}
+
 interface OrderEmailData {
   orderNumber: string;
   customerName: string;
@@ -129,9 +137,75 @@ export class EmailService {
   }
 
   /**
+   * E-posta gönderim hatasını analiz et ve kullanıcı dostu hata kodu döndür
+   */
+  private static analyzeEmailError(error: unknown): { errorCode: EmailSendResult['errorCode']; message: string } {
+    const err = error as { message?: string; code?: string; responseCode?: number } | null;
+    const errorMessage = err?.message?.toLowerCase() || '';
+    const errorCode = err?.code?.toLowerCase() || '';
+    const responseCode = err?.responseCode || 0;
+    
+    // Geçersiz alıcı adresi hataları (SMTP 550, 553, 554 vb.)
+    if (
+      responseCode === 550 || 
+      responseCode === 553 || 
+      responseCode === 554 ||
+      errorMessage.includes('invalid') ||
+      errorMessage.includes('does not exist') ||
+      errorMessage.includes('user unknown') ||
+      errorMessage.includes('no such user') ||
+      errorMessage.includes('mailbox not found') ||
+      errorMessage.includes('recipient rejected') ||
+      errorMessage.includes('undeliverable') ||
+      errorMessage.includes('invalid recipient') ||
+      errorMessage.includes('address rejected')
+    ) {
+      return {
+        errorCode: 'INVALID_EMAIL',
+        message: 'Bu e-posta adresine mesaj gönderilemedi. Lütfen e-posta adresinizi kontrol edin.'
+      };
+    }
+    
+    // Bağlantı hataları
+    if (
+      errorCode === 'econnrefused' ||
+      errorCode === 'etimedout' ||
+      errorCode === 'enotfound' ||
+      errorMessage.includes('connection') ||
+      errorMessage.includes('timeout')
+    ) {
+      return {
+        errorCode: 'CONNECTION_ERROR',
+        message: 'E-posta sunucusuna bağlanılamadı. Lütfen daha sonra tekrar deneyin.'
+      };
+    }
+    
+    // SMTP sunucu hataları
+    if (responseCode >= 500 && responseCode < 600) {
+      return {
+        errorCode: 'SMTP_ERROR',
+        message: 'E-posta gönderilemedi. Lütfen daha sonra tekrar deneyin.'
+      };
+    }
+    
+    return {
+      errorCode: 'UNKNOWN',
+      message: 'E-posta gönderilemedi. Lütfen tekrar deneyin.'
+    };
+  }
+
+  /**
    * Send a generic email
    */
   static async sendEmail(options: EmailOptions): Promise<boolean> {
+    const result = await this.sendEmailWithDetails(options);
+    return result.success;
+  }
+
+  /**
+   * Send email with detailed result (including error info)
+   */
+  static async sendEmailWithDetails(options: EmailOptions): Promise<EmailSendResult> {
     try {
       const transporter = this.getTransporter();
       const from = process.env.SMTP_USER || 'bilgi@vadiler.com';
@@ -153,14 +227,20 @@ export class EmailService {
       });
 
       console.log('✅ Email sent successfully:', result.messageId);
-      return true;
+      return { success: true, messageId: result.messageId };
     } catch (error) {
       console.error('❌ Email sending error:', error);
       if (error instanceof Error) {
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
       }
-      return false;
+      
+      const analyzed = this.analyzeEmailError(error);
+      return {
+        success: false,
+        error: analyzed.message,
+        errorCode: analyzed.errorCode
+      };
     }
   }
 
@@ -172,55 +252,355 @@ export class EmailService {
     code: string;
     purpose: 'login' | 'register' | 'password-reset';
   }): Promise<boolean> {
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+    
     let purposeLabel = '';
     let title = '';
+    let emoji = '';
     
     switch (params.purpose) {
       case 'register':
         purposeLabel = 'Kayıt';
-        title = 'Kayıt işleminizi tamamlamak için doğrulama kodunuz:';
+        title = 'Kayıt işleminizi tamamlayın';
+        emoji = '🌸';
         break;
       case 'login':
         purposeLabel = 'Giriş';
-        title = 'Giriş işleminizi tamamlamak için doğrulama kodunuz:';
+        title = 'Hesabınıza giriş yapın';
+        emoji = '🔐';
         break;
       case 'password-reset':
         purposeLabel = 'Şifre Sıfırlama';
-        title = 'Şifrenizi sıfırlamak için doğrulama kodunuz:';
+        title = 'Şifrenizi sıfırlayın';
+        emoji = '🔑';
         break;
     }
 
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="tr">
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #111827; background: #f9fafb; }
-            .container { max-width: 520px; margin: 0 auto; padding: 24px; }
-            .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; }
-            .brand { font-weight: 700; font-size: 18px; margin: 0 0 8px 0; }
-            .muted { color: #6b7280; font-size: 13px; }
-            .code { font-size: 28px; font-weight: 800; letter-spacing: 6px; text-align: center; padding: 16px 0; border-radius: 10px; background: #f3f4f6; border: 1px dashed #d1d5db; }
-          </style>
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>${title}</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="card">
-              <p class="brand">Vadiler</p>
-              <p>${title}</p>
-              <div class="code">${params.code}</div>
-              <p class="muted">Kod 10 dakika geçerlidir. Eğer bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
-            </div>
-          </div>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
+                  </tr>
+
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              ${title}
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              Aşağıdaki doğrulama kodunu kullanın
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- OTP Code Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 32px 24px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td align="center">
+                                  <p style="margin: 0 0 16px 0; font-size: 40px;">${emoji}</p>
+                                  <p style="margin: 0 0 8px 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Doğrulama Kodu</p>
+                                  <p style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #1d1d1f; font-family: 'SF Mono', Monaco, 'Courier New', monospace;">${params.code}</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Timer Notice -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+                        <tr>
+                          <td style="background-color: #f0f9ff; border-radius: 12px; padding: 16px 20px;">
+                            <p style="margin: 0; font-size: 14px; color: #3b82f6; font-weight: 500; text-align: center;">
+                              ⏱️ Bu kod 10 dakika içinde geçerliliğini yitirecektir
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Security Notice -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.<br/>
+                              Hesabınız güvende, herhangi bir işlem yapmanıza gerek yok.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Yardıma mı ihtiyacınız var? <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${params.to} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
         </body>
       </html>
     `;
 
     return this.sendEmail({
       to: params.to,
-      subject: `Vadiler ${purposeLabel} Doğrulama Kodu`,
+      subject: `${emoji} Vadiler ${purposeLabel} Doğrulama Kodu`,
+      html,
+      text: `Vadiler ${purposeLabel} doğrulama kodunuz: ${params.code} (10 dakika geçerli)`,
+    });
+  }
+
+  /**
+   * Send customer OTP with detailed result (for error handling)
+   */
+  static async sendCustomerOtpWithDetails(params: {
+    to: string;
+    code: string;
+    purpose: 'login' | 'register' | 'password-reset';
+  }): Promise<EmailSendResult> {
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+    
+    let purposeLabel = '';
+    let title = '';
+    let emoji = '';
+    
+    switch (params.purpose) {
+      case 'register':
+        purposeLabel = 'Kayıt';
+        title = 'Kayıt işleminizi tamamlayın';
+        emoji = '🌸';
+        break;
+      case 'login':
+        purposeLabel = 'Giriş';
+        title = 'Hesabınıza giriş yapın';
+        emoji = '🔐';
+        break;
+      case 'password-reset':
+        purposeLabel = 'Şifre Sıfırlama';
+        title = 'Şifrenizi sıfırlayın';
+        emoji = '🔑';
+        break;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="tr">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>${title}</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
+                  </tr>
+
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              ${title}
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              Aşağıdaki doğrulama kodunu kullanın
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- OTP Code Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 32px 24px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td align="center">
+                                  <p style="margin: 0 0 16px 0; font-size: 40px;">${emoji}</p>
+                                  <p style="margin: 0 0 8px 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Doğrulama Kodu</p>
+                                  <p style="margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #1d1d1f; font-family: 'SF Mono', Monaco, 'Courier New', monospace;">${params.code}</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Timer Notice -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+                        <tr>
+                          <td style="background-color: #f0f9ff; border-radius: 12px; padding: 16px 20px;">
+                            <p style="margin: 0; font-size: 14px; color: #3b82f6; font-weight: 500; text-align: center;">
+                              ⏱️ Bu kod 10 dakika içinde geçerliliğini yitirecektir
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Security Notice -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.<br/>
+                              Hesabınız güvende, herhangi bir işlem yapmanıza gerek yok.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Yardıma mı ihtiyacınız var? <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${params.to} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
+        </body>
+      </html>
+    `;
+
+    return this.sendEmailWithDetails({
+      to: params.to,
+      subject: `${emoji} Vadiler ${purposeLabel} Doğrulama Kodu`,
       html,
       text: `Vadiler ${purposeLabel} doğrulama kodunuz: ${params.code} (10 dakika geçerli)`,
     });
@@ -230,23 +610,30 @@ export class EmailService {
    * Send order confirmation email
    */
   static async sendOrderConfirmation(data: OrderEmailData): Promise<boolean> {
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+    
     const trackingUrl = this.buildTrackingUrl({
       orderNumber: data.orderNumber,
       verificationType: data.verificationType,
       verificationValue: data.verificationValue,
     });
 
-    const itemsHtml = data.items
-      .map(
-        (item) => `
+    // Apple tarzı minimalist ürün kartları
+    const itemsHtml = data.items.map(item => `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
         <tr>
-          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.name}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${item.price.toFixed(2)} ₺</td>
+          <td style="padding-left: 0; vertical-align: top;">
+            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #1d1d1f; line-height: 1.3;">${item.name}</p>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #86868b;">Adet: ${item.quantity}</p>
+          </td>
+          <td align="right" style="vertical-align: top;">
+            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #1d1d1f;">${(item.price * item.quantity).toLocaleString('tr-TR')} ₺</p>
+          </td>
         </tr>
-      `
-      )
-      .join('');
+      </table>
+    `).join('');
 
     const safeCustomerPhone = (data.customerPhone || '').trim();
     const safeRecipientName = (data.recipientName || '').trim();
@@ -258,110 +645,242 @@ export class EmailService {
 
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="tr">
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #111827; background: #f5f5f7; margin: 0; padding: 0; }
-            .container { max-width: 640px; margin: 0 auto; padding: 24px; }
-            .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
-            .header { padding: 22px 24px; border-bottom: 1px solid #e5e7eb; }
-            .brand { font-weight: 700; font-size: 14px; letter-spacing: 0.2px; color: #111827; margin: 0 0 8px 0; }
-            .title { font-weight: 800; font-size: 22px; margin: 0; color: #111827; }
-            .sub { margin: 6px 0 0 0; color: #6b7280; font-size: 13px; }
-            .content { padding: 24px; }
-            .section { background: #f9fafb; padding: 16px; border-radius: 12px; margin: 16px 0; border: 1px solid #eef2f7; }
-            .section h3 { margin: 0 0 10px 0; font-size: 14px; color: #111827; }
-            .muted { color: #6b7280; }
-            table { width: 100%; border-collapse: collapse; margin: 16px 0 0 0; }
-            th, td { font-size: 13px; }
-            .total-row { font-weight: 800; }
-            .footer { text-align: center; padding: 18px 24px 24px; color: #6b7280; font-size: 12px; }
-          </style>
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>Siparişiniz Alındı</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="card">
-              <div class="header">
-                <p class="brand">Vadiler</p>
-                <h1 class="title">Siparişiniz alındı</h1>
-                <p class="sub">Sipariş No: <strong>#${data.orderNumber}</strong></p>
-              </div>
-              <div class="content">
-              <p>Merhaba ${data.customerName},</p>
-              <p>Siparişiniz başarıyla alındı. En kısa sürede hazırlayıp size ulaştıracağız.</p>
-
-              <div class="section">
-                <h3>Sipariş Bilgileri</h3>
-                <p><strong>Sipariş No:</strong> #${data.orderNumber}</p>
-                ${paymentMethod ? `<p><strong>Ödeme:</strong> ${paymentMethod}</p>` : ''}
-                <p><strong>İletişim:</strong> ${data.customerEmail}${safeCustomerPhone ? ` • ${safeCustomerPhone}` : ''}</p>
-              </div>
-              
-              <div class="section">
-                <h3>Teslimat Bilgileri</h3>
-                ${safeRecipientName ? `<p><strong>Alıcı:</strong> ${safeRecipientName}${safeRecipientPhone ? ` • ${safeRecipientPhone}` : ''}</p>` : ''}
-                <p><strong>Adres:</strong> ${data.deliveryAddress}</p>
-                ${safeDistrict ? `<p><strong>İlçe:</strong> ${safeDistrict}</p>` : ''}
-                <p><strong>Tarih:</strong> ${data.deliveryDate}</p>
-                <p><strong>Zaman:</strong> ${data.deliveryTime}</p>
-              </div>
-
-              <h3>Sipariş Detayları</h3>
-              <table>
-                <thead>
-                  <tr style="background: #f9fafb;">
-                    <th style="padding: 10px; text-align: left;">Ürün</th>
-                    <th style="padding: 10px; text-align: center;">Adet</th>
-                    <th style="padding: 10px; text-align: right;">Fiyat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${itemsHtml}
-                </tbody>
-                <tfoot>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
                   <tr>
-                    <td colspan="2" style="padding: 10px; text-align: right;">Ara Toplam:</td>
-                    <td style="padding: 10px; text-align: right;">${data.subtotal.toFixed(2)} ₺</td>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
                   </tr>
-                  ${showDiscount ? `
-                  <tr>
-                    <td colspan="2" style="padding: 10px; text-align: right;">İndirim:</td>
-                    <td style="padding: 10px; text-align: right;">-${discount.toFixed(2)} ₺</td>
-                  </tr>
-                  ` : ''}
-                  <tr>
-                    <td colspan="2" style="padding: 10px; text-align: right;">Teslimat Ücreti:</td>
-                    <td style="padding: 10px; text-align: right;">${data.deliveryFee === 0 ? 'ÜCRETSİZ' : data.deliveryFee.toFixed(2) + ' ₺'}</td>
-                  </tr>
-                  <tr class="total-row">
-                    <td colspan="2" style="padding: 10px; text-align: right; border-top: 2px solid #e5e7eb;">TOPLAM:</td>
-                    <td style="padding: 10px; text-align: right; border-top: 2px solid #e5e7eb; color: #111827;">${data.total.toFixed(2)} ₺</td>
-                  </tr>
-                </tfoot>
-              </table>
 
-              <div style="text-align: center;">
-                <a href="${trackingUrl}" style="display:inline-block;background:#111827;color:#ffffff !important;padding:12px 18px;text-decoration:none;border-radius:10px;font-weight:700;letter-spacing:0.2px;">Siparişimi Takip Et</a>
-              </div>
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Success Badge -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+                        <tr>
+                          <td style="background-color: #ecfdf5; border-radius: 12px; padding: 16px 20px;">
+                            <p style="margin: 0; font-size: 14px; color: #10b981; font-weight: 500; text-align: center;">
+                              ✓ Siparişiniz başarıyla alındı
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
 
-              <p style="margin-top: 26px; font-size: 12px; color: #6b7280;">
-                Sorularınız için <strong>0850 307 4876</strong> numaralı telefondan bize ulaşabilirsiniz.
-              </p>
-              </div>
-              <div class="footer">
-                <p style="margin:0;">Vadiler Çiçekçilik</p>
-                <p style="margin:6px 0 0 0;">Bu email ${data.customerEmail} adresine gönderilmiştir.</p>
-              </div>
-            </div>
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              Teşekkürler, ${data.customerName.split(' ')[0]}!
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              Siparişinizi en kısa sürede hazırlayacağız
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Order Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            
+                            <!-- Order Header -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                              <tr>
+                                <td>
+                                  <p style="margin: 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Sipariş</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 20px; font-weight: 600; color: #1d1d1f;">#${data.orderNumber}</p>
+                                </td>
+                                <td align="right">
+                                  <p style="margin: 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Teslimat</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #1d1d1f;">${data.deliveryDate}</p>
+                                </td>
+                              </tr>
+                            </table>
+
+                            <!-- Divider -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td style="border-top: 1px solid #d2d2d7; padding-top: 20px;"></td>
+                              </tr>
+                            </table>
+
+                            <!-- Products -->
+                            ${itemsHtml}
+
+                            <!-- Pricing -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px; border-top: 1px solid #d2d2d7; padding-top: 20px;">
+                              <tr>
+                                <td style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #86868b;">Ara Toplam</p>
+                                </td>
+                                <td align="right" style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #1d1d1f;">${data.subtotal.toLocaleString('tr-TR')} ₺</p>
+                                </td>
+                              </tr>
+                              ${showDiscount ? `
+                              <tr>
+                                <td style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #10b981;">İndirim</p>
+                                </td>
+                                <td align="right" style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #10b981;">-${discount.toLocaleString('tr-TR')} ₺</p>
+                                </td>
+                              </tr>
+                              ` : ''}
+                              <tr>
+                                <td style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #86868b;">Teslimat</p>
+                                </td>
+                                <td align="right" style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: ${data.deliveryFee === 0 ? '#10b981' : '#1d1d1f'};">${data.deliveryFee === 0 ? 'Ücretsiz' : data.deliveryFee.toLocaleString('tr-TR') + ' ₺'}</p>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 12px 0 0 0;">
+                                  <p style="margin: 0; font-size: 17px; font-weight: 600; color: #1d1d1f;">Toplam</p>
+                                </td>
+                                <td align="right" style="padding: 12px 0 0 0;">
+                                  <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1d1d1f;">${data.total.toLocaleString('tr-TR')} ₺</p>
+                                </td>
+                              </tr>
+                            </table>
+
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Delivery Info Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <p style="margin: 0 0 16px 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Teslimat Bilgileri</p>
+                            
+                            ${safeRecipientName ? `
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b; font-size: 14px; width: 80px;">Alıcı</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-size: 14px; font-weight: 500;">${safeRecipientName}${safeRecipientPhone ? ` • ${safeRecipientPhone}` : ''}</td>
+                              </tr>
+                            </table>
+                            ` : ''}
+                            
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b; font-size: 14px; width: 80px;">Adres</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-size: 14px; font-weight: 500;">${data.deliveryAddress}${safeDistrict ? `, ${safeDistrict}` : ''}</td>
+                              </tr>
+                            </table>
+                            
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b; font-size: 14px; width: 80px;">Zaman</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-size: 14px; font-weight: 500;">${data.deliveryDate} • ${data.deliveryTime}</td>
+                              </tr>
+                            </table>
+
+                            ${paymentMethod ? `
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 12px;">
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b; font-size: 14px; width: 80px;">Ödeme</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-size: 14px; font-weight: 500;">${paymentMethod}</td>
+                              </tr>
+                            </table>
+                            ` : ''}
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- CTA Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <a href="${trackingUrl}" style="display: inline-block; background-color: #1d1d1f; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 980px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">
+                              Siparişimi Takip Et
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Sorularınız için <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${trackingUrl}" style="color: #06c; text-decoration: none;">Siparişi Takip Et</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${data.customerEmail} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
         </body>
       </html>
     `;
 
     return this.sendEmail({
       to: data.customerEmail,
-      subject: `Siparişiniz Alındı - #${data.orderNumber}`,
+      subject: `✓ Siparişiniz Alındı - #${data.orderNumber}`,
       html,
       text: `Siparişiniz alındı! Sipariş No: ${data.orderNumber}. Sipariş takibi: ${trackingUrl}`,
     });
@@ -375,70 +894,166 @@ export class EmailService {
     customerName: string,
     orderNumber: string
   ): Promise<boolean> {
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+    
     const trackingUrl = this.buildTrackingUrl({
       orderNumber,
       verificationType: 'email',
       verificationValue: customerEmail,
     });
+
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="tr">
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #111827; background: #f5f5f7; margin: 0; padding: 0; }
-            .container { max-width: 640px; margin: 0 auto; padding: 24px; }
-            .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
-            .header { padding: 22px 24px; border-bottom: 1px solid #e5e7eb; }
-            .brand { font-weight: 700; font-size: 14px; letter-spacing: 0.2px; color: #111827; margin: 0 0 8px 0; }
-            .title { font-weight: 800; font-size: 22px; margin: 0; color: #111827; }
-            .sub { margin: 6px 0 0 0; color: #6b7280; font-size: 13px; }
-            .content { padding: 24px; }
-            .status-box { background: #f9fafb; border: 1px solid #eef2f7; padding: 16px; border-radius: 12px; margin: 16px 0; text-align: left; }
-            .footer { text-align: center; padding: 18px 24px 24px; color: #6b7280; font-size: 12px; }
-          </style>
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>Siparişiniz Yola Çıktı</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="card">
-              <div class="header">
-                <p class="brand">Vadiler</p>
-                <h1 class="title">Siparişiniz yola çıktı</h1>
-                <p class="sub">Sipariş No: <strong>#${orderNumber}</strong></p>
-              </div>
-              <div class="content">
-              <p>Merhaba ${customerName},</p>
-              <p>Harika haber! Siparişiniz kargoya verildi ve yakında sizinle olacak.</p>
-              
-              <div class="status-box">
-                <p style="margin: 0; font-weight: 800;">📦 Teslimat yolda</p>
-                <p style="margin: 8px 0 0 0; color: #6b7280;">Çiçekleriniz özenle paketlendi ve size doğru yola çıktı.</p>
-              </div>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
+                  </tr>
 
-              <p>Teslimat sırasında herhangi bir sorun yaşarsanız lütfen bizimle iletişime geçin.</p>
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <p style="margin: 0 0 16px 0; font-size: 64px;">🚚</p>
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              Siparişiniz yola çıktı!
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              Çiçekleriniz size doğru yola çıktı
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
 
-              <div style="text-align: center;">
-                <a href="${trackingUrl}" style="display:inline-block;background:#111827;color:#ffffff !important;padding:12px 18px;text-decoration:none;border-radius:10px;font-weight:700;letter-spacing:0.2px;">Teslimat Durumunu Takip Et</a>
-              </div>
+                      <!-- Status Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ecfdf5; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            
+                            <!-- Order Info -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td>
+                                  <p style="margin: 0; font-size: 13px; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Sipariş No</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 20px; font-weight: 600; color: #065f46;">#${orderNumber}</p>
+                                </td>
+                                <td align="right">
+                                  <p style="margin: 0; font-size: 13px; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Durum</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #065f46;">📦 Yolda</p>
+                                </td>
+                              </tr>
+                            </table>
 
-              <p style="margin-top: 30px; font-size: 0.9em; color: #6b7280;">
-                Sorularınız için <strong>0850 307 4876</strong> numaralı telefondan bize ulaşabilirsiniz.
-              </p>
-              </div>
-              <div class="footer">
-                <p style="margin:0;">Vadiler Çiçekçilik</p>
-                <p style="margin:6px 0 0 0;">Bu email ${customerEmail} adresine gönderilmiştir.</p>
-              </div>
-            </div>
-          </div>
+                            <!-- Divider -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+                              <tr>
+                                <td style="border-top: 1px solid #86efac;"></td>
+                              </tr>
+                            </table>
+
+                            <p style="margin: 0; font-size: 14px; color: #065f46; line-height: 1.6;">
+                              Merhaba ${customerName.split(' ')[0]}, harika haber! Çiçekleriniz özenle paketlendi ve size doğru yola çıktı. Teslimat sırasında herhangi bir sorun yaşarsanız lütfen bizimle iletişime geçin.
+                            </p>
+
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- CTA Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <a href="${trackingUrl}" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 980px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">
+                              Teslimatı Takip Et
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Sorularınız için <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${trackingUrl}" style="color: #06c; text-decoration: none;">Siparişi Takip Et</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${customerEmail} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
         </body>
       </html>
     `;
 
     return this.sendEmail({
       to: customerEmail,
-      subject: `Siparişiniz Kargoya Verildi - #${orderNumber}`,
+      subject: `🚚 Siparişiniz Yola Çıktı - #${orderNumber}`,
       html,
       text: `Siparişiniz kargoya verildi! Sipariş No: ${orderNumber}. Sipariş takibi: ${trackingUrl}`,
     });
@@ -451,15 +1066,18 @@ export class EmailService {
     customerEmail: string;
     customerName: string;
     orderNumber: string;
-    status: 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+    status: 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'failed' | 'payment_failed' | 'pending_payment' | 'refunded';
     deliveryDate?: string;
     deliveryTime?: string;
     deliveryAddress?: string;
     district?: string;
     recipientName?: string;
     recipientPhone?: string;
+    refundAmount?: number;
+    refundReason?: string;
+    refundDate?: string;
   }): Promise<boolean> {
-    const statusMeta: Record<string, { title: string; subject: string; message: string; button: string }> = {
+    const statusMeta: Record<string, { title: string; subject: string; message: string; button: string; color?: string }> = {
       confirmed: {
         title: 'Siparişiniz Onaylandı',
         subject: `Siparişiniz Onaylandı - #${params.orderNumber}`,
@@ -487,13 +1105,46 @@ export class EmailService {
       cancelled: {
         title: 'Siparişiniz İptal Edildi',
         subject: `Siparişiniz İptal Edildi - #${params.orderNumber}`,
-        message: 'Siparişiniz iptal edildi. Detay için bizimle iletişime geçebilirsiniz.',
+        message: 'Siparişiniz iptal edildi. Ödeme yaptıysanız, iade işlemi başlatılacaktır. Detaylı bilgi için bizimle iletişime geçebilirsiniz.',
         button: 'Sipariş Detayları',
+        color: '#ef4444',
+      },
+      failed: {
+        title: 'Siparişiniz Başarısız Oldu',
+        subject: `Siparişiniz Başarısız - #${params.orderNumber}`,
+        message: 'Maalesef siparişiniz tamamlanamadı. Ödeme işlemi gerçekleştirildiyse iadeniz en kısa sürede yapılacaktır. Detaylı bilgi için bizimle iletişime geçebilirsiniz.',
+        button: 'Destek Al',
+        color: '#ef4444',
+      },
+      payment_failed: {
+        title: 'Ödeme Başarısız',
+        subject: `Ödeme Başarısız - #${params.orderNumber}`,
+        message: 'Siparişiniz için ödeme işlemi başarısız oldu. Lütfen farklı bir ödeme yöntemi deneyiniz veya bizimle iletişime geçiniz.',
+        button: 'Tekrar Dene',
+        color: '#f59e0b',
+      },
+      pending_payment: {
+        title: 'Ödeme Bekleniyor',
+        subject: `Ödeme Bekleniyor - #${params.orderNumber}`,
+        message: 'Siparişiniz oluşturuldu, ödeme bekleniyor. Havale/EFT ile ödeme yapacaksanız lütfen açıklama kısmına sipariş numaranızı yazınız.',
+        button: 'Ödeme Bilgilerini Gör',
+        color: '#3b82f6',
+      },
+      refunded: {
+        title: 'İade İşleminiz Tamamlandı',
+        subject: `İade Tamamlandı - #${params.orderNumber}`,
+        message: `Siparişiniz için iade işlemi tamamlanmıştır.${params.refundAmount ? ` İade tutarı: ₺${params.refundAmount.toLocaleString('tr-TR')}.` : ''} Tutar, ödeme yönteminize göre 3-7 iş günü içinde hesabınıza yansıyacaktır.${params.refundReason ? ` İade sebebi: ${params.refundReason}` : ''}`,
+        button: 'Sipariş Detayları',
+        color: '#10b981',
       },
     };
 
     const meta = statusMeta[params.status];
     if (!meta) return false;
+
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
 
     const trackingUrl = this.buildTrackingUrl({
       orderNumber: params.orderNumber,
@@ -508,67 +1159,202 @@ export class EmailService {
     const safeDeliveryDate = (params.deliveryDate || '').trim();
     const safeDeliveryTime = (params.deliveryTime || '').trim();
 
+    // Status-based colors and backgrounds
+    const statusColors: Record<string, { bg: string; text: string; btn: string }> = {
+      confirmed: { bg: '#ecfdf5', text: '#065f46', btn: '#10b981' },
+      processing: { bg: '#eff6ff', text: '#1e40af', btn: '#3b82f6' },
+      shipped: { bg: '#ecfdf5', text: '#065f46', btn: '#10b981' },
+      delivered: { bg: '#ecfdf5', text: '#065f46', btn: '#10b981' },
+      cancelled: { bg: '#fef2f2', text: '#991b1b', btn: '#ef4444' },
+      failed: { bg: '#fef2f2', text: '#991b1b', btn: '#ef4444' },
+      payment_failed: { bg: '#fffbeb', text: '#92400e', btn: '#f59e0b' },
+      pending_payment: { bg: '#eff6ff', text: '#1e40af', btn: '#3b82f6' },
+      refunded: { bg: '#ecfdf5', text: '#065f46', btn: '#10b981' },
+    };
+
+    const statusEmojis: Record<string, string> = {
+      confirmed: '✓',
+      processing: '🔄',
+      shipped: '🚚',
+      delivered: '🎉',
+      cancelled: '✕',
+      failed: '❌',
+      payment_failed: '⚠️',
+      pending_payment: '⏳',
+      refunded: '💰',
+    };
+
+    const colors = statusColors[params.status] || statusColors.confirmed;
+    const emoji = statusEmojis[params.status] || '📦';
+
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="tr">
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #111827; background: #f5f5f7; margin: 0; padding: 0; }
-            .container { max-width: 640px; margin: 0 auto; padding: 24px; }
-            .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
-            .header { padding: 22px 24px; border-bottom: 1px solid #e5e7eb; }
-            .brand { font-weight: 700; font-size: 14px; letter-spacing: 0.2px; color: #111827; margin: 0 0 8px 0; }
-            .title { font-weight: 800; font-size: 22px; margin: 0; color: #111827; }
-            .sub { margin: 6px 0 0 0; color: #6b7280; font-size: 13px; }
-            .content { padding: 24px; }
-            .info { background: #f9fafb; padding: 16px; border-radius: 12px; margin: 16px 0; border: 1px solid #eef2f7; }
-            .footer { text-align: center; padding: 18px 24px 24px; color: #6b7280; font-size: 12px; }
-          </style>
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>${meta.title}</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="card">
-              <div class="header">
-                <p class="brand">Vadiler</p>
-                <h1 class="title">${meta.title}</h1>
-                <p class="sub">Sipariş No: <strong>#${params.orderNumber}</strong></p>
-              </div>
-              <div class="content">
-              <p>Merhaba ${params.customerName},</p>
-              <p>${meta.message}</p>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
+                  </tr>
 
-              <div class="info">
-                <p style="margin: 0;"><strong>Sipariş No:</strong> #${params.orderNumber}</p>
-                ${safeDeliveryDate ? `<p style="margin: 8px 0 0 0;"><strong>Tarih:</strong> ${safeDeliveryDate}</p>` : ''}
-                ${safeDeliveryTime ? `<p style="margin: 8px 0 0 0;"><strong>Zaman:</strong> ${safeDeliveryTime}</p>` : ''}
-                ${safeRecipientName ? `<p style="margin: 8px 0 0 0;"><strong>Alıcı:</strong> ${safeRecipientName}${safeRecipientPhone ? ` • ${safeRecipientPhone}` : ''}</p>` : ''}
-                ${safeDeliveryAddress ? `<p style="margin: 8px 0 0 0;"><strong>Adres:</strong> ${safeDeliveryAddress}</p>` : ''}
-                ${safeDistrict ? `<p style="margin: 8px 0 0 0;"><strong>İlçe:</strong> ${safeDistrict}</p>` : ''}
-              </div>
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              ${meta.title}
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              Sipariş No: #${params.orderNumber}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
 
-              <div style="text-align: center;">
-                <a href="${trackingUrl}" style="display:inline-block;background:#111827;color:#ffffff !important;padding:12px 18px;text-decoration:none;border-radius:10px;font-weight:700;letter-spacing:0.2px;">${meta.button}</a>
-              </div>
+                      <!-- Status Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${colors.bg}; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td width="48" style="vertical-align: top;">
+                                  <div style="width: 48px; height: 48px; background-color: ${colors.btn}; border-radius: 50%; text-align: center; line-height: 48px; font-size: 20px; color: #ffffff;">
+                                    ${emoji}
+                                  </div>
+                                </td>
+                                <td style="padding-left: 16px; vertical-align: top;">
+                                  <p style="margin: 0; font-size: 17px; font-weight: 600; color: ${colors.text};">${meta.title}</p>
+                                  <p style="margin: 8px 0 0 0; font-size: 14px; color: ${colors.text}; line-height: 1.5;">${meta.message}</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
 
-              <p style="margin-top: 30px; font-size: 0.9em; color: #6b7280;">
-                Sorularınız için <strong>0850 307 4876</strong> numaralı telefondan bize ulaşabilirsiniz.
-              </p>
-              </div>
-              <div class="footer">
-                <p style="margin:0;">Vadiler Çiçekçilik</p>
-                <p style="margin:6px 0 0 0;">Bu email ${params.customerEmail} adresine gönderilmiştir.</p>
-              </div>
-            </div>
-          </div>
+                      ${safeDeliveryDate || safeRecipientName || safeDeliveryAddress ? `
+                      <!-- Delivery Info Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <p style="margin: 0 0 16px 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Teslimat Bilgileri</p>
+                            
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 14px;">
+                              ${safeDeliveryDate ? `
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b; width: 80px;">Tarih</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500;">${safeDeliveryDate}${safeDeliveryTime ? ` • ${safeDeliveryTime}` : ''}</td>
+                              </tr>
+                              ` : ''}
+                              ${safeRecipientName ? `
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b;">Alıcı</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500;">${safeRecipientName}${safeRecipientPhone ? ` • ${safeRecipientPhone}` : ''}</td>
+                              </tr>
+                              ` : ''}
+                              ${safeDeliveryAddress ? `
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b;">Adres</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500;">${safeDeliveryAddress}${safeDistrict ? `, ${safeDistrict}` : ''}</td>
+                              </tr>
+                              ` : ''}
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                      ` : ''}
+
+                      <!-- CTA Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <a href="${trackingUrl}" style="display: inline-block; background-color: ${colors.btn}; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 980px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">
+                              ${meta.button}
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Sorularınız için <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${trackingUrl}" style="color: #06c; text-decoration: none;">Siparişi Takip Et</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${params.customerEmail} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
         </body>
       </html>
     `;
 
     return this.sendEmail({
       to: params.customerEmail,
-      subject: meta.subject,
+      subject: `${emoji} ${meta.subject}`,
       html,
       text: `${meta.title} - Sipariş No: ${params.orderNumber}. Sipariş takibi: ${trackingUrl}`,
     });
@@ -583,51 +1369,159 @@ export class EmailService {
     productName: string,
     reviewUrl: string
   ): Promise<boolean> {
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="tr">
         <head>
           <meta charset="utf-8">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-            .button { display: inline-block; background: #ec4899; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 0.9em; }
-          </style>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>Değerlendirmeniz Yayınlandı</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 style="margin: 0;">Değerlendirmeniz Yayınlandı! ⭐</h1>
-            </div>
-            <div class="content">
-              <p>Merhaba ${customerName},</p>
-              <p><strong>${productName}</strong> için yazdığınız değerlendirme onaylandı ve yayınlandı!</p>
-              
-              <p>Değerli görüşleriniz için teşekkür ederiz. Paylaştığınız deneyimler, diğer müşterilerimizin doğru seçim yapmasına yardımcı oluyor.</p>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
+                  </tr>
 
-              <div style="text-align: center;">
-                <a href="${reviewUrl}" class="button">Değerlendirmenizi Görüntüleyin</a>
-              </div>
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <p style="margin: 0 0 16px 0; font-size: 64px;">⭐</p>
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              Değerlendirmeniz Yayınlandı!
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              Görüşlerinizi bizimle paylaştığınız için teşekkürler
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
 
-              <p style="margin-top: 30px; font-size: 0.9em; color: #6b7280;">
-                Bir sonraki alışverişinizde kullanabileceğiniz %5 indirim kuponu: <strong>YORUM5</strong>
-              </p>
-            </div>
-            <div class="footer">
-              <p>Vadiler Çiçekçilik - İstanbul'un En Taze Çiçekleri</p>
-              <p>Bu email ${customerEmail} adresine gönderilmiştir.</p>
-            </div>
-          </div>
+                      <!-- Product Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #fdf4ff; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <p style="margin: 0 0 8px 0; font-size: 13px; color: #a21caf; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Ürün</p>
+                            <p style="margin: 0; font-size: 17px; font-weight: 600; color: #86198f;">${productName}</p>
+                            <p style="margin: 16px 0 0 0; font-size: 14px; color: #a21caf; line-height: 1.6;">
+                              Değerli görüşleriniz için teşekkür ederiz. Paylaştığınız deneyimler, diğer müşterilerimizin doğru seçim yapmasına yardımcı oluyor.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Coupon Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ecfdf5; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td width="48" style="vertical-align: top;">
+                                  <div style="width: 48px; height: 48px; background-color: #10b981; border-radius: 50%; text-align: center; line-height: 48px; font-size: 20px; color: #ffffff;">
+                                    🎁
+                                  </div>
+                                </td>
+                                <td style="padding-left: 16px; vertical-align: top;">
+                                  <p style="margin: 0; font-size: 13px; color: #065f46; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">İndirim Kuponu</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 24px; font-weight: 700; color: #065f46; font-family: 'SF Mono', Monaco, 'Courier New', monospace;">YORUM5</p>
+                                  <p style="margin: 8px 0 0 0; font-size: 14px; color: #10b981;">Bir sonraki alışverişinizde %5 indirim</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- CTA Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <a href="${reviewUrl}" style="display: inline-block; background-color: #d946ef; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 980px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">
+                              Değerlendirmenizi Görüntüleyin
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Sorularınız için <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${customerEmail} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
         </body>
       </html>
     `;
 
     return this.sendEmail({
       to: customerEmail,
-      subject: `Değerlendirmeniz Yayınlandı - ${productName}`,
+      subject: `⭐ Değerlendirmeniz Yayınlandı - ${productName}`,
       html,
       text: `Değerlendirmeniz onaylandı ve yayınlandı! ${productName} için yazdığınız değerlendirme artık sitede görünüyor.`,
     });
@@ -643,53 +1537,145 @@ export class EmailService {
     response: string,
     reviewUrl: string
   ): Promise<boolean> {
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="tr">
         <head>
           <meta charset="utf-8">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-            .response-box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px; }
-            .button { display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 0.9em; }
-          </style>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>Değerlendirmenize Yanıt</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 style="margin: 0;">Değerlendirmenize Yanıt Verildi 💬</h1>
-            </div>
-            <div class="content">
-              <p>Merhaba ${customerName},</p>
-              <p><strong>${productName}</strong> için yazdığınız değerlendirmeye satıcı yanıt verdi:</p>
-              
-              <div class="response-box">
-                <p style="margin: 0; color: #1e40af;"><strong>Satıcı Yanıtı:</strong></p>
-                <p style="margin: 10px 0 0 0;">${response}</p>
-              </div>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
+                  </tr>
 
-              <p>Görüşlerinize verdiğimiz önemi göstermek adına sizinle iletişime geçtik. Memnuniyetiniz bizim için önemlidir!</p>
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <p style="margin: 0 0 16px 0; font-size: 64px;">💬</p>
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              Değerlendirmenize Yanıt Verildi
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              ${productName}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
 
-              <div style="text-align: center;">
-                <a href="${reviewUrl}" class="button">Yanıtı Görüntüleyin</a>
-              </div>
-            </div>
-            <div class="footer">
-              <p>Vadiler Çiçekçilik - İstanbul'un En Taze Çiçekleri</p>
-              <p>Bu email ${customerEmail} adresine gönderilmiştir.</p>
-            </div>
-          </div>
+                      <!-- Response Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #eff6ff; border-radius: 16px; margin-bottom: 24px; border-left: 4px solid #3b82f6;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <p style="margin: 0 0 12px 0; font-size: 13px; color: #1e40af; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Satıcı Yanıtı</p>
+                            <p style="margin: 0; font-size: 15px; color: #1e3a8a; line-height: 1.6;">${response}</p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Message -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Görüşlerinize verdiğimiz önemi göstermek adına sizinle iletişime geçtik.<br/>Memnuniyetiniz bizim için önemlidir!
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- CTA Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <a href="${reviewUrl}" style="display: inline-block; background-color: #3b82f6; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 980px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">
+                              Yanıtı Görüntüleyin
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Sorularınız için <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${customerEmail} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
         </body>
       </html>
     `;
 
     return this.sendEmail({
       to: customerEmail,
-      subject: `Değerlendirmenize Yanıt - ${productName}`,
+      subject: `💬 Değerlendirmenize Yanıt - ${productName}`,
       html,
       text: `${productName} için yazdığınız değerlendirmeye satıcı yanıt verdi. Yanıtı görüntülemek için: ${reviewUrl}`,
     });
@@ -705,50 +1691,134 @@ export class EmailService {
     rating: number,
     reviewUrl: string
   ): Promise<boolean> {
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="tr">
         <head>
           <meta charset="utf-8">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #374151; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
-            .button { display: inline-block; background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-            .stars { color: #fbbf24; font-size: 1.2em; }
-            .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 0.9em; }
-          </style>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>Yeni Değerlendirme</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1 style="margin: 0;">Yeni Değerlendirme Bekliyor! 📝</h1>
-            </div>
-            <div class="content">
-              <p><strong>${customerName}</strong>, <strong>${productName}</strong> için bir değerlendirme yazdı.</p>
-              
-              <div style="margin: 20px 0;">
-                <p><strong>Puan:</strong> <span class="stars">${'⭐'.repeat(rating)}</span> (${rating}/5)</p>
-              </div>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
+                  </tr>
 
-              <p>Bu değerlendirmeyi onaylamak veya reddetmek için admin paneline gidin.</p>
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <p style="margin: 0 0 16px 0; font-size: 64px;">📝</p>
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              Yeni Değerlendirme Bekliyor
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              Onay bekleyen bir değerlendirme var
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
 
-              <div style="text-align: center;">
-                <a href="${reviewUrl}" class="button">Değerlendirmeyi İncele</a>
-              </div>
-            </div>
-            <div class="footer">
-              <p>Vadiler Çiçekçilik - Yönetim Paneli</p>
-            </div>
-          </div>
+                      <!-- Review Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #fffbeb; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
+                              <tr>
+                                <td>
+                                  <p style="margin: 0; font-size: 13px; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Ürün</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 17px; font-weight: 600; color: #78350f;">${productName}</p>
+                                </td>
+                              </tr>
+                            </table>
+                            
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top: 1px solid #fcd34d; padding-top: 16px;">
+                              <tr>
+                                <td width="50%">
+                                  <p style="margin: 0; font-size: 13px; color: #92400e;">Müşteri</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 15px; font-weight: 500; color: #78350f;">${customerName}</p>
+                                </td>
+                                <td width="50%" align="right">
+                                  <p style="margin: 0; font-size: 13px; color: #92400e;">Puan</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 24px; color: #fbbf24;">${'⭐'.repeat(rating)}</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- CTA Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <a href="${reviewUrl}" style="display: inline-block; background-color: #f59e0b; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 980px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">
+                              Değerlendirmeyi İncele
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              Vadiler Çiçekçilik - Yönetim Paneli
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
         </body>
       </html>
     `;
 
     return this.sendEmail({
       to: adminEmail,
-      subject: `Yeni Değerlendirme: ${productName}`,
+      subject: `📝 Yeni Değerlendirme: ${productName}`,
       html,
       text: `${customerName}, ${productName} için ${rating} yıldız verdi. Değerlendirmeyi inceleyin: ${reviewUrl}`,
     });
@@ -775,23 +1845,30 @@ export class EmailService {
    * Send bank transfer order confirmation email
    */
   static async sendBankTransferConfirmation(data: OrderEmailData & { orderNumber: string }): Promise<boolean> {
+    const siteUrl = this.getSiteUrl();
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+    
     const trackingUrl = this.buildTrackingUrl({
       orderNumber: data.orderNumber,
       verificationType: data.verificationType,
       verificationValue: data.verificationValue,
     });
 
-    const itemsHtml = data.items
-      .map(
-        (item) => `
+    // Apple tarzı minimalist ürün kartları
+    const itemsHtml = data.items.map(item => `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
         <tr>
-          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.name}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${item.price.toFixed(2)} ₺</td>
+          <td style="padding-left: 0; vertical-align: top;">
+            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #1d1d1f; line-height: 1.3;">${item.name}</p>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #86868b;">Adet: ${item.quantity}</p>
+          </td>
+          <td align="right" style="vertical-align: top;">
+            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #1d1d1f;">${(item.price * item.quantity).toLocaleString('tr-TR')} ₺</p>
+          </td>
         </tr>
-      `
-      )
-      .join('');
+      </table>
+    `).join('');
 
     const safeCustomerPhone = (data.customerPhone || '').trim();
     const safeRecipientName = (data.recipientName || '').trim();
@@ -802,144 +1879,591 @@ export class EmailService {
 
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="tr">
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #111827; background: #f5f5f7; margin: 0; padding: 0; }
-            .container { max-width: 640px; margin: 0 auto; padding: 24px; }
-            .card { background: #ffffff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
-            .header { padding: 22px 24px; border-bottom: 1px solid #e5e7eb; }
-            .brand { font-weight: 700; font-size: 14px; letter-spacing: 0.2px; color: #111827; margin: 0 0 8px 0; }
-            .title { font-weight: 800; font-size: 22px; margin: 0; color: #111827; }
-            .sub { margin: 6px 0 0 0; color: #6b7280; font-size: 13px; }
-            .content { padding: 24px; }
-            .section { background: #f9fafb; padding: 16px; border-radius: 12px; margin: 16px 0; border: 1px solid #eef2f7; }
-            .section h3 { margin: 0 0 10px 0; font-size: 14px; color: #111827; }
-            .bank-section { background: #ecfdf5; padding: 20px; border-radius: 12px; margin: 20px 0; border: 2px solid #10b981; }
-            .bank-section h3 { margin: 0 0 16px 0; font-size: 16px; color: #065f46; }
-            .bank-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #d1fae5; }
-            .bank-row:last-child { border-bottom: none; }
-            .bank-label { color: #047857; font-size: 13px; }
-            .bank-value { color: #065f46; font-weight: 600; font-size: 14px; }
-            .warning-box { background: #fffbeb; padding: 16px; border-radius: 12px; margin: 16px 0; border: 1px solid #f59e0b; }
-            .warning-box p { margin: 0; color: #92400e; font-size: 13px; }
-            .muted { color: #6b7280; }
-            table { width: 100%; border-collapse: collapse; margin: 16px 0 0 0; }
-            th, td { font-size: 13px; }
-            .total-row { font-weight: 800; }
-            .footer { text-align: center; padding: 18px 24px 24px; color: #6b7280; font-size: 12px; }
-          </style>
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>Ödeme Bekleniyor</title>
         </head>
-        <body>
-          <div class="container">
-            <div class="card">
-              <div class="header">
-                <p class="brand">Vadiler</p>
-                <h1 class="title">Siparişiniz Alındı - Ödeme Bekleniyor</h1>
-                <p class="sub">Sipariş No: <strong>#${data.orderNumber}</strong></p>
-              </div>
-              <div class="content">
-              <p>Merhaba ${data.customerName},</p>
-              <p>Siparişiniz başarıyla oluşturuldu. Aşağıdaki banka hesabına havale/EFT yaparak ödemenizi tamamlayabilirsiniz.</p>
-
-              <div class="bank-section">
-                <h3>🏦 Banka Hesap Bilgileri</h3>
-                <div style="margin-bottom: 12px;">
-                  <div class="bank-label">Banka</div>
-                  <div class="bank-value">Garanti Bankası</div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                  <div class="bank-label">IBAN</div>
-                  <div class="bank-value" style="font-family: monospace;">TR12 0006 2000 7520 0006 2942 76</div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                  <div class="bank-label">Hesap Sahibi</div>
-                  <div class="bank-value">STR GRUP A.Ş</div>
-                </div>
-                <div style="margin-bottom: 12px;">
-                  <div class="bank-label">Ödenecek Tutar</div>
-                  <div class="bank-value" style="font-size: 18px; color: #059669;">${data.total.toFixed(2)} ₺</div>
-                </div>
-              </div>
-
-              <div class="warning-box">
-                <p><strong>⚠️ Önemli:</strong> Havale/EFT yaparken açıklama kısmına mutlaka sipariş numaranızı (<strong>${data.orderNumber}</strong>) yazınız. Aksi takdirde ödemeniz eşleştirilemeyebilir.</p>
-              </div>
-
-              <div class="section">
-                <h3>Sipariş Bilgileri</h3>
-                <p><strong>Sipariş No:</strong> #${data.orderNumber}</p>
-                <p><strong>Ödeme Yöntemi:</strong> Havale/EFT</p>
-                <p><strong>İletişim:</strong> ${data.customerEmail}${safeCustomerPhone ? ` • ${safeCustomerPhone}` : ''}</p>
-              </div>
-              
-              <div class="section">
-                <h3>Teslimat Bilgileri</h3>
-                ${safeRecipientName ? `<p><strong>Alıcı:</strong> ${safeRecipientName}${safeRecipientPhone ? ` • ${safeRecipientPhone}` : ''}</p>` : ''}
-                <p><strong>Adres:</strong> ${data.deliveryAddress}</p>
-                ${safeDistrict ? `<p><strong>İlçe:</strong> ${safeDistrict}</p>` : ''}
-                <p><strong>Tarih:</strong> ${data.deliveryDate}</p>
-                <p><strong>Zaman:</strong> ${data.deliveryTime}</p>
-              </div>
-
-              <h3>Sipariş Detayları</h3>
-              <table>
-                <thead>
-                  <tr style="background: #f9fafb;">
-                    <th style="padding: 10px; text-align: left;">Ürün</th>
-                    <th style="padding: 10px; text-align: center;">Adet</th>
-                    <th style="padding: 10px; text-align: right;">Fiyat</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${itemsHtml}
-                </tbody>
-                <tfoot>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
                   <tr>
-                    <td colspan="2" style="padding: 10px; text-align: right;">Ara Toplam:</td>
-                    <td style="padding: 10px; text-align: right;">${data.subtotal.toFixed(2)} ₺</td>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
                   </tr>
-                  ${showDiscount ? `
-                  <tr>
-                    <td colspan="2" style="padding: 10px; text-align: right;">İndirim:</td>
-                    <td style="padding: 10px; text-align: right;">-${discount.toFixed(2)} ₺</td>
-                  </tr>
-                  ` : ''}
-                  <tr>
-                    <td colspan="2" style="padding: 10px; text-align: right;">Teslimat Ücreti:</td>
-                    <td style="padding: 10px; text-align: right;">${data.deliveryFee === 0 ? 'ÜCRETSİZ' : data.deliveryFee.toFixed(2) + ' ₺'}</td>
-                  </tr>
-                  <tr class="total-row">
-                    <td colspan="2" style="padding: 10px; text-align: right; border-top: 2px solid #e5e7eb;">TOPLAM:</td>
-                    <td style="padding: 10px; text-align: right; border-top: 2px solid #e5e7eb; color: #059669; font-size: 16px;">${data.total.toFixed(2)} ₺</td>
-                  </tr>
-                </tfoot>
-              </table>
 
-              <div style="text-align: center; margin-top: 24px;">
-                <a href="${trackingUrl}" style="display:inline-block;background:#059669;color:#ffffff !important;padding:12px 18px;text-decoration:none;border-radius:10px;font-weight:700;letter-spacing:0.2px;">Siparişimi Takip Et</a>
-              </div>
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              Siparişiniz Alındı
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              Ödemenizi tamamlamanızı bekliyoruz
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
 
-              <p style="margin-top: 26px; font-size: 12px; color: #6b7280;">
-                Ödemenizi yaptıktan sonra siparişiniz onaylanacak ve size bilgi verilecektir. Sorularınız için <strong>0850 307 4876</strong> numaralı telefondan bize ulaşabilirsiniz.
-              </p>
-              </div>
-              <div class="footer">
-                <p style="margin:0;">Vadiler Çiçekçilik</p>
-                <p style="margin:6px 0 0 0;">Bu email ${data.customerEmail} adresine gönderilmiştir.</p>
-              </div>
-            </div>
+                      <!-- Bank Info Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ecfdf5; border-radius: 16px; margin-bottom: 24px; border: 2px solid #10b981;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <p style="margin: 0 0 20px 0; font-size: 17px; font-weight: 600; color: #065f46;">🏦 Banka Hesap Bilgileri</p>
+                            
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 14px;">
+                              <tr>
+                                <td style="padding: 8px 0; color: #047857; width: 100px;">Banka</td>
+                                <td style="padding: 8px 0; color: #065f46; font-weight: 500;"><img src="https://res.cloudinary.com/dgdl1vdao/image/upload/v1768160000/branding/garanti-bank-logo.png" alt="Garanti Bankası" height="24" style="height: 24px; vertical-align: middle;" /></td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px 0; color: #047857;">IBAN</td>
+                                <td style="padding: 8px 0; color: #065f46; font-weight: 600; font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 13px;">TR12 0006 2000 7520 0006 2942 76</td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px 0; color: #047857;">Hesap</td>
+                                <td style="padding: 8px 0; color: #065f46; font-weight: 500;">STR GRUP A.Ş</td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px 0; color: #047857;">Tutar</td>
+                                <td style="padding: 8px 0; color: #059669; font-weight: 700; font-size: 20px;">${data.total.toLocaleString('tr-TR')} ₺</td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px 0; color: #047857;">Açıklama</td>
+                                <td style="padding: 8px 0; color: #059669; font-weight: 700;">#${data.orderNumber}</td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Warning Notice -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+                        <tr>
+                          <td style="background-color: #fffbeb; border-radius: 12px; padding: 16px 20px;">
+                            <p style="margin: 0; font-size: 14px; color: #92400e; font-weight: 500; line-height: 1.5;">
+                              ⚠️ <strong>Önemli:</strong> Havale/EFT yaparken açıklama kısmına mutlaka sipariş numaranızı yazınız.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Order Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            
+                            <!-- Order Header -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                              <tr>
+                                <td>
+                                  <p style="margin: 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Sipariş</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 20px; font-weight: 600; color: #1d1d1f;">#${data.orderNumber}</p>
+                                </td>
+                                <td align="right">
+                                  <p style="margin: 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Teslimat</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #1d1d1f;">${data.deliveryDate}</p>
+                                </td>
+                              </tr>
+                            </table>
+
+                            <!-- Divider -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td style="border-top: 1px solid #d2d2d7; padding-top: 20px;"></td>
+                              </tr>
+                            </table>
+
+                            <!-- Products -->
+                            ${itemsHtml}
+
+                            <!-- Pricing -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px; border-top: 1px solid #d2d2d7; padding-top: 20px;">
+                              <tr>
+                                <td style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #86868b;">Ara Toplam</p>
+                                </td>
+                                <td align="right" style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #1d1d1f;">${data.subtotal.toLocaleString('tr-TR')} ₺</p>
+                                </td>
+                              </tr>
+                              ${showDiscount ? `
+                              <tr>
+                                <td style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #10b981;">İndirim</p>
+                                </td>
+                                <td align="right" style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #10b981;">-${discount.toLocaleString('tr-TR')} ₺</p>
+                                </td>
+                              </tr>
+                              ` : ''}
+                              <tr>
+                                <td style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: #86868b;">Teslimat</p>
+                                </td>
+                                <td align="right" style="padding: 4px 0;">
+                                  <p style="margin: 0; font-size: 14px; color: ${data.deliveryFee === 0 ? '#10b981' : '#1d1d1f'};">${data.deliveryFee === 0 ? 'Ücretsiz' : data.deliveryFee.toLocaleString('tr-TR') + ' ₺'}</p>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 12px 0 0 0;">
+                                  <p style="margin: 0; font-size: 17px; font-weight: 600; color: #1d1d1f;">Toplam</p>
+                                </td>
+                                <td align="right" style="padding: 12px 0 0 0;">
+                                  <p style="margin: 0; font-size: 24px; font-weight: 700; color: #10b981;">${data.total.toLocaleString('tr-TR')} ₺</p>
+                                </td>
+                              </tr>
+                            </table>
+
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Delivery Info Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            <p style="margin: 0 0 16px 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Teslimat Bilgileri</p>
+                            
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 14px;">
+                              ${safeRecipientName ? `
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b; width: 80px;">Alıcı</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500;">${safeRecipientName}${safeRecipientPhone ? ` • ${safeRecipientPhone}` : ''}</td>
+                              </tr>
+                              ` : ''}
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b;">Adres</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500;">${data.deliveryAddress}${safeDistrict ? `, ${safeDistrict}` : ''}</td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b;">Zaman</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500;">${data.deliveryDate} • ${data.deliveryTime}</td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- CTA Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <a href="${trackingUrl}" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 980px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">
+                              Siparişimi Takip Et
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Sorularınız için <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${trackingUrl}" style="color: #06c; text-decoration: none;">Siparişi Takip Et</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${data.customerEmail} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
         </body>
       </html>
     `;
 
     return this.sendEmail({
       to: data.customerEmail,
-      subject: `Siparişiniz Alındı - Ödeme Bekleniyor - #${data.orderNumber}`,
+      subject: `🏦 Siparişiniz Alındı - Ödeme Bekleniyor - #${data.orderNumber}`,
       html,
       text: `Siparişiniz alındı! Sipariş No: ${data.orderNumber}. Havale/EFT için: Garanti Bankası, IBAN: TR12 0006 2000 7520 0006 2942 76, Hesap Sahibi: STR GRUP A.Ş, Tutar: ${data.total.toFixed(2)} ₺. Açıklamaya sipariş numaranızı yazınız. Sipariş takibi: ${trackingUrl}`,
+    });
+  }
+
+  /**
+   * Amazon/Trendyol tarzı ödeme hatırlatma emaili
+   * "Sepetinizde ürünler kaldı" - Aciliyet yaratan, dönüşüm odaklı tasarım
+   */
+  static async sendPaymentReminderEmail(params: {
+    customerEmail: string;
+    customerName: string;
+    orderNumber: string;
+    status: 'pending_payment' | 'awaiting_payment' | 'payment_failed';
+    reminderCount: number; // Kaçıncı hatırlatma (1, 2, 3)
+    items: Array<{
+      name: string;
+      quantity: number;
+      price: number;
+      imageUrl?: string;
+    }>;
+    total: number;
+    deliveryDate?: string;
+    deliveryTime?: string;
+    createdAt: string;
+  }): Promise<boolean> {
+    const siteUrl = this.getSiteUrl();
+    
+    // Sipariş takip sayfasına yönlendirme URL'i (ödeme bölümüne scroll)
+    const paymentUrl = `${siteUrl}/siparis-takip?order=${params.orderNumber}&vtype=email&v=${encodeURIComponent(params.customerEmail)}#payment-section`;
+    const trackingUrl = this.buildTrackingUrl({
+      orderNumber: params.orderNumber,
+      verificationType: 'email',
+      verificationValue: params.customerEmail,
+    });
+
+    // Hatırlatma sayısına göre mesaj ve aciliyet seviyesi
+    const reminderMessages = {
+      1: {
+        emoji: '🛒',
+        headline: 'Siparişiniz sizi bekliyor!',
+        subheadline: 'Ödemenizi tamamlayarak çiçeklerinizi güvenceye alın',
+        urgency: '',
+        buttonText: 'Ödemeyi Tamamla',
+        color: '#3b82f6', // Mavi
+      },
+      2: {
+        emoji: '⏰',
+        headline: 'Siparişiniz hâlâ bekliyor!',
+        subheadline: 'Teslimat tarihinize yetişmesi için ödemenizi yapın',
+        urgency: '⚠️ Siparişiniz 24 saat içinde iptal edilebilir',
+        buttonText: 'Hemen Öde',
+        color: '#f59e0b', // Turuncu
+      },
+      3: {
+        emoji: '🚨',
+        headline: 'Son Hatırlatma!',
+        subheadline: 'Siparişiniz çok yakında iptal edilecek',
+        urgency: '❌ Bu son hatırlatmadır, ödeme yapılmazsa sipariş iptal edilecektir',
+        buttonText: 'Acil Öde',
+        color: '#ef4444', // Kırmızı
+      },
+    };
+
+    const reminder = reminderMessages[params.reminderCount as 1 | 2 | 3] || reminderMessages[1];
+
+    // Ödeme başarısız durumu için özel mesaj
+    const isPaymentFailed = params.status === 'payment_failed';
+    if (isPaymentFailed) {
+      reminder.headline = 'Ödemeniz başarısız oldu!';
+      reminder.subheadline = 'Lütfen tekrar deneyin veya farklı bir ödeme yöntemi seçin';
+      reminder.emoji = '❌';
+    }
+
+    // Ürün kartları HTML'i - Apple tarzı minimalist
+    const itemsHtml = params.items.map(item => `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
+        <tr>
+          ${item.imageUrl ? `
+          <td width="56" style="vertical-align: top;">
+            <img src="${item.imageUrl}" alt="${item.name}" width="56" height="56" style="display: block; border-radius: 8px; background-color: #f5f5f7;" />
+          </td>
+          ` : `
+          <td width="56" style="vertical-align: top;">
+            <div style="width: 56px; height: 56px; background-color: #f5f5f7; border-radius: 8px; text-align: center; line-height: 56px; font-size: 24px;">🌸</div>
+          </td>
+          `}
+          <td style="padding-left: 16px; vertical-align: top;">
+            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #1d1d1f; line-height: 1.3;">${item.name}</p>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #86868b;">Adet: ${item.quantity}</p>
+          </td>
+          <td align="right" style="vertical-align: top;">
+            <p style="margin: 0; font-size: 15px; font-weight: 500; color: #1d1d1f;">${(item.price * item.quantity).toLocaleString('tr-TR')} ₺</p>
+          </td>
+        </tr>
+      </table>
+    `).join('');
+
+    // Sipariş oluşturulma zamanından bu yana geçen süre
+    const createdDate = new Date(params.createdAt);
+    const now = new Date();
+    const hoursPassed = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60));
+
+    // Logo URLs - Cloudinary'den (PNG format, email uyumlu)
+    const logoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159827/branding/vadiler-logo.png';
+    const brandLogoUrl = 'https://res.cloudinary.com/dgdl1vdao/image/upload/v1768159828/branding/vadiler-logo-band.png';
+    
+    // Accent color based on reminder level
+    const accentColor = reminder.color;
+    const softBg = params.reminderCount === 3 ? '#fef2f2' : params.reminderCount === 2 ? '#fffbeb' : '#f0f9ff';
+
+    const html = `
+      <!DOCTYPE html>>
+      <html lang="tr">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta name="color-scheme" content="light">
+          <meta name="supported-color-schemes" content="light">
+          <title>${reminder.headline}</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+          
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff;">
+            <tr>
+              <td align="center" style="padding: 0;">
+                
+                <!-- Container -->
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; margin: 0 auto;">
+                  
+                  <!-- Logo Section -->
+                  <tr>
+                    <td align="center" style="padding: 48px 24px 40px 24px;">
+                      <a href="${siteUrl}" style="text-decoration: none;">
+                        <img src="${logoUrl}" alt="Vadiler Çiçekçilik" width="180" style="display: block; border: 0; height: auto; max-width: 180px;" />
+                      </a>
+                    </td>
+                  </tr>
+
+                  <!-- Main Content -->
+                  <tr>
+                    <td style="padding: 0 24px;">
+                      
+                      <!-- Headline -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding: 0 0 24px 0;">
+                            <h1 style="margin: 0; font-size: 28px; font-weight: 600; color: #1d1d1f; letter-spacing: -0.5px; line-height: 1.2;">
+                              ${reminder.headline}
+                            </h1>
+                            <p style="margin: 12px 0 0 0; font-size: 17px; color: #86868b; font-weight: 400; line-height: 1.5;">
+                              ${reminder.subheadline}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      ${reminder.urgency ? `
+                      <!-- Urgency Notice -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+                        <tr>
+                          <td style="background-color: ${softBg}; border-radius: 12px; padding: 16px 20px;">
+                            <p style="margin: 0; font-size: 14px; color: ${accentColor}; font-weight: 500; text-align: center;">
+                              ${reminder.urgency}
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                      ` : ''}
+
+                      <!-- Order Card -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f7; border-radius: 16px; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 24px;">
+                            
+                            <!-- Order Header -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                              <tr>
+                                <td>
+                                  <p style="margin: 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Sipariş</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 20px; font-weight: 600; color: #1d1d1f;">#${params.orderNumber}</p>
+                                </td>
+                                <td align="right">
+                                  ${params.deliveryDate ? `
+                                  <p style="margin: 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Teslimat</p>
+                                  <p style="margin: 4px 0 0 0; font-size: 15px; font-weight: 600; color: #1d1d1f;">${params.deliveryDate}</p>
+                                  ` : ''}
+                                </td>
+                              </tr>
+                            </table>
+
+                            <!-- Divider -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                              <tr>
+                                <td style="border-top: 1px solid #d2d2d7; padding-top: 20px;"></td>
+                              </tr>
+                            </table>
+
+                            <!-- Products -->
+                            ${itemsHtml}
+
+                            <!-- Total -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px; border-top: 1px solid #d2d2d7; padding-top: 20px;">
+                              <tr>
+                                <td>
+                                  <p style="margin: 0; font-size: 17px; font-weight: 600; color: #1d1d1f;">Toplam</p>
+                                </td>
+                                <td align="right">
+                                  <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1d1d1f;">${params.total.toLocaleString('tr-TR')} ₺</p>
+                                </td>
+                              </tr>
+                            </table>
+
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- CTA Button -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <a href="${paymentUrl}" style="display: inline-block; background-color: ${accentColor}; color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 980px; font-size: 17px; font-weight: 500; letter-spacing: -0.2px;">
+                              ${reminder.buttonText}
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Bank Info -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 16px 0; font-size: 13px; color: #86868b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">
+                              veya havale ile ödeyin
+                            </p>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="background-color: #f5f5f7; border-radius: 12px; padding: 20px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size: 14px;">
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b; width: 100px;">Banka</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500;"><img src="https://res.cloudinary.com/dgdl1vdao/image/upload/v1768160000/branding/garanti-bank-logo.png" alt="Garanti Bankası" height="20" style="height: 20px; vertical-align: middle;" /></td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b;">Hesap</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500;">STR GRUP A.Ş</td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b;">IBAN</td>
+                                <td style="padding: 4px 0; color: #1d1d1f; font-weight: 500; font-family: 'SF Mono', Monaco, 'Courier New', monospace; font-size: 13px;">TR12 0006 2000 7520 0006 2942 76</td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 4px 0; color: #86868b;">Açıklama</td>
+                                <td style="padding: 4px 0; color: ${accentColor}; font-weight: 600;">#${params.orderNumber}</td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Help -->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 32px;">
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0; font-size: 14px; color: #86868b; line-height: 1.6;">
+                              Sorularınız için <a href="tel:08503074876" style="color: #1d1d1f; text-decoration: none; font-weight: 500;">0850 307 4876</a>
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 32px 24px 48px 24px; border-top: 1px solid #f5f5f7;">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td align="center" style="padding-bottom: 24px;">
+                            <img src="${brandLogoUrl}" alt="Vadiler Çiçekçilik" width="210" style="display: block; border: 0; height: auto; max-width: 210px;" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <td align="center">
+                            <p style="margin: 0 0 12px 0; font-size: 12px; color: #86868b;">
+                              <a href="${trackingUrl}" style="color: #06c; text-decoration: none;">Siparişi Takip Et</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}/iletisim" style="color: #06c; text-decoration: none;">İletişim</a>
+                              <span style="color: #d2d2d7; padding: 0 8px;">|</span>
+                              <a href="${siteUrl}" style="color: #06c; text-decoration: none;">vadiler.com</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #86868b;">
+                              © ${new Date().getFullYear()} Vadiler Çiçekçilik
+                            </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #86868b;">
+                              Bu email ${params.customerEmail} adresine gönderilmiştir.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+
+                </table>
+                <!-- End Container -->
+
+              </td>
+            </tr>
+          </table>
+
+        </body>
+      </html>
+    `;
+
+    // Subject line - Hatırlatma sayısına göre değişen
+    const subjectLines = {
+      1: `🛒 Siparişiniz bekliyor! - #${params.orderNumber}`,
+      2: `⏰ Ödemenizi unutmayın! - #${params.orderNumber}`,
+      3: `🚨 Son Hatırlatma: Siparişiniz iptal edilecek - #${params.orderNumber}`,
+    };
+
+    const subject = isPaymentFailed 
+      ? `❌ Ödemeniz başarısız oldu - #${params.orderNumber}`
+      : subjectLines[params.reminderCount as 1 | 2 | 3] || subjectLines[1];
+
+    return this.sendEmail({
+      to: params.customerEmail,
+      subject,
+      html,
+      text: `${reminder.headline} - Sipariş No: ${params.orderNumber}. Toplam: ${params.total.toLocaleString('tr-TR')} ₺. Ödeme için: ${paymentUrl}`,
     });
   }
 }
