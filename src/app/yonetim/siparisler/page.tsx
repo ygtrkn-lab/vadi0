@@ -1590,6 +1590,18 @@ export default function SiparislerPage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                     <span className="relative z-10">#{selectedOrder.orderNumber}</span>
                   </div>
+                  {(() => {
+                    const paymentLogo = getPaymentLogoInfo(selectedOrder.payment?.method);
+                    if (!paymentLogo) return null;
+                    return (
+                      <div
+                        className={`${paymentLogo.containerClass(isDark)} !h-12 sm:!h-14 !w-auto px-4 sm:px-5`}
+                        title={selectedOrder.payment?.method === 'credit_card' ? 'Kredi Kartı (iyzico)' : selectedOrder.payment?.method === 'bank_transfer' ? 'Havale/EFT (Garanti)' : ''}
+                      >
+                        <img src={paymentLogo.src} alt={paymentLogo.alt} className="h-7 sm:h-9 w-auto" loading="lazy" />
+                      </div>
+                    );
+                  })()}
                   <div>
                     <div className="flex items-center gap-2 sm:gap-3">
                       <h3 className={`text-xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Sipariş Detayı</h3>
