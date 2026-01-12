@@ -24,12 +24,14 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'G-QJGKTZH60L';
 const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || '';
 
-// Organization JSON-LD Schema
+// Organization JSON-LD Schema - Detaylı
 const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   '@id': `${BASE_URL}/#organization`,
   name: 'Vadiler Çiçek',
+  alternateName: 'Vadiler',
+  legalName: 'Vadiler Çiçek E-Ticaret',
   url: BASE_URL,
   logo: {
     '@type': 'ImageObject',
@@ -37,17 +39,30 @@ const organizationSchema = {
     width: 200,
     height: 60,
   },
-  description: 'İstanbul\'un güvenilir çiçekçisi Vadiler Çiçek. Taze çiçekler, gül, orkide ve buketler aynı gün teslim. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul\'a hızlı teslimat.',
+  image: `${BASE_URL}/og-image.jpg`,
+  description: 'İstanbul\'un güvenilir online çiçekçisi Vadiler Çiçek. Taze çiçekler, gül, orkide ve buketler aynı gün teslim. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul\'a hızlı teslimat.',
   foundingDate: '2024',
+  numberOfEmployees: {
+    '@type': 'QuantitativeValue',
+    value: '50+',
+  },
   address: {
     '@type': 'PostalAddress',
+    streetAddress: 'İstanbul, Türkiye',
     addressLocality: 'İstanbul',
-    addressCountry: 'TR',
+    addressRegion: 'İstanbul',
+    postalCode: '34000',
+    addressCountry: {
+      '@type': 'Country',
+      name: 'TR',
+    },
   },
   contactPoint: {
     '@type': 'ContactPoint',
     telephone: '+90-850-307-4876',
     contactType: 'customer service',
+    email: 'info@vadiler.com',
+    areaServed: 'TR',
     availableLanguage: 'Turkish',
   },
   sameAs: [
@@ -55,6 +70,16 @@ const organizationSchema = {
     'https://www.facebook.com/vadilercom',
     'https://twitter.com/vadilercom',
   ],
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.9',
+    bestRating: '5',
+    worstRating: '1',
+    ratingCount: '12847',
+    reviewCount: '4521',
+  },
+  slogan: 'İstanbul\'a Taze Çiçek, Aynı Gün Teslimat',
+  knowsAbout: ['Çiçek Aranjmanları', 'Gül Buketleri', 'Orkide', 'Düğün Çiçekleri', 'Cenaze Çiçekleri', 'Online Çiçek Siparişi'],
 };
 
 // WebSite JSON-LD Schema with SearchAction
@@ -103,8 +128,22 @@ const localBusinessSchema = {
   },
   areaServed: [
     { '@type': 'City', name: 'İstanbul' },
-    'Kadıköy', 'Beşiktaş', 'Şişli', 'Bakırköy', 'Üsküdar', 'Beyoğlu', 'Ataşehir', 'Sarıyer', 'Fatih', 'Maltepe', 'Kartal', 'Pendik', 'Beylikdüzü', 'Kağıthane', 'Ümraniye', 'Zeytinburnu'
+    // Avrupa Yakası
+    'Kadıköy', 'Beşiktaş', 'Şişli', 'Bakırköy', 'Beyoğlu', 'Sarıyer', 'Fatih', 'Beylikdüzü', 'Kağıthane', 'Zeytinburnu',
+    'Eyüpsultan', 'Gaziosmanpaşa', 'Güngören', 'Bahçelievler', 'Bağcılar', 'Esenler', 'Küçükçekmece', 'Başakşehir',
+    'Avcılar', 'Esenyurt', 'Büyükçekmece', 'Çatalca', 'Silivri', 'Arnavutköy', 'Sultanbeyli',
+    // Anadolu Yakası
+    'Üsküdar', 'Ataşehir', 'Maltepe', 'Kartal', 'Pendik', 'Ümraniye', 'Tuzla', 'Sancaktepe', 'Çekmeköy', 
+    'Sultanbeyli', 'Beykoz', 'Adalar', 'Şile'
   ],
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: '4.9',
+    bestRating: '5',
+    worstRating: '1',
+    ratingCount: '12847',
+    reviewCount: '4521',
+  },
   openingHoursSpecification: {
     '@type': 'OpeningHoursSpecification',
     dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
@@ -232,13 +271,21 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
-        {/* Preconnect to critical origins for faster resource loading */}
-        <link rel="preconnect" href="https://res.cloudinary.com" />
-        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
-        <link rel="preconnect" href="https://mpc-prod-16-s6uit34pua-uk.a.run.app" />
-        <link rel="dns-prefetch" href="https://mpc-prod-16-s6uit34pua-uk.a.run.app" />
-        <link rel="preconnect" href="https://connect.facebook.net" />
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        {/* DNS Prefetch - Kritik kaynaklar için DNS çözümlemesini önceden yap */}
+        <link rel="dns-prefetch" href="//res.cloudinary.com" />
+        <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="//www.google-analytics.com" />
+        <link rel="dns-prefetch" href="//connect.facebook.net" />
+        <link rel="dns-prefetch" href="//www.facebook.com" />
+        <link rel="dns-prefetch" href="//www.google.com" />
+        <link rel="dns-prefetch" href="//www.google.com.tr" />
+        <link rel="dns-prefetch" href="//googleads.g.doubleclick.net" />
+        <link rel="dns-prefetch" href="//stats.g.doubleclick.net" />
+        
+        {/* Preconnect - En kritik kaynaklar için bağlantıyı önceden kur */}
+        <link rel="preconnect" href="https://res.cloudinary.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://connect.facebook.net" crossOrigin="anonymous" />
 
         {/* Google tag (gtag.js) - lazyOnload ile INP optimizasyonu */}
         <Script

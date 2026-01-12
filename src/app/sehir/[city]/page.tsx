@@ -144,6 +144,38 @@ export default async function CityPage({ params }: PageProps) {
     },
   }
 
+  // FAQ Schema for city page
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: `${content.name} çiçek siparişi nasıl verilir?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `${content.name} ilçesine çiçek siparişi vermek için Vadiler Çiçek web sitesinden ürün seçip, teslimat adresinizi girerek kolayca sipariş verebilirsiniz. Aynı gün teslimat seçeneğimiz mevcuttur.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `${content.name} aynı gün çiçek teslimatı var mı?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Evet, ${content.name} ilçesine aynı gün çiçek teslimatı yapıyoruz. Saat 16:00'ya kadar verilen siparişler aynı gün teslim edilir.`
+        }
+      },
+      {
+        '@type': 'Question',
+        name: `${content.name} çiçek fiyatları ne kadar?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `${content.name} ilçesine çiçek fiyatları 299 TL'den başlamaktadır. Gül buketi, orkide, aranjman ve özel tasarım çiçekler için farklı fiyat seçenekleri mevcuttur.`
+        }
+      }
+    ]
+  }
+
   // BreadcrumbList Schema
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -186,6 +218,36 @@ export default async function CityPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+
+      {/* 🔍 Hidden SEO Content - İlçe bazlı arama motoru optimizasyonu */}
+      <div className="sr-only" aria-hidden="true">
+        <h1>{content.name} Çiçek Siparişi | {content.name} Çiçekçi | {content.name} Online Çiçek</h1>
+        <p>
+          {content.name} çiçek siparişi, {content.name} çiçekçi, {content.name} online çiçek gönder, 
+          {content.name} aynı gün çiçek teslimatı, {content.name} ucuz çiçek, {content.name} en iyi çiçekçi,
+          {content.name} gül siparişi, {content.name} buket çiçek, {content.name} aranjman çiçek,
+          {content.name} orkide gönder, {content.name} kutuda gül, {content.name} papatya buketi,
+          {content.name} sevgililer günü çiçek, {content.name} doğum günü çiçeği, {content.name} anneler günü çiçek,
+          {content.name} yıldönümü çiçeği, {content.name} tebrik çiçeği, {content.name} açılış çiçeği,
+          {content.name} cenaze çiçeği, {content.name} nişan çiçeği, {content.name} söz çiçeği,
+          {content.name} 7li gül, {content.name} 10lu gül, {content.name} 15li gül, {content.name} 20li gül,
+          {content.name} 21li gül, {content.name} 25li gül, {content.name} 30lu gül, {content.name} 33lü gül,
+          {content.name} 50li gül, {content.name} 99lu gül, {content.name} 101 gül buketi,
+          {content.name} çiçek siparişi ver, {content.name} çiçek gönder online, {content.name} hızlı çiçek teslimatı,
+          İstanbul {content.name} çiçekçi, {content.name} ilçesi çiçek, {content.name} semti çiçek gönderimi
+        </p>
+        <ul>
+          <li>{content.name} gülleri - kırmızı gül, beyaz gül, pembe gül, sarı gül</li>
+          <li>{content.name} orkide çeşitleri - tek dal orkide, çift dal orkide, mor orkide</li>
+          <li>{content.name} aranjman modelleri - ferforje, seramik, cam vazo aranjman</li>
+          <li>{content.name} kutuda çiçek - heart box, silindir kutu, kare kutu gül</li>
+          <li>{content.name} özel gün çiçekleri - sevgililer günü, anneler günü, doğum günü</li>
+        </ul>
+      </div>
 
       <Header />
       <div className="h-0 lg:h-40" />

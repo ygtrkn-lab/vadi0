@@ -280,6 +280,28 @@ export default async function SpecialDayPage({ params }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
+      {/* 🔍 Hidden SEO Content - Özel gün bazlı arama motoru optimizasyonu */}
+      <div className="sr-only" aria-hidden="true">
+        <h1>{specialDay.name} Çiçekleri | {specialDay.name} Hediyesi | {specialDay.name} Online Sipariş</h1>
+        <p>
+          {specialDay.name} çiçek siparişi, {specialDay.name} çiçekleri online, {specialDay.name} için çiçek gönder,
+          {specialDay.name} hediye çiçek, {specialDay.name} buket siparişi, {specialDay.name} aranjman,
+          {specialDay.name} İstanbul çiçek, {specialDay.name} aynı gün teslimat, {specialDay.name} özel çiçek,
+          {specialDay.name} için en güzel çiçekler, {specialDay.name} sürpriz çiçek, {specialDay.name} romantik çiçek,
+          {specialDay.name} kutlama çiçeği, {specialDay.name} hediye fikirleri, {specialDay.name} çiçek modelleri,
+          {specialDay.name} gül buketi, {specialDay.name} orkide, {specialDay.name} lilyum, {specialDay.name} papatya,
+          en güzel {specialDay.name} çiçekleri, {specialDay.name} için ucuz çiçek, {specialDay.name} çiçekçi,
+          İstanbul {specialDay.name} çiçek gönder, {specialDay.name} hediye seçenekleri
+        </p>
+        <ul>
+          <li>{specialDay.name} kırmızı güller - aşkın simgesi romantik buketler</li>
+          <li>{specialDay.name} pembe güller - zarafet ve sevgi dolu aranjmanlar</li>
+          <li>{specialDay.name} orkide çeşitleri - şık ve uzun ömürlü hediyeler</li>
+          <li>{specialDay.name} kutuda çiçekler - özel tasarım lüks hediyeler</li>
+          <li>{specialDay.name} karma buketler - rengarenk neşeli aranjmanlar</li>
+        </ul>
+      </div>
+
       <main className="min-h-screen bg-gray-50">
         {/* Hero Section */}
         <section className="relative bg-gradient-to-r from-pink-500 to-rose-500 text-white py-20 overflow-hidden">

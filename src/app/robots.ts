@@ -8,22 +8,9 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/arama'],  // Search pages only - low quality
-      },
-      {
-        userAgent: 'Googlebot',
-        allow: '/',
-        disallow: ['/arama'],
-      },
-      {
-        userAgent: 'Bingbot',
-        allow: '/',
-        disallow: ['/arama'],
-      },
-      {
-        userAgent: 'Yandex',
-        allow: '/',
-        disallow: ['/arama'],
+        disallow: [
+          '/arama',           // Search pages - low quality duplicate content
+        ],
       },
     ],
     sitemap: [

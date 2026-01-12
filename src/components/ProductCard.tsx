@@ -158,7 +158,7 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
             <>
               <Image
                 src={imageError ? '/placeholder-flower.jpg' : product.image}
-                alt={product.name}
+                alt={`${product.name} - Online Çiçek Siparişi | Vadiler Çiçek`}
                 fill
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 className="product-image object-cover rounded-xl"
@@ -171,7 +171,7 @@ export default function ProductCard({ product, index = 0, priority = false }: Pr
               {product.hoverImage && !imageError && (
                 <Image
                   src={product.hoverImage}
-                  alt={`${product.name} - hover`}
+                  alt={`${product.name} Detay Görünümü - Taze Çiçek`}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   loading="lazy"

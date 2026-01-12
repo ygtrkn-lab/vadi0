@@ -17,6 +17,28 @@ const footerLinks = {
       { name: "Tüm Kategoriler", href: "/kategoriler" },
     ]
   },
+  teslimatBolgeleri: {
+    title: "Teslimat Bölgeleri",
+    items: [
+      { name: "Kadıköy Çiçek", href: "/istanbul/kadikoy" },
+      { name: "Beşiktaş Çiçek", href: "/istanbul/besiktas" },
+      { name: "Üsküdar Çiçek", href: "/istanbul/uskudar" },
+      { name: "Şişli Çiçek", href: "/istanbul/sisli" },
+      { name: "Ataşehir Çiçek", href: "/istanbul/atasehir" },
+      { name: "Tüm İlçeler", href: "/istanbul" },
+    ]
+  },
+  ozelGunler: {
+    title: "Özel Günler",
+    items: [
+      { name: "Sevgililer Günü", href: "/ozel-gunler/sevgililer-gunu" },
+      { name: "Anneler Günü", href: "/ozel-gunler/anneler-gunu" },
+      { name: "Yıldönümü", href: "/ozel-gunler/yildonumu" },
+      { name: "Geçmiş Olsun", href: "/ozel-gunler/gecmis-olsun" },
+      { name: "Tebrikler", href: "/ozel-gunler/tebrikler" },
+      { name: "Tüm Özel Günler", href: "/ozel-gunler" },
+    ]
+  },
   kurumsal: {
     title: "Kurumsal",
     items: [
@@ -49,12 +71,6 @@ const footerLinks = {
       { name: "Favorilerim", href: "/hesabim/favorilerim" },
       { name: "Adreslerim", href: "/hesabim/adreslerim" },
       { name: "Ayarlar", href: "/hesabim/ayarlar" },
-    ]
-  },
-  banka: {
-    title: "Banka Hesaplarımız",
-    items: [
-      { name: "Banka Hesaplarımız", href: "/banka-hesaplarimiz" },
     ]
   },
 };
@@ -136,9 +152,9 @@ export default function Footer() {
       
       <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 lg:gap-8 mb-8 lg:mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-6 lg:gap-6 mb-8 lg:mb-12">
           {/* Brand Section */}
-          <div className="col-span-1 md:col-span-3 lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="col-span-1 md:col-span-2 lg:col-span-2 xl:col-span-2 space-y-4 sm:space-y-6">
             <Link href="/" className="inline-block group">
               <Image
                 src="/logo.webp"
