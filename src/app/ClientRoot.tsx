@@ -2,19 +2,12 @@
 
 import { useState, useEffect, createContext, useContext, useRef, useCallback, Suspense } from 'react';
 import { usePathname } from 'next/navigation';
-import { Preloader, ScrollToTop } from '@/components';
+import { ScrollToTop } from '@/components';
 import { CartProvider } from '@/context/CartContext';
 import { CustomerProvider } from '@/context/CustomerContext';
 import { OrderProvider } from '@/context/OrderContext';
 import { AnalyticsProvider } from '@/context/AnalyticsContext';
 import WhatsAppButton from '@/components/WhatsAppButton';
-
-interface LogoPosition {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 
 interface PreloaderContextType {
   isPreloaderComplete: boolean;
@@ -24,8 +17,8 @@ interface PreloaderContextType {
 }
 
 const PreloaderContext = createContext<PreloaderContextType>({
-  isPreloaderComplete: false,
-  showHeaderLogo: false,
+  isPreloaderComplete: true,
+  showHeaderLogo: true,
   logoRef: { current: null },
   registerLogoPosition: () => {},
 });
@@ -37,105 +30,23 @@ interface ClientRootProps {
 }
 
 export default function ClientRoot({ children }: ClientRootProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPreloaderComplete, setIsPreloaderComplete] = useState(false);
-  const [showHeaderLogo, setShowHeaderLogo] = useState(false);
-  const [isPreloaderVisible, setIsPreloaderVisible] = useState(true);
-  const [targetPosition, setTargetPosition] = useState<LogoPosition | null>(null);
+  const [isPageReady, setIsPageReady] = useState(false);
   const logoRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
   const registerLogoPosition = useCallback(() => {
-    const maxAttempts = 12;
-    const measure = (attempt: number) => {
-      const el = logoRef.current;
-      if (!el) {
-        if (attempt < maxAttempts) {
-          requestAnimationFrame(() => measure(attempt + 1));
-        }
-        return;
-      }
-
-      const rect = el.getBoundingClientRect();
-      const hasSize = rect.width > 0 && rect.height > 0;
-      if (!hasSize && attempt < maxAttempts) {
-        requestAnimationFrame(() => measure(attempt + 1));
-        return;
-      }
-
-      setTargetPosition({
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2,
-        width: rect.width,
-        height: rect.height,
-      });
-    };
-
-    measure(0);
+    // No longer needed, kept for backward compatibility
   }, []);
 
   useEffect(() => {
-    // Calculate logo position after layout is ready.
-    const positionTimer = setTimeout(() => {
-      registerLogoPosition();
-    }, 0);
-
-    // Re-measure once fonts are ready (can shift layout on first cold load).
-    const maybeFontsReady = (document as any).fonts?.ready as Promise<void> | undefined;
-    maybeFontsReady?.then(() => registerLogoPosition()).catch(() => {});
-
-    // Minimum loading time for smooth UX
-    const minLoadTime = setTimeout(() => {
-      setIsLoading(false);
-    }, 2500);
-
-    // Also check if page is loaded
-    const handleLoad = () => {
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 800);
-    };
-
-    if (document.readyState === 'complete') {
-      setTimeout(() => setIsLoading(false), 2000);
-    } else {
-      window.addEventListener('load', handleLoad);
-    }
-
-    return () => {
-      clearTimeout(positionTimer);
-      clearTimeout(minLoadTime);
-      window.removeEventListener('load', handleLoad);
-    };
-  }, [registerLogoPosition]);
-
-  useEffect(() => {
-    const handleResize = () => registerLogoPosition();
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-    };
-  }, [registerLogoPosition]);
+    // Sayfa hazır olduğunda hemen göster - bekletme yok
+    setIsPageReady(true);
+  }, []);
 
   // Always start from top on route change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [pathname]);
-
-  const handleLogoArrived = () => {
-    // Logo arrived at header position, now show actual header logo
-    setShowHeaderLogo(true);
-    setTimeout(() => {
-      setIsPreloaderComplete(true);
-      setIsPreloaderVisible(false);
-    }, 200);
-  };
-
-  // Sadece anasayfada preloader göster
-  const isHomePage = pathname === '/';
-  const shouldShowPreloader = isHomePage && isPreloaderVisible;
 
   return (
     <CustomerProvider>
@@ -143,18 +54,17 @@ export default function ClientRoot({ children }: ClientRootProps) {
         <CartProvider>
           <Suspense fallback={null}>
             <AnalyticsProvider>
-              <PreloaderContext.Provider value={{ isPreloaderComplete: isHomePage ? isPreloaderComplete : true, showHeaderLogo: isHomePage ? showHeaderLogo : true, logoRef, registerLogoPosition }}>
-                {shouldShowPreloader && (
-                  <Preloader 
-                    isLoading={isLoading} 
-                    targetPosition={targetPosition}
-                    onLogoArrived={handleLogoArrived}
-                  />
-                )}
+              <PreloaderContext.Provider value={{ 
+                isPreloaderComplete: true, 
+                showHeaderLogo: true, 
+                logoRef, 
+                registerLogoPosition 
+              }}>
+                {/* Minimal page transition - anında görünüm */}
                 <div 
                   style={{ 
-                    opacity: (isHomePage ? isPreloaderComplete : true) ? 1 : 0.99,
-                    transition: 'opacity 0.3s ease'
+                    opacity: isPageReady ? 1 : 0,
+                    transition: 'opacity 0.15s ease-out'
                   }}
                 >
                   {children}
