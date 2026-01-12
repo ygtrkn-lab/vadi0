@@ -877,6 +877,66 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
             />
           </div>
 
+          {/* SEO Content Section - Product Specific */}
+          <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-200/60 shadow-sm p-6 mt-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {product.name} - İstanbul Çiçek Siparişi
+            </h3>
+            <div className="prose prose-sm max-w-none text-gray-600 space-y-3">
+              <p>
+                <strong>{product.name}</strong> ile sevdiklerinize unutulmaz bir sürpriz yapın. 
+                İstanbul {product.name.toLowerCase()} siparişi vererek aynı gün teslimat avantajından yararlanın.
+              </p>
+              <p>
+                {product.name} online sipariş, {product.name.toLowerCase()} İstanbul, 
+                İstanbul&apos;a {product.name.toLowerCase()} gönder. {categoryName} kategorisinde 
+                güvenilir çiçek siparişi Vadiler Çiçek&apos;te.
+              </p>
+            </div>
+            
+            {/* SEO Tags */}
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                `${product.name} sipariş`,
+                `İstanbul ${product.name.toLowerCase()}`,
+                `${product.name.toLowerCase()} gönder`,
+                `${categoryName} sipariş`,
+                `Online ${product.name.toLowerCase()}`,
+                `${product.name} fiyat`,
+                `İstanbul çiçek siparişi`,
+                `Aynı gün teslimat`,
+                `Güvenilir çiçekçi`,
+              ].map((tag, idx) => (
+                <span 
+                  key={idx}
+                  className="inline-flex items-center px-3 py-1.5 rounded-full text-xs bg-white text-gray-500 border border-gray-200"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            {/* Hidden SEO Text */}
+            <div className="sr-only" aria-hidden="false">
+              <h4>{product.name} İstanbul Çiçek Siparişi</h4>
+              <p>
+                {product.name} online sipariş, {product.name} satın al, {product.name} fiyatı,
+                {product.name} İstanbul, İstanbul {product.name.toLowerCase()} siparişi,
+                {product.name.toLowerCase()} gönder İstanbul, {product.name} aynı gün teslimat,
+                {product.name} ücretsiz kargo, {product.name} güvenilir sipariş,
+                {product.name} Kadıköy, {product.name} Beşiktaş, {product.name} Şişli,
+                {product.name} Bakırköy, {product.name} Üsküdar, {product.name} Ataşehir,
+                {product.name} Maltepe, {product.name} Kartal, {product.name} Pendik,
+                {product.name} Beylikdüzü, {product.name} Esenyurt, {product.name} Avcılar.
+                {categoryName} kategorisi, {categoryName} çiçek siparişi, {categoryName} online.
+                İstanbul çiçek siparişi, İstanbul içi çiçek siparişi, güvenilir çiçek siparişi.
+                7li gül, 15li gül, 21li gül, 30lu gül, 50li gül, 101 gül, kırmızı gül buketi.
+                Orkide sipariş, lilyum buketi, papatya buketi, gerbera çiçeği, aranjman çiçek.
+                Kutuda çiçek, sepette çiçek, doğum günü çiçeği, sevgililer günü çiçeği.
+              </p>
+            </div>
+          </div>
+
           {/* Related Products */}
           {relatedProducts.length > 0 && (
             <div className="mt-12">

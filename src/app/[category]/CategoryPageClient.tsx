@@ -608,6 +608,27 @@ export default function CategoryPageClient({
 
       <Footer />
       <MobileNavBar />
+      
+      {/* Hidden SEO Content for Category Pages */}
+      <div className="sr-only" aria-hidden="false">
+        <h2>{categoryName} - İstanbul Çiçek Siparişi</h2>
+        <p>
+          {categoryName} kategorisinde İstanbul çiçek siparişi verin. {categoryName} için güvenilir online çiçek siparişi.
+          İstanbul içi {categoryName.toLowerCase()} siparişi, aynı gün teslimat ile kapınızda.
+        </p>
+        <p>
+          İstanbul gül siparişi, 7'li gül buketi, 15'li gül buketi, 21'li gül buketi, 30'lu gül buketi.
+          Kırmızı gül, beyaz gül, pembe gül, sarı gül buketi siparişi.
+          Orkide, lilyum, papatya, gerbera, ayçiçeği, aranjman çiçekler.
+          Kutuda çiçek, sepette çiçek, buket çiçek siparişi İstanbul.
+        </p>
+        <p>
+          Doğum günü çiçekleri, sevgililer günü çiçekleri, anneler günü çiçekleri, yıldönümü çiçekleri.
+          Aynı gün çiçek teslimatı İstanbul, ücretsiz kargo, hızlı teslimat.
+          Kadıköy, Beşiktaş, Şişli, Bakırköy, Üsküdar, Ataşehir, Maltepe, Kartal, Pendik çiçek siparişi.
+          Avrupa yakası çiçekçi, Anadolu yakası çiçekçi, İstanbul online çiçekçi.
+        </p>
+      </div>
     </>
   );
 }

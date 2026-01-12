@@ -40,6 +40,16 @@ interface HeaderProps {
   hideCategories?: boolean;
 }
 
+// SEO Keywords for hidden content
+const SEO_HIDDEN_CONTENT = `
+  İstanbul çiçek siparişi | İstanbul içi çiçek siparişi | Güvenilir çiçek siparişi | Online çiçek sipariş
+  İstanbul gül siparişi | 7 gül | 15 gül | 21 gül | 30 gül | 50 gül | 101 gül | Kırmızı gül buketi
+  Beyaz gül | Pembe gül | Sarı gül | Orkide | Lilyum | Papatya | Gerbera | Ayçiçeği | Aranjman
+  Kutuda çiçek | Sepette çiçek | Doğum günü çiçeği | Sevgililer günü çiçeği | Anneler günü çiçeği
+  Aynı gün teslimat | Ücretsiz kargo | Hızlı teslimat | İstanbul çiçekçi | Online çiçekçi
+  Kadıköy çiçek | Beşiktaş çiçek | Şişli çiçek | Bakırköy çiçek | Üsküdar çiçek | Ataşehir çiçek
+`;
+
 export default function Header({ hideCategories = false }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -139,6 +149,11 @@ export default function Header({ hideCategories = false }: HeaderProps) {
 
   return (
     <>
+      {/* Hidden SEO Content */}
+      <div className="sr-only" aria-hidden="false">
+        <p>{SEO_HIDDEN_CONTENT}</p>
+      </div>
+      
       <div className="fixed top-0 left-0 right-0 z-[20000]" style={{ pointerEvents: 'auto' }}>
         {/* ═══════════════════════════════════════════════════════════════════
             MOBILE HEADER - Ultra Modern Apple/Dribbble/Shopify/Amazon Style

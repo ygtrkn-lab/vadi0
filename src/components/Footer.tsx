@@ -328,12 +328,46 @@ export default function Footer() {
         </div>
 
         {/* SEO helper text (visually hidden, accessible) */}
-        <p className="sr-only">
-          Vadiler Çiçek: İstanbul online çiçek siparişi, uygun çiçek fiyatları, aynı gün teslimat, 
-          gül buketi, orkide, lilyum, papatya, aranjmanlar, doğum günü çiçeği, sevgililer günü
-          çiçekleri, açılış çiçekleri ve kurumsal çiçek gönderimi. Güvenli ödeme, hızlı teslimat,
-          kaliteli çiçekler ve müşteri memnuniyeti ile Vadiler.com.
-        </p>
+        <div className="sr-only" aria-hidden="false">
+          <h2>Vadiler Çiçek - İstanbul Çiçek Siparişi</h2>
+          <p>
+            İstanbul çiçek siparişi, İstanbul içi çiçek siparişi, güvenilir çiçek siparişi, online çiçek sipariş.
+            İstanbul gül siparişi, İstanbul'a çiçek gönder, İstanbul çiçekçi, İstanbul online çiçekçi.
+          </p>
+          <h3>Gül Buketleri</h3>
+          <p>
+            7'li gül buketi, 7 kırmızı gül, 10'lu gül buketi, 15'li gül buketi, 15 kırmızı gül,
+            20'li gül buketi, 21'li gül buketi, 21 kırmızı gül kız isteme, 25'li gül buketi,
+            30'lu gül buketi, 30 kırmızı gül, 50'li gül buketi, 100'lü gül buketi, 101 gül.
+          </p>
+          <h3>Çiçek Çeşitleri</h3>
+          <p>
+            Kırmızı güller, beyaz güller, pembe güller, sarı güller, turuncu güller.
+            Orkide çiçeği, orkide siparişi, beyaz orkide, mor orkide, çift dallı orkide.
+            Lilyum buketi, papatya buketi, gerbera çiçeği, ayçiçeği buketi, kasımpatı.
+            Aranjman çiçekler, kutuda çiçek, sepette çiçek, vazo çiçek, buket çiçek.
+          </p>
+          <h3>Özel Günler</h3>
+          <p>
+            Doğum günü çiçekleri, sevgililer günü çiçekleri, anneler günü çiçekleri, babalar günü çiçekleri.
+            Evlilik yıldönümü çiçekleri, nişan çiçekleri, söz çiçekleri, düğün çiçekleri.
+            Mezuniyet çiçekleri, tebrik çiçekleri, geçmiş olsun çiçekleri, açılış çiçekleri.
+          </p>
+          <h3>İstanbul Teslimat</h3>
+          <p>
+            Aynı gün çiçek teslimatı İstanbul, ücretsiz kargo İstanbul içi, hızlı çiçek teslimatı.
+            Kadıköy çiçekçi, Beşiktaş çiçekçi, Şişli çiçekçi, Bakırköy çiçekçi, Üsküdar çiçekçi.
+            Ataşehir çiçek siparişi, Maltepe çiçek siparişi, Kartal çiçek siparişi, Pendik çiçek siparişi.
+            Beylikdüzü çiçek siparişi, Esenyurt çiçek siparişi, Avcılar çiçek siparişi.
+            Avrupa yakası çiçekçi, Anadolu yakası çiçekçi, İstanbul'un tüm ilçelerine çiçek gönderimi.
+          </p>
+          <h3>Güvenli Alışveriş</h3>
+          <p>
+            Güvenli ödeme, 3D Secure ödeme, kredi kartı ile çiçek siparişi, havale ile çiçek siparişi.
+            Kaliteli çiçekler, taze çiçekler, uygun fiyatlı çiçekler, indirimli çiçekler.
+            Memnuniyet garantisi, müşteri memnuniyeti, hızlı teslimat garantisi.
+          </p>
+        </div>
       </div>
     </footer>
   );
