@@ -274,9 +274,10 @@ export default function HomeCategoryProducts({
         const allProducts = productsData.products || productsData.data || [];
         const allCategories = categoriesData.categories || categoriesData.data || [];
         
-        const filtered = allProducts
-          .filter((p: Product) => p.category === categorySlug)
-          .slice(0, limit);
+        // Filter by category and shuffle for variety
+        const categoryFiltered = allProducts.filter((p: Product) => p.category === categorySlug);
+        const shuffled = [...categoryFiltered].sort(() => Math.random() - 0.5);
+        const filtered = shuffled.slice(0, limit);
         
         setCategoryProducts(filtered);
         setCategory(allCategories.find((c: any) => c.slug === categorySlug));
