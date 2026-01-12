@@ -333,7 +333,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            MOBILE SEARCH MODAL - Full Screen Apple Style
+            MOBILE SEARCH MODAL - Full Screen Apple/Instagram Style
             ═══════════════════════════════════════════════════════════════════ */}
         <AnimatePresence>
           {isSearchOpen && (
@@ -341,37 +341,46 @@ export default function Header({ hideCategories = false }: HeaderProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[30000] lg:hidden"
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-[30000] lg:hidden overflow-hidden"
               style={{
-                background: 'rgba(255, 255, 255, 0.98)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
+                background: 'rgba(255, 255, 255, 0.97)',
+                backdropFilter: 'saturate(180%) blur(20px)',
+                WebkitBackdropFilter: 'saturate(180%) blur(20px)',
               }}
             >
-              {/* Search Header */}
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.1, duration: 0.3 }}
-                className="flex items-center gap-3 px-4 h-[60px] border-b border-gray-100"
-              >
-                <div className="flex-1 relative">
-                  <SearchBar 
-                    isMobile 
-                    autoFocus 
-                    onClose={() => setIsSearchOpen(false)} 
-                    onOpenChange={setIsSearchDropdownOpen}
-                  />
-                </div>
-                <motion.button
-                  onClick={() => setIsSearchOpen(false)}
-                  whileTap={{ scale: 0.9 }}
-                  className="text-primary-500 font-medium text-[15px] px-2"
+              {/* Safe area padding for iOS */}
+              <div className="h-full flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+                {/* Search Header - Apple style */}
+                <motion.div
+                  initial={{ y: -30, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.05, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="flex items-center gap-3 px-4 pt-4 pb-2"
                 >
-                  İptal
-                </motion.button>
-              </motion.div>
+                  {/* Search Input Container */}
+                  <div className="flex-1">
+                    <SearchBar 
+                      isMobile 
+                      autoFocus 
+                      onClose={() => setIsSearchOpen(false)} 
+                      onOpenChange={setIsSearchDropdownOpen}
+                    />
+                  </div>
+                  
+                  {/* Cancel Button - Apple style */}
+                  <motion.button
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.15, duration: 0.3 }}
+                    onClick={() => setIsSearchOpen(false)}
+                    whileTap={{ scale: 0.95 }}
+                    className="text-primary-500 font-semibold text-[15px] px-1 shrink-0"
+                  >
+                    İptal
+                  </motion.button>
+                </motion.div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
