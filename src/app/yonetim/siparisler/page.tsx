@@ -1784,6 +1784,78 @@ export default function SiparislerPage() {
                             </p>
                           </details>
                         </div>
+                        
+                        {/* Traffic Source - Trafik Kaynağı */}
+                        {(selectedOrder as any).trafficSource && (
+                          <div className={`p-3 rounded-xl ${isDark ? 'bg-neutral-950 border border-neutral-800' : 'bg-gray-50 border border-gray-200'}`}>
+                            <p className={`text-xs font-semibold mb-2 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
+                              📊 Trafik Kaynağı
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {/* Kaynak */}
+                              <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                                (selectedOrder as any).trafficSource === 'google' 
+                                  ? 'bg-blue-500/15 text-blue-400' 
+                                  : (selectedOrder as any).trafficSource === 'instagram'
+                                  ? 'bg-pink-500/15 text-pink-400'
+                                  : (selectedOrder as any).trafficSource === 'facebook'
+                                  ? 'bg-blue-600/15 text-blue-400'
+                                  : (selectedOrder as any).trafficSource === 'tiktok'
+                                  ? 'bg-purple-500/15 text-purple-400'
+                                  : (selectedOrder as any).trafficSource === 'direct'
+                                  ? 'bg-gray-500/15 text-gray-400'
+                                  : 'bg-cyan-500/15 text-cyan-400'
+                              }`}>
+                                {(selectedOrder as any).trafficSource === 'google' && '🔍'}
+                                {(selectedOrder as any).trafficSource === 'instagram' && '📷'}
+                                {(selectedOrder as any).trafficSource === 'facebook' && '👥'}
+                                {(selectedOrder as any).trafficSource === 'tiktok' && '🎵'}
+                                {(selectedOrder as any).trafficSource === 'youtube' && '📺'}
+                                {(selectedOrder as any).trafficSource === 'twitter' && '🐦'}
+                                {(selectedOrder as any).trafficSource === 'direct' && '➡️'}
+                                {(selectedOrder as any).trafficSource === 'referral' && '🔗'}
+                                {' '}
+                                {((selectedOrder as any).trafficSource || 'Bilinmiyor').charAt(0).toUpperCase() + ((selectedOrder as any).trafficSource || 'bilinmiyor').slice(1)}
+                              </span>
+                              
+                              {/* Medium */}
+                              {(selectedOrder as any).trafficMedium && (
+                                <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                                  isDark ? 'bg-purple-500/15 text-purple-400' : 'bg-purple-100 text-purple-700'
+                                }`}>
+                                  {(selectedOrder as any).trafficMedium === 'organic' && '🌱 Organik'}
+                                  {(selectedOrder as any).trafficMedium === 'cpc' && '💰 Reklam'}
+                                  {(selectedOrder as any).trafficMedium === 'social' && '👥 Sosyal'}
+                                  {(selectedOrder as any).trafficMedium === 'email' && '📧 E-posta'}
+                                  {(selectedOrder as any).trafficMedium === 'referral' && '🔗 Yönlendirme'}
+                                  {!['organic', 'cpc', 'social', 'email', 'referral', 'none'].includes((selectedOrder as any).trafficMedium) && (selectedOrder as any).trafficMedium}
+                                </span>
+                              )}
+                              
+                              {/* Campaign */}
+                              {(selectedOrder as any).trafficCampaign && (
+                                <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
+                                  isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-700'
+                                }`}>
+                                  🎯 {(selectedOrder as any).trafficCampaign}
+                                </span>
+                              )}
+                            </div>
+                            
+                            {/* Referrer Details */}
+                            {(selectedOrder as any).trafficReferrer && (
+                              <details className="group mt-2">
+                                <summary className={`text-[10px] cursor-pointer hover:underline ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
+                                  Referrer URL
+                                </summary>
+                                <p className={`text-[10px] mt-1 leading-snug break-all ${isDark ? 'text-neutral-600' : 'text-gray-400'}`}>
+                                  {(selectedOrder as any).trafficReferrer}
+                                </p>
+                              </details>
+                            )}
+                          </div>
+                        )}
+                        
                         {reminderInfo.shown && (
                           <div className={`p-3 rounded-xl border ${isDark ? 'bg-amber-500/5 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
                             <p className={`text-xs font-semibold ${isDark ? 'text-amber-200' : 'text-amber-700'}`}>Hatırlatma Gösterildi</p>

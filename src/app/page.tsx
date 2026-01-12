@@ -11,8 +11,8 @@ import {
 import FAQSchema from '@/components/FAQSchema';
 
 // Lazy load ağır carousel bileşenleri - INP optimizasyonu
-const HeroSlider = dynamic(() => import('@/components/HeroSlider'), {
-  loading: () => <div className="h-[400px] lg:h-[600px] bg-gradient-to-r from-pink-100 to-rose-100 animate-pulse" />,
+const ModernHeroSlider = dynamic(() => import('@/components/ModernHeroSlider'), {
+  loading: () => <div className="h-screen max-h-[100svh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 animate-pulse" />,
 });
 
 const CategoryCarousel = dynamic(() => import('@/components/CategoryCarousel'), {
@@ -219,10 +219,10 @@ export default function Home() {
 
       {/* Main Content */}
       <main>
-        {/* Hero Slider */}
-        <HeroSlider id="hero-section" />
+        {/* Modern Hero Slider with Product Carousel */}
+        <ModernHeroSlider id="hero-section" />
 
-        {/* Kampanyalı Ürünler Slider - only under circle categories */}
+        {/* Kampanyalı Ürünler Band - Daha kompakt secondary slider */}
         <CategoryCarousel />
 
         {/* Marquee - Scrolling Text */}

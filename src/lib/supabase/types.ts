@@ -248,6 +248,10 @@ export interface Database {
           notes: string
           tracking_url: string
           order_time_group: string | null
+          traffic_source: string | null
+          traffic_medium: string | null
+          traffic_campaign: string | null
+          traffic_referrer: string | null
           timeline: Json
           refund: Json | null
           created_at: string
@@ -274,6 +278,10 @@ export interface Database {
           notes?: string
           tracking_url?: string
           order_time_group?: string | null
+          traffic_source?: string | null
+          traffic_medium?: string | null
+          traffic_campaign?: string | null
+          traffic_referrer?: string | null
           timeline?: Json
           refund?: Json | null
           created_at?: string
@@ -300,6 +308,10 @@ export interface Database {
           notes?: string
           tracking_url?: string
           order_time_group?: string | null
+          traffic_source?: string | null
+          traffic_medium?: string | null
+          traffic_campaign?: string | null
+          traffic_referrer?: string | null
           timeline?: Json
           refund?: Json | null
           created_at?: string

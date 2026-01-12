@@ -15,6 +15,7 @@ interface DbProduct {
   discount: number;
   image: string;
   hover_image?: string;
+  hover_video?: string;
   gallery?: string[];
   category: string;
   categories?: string[];
@@ -40,6 +41,7 @@ export interface Product {
   discount: number;
   image: string;
   hoverImage?: string;
+  hoverVideo?: string;
   gallery?: string[];
   category: string;
   categories?: string[];
@@ -78,6 +80,7 @@ export function transformProduct(dbProduct: DbProduct): Product {
     discount: dbProduct.discount,
     image: dbProduct.image,
     hoverImage: dbProduct.hover_image,
+    hoverVideo: dbProduct.hover_video,
     gallery: dbProduct.gallery,
     category: dbProduct.category,
     categories: Array.from(new Set([...mergedCategories, SECONDARY_CATEGORY_SLUG])),

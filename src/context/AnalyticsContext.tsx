@@ -46,6 +46,9 @@ interface AnalyticsContextType {
   
   // Session bilgisi
   getSessionInfo: () => { sessionId: string; visitorId: string } | null;
+  
+  // Traffic source bilgisi
+  getTrafficSource: () => { source: string; medium?: string; campaign?: string; referrer?: string } | null;
 }
 
 const AnalyticsContext = createContext<AnalyticsContextType | null>(null);
@@ -72,6 +75,7 @@ export function useAnalytics() {
       trackLogin: () => {},
       trackSignUp: () => {},
       getSessionInfo: () => null,
+      getTrafficSource: () => null,
     };
   }
   return context;
@@ -195,6 +199,125 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     };
   }, []);
 
+  const getTrafficSource = useCallback(() => {
+    if (typeof window === 'undefined') return null;
+    
+    // UTM parametrelerini kontrol et
+    const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get('utm_source');
+    const utmMedium = params.get('utm_medium');
+    const utmCampaign = params.get('utm_campaign');
+    const gclid = params.get('gclid');
+    
+    // LocalStorage'dan session'ın başlangıç verilerini al
+    const sessionData = localStorage.getItem('vadiler_analytics_session');
+    let referrer: string | null = null;
+    let referrerDomain: string | null = null;
+    
+    if (sessionData) {
+      try {
+        const parsed = JSON.parse(sessionData);
+        referrer = parsed.referrer || null;
+        referrerDomain = parsed.referrerDomain || null;
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+    
+    // Kaynak belirleme prioritesi:
+    // 1. UTM parametreleri varsa
+    if (utmSource) {
+      return {
+        source: utmSource,
+        medium: utmMedium || undefined,
+        campaign: utmCampaign || undefined,
+        referrer: referrer || undefined,
+      };
+    }
+    
+    // 2. Google Ads (gclid varsa)
+    if (gclid) {
+      return {
+        source: 'google',
+        medium: 'cpc',
+        campaign: 'google-ads',
+        referrer: referrer || undefined,
+      };
+    }
+    
+    // 3. Referrer analizi
+    if (referrerDomain) {
+      const domain = referrerDomain.toLowerCase();
+      
+      // Google araması
+      if (domain.includes('google.')) {
+        return {
+          source: 'google',
+          medium: 'organic',
+          referrer: referrer || undefined,
+        };
+      }
+      
+      // Instagram
+      if (domain.includes('instagram.com') || domain.includes('l.instagram.com')) {
+        return {
+          source: 'instagram',
+          medium: 'social',
+          referrer: referrer || undefined,
+        };
+      }
+      
+      // Facebook
+      if (domain.includes('facebook.com') || domain.includes('fb.com') || domain.includes('l.facebook.com')) {
+        return {
+          source: 'facebook',
+          medium: 'social',
+          referrer: referrer || undefined,
+        };
+      }
+      
+      // TikTok
+      if (domain.includes('tiktok.com')) {
+        return {
+          source: 'tiktok',
+          medium: 'social',
+          referrer: referrer || undefined,
+        };
+      }
+      
+      // Twitter/X
+      if (domain.includes('twitter.com') || domain.includes('x.com') || domain.includes('t.co')) {
+        return {
+          source: 'twitter',
+          medium: 'social',
+          referrer: referrer || undefined,
+        };
+      }
+      
+      // YouTube
+      if (domain.includes('youtube.com') || domain.includes('youtu.be')) {
+        return {
+          source: 'youtube',
+          medium: 'social',
+          referrer: referrer || undefined,
+        };
+      }
+      
+      // Diğer referrer'lar
+      return {
+        source: 'referral',
+        medium: referrerDomain,
+        referrer: referrer || undefined,
+      };
+    }
+    
+    // 4. Direkt trafik (referrer yok)
+    return {
+      source: 'direct',
+      medium: 'none',
+    };
+  }, []);
+
   const value: AnalyticsContextType = {
     trackPageView,
     trackEvent,
@@ -209,6 +332,7 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     trackLogin: _trackLogin,
     trackSignUp: _trackSignUp,
     getSessionInfo,
+    getTrafficSource,
   };
 
   return (

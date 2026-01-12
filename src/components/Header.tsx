@@ -23,6 +23,7 @@ import { usePreloader } from '@/app/ClientRoot';
 import { useCart } from '@/context/CartContext';
 import { useCustomer } from '@/context/CustomerContext';
 import { useSetting } from '@/hooks/useSettings';
+import DesktopSearch from './DesktopSearch';
 import SearchBar from './SearchBar';
 import CategoryAvatar from './ui/CategoryAvatar';
 import MobileCategoryMenu from './MobileCategoryMenu';
@@ -333,55 +334,94 @@ export default function Header({ hideCategories = false }: HeaderProps) {
         </div>
 
         {/* ═══════════════════════════════════════════════════════════════════
-            MOBILE SEARCH MODAL - Full Screen Apple/Instagram Style
+            MOBILE SEARCH - Slide Down Panel (Entegre)
             ═══════════════════════════════════════════════════════════════════ */}
         <AnimatePresence>
           {isSearchOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="fixed inset-0 z-[30000] lg:hidden overflow-hidden"
-              style={{
-                background: 'rgba(255, 255, 255, 0.97)',
-                backdropFilter: 'saturate(180%) blur(20px)',
-                WebkitBackdropFilter: 'saturate(180%) blur(20px)',
-              }}
-            >
-              {/* Safe area padding for iOS */}
-              <div className="h-full flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-                {/* Search Header - Apple style */}
-                <motion.div
-                  initial={{ y: -30, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.05, duration: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="flex items-center gap-3 px-4 pt-4 pb-2"
-                >
-                  {/* Search Input Container */}
-                  <div className="flex-1">
-                    <SearchBar 
-                      isMobile 
-                      autoFocus 
-                      onClose={() => setIsSearchOpen(false)} 
-                      onOpenChange={setIsSearchDropdownOpen}
-                    />
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setIsSearchOpen(false)}
+                className="fixed inset-0 z-[29999] lg:hidden bg-black/40 backdrop-blur-sm"
+              />
+              
+              {/* Search Panel - Header altından slide */}
+              <motion.div
+                initial={{ y: -20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -20, opacity: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="fixed top-0 left-0 right-0 z-30000 lg:hidden"
+                style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+              >
+                {/* Search Input Area */}
+                <div className="bg-white shadow-xl rounded-b-3xl overflow-hidden">
+                  {/* Input Row */}
+                  <div className="flex items-center gap-3 p-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        autoFocus
+                        placeholder="Çiçek, buket veya hediye ara..."
+                        className="w-full h-12 pl-11 pr-4 bg-gray-100 rounded-xl
+                          text-[16px] text-gray-900 placeholder:text-gray-400
+                          focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:bg-white
+                          transition-all"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const value = (e.target as HTMLInputElement).value.trim();
+                            if (value) {
+                              window.location.href = `/arama?search=${encodeURIComponent(value)}`;
+                            }
+                          } else if (e.key === 'Escape') {
+                            setIsSearchOpen(false);
+                          }
+                        }}
+                      />
+                    </div>
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setIsSearchOpen(false)}
+                      className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center
+                        text-gray-500 hover:bg-gray-200 active:bg-gray-300 transition-colors shrink-0"
+                    >
+                      <X className="w-5 h-5" />
+                    </motion.button>
                   </div>
-                  
-                  {/* Cancel Button - Apple style */}
-                  <motion.button
-                    initial={{ x: 20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.15, duration: 0.3 }}
-                    onClick={() => setIsSearchOpen(false)}
-                    whileTap={{ scale: 0.95 }}
-                    className="text-primary-500 font-semibold text-[15px] px-1 shrink-0"
-                  >
-                    İptal
-                  </motion.button>
-                </motion.div>
-              </div>
-            </motion.div>
+
+                  {/* Quick Links */}
+                  <div className="px-4 pb-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Popüler</p>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { text: 'Güller', icon: '🌹' },
+                        { text: 'Orkide', icon: '🌺' },
+                        { text: 'Doğum günü', icon: '🎂' },
+                        { text: 'Sevgiliye', icon: '💝' },
+                      ].map((item) => (
+                        <Link
+                          key={item.text}
+                          href={`/arama?search=${encodeURIComponent(item.text)}`}
+                          onClick={() => setIsSearchOpen(false)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-full
+                            bg-gray-100 text-sm text-gray-700
+                            hover:bg-primary-50 hover:text-primary-600 active:scale-95
+                            transition-all"
+                        >
+                          <span>{item.icon}</span>
+                          <span>{item.text}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </>
           )}
         </AnimatePresence>
 
@@ -514,7 +554,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
 
             {/* Search Bar - Desktop */}
             <div className="flex flex-1 max-w-xl mx-8">
-              <SearchBar onOpenChange={setIsSearchDropdownOpen} />
+              <DesktopSearch />
             </div>
 
             {/* Right Actions - Desktop Only */}
@@ -702,10 +742,9 @@ export default function Header({ hideCategories = false }: HeaderProps) {
           <div className="flex items-center gap-3 px-4 h-14 border-b border-gray-100 bg-white">
             <div className="flex-1">
               <SearchBar 
-                isMobile 
+                isFullScreen
                 autoFocus 
                 onClose={() => setIsSearchOpen(false)} 
-                onOpenChange={setIsSearchDropdownOpen}
               />
             </div>
             <motion.button

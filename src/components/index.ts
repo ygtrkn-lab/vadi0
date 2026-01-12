@@ -1,5 +1,6 @@
 export { default as Header } from './Header';
 export { default as HeroSlider } from './HeroSlider';
+export { default as ModernHeroSlider } from './ModernHeroSlider';
 export { default as CategoryCarousel } from './CategoryCarousel';
 export { default as MobileNavBar } from './MobileNavBar';
 export { default as MobileNavVisibilityGuard } from './MobileNavVisibilityGuard';

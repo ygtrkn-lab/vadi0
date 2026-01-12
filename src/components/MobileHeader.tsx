@@ -208,7 +208,7 @@ export default function MobileHeader({ onMenuOpen }: MobileHeaderProps) {
             <div className="flex items-center gap-3 px-4 h-14 border-b border-gray-100">
               <div className="flex-1">
                 <SearchBar 
-                  isMobile 
+                  isFullScreen
                   autoFocus 
                   onClose={() => setIsSearchOpen(false)} 
                 />

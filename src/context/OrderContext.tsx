@@ -4,6 +4,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef, ReactN
 import { usePathname } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { CartItem } from './CartContext';
+import { useAnalytics } from './AnalyticsContext';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -475,6 +476,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const prevCountRef = useRef<number>(0);
   const lastOrderNumberRef = useRef<number | null>(null);
   const notificationSoundUrl = process.env.NEXT_PUBLIC_NOTIFICATION_SOUND_URL || '/siparis-bildirim.wav';
+  const { getTrafficSource } = useAnalytics();
 
   useEffect(() => {
     let pollInterval: ReturnType<typeof setInterval> | null = null;
@@ -601,6 +603,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const discount = data.discount || 0;
     const total = subtotal + deliveryFee - discount;
 
+    // Traffic source bilgisini al
+    const trafficSource = getTrafficSource();
+
     const orderData = {
       customer_id: data.customerId,
       customer_name: data.customerName,
@@ -621,6 +626,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       status: data.status || 'pending',
       notes: '',
       order_time_group: getOrderTimeGroupForNewOrder(),
+      traffic_source: trafficSource?.source || 'direct',
+      traffic_medium: trafficSource?.medium || null,
+      traffic_campaign: trafficSource?.campaign || null,
+      traffic_referrer: trafficSource?.referrer || null,
     };
 
     try {
