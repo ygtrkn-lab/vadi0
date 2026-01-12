@@ -1,9 +1,89 @@
 import Link from 'next/link';
+
+// İstanbul ilçeleri - SEO için
+const ISTANBUL_ILCELERI = {
+  avrupa: [
+    { name: 'Arnavutköy', slug: 'arnavutkoy' },
+    { name: 'Avcılar', slug: 'avcilar' },
+    { name: 'Bağcılar', slug: 'bagcilar' },
+    { name: 'Bahçelievler', slug: 'bahcelievler' },
+    { name: 'Bakırköy', slug: 'bakirkoy' },
+    { name: 'Başakşehir', slug: 'basaksehir' },
+    { name: 'Bayrampaşa', slug: 'bayrampasa' },
+    { name: 'Beşiktaş', slug: 'besiktas' },
+    { name: 'Beylikdüzü', slug: 'beylikduzu' },
+    { name: 'Beyoğlu', slug: 'beyoglu' },
+    { name: 'Büyükçekmece', slug: 'buyukcekmece' },
+    { name: 'Çatalca', slug: 'catalca' },
+    { name: 'Esenler', slug: 'esenler' },
+    { name: 'Esenyurt', slug: 'esenyurt' },
+    { name: 'Eyüpsultan', slug: 'eyupsultan' },
+    { name: 'Fatih', slug: 'fatih' },
+    { name: 'Gaziosmanpaşa', slug: 'gaziosmanpasa' },
+    { name: 'Güngören', slug: 'gungoren' },
+    { name: 'Kağıthane', slug: 'kagithane' },
+    { name: 'Küçükçekmece', slug: 'kucukcekmece' },
+    { name: 'Sarıyer', slug: 'sariyer' },
+    { name: 'Silivri', slug: 'silivri' },
+    { name: 'Sultangazi', slug: 'sultangazi' },
+    { name: 'Şişli', slug: 'sisli' },
+    { name: 'Zeytinburnu', slug: 'zeytinburnu' },
+  ],
+  anadolu: [
+    { name: 'Adalar', slug: 'adalar' },
+    { name: 'Ataşehir', slug: 'atasehir' },
+    { name: 'Beykoz', slug: 'beykoz' },
+    { name: 'Çekmeköy', slug: 'cekmekoy' },
+    { name: 'Kadıköy', slug: 'kadikoy' },
+    { name: 'Kartal', slug: 'kartal' },
+    { name: 'Maltepe', slug: 'maltepe' },
+    { name: 'Pendik', slug: 'pendik' },
+    { name: 'Sancaktepe', slug: 'sancaktepe' },
+    { name: 'Sultanbeyli', slug: 'sultanbeyli' },
+    { name: 'Şile', slug: 'sile' },
+    { name: 'Tuzla', slug: 'tuzla' },
+    { name: 'Ümraniye', slug: 'umraniye' },
+    { name: 'Üsküdar', slug: 'uskudar' },
+  ],
+};
+
 const SeoContentSection = () => {
   return (
     <section className="bg-white py-12 lg:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
+          {/* Trust Badges */}
+          <div className="mb-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-primary-50 to-white border border-primary-100">
+              <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center mb-3">
+                <span className="text-2xl">🚚</span>
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm text-center">Aynı Gün Teslimat</h4>
+              <p className="text-xs text-gray-500 text-center mt-1">İstanbul içi ücretsiz</p>
+            </div>
+            <div className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-green-50 to-white border border-green-100">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-3">
+                <span className="text-2xl">✅</span>
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm text-center">Güvenilir Sipariş</h4>
+              <p className="text-xs text-gray-500 text-center mt-1">3D Secure ödeme</p>
+            </div>
+            <div className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-amber-50 to-white border border-amber-100">
+              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center mb-3">
+                <span className="text-2xl">🌸</span>
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm text-center">Taze Çiçekler</h4>
+              <p className="text-xs text-gray-500 text-center mt-1">Günlük kesim</p>
+            </div>
+            <div className="flex flex-col items-center p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-white border border-purple-100">
+              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-3">
+                <span className="text-2xl">💯</span>
+              </div>
+              <h4 className="font-semibold text-gray-900 text-sm text-center">Memnuniyet</h4>
+              <p className="text-xs text-gray-500 text-center mt-1">Garantisi</p>
+            </div>
+          </div>
+
           <div className="prose prose-lg max-w-none text-gray-700 space-y-6">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Vadiler Çiçek ile İstanbul'a Çiçek Gönder</h2>
             <p>
@@ -75,41 +155,77 @@ const SeoContentSection = () => {
             </p>
 
             {/* Internal links for topical relevance */}
-            <div className="not-prose mt-6">
-              <div className="flex flex-wrap gap-2">
-                <Link href="/guller" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Güller</Link>
-                <Link href="/aranjmanlar" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Aranjmanlar</Link>
-                <Link href="/orkideler" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Orkideler</Link>
-                <Link href="/dogum-gunu" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">Doğum Günü</Link>
-                <Link href="/sehir/istanbul" className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-gray-100 hover:bg-gray-200 text-gray-800 transition">İstanbul Çiçek Gönder</Link>
+            <div className="not-prose mt-8">
+              {/* Kategori Linkleri */}
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">Popüler Çiçek Kategorileri</h4>
+              <div className="flex flex-wrap gap-2 mb-8">
+                <Link href="/guller" className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-rose-50 to-pink-50 hover:from-rose-100 hover:to-pink-100 text-rose-700 border border-rose-200 transition">🌹 Güller</Link>
+                <Link href="/aranjmanlar" className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-purple-50 to-violet-50 hover:from-purple-100 hover:to-violet-100 text-purple-700 border border-purple-200 transition">💐 Aranjmanlar</Link>
+                <Link href="/orkideler" className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-fuchsia-50 to-pink-50 hover:from-fuchsia-100 hover:to-pink-100 text-fuchsia-700 border border-fuchsia-200 transition">🪻 Orkideler</Link>
+                <Link href="/kutuda-cicekler" className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-700 border border-amber-200 transition">🎁 Kutuda Çiçekler</Link>
+                <Link href="/buketler" className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-700 border border-emerald-200 transition">💮 Buketler</Link>
+                <Link href="/dogum-gunu-ozel-hediyeler-cicekler" className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 text-blue-700 border border-blue-200 transition">🎂 Doğum Günü</Link>
+                <Link href="/sevgiliye-cicekler" className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-red-50 to-rose-50 hover:from-red-100 hover:to-rose-100 text-red-700 border border-red-200 transition">❤️ Sevgiliye Çiçekler</Link>
+                <Link href="/haftanin-cicek-kampanyalari-vadiler-com" className="inline-flex items-center px-4 py-2 rounded-full text-sm bg-gradient-to-r from-green-50 to-lime-50 hover:from-green-100 hover:to-lime-100 text-green-700 border border-green-200 transition">🔥 Kampanyalı</Link>
               </div>
-              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                {[
-                  { name: 'Kadıköy', slug: 'kadikoy' },
-                  { name: 'Beşiktaş', slug: 'besiktas' },
-                  { name: 'Şişli', slug: 'sisli' },
-                  { name: 'Bakırköy', slug: 'bakirkoy' },
-                  { name: 'Üsküdar', slug: 'uskudar' },
-                  { name: 'Beyoğlu', slug: 'beyoglu' },
-                  { name: 'Ataşehir', slug: 'atasehir' },
-                  { name: 'Sarıyer', slug: 'sariyer' },
-                  { name: 'Fatih', slug: 'fatih' },
-                  { name: 'Maltepe', slug: 'maltepe' },
-                  { name: 'Kartal', slug: 'kartal' },
-                  { name: 'Pendik', slug: 'pendik' },
-                  { name: 'Beylikdüzü', slug: 'beylikduzu' },
-                  { name: 'Kağıthane', slug: 'kagithane' },
-                  { name: 'Ümraniye', slug: 'umraniye' },
-                  { name: 'Zeytinburnu', slug: 'zeytinburnu' },
-                ].map((d) => (
+
+              {/* İstanbul Avrupa Yakası */}
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">🌉 İstanbul Avrupa Yakası Çiçek Siparişi</h4>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 mb-6">
+                {ISTANBUL_ILCELERI.avrupa.map((ilce) => (
                   <Link
-                    key={d.slug}
-                    href={`/sehir/${d.slug}`}
-                    className="inline-flex items-center justify-center px-3 py-2 rounded-xl text-sm bg-white border border-gray-200 hover:border-primary-200 hover:bg-primary-50 text-gray-800 hover:text-primary-700 transition"
+                    key={ilce.slug}
+                    href={`/sehir/istanbul/${ilce.slug}`}
+                    className="inline-flex items-center justify-center px-3 py-2 rounded-xl text-xs sm:text-sm bg-white border border-gray-200 hover:border-primary-300 hover:bg-primary-50 text-gray-700 hover:text-primary-700 transition shadow-sm hover:shadow"
                   >
-                    {d.name}
+                    {ilce.name}
                   </Link>
                 ))}
+              </div>
+
+              {/* İstanbul Anadolu Yakası */}
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">🌊 İstanbul Anadolu Yakası Çiçek Siparişi</h4>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 mb-6">
+                {ISTANBUL_ILCELERI.anadolu.map((ilce) => (
+                  <Link
+                    key={ilce.slug}
+                    href={`/sehir/istanbul/${ilce.slug}`}
+                    className="inline-flex items-center justify-center px-3 py-2 rounded-xl text-xs sm:text-sm bg-white border border-gray-200 hover:border-secondary-300 hover:bg-secondary-50 text-gray-700 hover:text-secondary-700 transition shadow-sm hover:shadow"
+                  >
+                    {ilce.name}
+                  </Link>
+                ))}
+              </div>
+
+              {/* SEO Arama Terimleri */}
+              <div className="mt-8 p-6 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">🔍 İstanbul Çiçek Siparişi Hizmetlerimiz</h4>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    'İstanbul çiçek siparişi',
+                    'İstanbul içi çiçek siparişi',
+                    'Güvenilir çiçek siparişi',
+                    'Online çiçek siparişi',
+                    'Aynı gün çiçek teslimatı',
+                    'İstanbul çiçek gönder',
+                    'İstanbul\'a çiçek yolla',
+                    'Ucuz çiçek siparişi',
+                    'Kaliteli çiçek siparişi',
+                    'Hızlı çiçek teslimatı',
+                    'Avrupa yakası çiçekçi',
+                    'Anadolu yakası çiçekçi',
+                    'İnternetten çiçek sipariş',
+                    'En iyi çiçekçi İstanbul',
+                    'Güvenilir çiçekçi',
+                  ].map((term) => (
+                    <span
+                      key={term}
+                      className="inline-flex items-center px-3 py-1.5 rounded-full text-xs bg-white text-gray-600 border border-gray-200"
+                    >
+                      {term}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

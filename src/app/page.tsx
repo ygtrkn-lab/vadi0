@@ -214,6 +214,53 @@ export default function Home() {
       {/* FAQ Schema for SEO */}
       <FAQSchema faqs={faqs} />
 
+      {/* Hidden SEO Content - Screen readers & crawlers only */}
+      <div className="sr-only" aria-hidden="false">
+        <h2>İstanbul Çiçek Siparişi - Vadiler Çiçekçilik</h2>
+        <p>
+          İstanbul çiçek siparişi için Türkiye&apos;nin en güvenilir online çiçekçisi Vadiler Çiçek&apos;e hoş geldiniz. 
+          İstanbul içi çiçek siparişi verin, aynı gün kapınıza teslim edelim. Güvenilir çiçek siparişi garantisi ile 
+          İstanbul&apos;un tüm ilçelerine hızlı ve ücretsiz teslimat yapıyoruz.
+        </p>
+        <h3>İstanbul Avrupa Yakası Çiçek Siparişi</h3>
+        <p>
+          Avrupa yakası çiçek siparişi için Vadiler Çiçek yanınızda. Beylikdüzü, Esenyurt, Avcılar, Küçükçekmece, 
+          Bakırköy, Bahçelievler, Bağcılar, Esenler, Güngören, Zeytinburnu, Fatih, Beyoğlu, Şişli, Beşiktaş, 
+          Sarıyer, Eyüpsultan, Gaziosmanpaşa, Sultangazi, Başakşehir, Arnavutköy, Büyükçekmece, Çatalca, Silivri 
+          ilçelerine aynı gün çiçek gönderimi.
+        </p>
+        <h3>İstanbul Anadolu Yakası Çiçek Siparişi</h3>
+        <p>
+          Anadolu yakası çiçek siparişi hizmeti. Kadıköy, Üsküdar, Ataşehir, Maltepe, Kartal, Pendik, Tuzla, 
+          Sultanbeyli, Sancaktepe, Ümraniye, Çekmeköy, Beykoz, Şile, Adalar ilçelerine online çiçek siparişi. 
+          İstanbul Anadolu yakası çiçek gönder, sevdiklerini mutlu et.
+        </p>
+        <h3>Online Çiçek Siparişi - Güvenli Alışveriş</h3>
+        <p>
+          Online çiçek siparişi ile 7/24 sipariş verin. Güvenilir ödeme, SSL sertifikalı alışveriş, iyzico 3D Secure 
+          ile güvenli ödeme. İstanbul çiçekçi, İstanbul online çiçekçi, internetten çiçek sipariş et. 
+          Doğum günü çiçekleri, sevgiliye çiçek, anneler günü çiçekleri, evlilik yıldönümü çiçekleri.
+        </p>
+        <h3>Aynı Gün Çiçek Teslimatı İstanbul</h3>
+        <p>
+          Aynı gün teslimat garantisi ile İstanbul&apos;a çiçek gönder. Bugün sipariş ver, bugün teslim alalım. 
+          İstanbul çiçek gönder, İstanbul&apos;a çiçek yolla, İstanbul çiçek siparişi online. 
+          Taze çiçekler, kaliteli buketler, uygun fiyatlı çiçek siparişi.
+        </p>
+        <h3>Özel Günler İçin Çiçek Siparişi</h3>
+        <p>
+          Sevgililer günü çiçekleri, anneler günü çiçekleri, doğum günü çiçekleri, mezuniyet çiçekleri, 
+          söz nişan çiçekleri, düğün çiçekleri, cenaze çiçekleri, açılış çiçekleri, tebrik çiçekleri. 
+          Her özel gün için İstanbul çiçek siparişi Vadiler Çiçek&apos;te.
+        </p>
+        <h3>Çiçek Çeşitleri</h3>
+        <p>
+          Kırmızı güller, beyaz güller, pembe güller, orkideler, lilyumlar, papatyalar, ayçiçekleri, 
+          gerbera, karanfil, lale, kasımpatı. Buket çiçekler, aranjmanlar, kutuda çiçekler, sepette çiçekler. 
+          Romantik çiçekler, sevgi çiçekleri, aşk çiçekleri.
+        </p>
+      </div>
+
       {/* Header */}
       <Header />
 

@@ -254,116 +254,128 @@ export default function ModernHeroSlider({ id }: ModernHeroSliderProps) {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.03 }}
-                  className="relative bg-white/5 backdrop-blur-xl rounded-xl overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-primary-500/20 h-full w-[180px] lg:w-[200px]"
+                  className="relative rounded-2xl overflow-hidden h-full w-[170px] lg:w-[190px]"
                 >
-                  {/* Product Image/Video */}
-                  <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-white/10 to-white/5">
-                    {/* Ana görsel video ise */}
-                    {getMediaType(product.image) === 'video' ? (
-                      <>
-                        <video
-                          src={product.image}
-                          poster={product.gallery?.[0] ? optimizePosterUrl(product.gallery[0], 200) : undefined}
-                          className="w-full h-full object-cover"
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                          preload="none"
-                        />
-                        {/* Video Badge */}
-                        <div className="absolute bottom-2 left-2 z-10 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full flex items-center gap-1">
-                          <Play size={10} className="text-white fill-white" />
-                          <span className="text-[10px] text-white font-medium">VİDEO</span>
-                        </div>
-                      </>
-                    ) : product.hoverVideo && product.hoverVideo.startsWith('http') ? (
-                      <>
+                  {/* Glassmorphism Card Background */}
+                  <div className="absolute inset-0 bg-white/[0.08] backdrop-blur-2xl border border-white/[0.15] rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.12] via-transparent to-white/[0.05] rounded-2xl" />
+                  
+                  {/* Hover Glow Effect */}
+                  <div className="absolute -inset-px bg-gradient-to-br from-primary-400/0 via-primary-400/0 to-secondary-400/0 rounded-2xl opacity-0 group-hover:opacity-100 group-hover:from-primary-400/20 group-hover:via-primary-400/10 group-hover:to-secondary-400/20 transition-all duration-500 blur-sm" />
+                  
+                  <div className="relative z-10">
+                    {/* Product Image/Video */}
+                    <div className="relative aspect-[4/5] overflow-hidden rounded-t-2xl">
+                      {/* Ana görsel video ise */}
+                      {getMediaType(product.image) === 'video' ? (
+                        <>
+                          <video
+                            src={product.image}
+                            poster={product.gallery?.[0] ? optimizePosterUrl(product.gallery[0], 200) : undefined}
+                            className="w-full h-full object-cover"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            preload="none"
+                          />
+                          {/* Video Badge - Modern */}
+                          <div className="absolute bottom-2.5 left-2.5 z-10 px-2.5 py-1 bg-black/50 backdrop-blur-md rounded-full flex items-center gap-1.5 border border-white/10">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-[9px] text-white/90 font-semibold uppercase tracking-wide">Video</span>
+                          </div>
+                        </>
+                      ) : product.hoverVideo && product.hoverVideo.startsWith('http') ? (
+                        <>
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 768px) 170px, 190px"
+                            className="object-cover group-hover:opacity-0 transition-opacity duration-500"
+                            priority={index < 3}
+                          />
+                          <video
+                            src={product.hoverVideo}
+                            className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            preload="none"
+                          />
+                          {/* Video Badge */}
+                          <div className="absolute bottom-2.5 left-2.5 z-10 px-2.5 py-1 bg-black/50 backdrop-blur-md rounded-full flex items-center gap-1.5 border border-white/10">
+                            <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-[9px] text-white/90 font-semibold uppercase tracking-wide">Video</span>
+                          </div>
+                        </>
+                      ) : product.hoverImage ? (
+                        <>
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 768px) 170px, 190px"
+                            className="object-cover group-hover:opacity-0 group-hover:scale-105 transition-all duration-500"
+                            priority={index < 3}
+                          />
+                          <Image
+                            src={product.hoverImage}
+                            alt={product.name}
+                            fill
+                            sizes="(max-width: 768px) 170px, 190px"
+                            className="object-cover opacity-0 group-hover:opacity-100 scale-105 group-hover:scale-100 transition-all duration-500"
+                          />
+                        </>
+                      ) : (
                         <Image
                           src={product.image}
                           alt={product.name}
                           fill
-                          sizes="(max-width: 768px) 180px, 200px"
-                          className="object-cover group-hover:opacity-0 transition-opacity duration-500"
+                          sizes="(max-width: 768px) 170px, 190px"
+                          className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                           priority={index < 3}
                         />
-                        <video
-                          src={product.hoverVideo}
-                          className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                          preload="none"
-                        />
-                        {/* Video Badge */}
-                        <div className="absolute bottom-2 left-2 z-10 px-2 py-1 bg-black/60 backdrop-blur-sm rounded-full flex items-center gap-1">
-                          <Play size={10} className="text-white fill-white" />
-                          <span className="text-[10px] text-white font-medium">VİDEO</span>
-                        </div>
-                      </>
-                    ) : product.hoverImage ? (
-                      <>
-                        <Image
-                          src={product.image}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 768px) 180px, 200px"
-                          className="object-cover group-hover:opacity-0 transition-opacity duration-300"
-                          priority={index < 3}
-                        />
-                        <Image
-                          src={product.hoverImage}
-                          alt={product.name}
-                          fill
-                          sizes="(max-width: 768px) 180px, 200px"
-                          className="object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                        />
-                      </>
-                    ) : (
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        sizes="(max-width: 768px) 180px, 200px"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        priority={index < 3}
-                      />
-                    )}
-                    
-                    {/* Discount Badge */}
-                    {product.discount > 0 && (
-                      <div className="absolute top-2 right-2 z-10">
-                        <div className="px-2 py-1 rounded-lg bg-red-500 text-white text-xs font-bold shadow-lg">
-                          -%{product.discount}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-3 bg-gradient-to-b from-white/5 to-white/10 backdrop-blur-xl">
-                    <h3 className="text-white font-medium text-sm mb-1.5 line-clamp-2 min-h-[32px] group-hover:text-primary-300 transition-colors duration-300">
-                      {product.name}
-                    </h3>
-                    
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-base lg:text-lg font-bold text-white">
-                        {formatPrice(product.price)}
-                      </span>
-                      {product.oldPrice && product.oldPrice > product.price && (
-                        <span className="text-[10px] text-white/40 line-through">
-                          {formatPrice(product.oldPrice)}
-                        </span>
                       )}
+                      
+                      {/* Discount Badge - Modern Pill */}
+                      {product.discount > 0 && (
+                        <div className="absolute top-2.5 right-2.5 z-10">
+                          <div className="px-2.5 py-1 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[10px] font-bold shadow-lg shadow-rose-500/30 border border-white/20">
+                            %{product.discount} İndirim
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Subtle overlay on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
                     </div>
 
-                    <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="flex items-center gap-1 text-[10px] text-primary-300 font-medium">
-                        <span>İncele</span>
-                        <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                    {/* Info Section - Modern Glass */}
+                    <div className="p-3.5 relative">
+                      {/* Product Name */}
+                      <h3 className="text-white/95 font-medium text-[13px] leading-tight mb-2 line-clamp-2 min-h-[36px] group-hover:text-white transition-colors duration-300">
+                        {product.name}
+                      </h3>
+                      
+                      {/* Price Section */}
+                      <div className="flex items-end justify-between gap-2">
+                        <div className="flex flex-col">
+                          {product.oldPrice && product.oldPrice > product.price && (
+                            <span className="text-[10px] text-white/35 line-through mb-0.5">
+                              {formatPrice(product.oldPrice)}
+                            </span>
+                          )}
+                          <span className="text-lg font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                            {formatPrice(product.price)}
+                          </span>
+                        </div>
+                        
+                        {/* Quick View Button */}
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 border border-white/20 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                          <ArrowRight size={14} className="text-white" />
+                        </div>
                       </div>
                     </div>
                   </div>
