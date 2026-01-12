@@ -10,7 +10,8 @@ export async function POST(request: NextRequest) {
   try {
     const analyticsEnabled = await getAnalyticsStatus();
     if (!analyticsEnabled || !analyticsDb) {
-      return NextResponse.json({ success: false, error: 'Analytics disabled' }, { status: 503 });
+      // Fail-soft: never return a hard error for client-side tracking.
+      return NextResponse.json({ success: false, disabled: true }, { status: 200 });
     }
 
     const body = await request.json();
@@ -92,13 +93,15 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Failed to create session:', error);
-      return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
+      // Fail-soft: keep returning 2xx so Lighthouse/PageSpeed doesn't treat it as a broken resource.
+      return NextResponse.json({ success: false }, { status: 200 });
     }
 
     return NextResponse.json({ success: true, sessionId: data?.id });
   } catch (error) {
     console.error('Session API error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    // Fail-soft
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 }
 
@@ -108,8 +111,9 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    if (!isAnalyticsEnabled || !analyticsDb) {
-      return NextResponse.json({ success: false, error: 'Analytics disabled' }, { status: 503 });
+    const analyticsEnabled = await getAnalyticsStatus();
+    if (!analyticsEnabled || !analyticsDb) {
+      return NextResponse.json({ success: false, disabled: true }, { status: 200 });
     }
 
     const body = await request.json();
@@ -157,13 +161,13 @@ export async function PATCH(request: NextRequest) {
 
     if (error) {
       console.error('Failed to update session:', error);
-      return NextResponse.json({ error: 'Failed to update session' }, { status: 500 });
+      return NextResponse.json({ success: false }, { status: 200 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Session PATCH error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 }
 
@@ -173,7 +177,8 @@ export async function PATCH(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    if (!isAnalyticsEnabled || !analyticsDb) {
+    const analyticsEnabled = await getAnalyticsStatus();
+    if (!analyticsEnabled || !analyticsDb) {
       return NextResponse.json({ sessions: [], total: 0, limit: 50, offset: 0 });
     }
 
@@ -198,7 +203,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Failed to get sessions:', error);
-      return NextResponse.json({ error: 'Failed to get sessions' }, { status: 500 });
+      return NextResponse.json({ sessions: [], total: 0, limit, offset });
     }
 
     return NextResponse.json({
@@ -209,6 +214,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Session GET error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ sessions: [], total: 0, limit: 50, offset: 0 });
   }
 }

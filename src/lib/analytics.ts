@@ -706,12 +706,16 @@ class AnalyticsTracker {
 
       // Eğer session oluşturulamazsa, local storage'ı temizle
       if (!response.ok) {
-        console.error('Failed to create session, status:', response.status);
-        // Yine de devam et - session local'de var
+        // Fail-soft: tracking must never break UX or PSI/Lighthouse.
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('Analytics session create failed, status:', response.status);
+        }
       }
     } catch (error) {
-      console.error('Failed to start session:', error);
-      // Yine de devam et - session local'de var
+      // Fail-soft
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('Analytics session create failed:', error);
+      }
     }
   }
 

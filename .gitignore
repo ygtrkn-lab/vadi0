@@ -88,6 +88,7 @@ check-*.js
 create-*.js
 nuke-*.js
 delete-*.js
+remove-*.js
 recreate-*.js
 *.postman_collection.json
 

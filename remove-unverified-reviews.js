@@ -16,11 +16,17 @@ const argv = process.argv.slice(2).reduce((acc, arg) => {
 
 const CONFIRM = String(argv['confirm'] ?? 'false').toLowerCase() === 'true';
 
-const supabase = createClient(
-  'https://vtwogsixprzgchuypilh.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0d29nc2l4cHJ6Z2NodXlwaWxoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTM4ODQ2NiwiZXhwIjoyMDgwOTY0NDY2fQ.u0BNDLfCHOtE_DOa6z8IqUtkPc-etCkXxrE04ZDH6jU',
-  { auth: { autoRefreshToken: false, persistSession: false } }
-);
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Eksik env. Gerekli: SUPABASE_URL (veya NEXT_PUBLIC_SUPABASE_URL) + SUPABASE_SERVICE_ROLE_KEY (veya SUPABASE_SERVICE_KEY)');
+  process.exit(1);
+}
+
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
 
 (async () => {
   try {

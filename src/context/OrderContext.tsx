@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { CartItem } from './CartContext';
 import { useAnalytics } from './AnalyticsContext';
+import { useCustomer } from './CustomerContext';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -225,6 +226,7 @@ interface OrderContextType {
   state: OrderState;
   dispatch: React.Dispatch<OrderAction>;
   createOrder: (data: CreateOrderData) => Promise<{ success: boolean; order?: Order; error?: string }>;
+  refreshOrders?: () => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderStatus, note?: string) => void;
   cancelOrderWithRefund: (orderId: string, reason: string, addCredit?: boolean) => Promise<{ success: boolean; error?: string }>;
   updateOrder: (order: Order) => void;
@@ -477,8 +479,45 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const lastOrderNumberRef = useRef<number | null>(null);
   const notificationSoundUrl = process.env.NEXT_PUBLIC_NOTIFICATION_SOUND_URL || '/siparis-bildirim.wav';
   const { getTrafficSource } = useAnalytics();
+  const { state: customerState } = useCustomer();
+  const currentCustomerId = customerState.currentCustomer?.id || null;
 
+  const isAdminRoute = pathname?.startsWith('/yonetim');
+  const isAccountRoute = pathname?.startsWith('/hesabim');
+
+  const fetchOrders = async (args?: { silent?: boolean; customerId?: string | null }): Promise<void> => {
+    const silent = args?.silent ?? false;
+    const customerId = args?.customerId ?? null;
+
+    try {
+      if (!silent) dispatch({ type: 'SET_LOADING', payload: true });
+
+      const url = customerId ? `/api/orders?customerId=${encodeURIComponent(customerId)}` : '/api/orders';
+      const response = await fetch(url, { cache: 'no-store' });
+
+      if (response.ok) {
+        const data = await response.json();
+        const orders: Order[] = data.orders || [];
+        dispatch({ type: 'LOAD_ORDERS', payload: orders });
+
+        if (!customerId && orders.length > 0) {
+          const maxOrderNumber = Math.max(...orders.map(o => o.orderNumber));
+          lastOrderNumberRef.current = maxOrderNumber;
+          dispatch({ type: 'SET_LAST_ORDER_NUMBER', payload: maxOrderNumber });
+        }
+      }
+    } catch (error) {
+      console.error('OrderContext: fetchOrders failed', error);
+      if (!silent) dispatch({ type: 'SET_ERROR', payload: 'Siparişler yüklenemedi' });
+    } finally {
+      if (!silent) dispatch({ type: 'SET_LOADING', payload: false });
+    }
+  };
+
+  // Admin realtime + polling (ONLY for /yonetim)
   useEffect(() => {
+    if (!isAdminRoute) return;
+
     let pollInterval: ReturnType<typeof setInterval> | null = null;
     let realtimeSilentCheck: ReturnType<typeof setInterval> | null = null;
     let pingInterval: ReturnType<typeof setInterval> | null = null;
@@ -498,26 +537,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
 
     const loadOrders = async (silent = false) => {
-      try {
-        if (!silent) dispatch({ type: 'SET_LOADING', payload: true });
-        const response = await fetch('/api/orders', { cache: 'no-store' });
-        if (response.ok) {
-          const data = await response.json();
-          const orders: Order[] = data.orders || [];
-          dispatch({ type: 'LOAD_ORDERS', payload: orders });
-          if (orders.length > 0) {
-            const maxOrderNumber = Math.max(...orders.map(o => o.orderNumber));
-            lastOrderNumberRef.current = maxOrderNumber;
-            dispatch({ type: 'SET_LAST_ORDER_NUMBER', payload: maxOrderNumber });
-          }
-          lastRealtimeEvent = Date.now();
-        }
-      } catch (error) {
-        console.error('OrderContext: loadOrders failed', error);
-        if (!silent) dispatch({ type: 'SET_ERROR', payload: 'Siparişler yüklenemedi' });
-      } finally {
-        if (!silent) dispatch({ type: 'SET_LOADING', payload: false });
-      }
+      await fetchOrders({ silent });
+      lastRealtimeEvent = Date.now();
     };
 
     loadOrders();
@@ -564,10 +585,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       if (realtimeSilentCheck) clearInterval(realtimeSilentCheck);
       if (pingInterval) clearInterval(pingInterval);
     };
-  }, []);
+  }, [isAdminRoute]);
+
+  // Account orders (ONLY for /hesabim)
+  useEffect(() => {
+    if (!isAccountRoute) return;
+    if (!currentCustomerId) return;
+    fetchOrders({ customerId: currentCustomerId });
+  }, [isAccountRoute, currentCustomerId]);
 
   useEffect(() => {
-    const isAdminRoute = pathname?.startsWith('/yonetim');
     if (!isAdminRoute) return;
 
     const currentCount = state.orders.length;
@@ -582,6 +609,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
     prevCountRef.current = currentCount;
   }, [pathname, state.orders.length, notificationSoundUrl]);
+
+  const refreshOrders = async (): Promise<void> => {
+    if (isAdminRoute) {
+      await fetchOrders({ silent: true });
+      return;
+    }
+    if (isAccountRoute && currentCustomerId) {
+      await fetchOrders({ customerId: currentCustomerId, silent: false });
+    }
+  };
 
   const createOrder = async (data: CreateOrderData): Promise<{ success: boolean; order?: Order; error?: string }> => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -825,6 +862,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         state,
         dispatch,
         createOrder,
+        refreshOrders,
         updateOrderStatus,
         cancelOrderWithRefund,
         updateOrder,

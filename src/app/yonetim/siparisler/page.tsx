@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useDeferredValue, useCallback, useTransition } from 'react';
-import { FixedSizeList as List, FixedSizeGrid as Grid } from 'react-window';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getMediaType } from '@/components/admin/MediaUpload';
-import { SpotlightCard, FadeContent, StatusBadge } from '@/components/admin';
+import { FadeContent, StatusBadge } from '@/components/admin';
 import { useTheme } from '../ThemeContext';
 import { useOrder, Order, OrderStatus } from '@/context/OrderContext';
 import { useCustomer } from '@/context/CustomerContext';
@@ -18,7 +17,6 @@ import '@/styles/admin-modern.css';
 import { 
   HiOutlineSearch, 
   HiOutlineCurrencyDollar,
-  HiOutlineEye,
   HiOutlineTrash,
   HiOutlineX,
   HiOutlineClipboardList,
@@ -57,6 +55,15 @@ const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'i
 // Türkçe ay ve gün isimleri
 const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+
+type OrderExtraFields = {
+  trafficSource?: string;
+  trafficMedium?: string;
+  trafficCampaign?: string;
+  trafficReferrer?: string;
+  refund?: { amount?: number };
+  payment?: { clientInfo?: { deviceModel?: string } };
+};
 
 function getPaymentLogoInfo(paymentMethod?: string): { src: string; alt: string; containerClass: (isDark: boolean) => string } | null {
   if (paymentMethod === 'credit_card') {
@@ -215,7 +222,7 @@ export default function SiparislerPage() {
         const raw = localStorage.getItem('vadiler_orders_seen');
         const arr = raw ? JSON.parse(raw) : [];
         if (Array.isArray(arr)) return new Set<string>(arr);
-      } catch (e) {}
+      } catch {}
     }
     return new Set<string>();
   });
@@ -230,7 +237,7 @@ export default function SiparislerPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('vadiler_orders_view_mode', viewMode);
       }
-    } catch (e) {
+    } catch {
       // ignore storage errors
     }
   }, [viewMode]);
@@ -241,7 +248,7 @@ export default function SiparislerPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('vadiler_orders_seen', JSON.stringify([...seenOrderIds]));
       }
-    } catch (e) {
+    } catch {
       // ignore storage errors
     }
   }, [seenOrderIds]);
@@ -255,7 +262,7 @@ export default function SiparislerPage() {
         const initialIds = (orderState.orders || []).map(o => o.id);
         setSeenOrderIds(new Set(initialIds));
       }
-    } catch (e) {
+    } catch {
       // ignore storage errors
     }
     // run only when orders list first arrives/changes
@@ -354,7 +361,8 @@ export default function SiparislerPage() {
 
   // Filtreleme mantığı - Takvimsel gün seçimi ile
   const filteredOrders = useMemo(() => {
-    const q = (deferredSearchTerm || '').trim().toLowerCase();
+    const raw = (deferredSearchTerm || '').trim();
+    const q = raw.toLowerCase();
     return orderState.orders
       .filter(order => {
         // Durum filtresi
@@ -376,7 +384,7 @@ export default function SiparislerPage() {
         const matchesSearch =
           q.length === 0 ||
           customerName.includes(q) ||
-          order.orderNumber.toString().includes(deferredSearchTerm) ||
+          order.orderNumber.toString().includes(raw) ||
           customerEmail.includes(q);
         
         // Takvimsel tarih filtresi - Seçilen güne ait siparişleri göster
@@ -404,13 +412,11 @@ export default function SiparislerPage() {
 
   // itemsPerPage 'all' olduğunda tüm siparişleri göster
   const effectiveItemsPerPage = itemsPerPage === 'all' ? filteredOrders.length : itemsPerPage;
-  // Perf gates: keep visuals, reduce per-item animation/video work on larger pages
   const largeListMode = itemsPerPage === 'all' || effectiveItemsPerPage >= 25;
   const enableListAnimations = !prefersReducedMotion && !largeListMode;
-  const enableHoverAnimations = !prefersReducedMotion;
+  const enableHoverAnimations = !prefersReducedMotion && !largeListMode;
   const enableVideoAutoplay = !prefersReducedMotion && viewMode === 'grid' && !largeListMode;
   const enablePulseEffects = !prefersReducedMotion && !largeListMode;
-  const enableModalAnimations = !prefersReducedMotion;
   const totalPages = effectiveItemsPerPage > 0 ? Math.ceil(filteredOrders.length / effectiveItemsPerPage) : 1;
   const paginatedOrders = useMemo(() => {
     if (itemsPerPage === 'all') {
@@ -451,14 +457,15 @@ export default function SiparislerPage() {
         if (order.payment?.status === 'paid') return sum + (order.total || 0);
         return sum;
       }, 0);
-      return { dateKey, orders, dailyTotal, label: getDateGroupLabel(dateKey) };
+
+      return {
+        dateKey,
+        orders,
+        dailyTotal,
+        label: getDateGroupLabel(dateKey),
+      };
     });
   }, [groupedOrders]);
-
-  const DateGroupHeaderWrapper: any = enableListAnimations ? motion.div : 'div';
-  const GridCardWrapper: any = enableListAnimations ? motion.div : 'div';
-  const TableRowWrapper: any = enableListAnimations ? motion.tr : 'tr';
-  const ProductThumbWrapper: any = enableHoverAnimations ? motion.div : 'div';
 
   const stats = useMemo(() => {
     const orders = orderState.orders;
@@ -586,10 +593,15 @@ export default function SiparislerPage() {
 
   const getReminderInfo = (payment?: Order['payment']) => {
     if (!payment) return { shown: false, at: null as string | null, channel: null as string | null };
-    const raw = payment as any;
-    const at = raw.reminderShownAt || raw.reminder_shown_at || raw.reminderLastShownAt || raw.reminder_last_shown_at || null;
-    const channel = raw.reminderChannel || raw.reminder_channel || raw.reminderType || raw.reminder_type || null;
-    const shown = raw.reminderShown === true || raw.reminder_shown === true || raw.reminderAcknowledged === true || !!at;
+    const raw = payment as unknown as Record<string, unknown>;
+    const at =
+      raw['reminderShownAt'] ??
+      raw['reminder_shown_at'] ??
+      raw['reminderLastShownAt'] ??
+      raw['reminder_last_shown_at'] ??
+      null;
+    const channel = raw['reminderChannel'] ?? raw['reminder_channel'] ?? raw['reminderType'] ?? raw['reminder_type'] ?? null;
+    const shown = raw['reminderShown'] === true || raw['reminder_shown'] === true || raw['reminderAcknowledged'] === true || !!at;
     return { shown: !!shown, at: at ? String(at) : null, channel: channel ? String(channel) : null };
   };
 
@@ -597,11 +609,23 @@ export default function SiparislerPage() {
 
   const getReminderActions = (payment?: Order['payment']) => {
     if (!payment) return { hasAction: false, lastAction: null as string | null, lastAt: null as string | null, resumeCount: 0, dismissCount: 0 };
-    const raw = payment as any;
-    const lastAction = raw.reminderAction || raw.reminder_action || raw.reminderLastAction || raw.reminder_last_action || null;
-    const lastAt = raw.reminderActionAt || raw.reminder_action_at || raw.reminderLastActionAt || raw.reminder_last_action_at || raw.reminderClosedAt || raw.reminder_closed_at || null;
-    const resumeCount = Number(raw.reminderResumeCount || raw.reminder_resume_count || 0) || 0;
-    const dismissCount = Number(raw.reminderDismissCount || raw.reminder_dismiss_count || 0) || 0;
+    const raw = payment as unknown as Record<string, unknown>;
+    const lastAction =
+      raw['reminderAction'] ??
+      raw['reminder_action'] ??
+      raw['reminderLastAction'] ??
+      raw['reminder_last_action'] ??
+      null;
+    const lastAt =
+      raw['reminderActionAt'] ??
+      raw['reminder_action_at'] ??
+      raw['reminderLastActionAt'] ??
+      raw['reminder_last_action_at'] ??
+      raw['reminderClosedAt'] ??
+      raw['reminder_closed_at'] ??
+      null;
+    const resumeCount = Number((raw['reminderResumeCount'] ?? raw['reminder_resume_count'] ?? 0) as unknown) || 0;
+    const dismissCount = Number((raw['reminderDismissCount'] ?? raw['reminder_dismiss_count'] ?? 0) as unknown) || 0;
     const hasAction = !!(lastAction || lastAt || resumeCount || dismissCount);
     return {
       hasAction,
@@ -624,12 +648,14 @@ export default function SiparislerPage() {
     }
   };
 
+  const selectedOrderExtra = selectedOrder ? (selectedOrder as unknown as OrderExtraFields) : null;
+
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-3 sm:px-4 lg:px-0">{/* Glassmorphism Header */}
       <FadeContent direction="up" delay={0}>
         <div className={`p-3 sm:p-6 rounded-2xl sm:rounded-3xl backdrop-blur-xl ${
           isDark 
-            ? 'bg-white/[0.03] border border-white/[0.08]' 
+            ? 'bg-white/3 border border-white/8' 
             : 'bg-white/60 border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.06)]'
         }`}>
           <div className="flex flex-col gap-3">
@@ -644,7 +670,7 @@ export default function SiparislerPage() {
             
             {/* Ar-Ge Stats - Glassmorphism Pills */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
-              <div className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl backdrop-blur-md flex-shrink-0 ${
+              <div className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl backdrop-blur-md shrink-0 ${
                 isDark ? 'bg-emerald-500/10 ring-1 ring-emerald-500/20' : 'bg-emerald-50/80 ring-1 ring-emerald-200/50'
               }`}>
                 <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -657,7 +683,7 @@ export default function SiparislerPage() {
               {stats.totalFailed > 0 && (
                 <button
                   onClick={() => handleSetStatus('payment_failed')}
-                  className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl backdrop-blur-md transition-all cursor-pointer active:scale-95 flex-shrink-0 ${
+                  className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl backdrop-blur-md transition-all cursor-pointer active:scale-95 shrink-0 ${
                     selectedStatus === 'payment_failed'
                       ? (isDark ? 'bg-red-500/20 ring-2 ring-red-500/40' : 'bg-red-100 ring-2 ring-red-300')
                       : (isDark ? 'bg-red-500/10 ring-1 ring-red-500/20 hover:bg-red-500/15' : 'bg-red-50/80 ring-1 ring-red-200/50 hover:bg-red-100')
@@ -673,7 +699,7 @@ export default function SiparislerPage() {
 
               <Link
                 href="/yonetim/siparisler/silinen"
-                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl backdrop-blur-md transition-all flex-shrink-0 ${
+                className={`flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl backdrop-blur-md transition-all shrink-0 ${
                   isDark 
                     ? 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 ring-1 ring-white/10' 
                     : 'bg-black/5 text-gray-400 hover:text-gray-900 hover:bg-black/10 ring-1 ring-black/5'
@@ -686,7 +712,7 @@ export default function SiparislerPage() {
 
               <button
                 onClick={() => window.location.reload()}
-                className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl backdrop-blur-md transition-all flex-shrink-0 ${
+                className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl backdrop-blur-md transition-all shrink-0 ${
                   isDark 
                     ? 'bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 ring-1 ring-white/10' 
                     : 'bg-black/5 text-gray-400 hover:text-gray-900 hover:bg-black/10 ring-1 ring-black/5'
@@ -732,12 +758,12 @@ export default function SiparislerPage() {
       <FadeContent direction="up" delay={0.1}>
         <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl backdrop-blur-xl ${
           isDark 
-            ? 'bg-white/[0.02] border border-white/[0.06]' 
+            ? 'bg-white/2 border border-white/6' 
             : 'bg-white/50 border border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.04)]'
         }`}>
           <div className="flex flex-col gap-2.5">
           {/* Takvimsel Gün Seçici */}
-          <div className={`relative ${showCalendar ? 'z-[1000000]' : 'z-50'}`}>
+          <div className={`relative ${showCalendar ? 'z-1000000' : 'z-50'}`}>
             <button
               ref={calendarButtonRef}
               onClick={() => {
@@ -779,26 +805,22 @@ export default function SiparislerPage() {
               <>
                 {/* Backdrop */}
                 <motion.div
-                  {...(enableModalAnimations
-                    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-                    : {})}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   onClick={() => setShowCalendar(false)}
-                  className="fixed inset-0 z-[999998]"
+                  className="fixed inset-0 z-999998"
                   style={{ background: 'rgba(0,0,0,0.3)' }}
                 />
                 
                 {/* Calendar - Fixed position at button */}
                 <motion.div
-                  {...(enableModalAnimations
-                    ? {
-                        initial: { opacity: 0, y: -8, scale: 0.95 },
-                        animate: { opacity: 1, y: 0, scale: 1 },
-                        exit: { opacity: 0, y: -8, scale: 0.95 },
-                        transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
-                      }
-                    : {})}
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
                   style={{ top: calendarPosition.top, left: calendarPosition.left }}
-                  className={`fixed rounded-2xl border backdrop-blur-xl shadow-2xl z-[999999] w-72 ${
+                  className={`fixed rounded-2xl border backdrop-blur-xl shadow-2xl z-999999 w-72 ${
                     isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-white/50 shadow-[0_16px_48px_rgba(0,0,0,0.15)]'
                   }`}
                   onClick={(e) => e.stopPropagation()}
@@ -1009,45 +1031,46 @@ export default function SiparislerPage() {
         <FadeContent direction="up" delay={0.2}>
           <div className="space-y-8">
             {groupedOrdersWithStats.map(({ dateKey, orders, dailyTotal, label }, groupIndex) => (
-                {viewMode === 'grid' && orders.length > 20 ? (
-                  <Grid
-                    columnCount={3}
-                    columnWidth={370}
-                    height={900}
-                    rowCount={Math.ceil(orders.length / 3)}
-                    rowHeight={370}
-                    width={1200}
-                  >
-                    {({ columnIndex, rowIndex, style }) => {
-                      const index = rowIndex * 3 + columnIndex;
-                      if (index >= orders.length) return null;
-                      const order = orders[index];
-                      const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
-                      const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
-                      const paymentStatus = order.payment?.status?.toLowerCase();
-                      const paymentLogo = getPaymentLogoInfo(order.payment?.method);
-                      const isSeen = seenOrderIds.has(order.id);
-                      return (
-                        <div style={style} key={order.id}>
-                          <GridCardWrapper
-                            {...(enableListAnimations
-                              ? {
-                                  initial: { opacity: 0, y: 20, scale: 0.96 },
-                                  animate: { opacity: 1, y: 0, scale: 1 },
-                                  transition: { delay: 0, duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-                                }
-                              : {})}
-                            onClick={() => handleSelectOrder(order)}
-                            className="cursor-pointer group h-full"
-                            style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 340px' }}
-                          >
-                            {/* ...existing code... */}
-                          </GridCardWrapper>
-                        </div>
-                      );
-                    }}
-                  </Grid>
-                ) : viewMode === 'grid' ? (
+              <div key={dateKey}>
+                {/* Date Group Header */}
+                <motion.div
+                  {...(enableListAnimations
+                    ? {
+                        initial: { opacity: 0, x: -20 },
+                        animate: { opacity: 1, x: 0 },
+                        transition: { delay: Math.min(groupIndex * 0.05, 0.35), duration: 0.4 },
+                      }
+                    : {})}
+                  className={`mb-5 pb-3 border-b-2 ${
+                    isDark 
+                      ? 'border-white/10' 
+                      : 'border-black/5'
+                  }`}
+                >
+                  <h3 className={`text-xl font-bold tracking-tight flex items-center gap-2 flex-wrap ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      isDark ? 'bg-purple-400' : 'bg-purple-600'
+                    }`} />
+                    {label}
+                    <span className={`text-sm font-medium ${
+                      isDark ? 'text-neutral-500' : 'text-gray-400'
+                    }`}>
+                      ({orders.length} sipariş)
+                    </span>
+                    {dailyTotal > 0 ? (
+                      <span className={`ml-auto text-base font-bold tabular-nums ${
+                        isDark ? 'text-emerald-400' : 'text-emerald-600'
+                      }`}>
+                        {formatPrice(dailyTotal)}
+                      </span>
+                    ) : null}
+                  </h3>
+                </motion.div>
+
+                {/* Orders - Grid veya List View */}
+                {viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5 grid-auto-rows-fr">
                     {orders.map((order, index) => {
                       const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
@@ -1055,108 +1078,42 @@ export default function SiparislerPage() {
                       const paymentStatus = order.payment?.status?.toLowerCase();
                       const paymentLogo = getPaymentLogoInfo(order.payment?.method);
                       const isSeen = seenOrderIds.has(order.id);
-                      return (
-                        <GridCardWrapper
-                          key={order.id}
-                          {...(enableListAnimations
-                            ? {
-                                initial: { opacity: 0, y: 20, scale: 0.96 },
-                                animate: { opacity: 1, y: 0, scale: 1 },
-                                transition: { delay: Math.min(index * 0.025, 0.2), duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-                              }
-                            : {})}
-                          onClick={() => handleSelectOrder(order)}
-                          className="cursor-pointer group h-full"
-                          style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 340px' }}
-                        >
-                          {/* ...existing code... */}
-                        </GridCardWrapper>
-                      );
-                    })}
-                  </div>
-                ) : (
 
-                  <div className={`overflow-x-auto rounded-xl border ${isDark ? 'bg-neutral-900/50 border-neutral-800' : 'bg-white border-gray-200'}`}>
-                    <table className="w-full min-w-[900px]">
-                      <thead>
-                        <tr className={`text-left text-xs uppercase tracking-wider ${isDark ? 'text-neutral-500 border-b border-neutral-800' : 'text-gray-500 border-b border-gray-200'}`}>
-                          <th className="px-4 py-3 font-medium">Sipariş</th>
-                          <th className="px-4 py-3 font-medium">Tarih</th>
-                          <th className="px-4 py-3 font-medium">Müşteri</th>
-                          <th className="px-4 py-3 font-medium">Ürünler</th>
-                          <th className="px-4 py-3 font-medium">Teslimat</th>
-                          <th className="px-4 py-3 font-medium">Durum</th>
-                          <th className="px-4 py-3 font-medium">Ödeme</th>
-                          <th className="px-4 py-3 font-medium text-right">Tutar</th>
-                        </tr>
-                      </thead>
-                      <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-gray-100'}`}> 
-                        {orders.length > 30 ? (
-                          <List
-                            height={900}
-                            itemCount={orders.length}
-                            itemSize={56}
-                            width={1200}
-                          >
-                            {({ index, style }) => {
-                              const order = orders[index];
-                              const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
-                              const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
-                              const paymentStatus = order.payment?.status?.toLowerCase();
-                              const paymentLogo = getPaymentLogoInfo(order.payment?.method);
-                              const orderDate = new Date(order.createdAt);
-                              const firstProduct = order.products[0];
-                              const isSeen = seenOrderIds.has(order.id);
-                              return (
-                                <TableRowWrapper
-                                  key={order.id}
-                                  {...(enableListAnimations
-                                    ? {
-                                        initial: { opacity: 0, y: 10 },
-                                        animate: { opacity: 1, y: 0 },
-                                        transition: { delay: 0 },
-                                      }
-                                    : {})}
-                                  onClick={() => handleSelectOrder(order)}
-                                  style={{ ...style, contentVisibility: 'auto', containIntrinsicSize: '1px 56px' }}
-                                  className={`cursor-pointer transition-colors ${isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-gray-50'} ${!isSeen ? 'outline-2 outline-purple-400/50' : ''}`}
-                                >
-                                  {/* ...existing code... */}
-                                </TableRowWrapper>
-                              );
-                            }}
-                          </List>
-                        ) : (
-                          orders.map((order, index) => {
-                            const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
-                            const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
-                            const paymentStatus = order.payment?.status?.toLowerCase();
-                            const paymentLogo = getPaymentLogoInfo(order.payment?.method);
-                            const orderDate = new Date(order.createdAt);
-                            const firstProduct = order.products[0];
-                            const isSeen = seenOrderIds.has(order.id);
-                            return (
-                              <TableRowWrapper
-                                key={order.id}
-                                {...(enableListAnimations
-                                  ? {
-                                      initial: { opacity: 0, y: 10 },
-                                      animate: { opacity: 1, y: 0 },
-                                      transition: { delay: Math.min(index * 0.02, 0.2) },
-                                    }
-                                  : {})}
-                                onClick={() => handleSelectOrder(order)}
-                                style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 56px' }}
-                                className={`cursor-pointer transition-colors ${isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-gray-50'} ${!isSeen ? 'outline-2 outline-purple-400/50' : ''}`}
-                              >
-                                {/* ...existing code... */}
-                              </TableRowWrapper>
-                            );
-                          })
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+              return (
+                <motion.div
+                  key={order.id}
+                  {...(enableListAnimations
+                    ? {
+                        initial: { opacity: 0, y: 20, scale: 0.96 },
+                        animate: { opacity: 1, y: 0, scale: 1 },
+                        transition: { delay: Math.min(index * 0.025, 0.2), duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                      }
+                    : {})}
+                  onClick={() => handleSelectOrder(order)}
+                  className="cursor-pointer group h-full"
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 340px' }}
+                >
+                  {/* Premium Card - Modern Design System */}
+                  <div className={`relative overflow-hidden rounded-2xl sm:rounded-[24px] transition-all duration-700 ease-out backdrop-blur-2xl active:scale-[0.98] sm:group-hover:-translate-y-1 h-full flex flex-col ${
+                    isDark 
+                      ? 'bg-linear-to-br from-white/7 to-white/2 hover:from-white/12 hover:to-white/4 border border-white/12 hover:border-white/20 shadow-[0_4px_24px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.4)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_4px_12px_rgba(0,0,0,0.3)]' 
+                      : 'bg-linear-to-br from-white via-white/95 to-white/80 hover:from-white hover:to-white/95 border border-black/6 hover:border-black/12 shadow-[0_2px_16px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]'
+                  } ${!isSeen ? 'ring-2 ring-purple-400/50' : ''}`}>
+                    
+                    {/* Subtle Gradient Overlay */}
+                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none ${
+                      order.status === 'delivered' ? 'bg-linear-to-br from-emerald-500/8 via-emerald-400/4 to-transparent' :
+                      order.status === 'shipped' ? 'bg-linear-to-br from-blue-500/8 via-blue-400/4 to-transparent' :
+                      order.status === 'processing' || order.status === 'confirmed' ? 'bg-linear-to-br from-purple-500/8 via-purple-400/4 to-transparent' :
+                      order.status === 'pending' ? 'bg-linear-to-br from-amber-500/8 via-amber-400/4 to-transparent' :
+                      order.status === 'cancelled' ? 'bg-linear-to-br from-red-500/8 via-red-400/4 to-transparent' :
+                      'bg-linear-to-br from-gray-500/8 via-gray-400/4 to-transparent'
+                    }`} />
+                    
+                    {/* Ambient Border Glow */}
+                    <div className={`absolute inset-0 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none ${
+                      order.status === 'delivered' ? 'shadow-[inset_0_0_20px_rgba(16,185,129,0.15)]' :
+                      order.status === 'shipped' ? 'shadow-[inset_0_0_20px_rgba(59,130,246,0.15)]' :
                       order.status === 'processing' || order.status === 'confirmed' ? 'shadow-[inset_0_0_20px_rgba(168,85,247,0.15)]' :
                       order.status === 'pending' ? 'shadow-[inset_0_0_20px_rgba(245,158,11,0.15)]' :
                       order.status === 'cancelled' ? 'shadow-[inset_0_0_20px_rgba(239,68,68,0.15)]' :
@@ -1190,12 +1147,12 @@ export default function SiparislerPage() {
                           </div>
                           <div className="flex flex-col gap-1 sm:gap-1.5">
                             <div className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10.5px] font-semibold uppercase tracking-[0.08em] backdrop-blur-xl transition-all duration-300 ${
-                              order.status === 'delivered' ? (isDark ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-300 ring-1 ring-emerald-400/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'bg-gradient-to-r from-emerald-50 to-emerald-100/80 text-emerald-700 ring-1 ring-emerald-200/50 shadow-sm') :
-                              order.status === 'shipped' ? (isDark ? 'bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-300 ring-1 ring-blue-400/30 shadow-[0_0_12px_rgba(59,130,246,0.15)]' : 'bg-gradient-to-r from-blue-50 to-blue-100/80 text-blue-700 ring-1 ring-blue-200/50 shadow-sm') :
-                              order.status === 'processing' || order.status === 'confirmed' ? (isDark ? 'bg-gradient-to-r from-purple-500/20 to-purple-600/20 text-purple-300 ring-1 ring-purple-400/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' : 'bg-gradient-to-r from-purple-50 to-purple-100/80 text-purple-700 ring-1 ring-purple-200/50 shadow-sm') :
-                              order.status === 'pending' ? (isDark ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/30 shadow-[0_0_12px_rgba(245,158,11,0.15)]' : 'bg-gradient-to-r from-amber-50 to-amber-100/80 text-amber-700 ring-1 ring-amber-200/50 shadow-sm') :
-                              order.status === 'cancelled' ? (isDark ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-300 ring-1 ring-red-400/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]' : 'bg-gradient-to-r from-red-50 to-red-100/80 text-red-700 ring-1 ring-red-200/50 shadow-sm') :
-                              (isDark ? 'bg-gradient-to-r from-neutral-500/20 to-neutral-600/20 text-neutral-300 ring-1 ring-neutral-400/30' : 'bg-gradient-to-r from-gray-50 to-gray-100/80 text-gray-700 ring-1 ring-gray-200/50 shadow-sm')
+                              order.status === 'delivered' ? (isDark ? 'bg-linear-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-300 ring-1 ring-emerald-400/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'bg-linear-to-r from-emerald-50 to-emerald-100/80 text-emerald-700 ring-1 ring-emerald-200/50 shadow-sm') :
+                              order.status === 'shipped' ? (isDark ? 'bg-linear-to-r from-blue-500/20 to-blue-600/20 text-blue-300 ring-1 ring-blue-400/30 shadow-[0_0_12px_rgba(59,130,246,0.15)]' : 'bg-linear-to-r from-blue-50 to-blue-100/80 text-blue-700 ring-1 ring-blue-200/50 shadow-sm') :
+                              order.status === 'processing' || order.status === 'confirmed' ? (isDark ? 'bg-linear-to-r from-purple-500/20 to-purple-600/20 text-purple-300 ring-1 ring-purple-400/30 shadow-[0_0_12px_rgba(168,85,247,0.15)]' : 'bg-linear-to-r from-purple-50 to-purple-100/80 text-purple-700 ring-1 ring-purple-200/50 shadow-sm') :
+                              order.status === 'pending' ? (isDark ? 'bg-linear-to-r from-amber-500/20 to-amber-600/20 text-amber-300 ring-1 ring-amber-400/30 shadow-[0_0_12px_rgba(245,158,11,0.15)]' : 'bg-linear-to-r from-amber-50 to-amber-100/80 text-amber-700 ring-1 ring-amber-200/50 shadow-sm') :
+                              order.status === 'cancelled' ? (isDark ? 'bg-linear-to-r from-red-500/20 to-red-600/20 text-red-300 ring-1 ring-red-400/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]' : 'bg-linear-to-r from-red-50 to-red-100/80 text-red-700 ring-1 ring-red-200/50 shadow-sm') :
+                              (isDark ? 'bg-linear-to-r from-neutral-500/20 to-neutral-600/20 text-neutral-300 ring-1 ring-neutral-400/30' : 'bg-linear-to-r from-gray-50 to-gray-100/80 text-gray-700 ring-1 ring-gray-200/50 shadow-sm')
                             }`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${enablePulseEffects ? 'animate-pulse' : ''} ${
                                 order.status === 'delivered' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]' :
@@ -1226,7 +1183,7 @@ export default function SiparislerPage() {
                               className={paymentLogo.containerClass(isDark)}
                               title={order.payment?.method === 'credit_card' ? 'Kredi Kartı (iyzico)' : order.payment?.method === 'bank_transfer' ? 'Havale/EFT (Garanti)' : ''}
                             >
-                              <img src={paymentLogo.src} alt={paymentLogo.alt} className="h-4 w-auto" loading="lazy" />
+                              <Image src={paymentLogo.src} alt={paymentLogo.alt} width={90} height={24} sizes="90px" className="h-4 w-auto" />
                             </div>
                           )}
                           {paymentStatus === 'paid' && (
@@ -1306,7 +1263,7 @@ export default function SiparislerPage() {
                       <div className="flex items-center gap-2.5 sm:gap-4 flex-1">
                         <div className="flex -space-x-3 sm:-space-x-4">
                           {order.products.slice(0, 3).map((p, idx) => (
-                            <ProductThumbWrapper
+                            <motion.div
                               key={idx}
                               {...(enableHoverAnimations
                                 ? {
@@ -1340,7 +1297,7 @@ export default function SiparislerPage() {
                                   🌸
                                 </div>
                               )}
-                            </ProductThumbWrapper>
+                            </motion.div>
                           ))}
                           {order.products.length > 3 && (
                             <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[16px] flex items-center justify-center text-[10px] sm:text-[12px] font-bold ring-2 sm:ring-[3px] backdrop-blur-xl shadow-lg transition-all duration-300 ${
@@ -1363,7 +1320,7 @@ export default function SiparislerPage() {
                       </div>
                     </div>
                   </div>
-                </GridCardWrapper>
+                </motion.div>
               );
             })}
           </div>
@@ -1394,7 +1351,7 @@ export default function SiparislerPage() {
                   const isSeen = seenOrderIds.has(order.id);
 
                   return (
-                    <TableRowWrapper
+                    <motion.tr
                       key={order.id}
                       {...(enableListAnimations
                         ? {
@@ -1518,7 +1475,7 @@ export default function SiparislerPage() {
                               className={paymentLogo.containerClass(isDark)}
                               title={order.payment?.method === 'credit_card' ? 'Kredi Kartı (iyzico)' : order.payment?.method === 'bank_transfer' ? 'Havale/EFT (Garanti)' : ''}
                             >
-                              <img src={paymentLogo.src} alt={paymentLogo.alt} className="h-4 w-auto" loading="lazy" />
+                              <Image src={paymentLogo.src} alt={paymentLogo.alt} width={90} height={24} sizes="90px" className="h-4 w-auto" />
                             </div>
                           )}
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -1537,7 +1494,7 @@ export default function SiparislerPage() {
                       <td className="px-4 py-3 text-right">
                         <span className={`font-semibold ${paymentStatus === 'paid' ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-white' : 'text-gray-900')}`}>{formatPrice(order.total)}</span>
                       </td>
-                    </TableRowWrapper>
+                    </motion.tr>
                   );
                 })}
               </tbody>
@@ -1677,9 +1634,9 @@ export default function SiparislerPage() {
       {isMounted && selectedOrder && createPortal(
         <AnimatePresence>
           <motion.div
-            {...(enableModalAnimations
-              ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-              : {})}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[99999]"
           >
             <div
@@ -1693,14 +1650,10 @@ export default function SiparislerPage() {
             />
 
             <motion.div
-              {...(enableModalAnimations
-                ? {
-                    initial: { y: 40, opacity: 0 },
-                    animate: { y: 0, opacity: 1 },
-                    exit: { y: 40, opacity: 0 },
-                    transition: { type: 'spring', stiffness: 320, damping: 34 },
-                  }
-                : {})}
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 34 }}
               className={`absolute inset-2 sm:inset-4 lg:inset-10 rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col backdrop-blur-2xl ${
                 isDark 
                   ? 'bg-neutral-950/95 border border-neutral-800/50 shadow-2xl shadow-purple-500/10' 
@@ -1735,7 +1688,7 @@ export default function SiparislerPage() {
                         className={`${paymentLogo.containerClass(isDark)} !h-12 sm:!h-14 !w-auto px-4 sm:px-5`}
                         title={selectedOrder.payment?.method === 'credit_card' ? 'Kredi Kartı (iyzico)' : selectedOrder.payment?.method === 'bank_transfer' ? 'Havale/EFT (Garanti)' : ''}
                       >
-                        <img src={paymentLogo.src} alt={paymentLogo.alt} className="h-7 sm:h-9 w-auto" loading="lazy" />
+                        <Image src={paymentLogo.src} alt={paymentLogo.alt} width={180} height={56} sizes="180px" className="h-7 sm:h-9 w-auto" />
                       </div>
                     );
                   })()}
@@ -1914,7 +1867,7 @@ export default function SiparislerPage() {
                                 className={paymentLogo.containerClass(isDark)}
                                 title={selectedOrder.payment?.method === 'credit_card' ? 'Kredi Kartı (iyzico)' : selectedOrder.payment?.method === 'bank_transfer' ? 'Havale/EFT (Garanti)' : ''}
                               >
-                                <img src={paymentLogo.src} alt={paymentLogo.alt} className="h-4 w-auto" loading="lazy" />
+                                <Image src={paymentLogo.src} alt={paymentLogo.alt} width={90} height={24} sizes="90px" className="h-4 w-auto" />
                               </div>
                             );
                           })()}
@@ -1966,11 +1919,11 @@ export default function SiparislerPage() {
                             )}
                             
                             {/* Cihaz Modeli */}
-                            {selectedOrder.payment.clientInfo?.deviceModel && (
+                            {selectedOrderExtra?.payment?.clientInfo?.deviceModel && (
                               <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
                                 isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-700'
                               }`}>
-                                📲 {selectedOrder.payment.clientInfo.deviceModel}
+                                📲 {selectedOrderExtra.payment?.clientInfo?.deviceModel}
                               </span>
                             )}
                             
@@ -1993,7 +1946,7 @@ export default function SiparislerPage() {
                         </div>
                         
                         {/* Traffic Source - Trafik Kaynağı */}
-                        {(selectedOrder as any).trafficSource && (
+                        {selectedOrderExtra?.trafficSource && (
                           <div className={`p-3 rounded-xl ${isDark ? 'bg-neutral-950 border border-neutral-800' : 'bg-gray-50 border border-gray-200'}`}>
                             <p className={`text-xs font-semibold mb-2 ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>
                               📊 Trafik Kaynağı
@@ -2001,62 +1954,62 @@ export default function SiparislerPage() {
                             <div className="flex flex-wrap gap-2">
                               {/* Kaynak */}
                               <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
-                                (selectedOrder as any).trafficSource === 'google' 
+                                selectedOrderExtra.trafficSource === 'google' 
                                   ? 'bg-blue-500/15 text-blue-400' 
-                                  : (selectedOrder as any).trafficSource === 'instagram'
+                                  : selectedOrderExtra.trafficSource === 'instagram'
                                   ? 'bg-pink-500/15 text-pink-400'
-                                  : (selectedOrder as any).trafficSource === 'facebook'
+                                  : selectedOrderExtra.trafficSource === 'facebook'
                                   ? 'bg-blue-600/15 text-blue-400'
-                                  : (selectedOrder as any).trafficSource === 'tiktok'
+                                  : selectedOrderExtra.trafficSource === 'tiktok'
                                   ? 'bg-purple-500/15 text-purple-400'
-                                  : (selectedOrder as any).trafficSource === 'direct'
+                                  : selectedOrderExtra.trafficSource === 'direct'
                                   ? 'bg-gray-500/15 text-gray-400'
                                   : 'bg-cyan-500/15 text-cyan-400'
                               }`}>
-                                {(selectedOrder as any).trafficSource === 'google' && '🔍'}
-                                {(selectedOrder as any).trafficSource === 'instagram' && '📷'}
-                                {(selectedOrder as any).trafficSource === 'facebook' && '👥'}
-                                {(selectedOrder as any).trafficSource === 'tiktok' && '🎵'}
-                                {(selectedOrder as any).trafficSource === 'youtube' && '📺'}
-                                {(selectedOrder as any).trafficSource === 'twitter' && '🐦'}
-                                {(selectedOrder as any).trafficSource === 'direct' && '➡️'}
-                                {(selectedOrder as any).trafficSource === 'referral' && '🔗'}
+                                {selectedOrderExtra.trafficSource === 'google' && '🔍'}
+                                {selectedOrderExtra.trafficSource === 'instagram' && '📷'}
+                                {selectedOrderExtra.trafficSource === 'facebook' && '👥'}
+                                {selectedOrderExtra.trafficSource === 'tiktok' && '🎵'}
+                                {selectedOrderExtra.trafficSource === 'youtube' && '📺'}
+                                {selectedOrderExtra.trafficSource === 'twitter' && '🐦'}
+                                {selectedOrderExtra.trafficSource === 'direct' && '➡️'}
+                                {selectedOrderExtra.trafficSource === 'referral' && '🔗'}
                                 {' '}
-                                {((selectedOrder as any).trafficSource || 'Bilinmiyor').charAt(0).toUpperCase() + ((selectedOrder as any).trafficSource || 'bilinmiyor').slice(1)}
+                                {(selectedOrderExtra.trafficSource || 'Bilinmiyor').charAt(0).toUpperCase() + (selectedOrderExtra.trafficSource || 'bilinmiyor').slice(1)}
                               </span>
                               
                               {/* Medium */}
-                              {(selectedOrder as any).trafficMedium && (
+                              {selectedOrderExtra?.trafficMedium && (
                                 <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
                                   isDark ? 'bg-purple-500/15 text-purple-400' : 'bg-purple-100 text-purple-700'
                                 }`}>
-                                  {(selectedOrder as any).trafficMedium === 'organic' && '🌱 Organik'}
-                                  {(selectedOrder as any).trafficMedium === 'cpc' && '💰 Reklam'}
-                                  {(selectedOrder as any).trafficMedium === 'social' && '👥 Sosyal'}
-                                  {(selectedOrder as any).trafficMedium === 'email' && '📧 E-posta'}
-                                  {(selectedOrder as any).trafficMedium === 'referral' && '🔗 Yönlendirme'}
-                                  {!['organic', 'cpc', 'social', 'email', 'referral', 'none'].includes((selectedOrder as any).trafficMedium) && (selectedOrder as any).trafficMedium}
+                                  {selectedOrderExtra.trafficMedium === 'organic' && '🌱 Organik'}
+                                  {selectedOrderExtra.trafficMedium === 'cpc' && '💰 Reklam'}
+                                  {selectedOrderExtra.trafficMedium === 'social' && '👥 Sosyal'}
+                                  {selectedOrderExtra.trafficMedium === 'email' && '📧 E-posta'}
+                                  {selectedOrderExtra.trafficMedium === 'referral' && '🔗 Yönlendirme'}
+                                  {!['organic', 'cpc', 'social', 'email', 'referral', 'none'].includes(selectedOrderExtra.trafficMedium) && selectedOrderExtra.trafficMedium}
                                 </span>
                               )}
                               
                               {/* Campaign */}
-                              {(selectedOrder as any).trafficCampaign && (
+                              {selectedOrderExtra?.trafficCampaign && (
                                 <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium ${
                                   isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-100 text-amber-700'
                                 }`}>
-                                  🎯 {(selectedOrder as any).trafficCampaign}
+                                  🎯 {selectedOrderExtra.trafficCampaign}
                                 </span>
                               )}
                             </div>
                             
                             {/* Referrer Details */}
-                            {(selectedOrder as any).trafficReferrer && (
+                            {selectedOrderExtra?.trafficReferrer && (
                               <details className="group mt-2">
                                 <summary className={`text-[10px] cursor-pointer hover:underline ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>
                                   Referrer URL
                                 </summary>
                                 <p className={`text-[10px] mt-1 leading-snug break-all ${isDark ? 'text-neutral-600' : 'text-gray-400'}`}>
-                                  {(selectedOrder as any).trafficReferrer}
+                                  {selectedOrderExtra.trafficReferrer}
                                 </p>
                               </details>
                             )}
@@ -2275,8 +2228,7 @@ export default function SiparislerPage() {
                                   muted
                                   loop
                                   playsInline
-                                  autoPlay={enableModalAnimations}
-                                  preload="none"
+                                  autoPlay
                                 />
                               ) : (
                                 <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
@@ -2353,9 +2305,9 @@ export default function SiparislerPage() {
                               <span>✓</span>
                               <span className="text-sm font-semibold">İade Tamamlandı</span>
                             </div>
-                            {(selectedOrder as any).refund?.amount && (
+                            {selectedOrderExtra?.refund?.amount && (
                               <p className="text-xs text-emerald-400/70 mt-1">
-                                Tutar: ₺{((selectedOrder as any).refund.amount || 0).toLocaleString('tr-TR')}
+                                Tutar: ₺{(selectedOrderExtra.refund?.amount || 0).toLocaleString('tr-TR')}
                               </p>
                             )}
                           </div>
@@ -2438,29 +2390,25 @@ export default function SiparislerPage() {
       {isMounted && deleteConfirmOrder && createPortal(
         <AnimatePresence>
           <motion.div
-            {...(enableModalAnimations
-              ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-              : {})}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100000] flex items-center justify-center p-4"
           >
             {/* Backdrop */}
             <motion.div
-              {...(enableModalAnimations
-                ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-                : {})}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => !isDeleting && setDeleteConfirmOrder(null)}
             />
             
             {/* Modal */}
             <motion.div
-              {...(enableModalAnimations
-                ? {
-                    initial: { opacity: 0, scale: 0.95, y: 20 },
-                    animate: { opacity: 1, scale: 1, y: 0 },
-                    exit: { opacity: 0, scale: 0.95, y: 20 },
-                  }
-                : {})}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className={`relative w-full max-w-md rounded-3xl p-6 shadow-2xl ${
                 isDark 
                   ? 'bg-neutral-900 border border-neutral-800' 
@@ -2553,9 +2501,9 @@ export default function SiparislerPage() {
       {isMounted && showRefundModal && refundOrder && createPortal(
         <AnimatePresence>
           <motion.div
-            {...(enableModalAnimations
-              ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-              : {})}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100001] flex items-center justify-center p-4"
           >
             <div 
@@ -2563,14 +2511,10 @@ export default function SiparislerPage() {
               onClick={() => !refundLoading && setShowRefundModal(false)}
             />
             <motion.div
-              {...(enableModalAnimations
-                ? {
-                    initial: { opacity: 0, scale: 0.95, y: 20 },
-                    animate: { opacity: 1, scale: 1, y: 0 },
-                    exit: { opacity: 0, scale: 0.95, y: 20 },
-                    transition: { type: 'spring', damping: 30, stiffness: 400 },
-                  }
-                : {})}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
               className={`relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl ${
                 isDark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-gray-200'
               }`}
