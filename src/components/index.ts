@@ -19,4 +19,4 @@ export { default as ProductSidebarDesktop } from './ProductSidebarDesktop';
 export { default as SeoContentSection } from './SeoContentSection';
 export { default as DeliverySelectorV2 } from './DeliverySelectorV2';
 export { default as ScrollToTop } from './ScrollToTop';
-export { default as HomeCategoryProducts, StoryBannerCarousel, HomeAllCategoriesProducts, FeaturedBannerGrid, QuickCategoryPills, HomeCategoryProductBands } from './HomeCategoryProducts';
+export { default as HomeCategoryProducts, StoryBannerCarousel, HomeAllCategoriesProducts, FeaturedBannerGrid, QuickCategoryPills, HomeCategoryProductBands, ProductCardEnhanced } from './HomeCategoryProducts';

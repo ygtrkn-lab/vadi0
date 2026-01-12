@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Percent, Flame, Sparkles } from "lucide-react";
-import ProductCard from "./ProductCard";
+import { ProductCardEnhanced } from "./HomeCategoryProducts";
 import type { Product } from "@/data/products";
 
 const SLICE_LIMIT = 16;
@@ -184,9 +184,7 @@ export default function CategoryCarousel({ variant = 'default' }: CategoryCarous
 						style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
 					>
 						{products.map((product, index) => (
-							<div key={product.id} className="w-[190px] sm:w-[210px] md:w-[230px] flex-shrink-0">
-								<ProductCard product={product} index={index} />
-							</div>
+							<ProductCardEnhanced key={product.id} product={product} index={index} />
 						))}
 					</div>
 

@@ -35,7 +35,7 @@ interface HomeCategoryProductsProps {
 }
 
 // Enhanced Product Card for Homepage - Çiçeksepeti Style
-function ProductCardEnhanced({ product, index }: { product: Product; index: number }) {
+export function ProductCardEnhanced({ product, index }: { product: Product; index: number }) {
   const { state: customerState, addToFavorites, removeFromFavorites, isFavorite } = useCustomer();
   const { addToCart } = useCart();
   const [isAddedToCart, setIsAddedToCart] = useState(false);
@@ -671,7 +671,7 @@ export function HomeAllCategoriesProducts() {
   );
 }
 
-// Featured Large Banner Grid - Çiçeksepeti Style
+// Featured Large Banner Grid - Modern Minimal Style
 export function FeaturedBannerGrid() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -693,39 +693,18 @@ export function FeaturedBannerGrid() {
 
   const featuredCategories = categories.slice(0, 8);
 
-  const resolveOverlayClass = (value?: string) => {
-    if (!value) {
-      return 'bg-gradient-to-t from-gray-900/60 via-gray-900/20 to-transparent';
-    }
-    const normalized = value.toLowerCase();
-    const presets: Record<string, string> = {
-      dark: 'bg-gradient-to-t from-gray-900/60 via-gray-900/20 to-transparent',
-      light: 'bg-gradient-to-t from-gray-900/40 via-gray-900/10 to-transparent',
-      none: 'bg-gradient-to-t from-transparent via-transparent to-transparent',
-    };
-    if (presets[normalized]) {
-      return presets[normalized];
-    }
-    if (value.includes('bg-')) {
-      return value;
-    }
-    if (value.includes('from-')) {
-      return `bg-gradient-to-t ${value}`;
-    }
-    return presets.dark;
-  };
-
   if (loading) {
     return (
-      <section className="py-8 md:py-12 bg-white">
+      <section className="py-12 md:py-20 bg-white">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 md:mb-8">
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Kategoriler</h2>
+          <div className="text-center mb-10 md:mb-14">
+            <div className="h-10 w-56 bg-gray-100 rounded-lg animate-pulse mx-auto mb-4" />
+            <div className="h-5 w-80 bg-gray-50 rounded animate-pulse mx-auto" />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="rounded-2xl overflow-hidden bg-gray-100 animate-pulse">
-                <div className="aspect-[3/4]" />
+              <div key={i} className="rounded-3xl overflow-hidden bg-gray-100 animate-pulse">
+                <div className="aspect-[4/5]" />
               </div>
             ))}
           </div>
@@ -735,51 +714,55 @@ export function FeaturedBannerGrid() {
   }
 
   return (
-    <section className="py-4 md:py-6 bg-white">
+    <section className="py-12 md:py-20 bg-gradient-to-b from-white via-gray-50/30 to-white overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* Section Header - Animated Apple Style */}
-        <div className="mb-8 md:mb-12 text-center overflow-hidden">
+        {/* Section Header - Clean & Modern */}
+        <div className="text-center mb-10 md:mb-14">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full mb-6"
+          >
+            <span className="w-2 h-2 bg-gray-900 rounded-full animate-pulse" />
+            <span className="text-sm font-medium text-gray-700">Popüler Kategoriler</span>
+          </motion.div>
+          
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-4 leading-tight"
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight"
           >
-            <span className="inline-block bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent pb-1">
-              Kategoriler
-            </span>
+            Kategoriler
           </motion.h2>
           
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-            className="text-gray-600 text-base md:text-lg max-w-2xl mx-auto leading-relaxed"
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-gray-500 text-base md:text-lg max-w-xl mx-auto"
           >
-            Her anınıza özel çiçekler.{' '}
-            <span className="inline-block font-semibold text-gray-900">
-              Bugün keşfedin.
-            </span>
+            Her anınıza özel çiçekler. <span className="text-gray-900 font-medium">Bugün keşfedin.</span>
           </motion.p>
         </div>
 
-        {/* Apple-style Category Cards Grid with Glassmorphism */}
+        {/* Modern Category Cards Grid */}
         <motion.div 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6"
         >
           {featuredCategories.map((category, index) => {
-            const coverType = category.coverType === 'video' && category.coverVideo ? 'video' : 'image';
             const coverImage = category.coverImage || category.coverMobileImage || category.image;
-            const overlayClass = resolveOverlayClass(category.coverOverlay);
-            const ctaText = category.coverCtaText || 'Keşfet';
-            const subtitle = category.coverSubtitle || '';
+            const coverType = category.coverType === 'video' && category.coverVideo ? 'video' : 'image';
+            
             return (
               <motion.div
                 key={category.slug}
@@ -788,70 +771,64 @@ export function FeaturedBannerGrid() {
                 viewport={{ once: true }}
                 transition={{ 
                   duration: 0.5, 
-                  delay: index * 0.1,
+                  delay: index * 0.08,
                   ease: "easeOut"
                 }}
               >
                 <Link 
                   href={`/${category.slug}`}
-                  className="group block relative rounded-3xl overflow-hidden bg-gradient-to-br from-white to-gray-50 
-                    backdrop-blur-xl border border-gray-200/60 hover:border-gray-300 
-                    shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1"
+                  className="group block relative rounded-3xl overflow-hidden bg-gray-100
+                    shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2"
                 >
-                  <div className="relative aspect-[3/4] overflow-hidden">
+                  <div className="relative aspect-[4/5] overflow-hidden">
+                    {/* Background Media */}
                     {coverType === 'video' && category.coverVideo ? (
-                      <>
-                        <video
-                          src={category.coverVideo}
-                          autoPlay
-                          muted
-                          loop
-                          playsInline
-                          preload="none"
-                          poster={optimizePosterUrl(coverImage || '', 400)}
-                          loading="lazy"
-                          onEnded={(e) => (e.target as HTMLVideoElement).play()}
-                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                        />
-                        <div className={`absolute inset-0 ${overlayClass} group-hover:from-gray-900/70 transition-all duration-500`} />
-                      </>
+                      <video
+                        src={category.coverVideo}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="none"
+                        poster={optimizePosterUrl(coverImage || '', 400)}
+                        className="absolute inset-0 w-full h-full object-cover 
+                          group-hover:scale-110 transition-transform duration-700 ease-out"
+                      />
                     ) : coverImage ? (
-                      <>
-                        <Image
-                          src={coverImage}
-                          alt={category.name}
-                          fill
-                          loading="lazy"
-                          sizes="(max-width: 768px) 50vw, 25vw"
-                          quality={75}
-                          className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                        />
-                        <div className={`absolute inset-0 ${overlayClass} group-hover:from-gray-900/70 transition-all duration-500`} />
-                      </>
+                      <Image
+                        src={coverImage}
+                        alt={category.name}
+                        fill
+                        loading="lazy"
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        quality={80}
+                        className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                      />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br 
-                        from-gray-100 to-gray-200 text-gray-400 text-6xl">
+                      <div className="w-full h-full flex items-center justify-center 
+                        bg-gradient-to-br from-gray-200 to-gray-300 text-gray-400 text-6xl">
                         🌸
                       </div>
                     )}
 
-                    <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6">
-                      <h3 className="text-white font-bold text-lg md:text-xl leading-tight mb-2
-                        group-hover:scale-105 transition-transform duration-300 origin-left">
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent 
+                      opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+
+                    {/* Content */}
+                    <div className="absolute inset-0 flex flex-col justify-end p-3 md:p-4">
+                      {/* Category Name */}
+                      <h3 className="text-white font-bold text-base md:text-lg leading-tight mb-1.5
+                        transform group-hover:translate-y-0 translate-y-1 transition-transform duration-500">
                         {category.name}
                       </h3>
-                      {subtitle && (
-                        <p className="text-white/85 text-sm md:text-base mb-3 leading-snug line-clamp-2">
-                          {subtitle}
-                        </p>
-                      )}
-                      <div className="inline-flex items-center gap-2 px-4 py-2.5 
-                        bg-white/95 backdrop-blur-md text-gray-900 text-sm font-semibold rounded-full
-                        opacity-0 group-hover:opacity-100 transform translate-y-3 group-hover:translate-y-0 
-                        transition-all duration-500 shadow-xl border border-white/20">
-                        <span>{ctaText}</span>
-                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
-                      </div>
+                      
+                      {/* CTA - Minimal text link */}
+                      <span className="text-white/80 text-xs font-medium flex items-center gap-1
+                        group-hover:text-white transition-colors duration-300">
+                        Keşfet
+                        <ChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform duration-300" />
+                      </span>
                     </div>
                   </div>
                 </Link>
@@ -860,23 +837,27 @@ export function FeaturedBannerGrid() {
           })}
         </motion.div>
 
-        {/* Apple-style View All Button - High Contrast */}
+        {/* View All - Animated underline link */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="text-center mt-12 md:mt-16"
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="text-center mt-8 md:mt-10"
         >
           <Link 
             href="/kategoriler"
-            className="inline-flex items-center gap-2.5 px-8 py-4 
-              bg-gray-900 hover:bg-gray-800 text-white text-base font-semibold rounded-full
-              transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 group
-              border border-gray-800"
+            className="group inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-300"
           >
-            <span>Tüm Kategoriler</span>
-            <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform duration-300" />
+            <span className="relative text-sm font-medium">
+              Tüm kategoriler
+              <span className="absolute left-0 -bottom-0.5 w-0 h-[1.5px] bg-gray-900 
+                group-hover:w-full transition-all duration-300 ease-out" />
+            </span>
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 
+              group-hover:bg-gray-900 group-hover:text-white transition-all duration-300">
+              <ChevronRight size={14} />
+            </span>
           </Link>
         </motion.div>
       </div>
@@ -884,7 +865,7 @@ export function FeaturedBannerGrid() {
   );
 }
 
-// Quick Category Pills - Horizontal scrollable pills
+// Quick Category Pills - Modern Grid Layout
 export function QuickCategoryPills() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -906,12 +887,15 @@ export function QuickCategoryPills() {
 
   if (loading) {
     return (
-      <section className="py-6 bg-gradient-to-r from-primary-50 to-secondary-50">
+      <section className="py-10 md:py-14 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <h3 className="text-lg font-bold text-gray-800 mb-4">Hızlı Erişim</h3>
-          <div className="flex gap-2 md:gap-3 overflow-x-auto pb-2">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="px-4 py-2.5 bg-gray-200 rounded-full animate-pulse w-32 h-10" />
+          <div className="text-center mb-8">
+            <div className="h-8 w-48 bg-gray-200 rounded-lg animate-pulse mx-auto mb-3" />
+            <div className="h-4 w-64 bg-gray-100 rounded animate-pulse mx-auto" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-100 rounded-2xl animate-pulse" />
             ))}
           </div>
         </div>
@@ -920,31 +904,101 @@ export function QuickCategoryPills() {
   }
 
   return (
-    <section className="py-6 bg-gradient-to-r from-primary-50 to-secondary-50">
+    <section className="py-10 md:py-14 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">Hızlı Erişim</h3>
-        <div className="flex gap-2 md:gap-3 overflow-x-auto scrollbar-hide pb-2" style={{ scrollbarWidth: 'none' }}>
-          {categories.map((category) => (
-            <Link
+        {/* Section Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8 md:mb-10"
+        >
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+            Hızlı Erişim
+          </h2>
+          <p className="text-gray-500 text-sm md:text-base">
+            Aradığınız kategoriye hızlıca ulaşın
+          </p>
+        </motion.div>
+
+        {/* Category Grid */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4"
+        >
+          {categories.slice(0, 10).map((category, index) => (
+            <motion.div
               key={category.slug}
-              href={`/${category.slug}`}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-primary-500 hover:text-white rounded-full text-sm font-medium text-gray-700 whitespace-nowrap transition-all shadow-sm hover:shadow-md"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: index * 0.05 }}
             >
-              {category.image && (
-                <div className="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 border-2 border-gray-100">
-                  <Image
-                    src={category.image}
-                    alt={category.name}
-                    width={28}
-                    height={28}
-                    className="object-cover w-full h-full"
-                  />
+              <Link
+                href={`/${category.slug}`}
+                className="group flex items-center gap-3 p-3 md:p-4 bg-white hover:bg-gray-900 
+                  rounded-2xl border border-gray-100 hover:border-gray-900
+                  shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              >
+                {/* Category Image */}
+                <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden flex-shrink-0 
+                  bg-gradient-to-br from-gray-100 to-gray-50 group-hover:from-gray-800 group-hover:to-gray-700 
+                  transition-all duration-300 shadow-sm">
+                  {category.image ? (
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      fill
+                      sizes="56px"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-2xl">
+                      🌸
+                    </div>
+                  )}
                 </div>
-              )}
-              {category.name}
-            </Link>
+
+                {/* Category Name */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm md:text-base font-semibold text-gray-800 group-hover:text-white 
+                    truncate transition-colors duration-300">
+                    {category.name}
+                  </h3>
+                  <p className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors duration-300 hidden sm:block">
+                    Keşfet →
+                  </p>
+                </div>
+              </Link>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
+
+        {/* View All Link */}
+        {categories.length > 10 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="text-center mt-8"
+          >
+            <Link 
+              href="/kategoriler"
+              className="inline-flex items-center gap-2 px-6 py-3 
+                bg-gray-100 hover:bg-gray-900 text-gray-700 hover:text-white 
+                text-sm font-semibold rounded-full transition-all duration-300 
+                hover:shadow-lg group"
+            >
+              <span>Tüm Kategorileri Gör</span>
+              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform duration-300" />
+            </Link>
+          </motion.div>
+        )}
       </div>
     </section>
   );
