@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useDeferredValue, useCallback, useTransition } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getMediaType } from '@/components/admin/MediaUpload';
@@ -189,6 +189,8 @@ function getDateGroupLabel(dateStr: string): string {
 export default function SiparislerPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+  const [, startTransition] = useTransition();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const printRef = useRef<HTMLDivElement | null>(null);
@@ -258,13 +260,32 @@ export default function SiparislerPage() {
     // run only when orders list first arrives/changes
   }, [orderState.orders]);
 
-  const markOrderSeen = (id: string) => {
+  const markOrderSeen = useCallback((id: string) => {
     setSeenOrderIds(prev => {
       const next = new Set(prev);
       next.add(id);
       return next;
     });
-  };
+  }, []);
+
+  const handleSelectOrder = useCallback((order: Order) => {
+    markOrderSeen(order.id);
+    setSelectedOrder(order);
+  }, [markOrderSeen]);
+
+  const handleSearchChange = useCallback((nextValue: string) => {
+    startTransition(() => {
+      setSearchTerm(nextValue);
+      setCurrentPage(1);
+    });
+  }, [startTransition]);
+
+  const handleSetStatus = useCallback((nextStatus: string) => {
+    startTransition(() => {
+      setSelectedStatus(nextStatus);
+      setCurrentPage(1);
+    });
+  }, [startTransition]);
   
   // Delete confirmation state
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState<Order | null>(null);
@@ -273,6 +294,7 @@ export default function SiparislerPage() {
   // Pagination - "all" seçeneği ile tüm siparişleri göster
   const [itemsPerPage, setItemsPerPage] = useState<number | 'all'>(25);
   const itemsPerPageOptions: (number | 'all')[] = [10, 25, 50, 100, 'all'];
+  const prefersReducedMotion = useReducedMotion();
   
   // Müşterinin kaçıncı siparişi olduğunu hesapla (sadece başarılı ve ödenmiş olanlar)
   const customerOrderCounts = useMemo(() => {
@@ -331,6 +353,7 @@ export default function SiparislerPage() {
 
   // Filtreleme mantığı - Takvimsel gün seçimi ile
   const filteredOrders = useMemo(() => {
+    const q = (deferredSearchTerm || '').trim().toLowerCase();
     return orderState.orders
       .filter(order => {
         // Durum filtresi
@@ -347,12 +370,13 @@ export default function SiparislerPage() {
         }
         
         // Arama filtresi
-        const customerName = order.customerName || '';
-        const customerEmail = order.customerEmail || '';
-        const matchesSearch = 
-          customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          order.orderNumber.toString().includes(searchTerm) ||
-          customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
+        const customerName = (order.customerName || '').toLowerCase();
+        const customerEmail = (order.customerEmail || '').toLowerCase();
+        const matchesSearch =
+          q.length === 0 ||
+          customerName.includes(q) ||
+          order.orderNumber.toString().includes(deferredSearchTerm) ||
+          customerEmail.includes(q);
         
         // Takvimsel tarih filtresi - Seçilen güne ait siparişleri göster
         let matchesDate = true;
@@ -375,10 +399,17 @@ export default function SiparislerPage() {
         return matchesStatus && matchesSearch && matchesDate;
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [orderState.orders, selectedStatus, searchTerm, selectedDate]);
+  }, [orderState.orders, selectedStatus, deferredSearchTerm, selectedDate]);
 
   // itemsPerPage 'all' olduğunda tüm siparişleri göster
   const effectiveItemsPerPage = itemsPerPage === 'all' ? filteredOrders.length : itemsPerPage;
+  // Perf gates: keep visuals, reduce per-item animation/video work on larger pages
+  const largeListMode = itemsPerPage === 'all' || effectiveItemsPerPage >= 25;
+  const enableListAnimations = !prefersReducedMotion && !largeListMode;
+  const enableHoverAnimations = !prefersReducedMotion;
+  const enableVideoAutoplay = !prefersReducedMotion && viewMode === 'grid' && !largeListMode;
+  const enablePulseEffects = !prefersReducedMotion && !largeListMode;
+  const enableModalAnimations = !prefersReducedMotion;
   const totalPages = effectiveItemsPerPage > 0 ? Math.ceil(filteredOrders.length / effectiveItemsPerPage) : 1;
   const paginatedOrders = useMemo(() => {
     if (itemsPerPage === 'all') {
@@ -412,6 +443,21 @@ export default function SiparislerPage() {
       new Date(b).getTime() - new Date(a).getTime()
     );
   }, [paginatedOrders]);
+
+  const groupedOrdersWithStats = useMemo(() => {
+    return groupedOrders.map(([dateKey, orders]) => {
+      const dailyTotal = orders.reduce((sum, order) => {
+        if (order.payment?.status === 'paid') return sum + (order.total || 0);
+        return sum;
+      }, 0);
+      return { dateKey, orders, dailyTotal, label: getDateGroupLabel(dateKey) };
+    });
+  }, [groupedOrders]);
+
+  const DateGroupHeaderWrapper: any = enableListAnimations ? motion.div : 'div';
+  const GridCardWrapper: any = enableListAnimations ? motion.div : 'div';
+  const TableRowWrapper: any = enableListAnimations ? motion.tr : 'tr';
+  const ProductThumbWrapper: any = enableHoverAnimations ? motion.div : 'div';
 
   const stats = useMemo(() => {
     const orders = orderState.orders;
@@ -609,7 +655,7 @@ export default function SiparislerPage() {
               
               {stats.totalFailed > 0 && (
                 <button
-                  onClick={() => { setSelectedStatus('payment_failed'); setCurrentPage(1); }}
+                  onClick={() => handleSetStatus('payment_failed')}
                   className={`flex items-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl backdrop-blur-md transition-all cursor-pointer active:scale-95 flex-shrink-0 ${
                     selectedStatus === 'payment_failed'
                       ? (isDark ? 'bg-red-500/20 ring-2 ring-red-500/40' : 'bg-red-100 ring-2 ring-red-300')
@@ -732,9 +778,9 @@ export default function SiparislerPage() {
               <>
                 {/* Backdrop */}
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                  {...(enableModalAnimations
+                    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+                    : {})}
                   onClick={() => setShowCalendar(false)}
                   className="fixed inset-0 z-[999998]"
                   style={{ background: 'rgba(0,0,0,0.3)' }}
@@ -742,10 +788,14 @@ export default function SiparislerPage() {
                 
                 {/* Calendar - Fixed position at button */}
                 <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                  transition={{ duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }}
+                  {...(enableModalAnimations
+                    ? {
+                        initial: { opacity: 0, y: -8, scale: 0.95 },
+                        animate: { opacity: 1, y: 0, scale: 1 },
+                        exit: { opacity: 0, y: -8, scale: 0.95 },
+                        transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
+                      }
+                    : {})}
                   style={{ top: calendarPosition.top, left: calendarPosition.left }}
                   className={`fixed rounded-2xl border backdrop-blur-xl shadow-2xl z-[999999] w-72 ${
                     isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-white/50 shadow-[0_16px_48px_rgba(0,0,0,0.15)]'
@@ -894,7 +944,7 @@ export default function SiparislerPage() {
             ].map((item) => (
               <button
                 key={item.status}
-                onClick={() => { setSelectedStatus(item.status); setCurrentPage(1); }}
+                onClick={() => handleSetStatus(item.status)}
                 className={`px-3.5 py-2 rounded-xl text-sm font-medium transition-all backdrop-blur-md ${
                   selectedStatus === item.status
                     ? (isDark ? 'bg-white/15 text-white ring-1 ring-white/20' : 'bg-black/10 text-gray-900 ring-1 ring-black/10')
@@ -922,7 +972,7 @@ export default function SiparislerPage() {
               type="text"
               placeholder="Sipariş ara..."
               value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className={`w-full pl-10 pr-10 py-2.5 text-sm rounded-xl transition-all focus:outline-none backdrop-blur-md ${
                 isDark 
                   ? 'bg-white/5 text-white placeholder-neutral-500 focus:bg-white/10 ring-1 ring-white/10 focus:ring-white/20' 
@@ -931,7 +981,7 @@ export default function SiparislerPage() {
             />
             {searchTerm && (
               <button 
-                onClick={() => { setSearchTerm(''); setCurrentPage(1); }} 
+                onClick={() => handleSearchChange('')} 
                 className={`absolute right-2.5 top-1/2 -translate-y-1/2 ${isDark ? 'text-neutral-500 hover:text-white' : 'text-gray-400 hover:text-gray-700'}`}
               >
                 <HiOutlineX className="w-4 h-4" />
@@ -957,13 +1007,17 @@ export default function SiparislerPage() {
       ) : paginatedOrders.length > 0 ? (
         <FadeContent direction="up" delay={0.2}>
           <div className="space-y-8">
-            {groupedOrders.map(([dateKey, orders], groupIndex) => (
+            {groupedOrdersWithStats.map(({ dateKey, orders, dailyTotal, label }, groupIndex) => (
               <div key={dateKey}>
                 {/* Date Group Header */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: groupIndex * 0.05, duration: 0.4 }}
+                <DateGroupHeaderWrapper
+                  {...(enableListAnimations
+                    ? {
+                        initial: { opacity: 0, x: -20 },
+                        animate: { opacity: 1, x: 0 },
+                        transition: { delay: Math.min(groupIndex * 0.05, 0.35), duration: 0.4 },
+                      }
+                    : {})}
                   className={`mb-5 pb-3 border-b-2 ${
                     isDark 
                       ? 'border-white/10' 
@@ -976,29 +1030,21 @@ export default function SiparislerPage() {
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       isDark ? 'bg-purple-400' : 'bg-purple-600'
                     }`} />
-                    {getDateGroupLabel(dateKey)}
+                    {label}
                     <span className={`text-sm font-medium ${
                       isDark ? 'text-neutral-500' : 'text-gray-400'
                     }`}>
                       ({orders.length} sipariş)
                     </span>
-                    {(() => {
-                      const dailyTotal = orders
-                        .filter(o => o.payment?.status === 'paid')
-                        .reduce((sum, o) => sum + (o.total || 0), 0);
-                      if (dailyTotal > 0) {
-                        return (
-                          <span className={`ml-auto text-base font-bold tabular-nums ${
-                            isDark ? 'text-emerald-400' : 'text-emerald-600'
-                          }`}>
-                            {formatPrice(dailyTotal)}
-                          </span>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {dailyTotal > 0 ? (
+                      <span className={`ml-auto text-base font-bold tabular-nums ${
+                        isDark ? 'text-emerald-400' : 'text-emerald-600'
+                      }`}>
+                        {formatPrice(dailyTotal)}
+                      </span>
+                    ) : null}
                   </h3>
-                </motion.div>
+                </DateGroupHeaderWrapper>
 
                 {/* Orders - Grid veya List View */}
                 {viewMode === 'grid' ? (
@@ -1011,13 +1057,18 @@ export default function SiparislerPage() {
                       const isSeen = seenOrderIds.has(order.id);
 
               return (
-                <motion.div
+                      <GridCardWrapper
                   key={order.id}
-                  initial={{ opacity: 0, y: 20, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: index * 0.025, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  onClick={() => { markOrderSeen(order.id); setSelectedOrder(order); }}
+                  {...(enableListAnimations
+                    ? {
+                        initial: { opacity: 0, y: 20, scale: 0.96 },
+                        animate: { opacity: 1, y: 0, scale: 1 },
+                        transition: { delay: Math.min(index * 0.025, 0.2), duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                      }
+                    : {})}
+                  onClick={() => handleSelectOrder(order)}
                   className="cursor-pointer group h-full"
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 340px' }}
                 >
                   {/* Premium Card - Modern Design System */}
                   <div className={`relative overflow-hidden rounded-2xl sm:rounded-[24px] transition-all duration-700 ease-out backdrop-blur-2xl active:scale-[0.98] sm:group-hover:-translate-y-1 h-full flex flex-col ${
@@ -1080,7 +1131,7 @@ export default function SiparislerPage() {
                               order.status === 'cancelled' ? (isDark ? 'bg-gradient-to-r from-red-500/20 to-red-600/20 text-red-300 ring-1 ring-red-400/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]' : 'bg-gradient-to-r from-red-50 to-red-100/80 text-red-700 ring-1 ring-red-200/50 shadow-sm') :
                               (isDark ? 'bg-gradient-to-r from-neutral-500/20 to-neutral-600/20 text-neutral-300 ring-1 ring-neutral-400/30' : 'bg-gradient-to-r from-gray-50 to-gray-100/80 text-gray-700 ring-1 ring-gray-200/50 shadow-sm')
                             }`}>
-                              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                              <span className={`w-1.5 h-1.5 rounded-full ${enablePulseEffects ? 'animate-pulse' : ''} ${
                                 order.status === 'delivered' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.6)]' :
                                 order.status === 'shipped' ? 'bg-blue-400 shadow-[0_0_8px_rgba(59,130,246,0.6)]' :
                                 order.status === 'processing' || order.status === 'confirmed' ? 'bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]' :
@@ -1189,10 +1240,14 @@ export default function SiparislerPage() {
                       <div className="flex items-center gap-2.5 sm:gap-4 flex-1">
                         <div className="flex -space-x-3 sm:-space-x-4">
                           {order.products.slice(0, 3).map((p, idx) => (
-                            <motion.div
+                            <ProductThumbWrapper
                               key={idx}
-                              whileHover={{ scale: 1.15, zIndex: 10 }}
-                              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                              {...(enableHoverAnimations
+                                ? {
+                                    whileHover: { scale: 1.15, zIndex: 10 },
+                                    transition: { type: 'spring', stiffness: 400, damping: 25 },
+                                  }
+                                : {})}
                               className={`relative w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[16px] overflow-hidden ring-2 sm:ring-[3px] shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-all duration-300 ${
                                 isDark ? 'ring-black/40 hover:ring-white/20' : 'ring-white hover:ring-black/10'
                               }`}
@@ -1206,10 +1261,11 @@ export default function SiparislerPage() {
                                     muted
                                     loop
                                     playsInline
-                                    autoPlay
+                                    autoPlay={enableVideoAutoplay}
+                                    preload={enableVideoAutoplay ? 'auto' : 'metadata'}
                                   />
                                 ) : (
-                                  <Image src={p.image} alt={p.name} fill className="object-cover transition-transform duration-300 group-hover:scale-110" unoptimized />
+                                  <Image src={p.image} alt={p.name} fill sizes="64px" className="object-cover transition-transform duration-300 group-hover:scale-110" unoptimized />
                                 )
                               ) : (
                                 <div className={`w-full h-full flex items-center justify-center text-2xl backdrop-blur-sm ${
@@ -1218,7 +1274,7 @@ export default function SiparislerPage() {
                                   🌸
                                 </div>
                               )}
-                            </motion.div>
+                            </ProductThumbWrapper>
                           ))}
                           {order.products.length > 3 && (
                             <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[16px] flex items-center justify-center text-[10px] sm:text-[12px] font-bold ring-2 sm:ring-[3px] backdrop-blur-xl shadow-lg transition-all duration-300 ${
@@ -1241,7 +1297,7 @@ export default function SiparislerPage() {
                       </div>
                     </div>
                   </div>
-                </motion.div>
+                </GridCardWrapper>
               );
             })}
           </div>
@@ -1272,13 +1328,18 @@ export default function SiparislerPage() {
                   const isSeen = seenOrderIds.has(order.id);
 
                   return (
-                    <motion.tr
+                    <TableRowWrapper
                       key={order.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.02 }}
-                      onClick={() => { markOrderSeen(order.id); setSelectedOrder(order); }}
-                      className={`cursor-pointer transition-colors ${isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-gray-50'} ${!isSeen ? 'outline outline-2 outline-purple-400/50' : ''}`}
+                      {...(enableListAnimations
+                        ? {
+                            initial: { opacity: 0, y: 10 },
+                            animate: { opacity: 1, y: 0 },
+                            transition: { delay: Math.min(index * 0.02, 0.2) },
+                          }
+                        : {})}
+                      onClick={() => handleSelectOrder(order)}
+                      style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 56px' }}
+                      className={`cursor-pointer transition-colors ${isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-gray-50'} ${!isSeen ? 'outline-2 outline-purple-400/50' : ''}`}
                     >
                       {/* Sipariş No */}
                       <td className="px-4 py-3">
@@ -1331,7 +1392,13 @@ export default function SiparislerPage() {
                             <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0">
                               {firstProduct.image ? (
                                 getMediaType(firstProduct.image) === 'video' ? (
-                                  <video src={firstProduct.image} className="w-full h-full object-cover" muted />
+                                  <video
+                                    src={firstProduct.image}
+                                    className="w-full h-full object-cover"
+                                    muted
+                                    playsInline
+                                    preload="none"
+                                  />
                                 ) : (
                                   <Image src={firstProduct.image} alt={firstProduct.name} fill className="object-cover" sizes="40px" />
                                 )
@@ -1404,7 +1471,7 @@ export default function SiparislerPage() {
                       <td className="px-4 py-3 text-right">
                         <span className={`font-semibold ${paymentStatus === 'paid' ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-white' : 'text-gray-900')}`}>{formatPrice(order.total)}</span>
                       </td>
-                    </motion.tr>
+                    </TableRowWrapper>
                   );
                 })}
               </tbody>
@@ -1544,9 +1611,9 @@ export default function SiparislerPage() {
       {isMounted && selectedOrder && createPortal(
         <AnimatePresence>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...(enableModalAnimations
+              ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+              : {})}
             className="fixed inset-0 z-[99999]"
           >
             <div
@@ -1560,10 +1627,14 @@ export default function SiparislerPage() {
             />
 
             <motion.div
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 34 }}
+              {...(enableModalAnimations
+                ? {
+                    initial: { y: 40, opacity: 0 },
+                    animate: { y: 0, opacity: 1 },
+                    exit: { y: 40, opacity: 0 },
+                    transition: { type: 'spring', stiffness: 320, damping: 34 },
+                  }
+                : {})}
               className={`absolute inset-2 sm:inset-4 lg:inset-10 rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col backdrop-blur-2xl ${
                 isDark 
                   ? 'bg-neutral-950/95 border border-neutral-800/50 shadow-2xl shadow-purple-500/10' 
@@ -2138,7 +2209,8 @@ export default function SiparislerPage() {
                                   muted
                                   loop
                                   playsInline
-                                  autoPlay
+                                  autoPlay={enableModalAnimations}
+                                  preload="none"
                                 />
                               ) : (
                                 <Image src={product.image} alt={product.name} fill className="object-cover" unoptimized />
@@ -2300,25 +2372,29 @@ export default function SiparislerPage() {
       {isMounted && deleteConfirmOrder && createPortal(
         <AnimatePresence>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...(enableModalAnimations
+              ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+              : {})}
             className="fixed inset-0 z-[100000] flex items-center justify-center p-4"
           >
             {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              {...(enableModalAnimations
+                ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+                : {})}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               onClick={() => !isDeleting && setDeleteConfirmOrder(null)}
             />
             
             {/* Modal */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              {...(enableModalAnimations
+                ? {
+                    initial: { opacity: 0, scale: 0.95, y: 20 },
+                    animate: { opacity: 1, scale: 1, y: 0 },
+                    exit: { opacity: 0, scale: 0.95, y: 20 },
+                  }
+                : {})}
               className={`relative w-full max-w-md rounded-3xl p-6 shadow-2xl ${
                 isDark 
                   ? 'bg-neutral-900 border border-neutral-800' 
@@ -2411,9 +2487,9 @@ export default function SiparislerPage() {
       {isMounted && showRefundModal && refundOrder && createPortal(
         <AnimatePresence>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...(enableModalAnimations
+              ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+              : {})}
             className="fixed inset-0 z-[100001] flex items-center justify-center p-4"
           >
             <div 
@@ -2421,10 +2497,14 @@ export default function SiparislerPage() {
               onClick={() => !refundLoading && setShowRefundModal(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+              {...(enableModalAnimations
+                ? {
+                    initial: { opacity: 0, scale: 0.95, y: 20 },
+                    animate: { opacity: 1, scale: 1, y: 0 },
+                    exit: { opacity: 0, scale: 0.95, y: 20 },
+                    transition: { type: 'spring', damping: 30, stiffness: 400 },
+                  }
+                : {})}
               className={`relative w-full max-w-md rounded-2xl overflow-hidden shadow-2xl ${
                 isDark ? 'bg-neutral-900 border border-neutral-800' : 'bg-white border border-gray-200'
               }`}
