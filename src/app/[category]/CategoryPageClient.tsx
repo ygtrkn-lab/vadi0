@@ -606,6 +606,23 @@ export default function CategoryPageClient({
         </AnimatePresence>
       </main>
 
+      {/* Visible SEO Content */}
+      <section className="container-custom py-6">
+        <div className="bg-gray-50 rounded-2xl p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-2">
+            {categoryName} - İstanbul Çiçek Siparişi
+          </h2>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            {categoryName} kategorisinde İstanbul içi online çiçek siparişi verin. Taze çiçekler, güvenli ödeme ve aynı gün teslimat ile
+            sevdiklerinize hızlıca ulaştırıyoruz.
+          </p>
+          <p className="text-sm text-gray-600 leading-relaxed mt-3">
+            Bu sayfada {categoryName.toLowerCase()} ürünlerini fiyata, isme, puana ve etikete göre sıralayabilir; bütçenize uygun seçenekleri
+            kolayca filtreleyebilirsiniz.
+          </p>
+        </div>
+      </section>
+
       <Footer />
       <MobileNavBar />
       

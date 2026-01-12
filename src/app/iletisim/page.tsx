@@ -6,6 +6,7 @@ import Footer from '@/components/Footer';
 import MobileNavBar from '@/components/MobileNavBar';
 import { Phone, MapPin, Instagram, Facebook } from 'lucide-react';
 import { useSetting } from '@/hooks/useSettings';
+import { COMPANY } from '@/data/company';
 
 export default function IletisimPage() {
   const phone = useSetting('site', 'phone', '0850 307 4876');
@@ -47,33 +48,39 @@ export default function IletisimPage() {
                 <div className="space-y-3 text-sm text-gray-600">
                   <div>
                     <p className="font-semibold text-gray-900 mb-1">Ünvan</p>
-                    <p>STR GRUP ANONİM ŞİRKETİ</p>
+                    <p>{COMPANY.legalName}</p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 mb-1">Ticaret Sicil Numarası</p>
-                    <p>702202</p>
+                    <p>{COMPANY.tradeRegistryNumber}</p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 mb-1">Adres</p>
-                    <p>SOĞANLI MAH. GÖLÇE SOKAK NO: 1 İÇ KAPI NO: 4<br />BAHÇELİEVLER / İSTANBUL</p>
+                    <p>
+                      {COMPANY.address.line1} {COMPANY.address.line2}
+                      <br />
+                      {COMPANY.address.district} / {COMPANY.address.city}
+                    </p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 mb-1">Vergi Dairesi / Vergi Numarası</p>
-                    <p>KOCASİNAN / 7810867621</p>
+                    <p>
+                      {COMPANY.taxOffice} / {COMPANY.taxId}
+                    </p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 mb-1">E-posta</p>
-                    <a href="mailto:bilgi@vadiler.com" className="text-[#e05a4c] hover:underline">
-                      bilgi@vadiler.com
+                    <a href={`mailto:${COMPANY.email}`} className="text-[#e05a4c] hover:underline">
+                      {COMPANY.email}
                     </a>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 mb-1">KEP Adresi</p>
-                    <p>strgrup@hs01.kep.tr</p>
+                    <p>{COMPANY.kepEmail}</p>
                   </div>
                   <div>
                     <p className="font-semibold text-gray-900 mb-1">Yer Sağlayıcı</p>
-                    <p>Vadiler İnternet Hizmetleri</p>
+                    <p>{COMPANY.hostingProvider}</p>
                   </div>
                 </div>
               </div>

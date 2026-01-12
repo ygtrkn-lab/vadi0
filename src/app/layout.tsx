@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from 'next/script';
 import "./globals.css";
 import ClientRoot from "./ClientRoot";
+import { COMPANY } from '@/data/company';
 
 // Using system fonts instead of Google Fonts to avoid build issues
 // in sandboxed environments where external font requests may fail.
@@ -29,9 +30,9 @@ const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   '@id': `${BASE_URL}/#organization`,
-  name: 'Vadiler Çiçek',
+  name: COMPANY.brandName,
   alternateName: 'Vadiler',
-  legalName: 'Vadiler Çiçek E-Ticaret',
+  legalName: COMPANY.legalName,
   url: BASE_URL,
   logo: {
     '@type': 'ImageObject',
@@ -42,26 +43,44 @@ const organizationSchema = {
   image: `${BASE_URL}/og-image.jpg`,
   description: 'İstanbul\'un güvenilir online çiçekçisi Vadiler Çiçek. Taze çiçekler, gül, orkide ve buketler aynı gün teslim. Kadıköy, Beşiktaş, Şişli ve tüm İstanbul\'a hızlı teslimat.',
   foundingDate: '2024',
+  taxID: COMPANY.taxId,
+  identifier: [
+    {
+      '@type': 'PropertyValue',
+      name: 'Ticaret Sicil Numarası',
+      value: COMPANY.tradeRegistryNumber,
+    },
+    {
+      '@type': 'PropertyValue',
+      name: 'Vergi Dairesi',
+      value: COMPANY.taxOffice,
+    },
+    {
+      '@type': 'PropertyValue',
+      name: 'KEP',
+      value: COMPANY.kepEmail,
+    },
+  ],
   numberOfEmployees: {
     '@type': 'QuantitativeValue',
     value: '50+',
   },
   address: {
     '@type': 'PostalAddress',
-    streetAddress: 'İstanbul, Türkiye',
-    addressLocality: 'İstanbul',
-    addressRegion: 'İstanbul',
-    postalCode: '34000',
+    streetAddress: `${COMPANY.address.line1} ${COMPANY.address.line2}`,
+    addressLocality: COMPANY.address.district,
+    addressRegion: COMPANY.address.city,
+    postalCode: COMPANY.address.postalCode,
     addressCountry: {
       '@type': 'Country',
-      name: 'TR',
+      name: COMPANY.address.countryCode,
     },
   },
   contactPoint: {
     '@type': 'ContactPoint',
-    telephone: '+90-850-307-4876',
+    telephone: COMPANY.phoneE164,
     contactType: 'customer service',
-    email: 'info@vadiler.com',
+    email: COMPANY.email,
     areaServed: 'TR',
     availableLanguage: 'Turkish',
   },
@@ -109,17 +128,19 @@ const localBusinessSchema = {
   '@context': 'https://schema.org',
   '@type': 'Florist',
   '@id': `${BASE_URL}/#localbusiness`,
-  name: 'Vadiler Çiçek',
+  name: COMPANY.brandName,
   url: BASE_URL,
-  telephone: '+90-850-307-4876',
+  telephone: COMPANY.phoneE164,
   priceRange: '₺₺',
   image: `${BASE_URL}/og-image.jpg`,
   description: 'İstanbul\'un en güvenilir online çiçekçisi. Taze çiçekler, aynı gün teslimat.',
   address: {
     '@type': 'PostalAddress',
-    addressLocality: 'İstanbul',
-    addressRegion: 'İstanbul',
-    addressCountry: 'TR',
+    streetAddress: `${COMPANY.address.line1} ${COMPANY.address.line2}`,
+    addressLocality: COMPANY.address.district,
+    addressRegion: COMPANY.address.city,
+    postalCode: COMPANY.address.postalCode,
+    addressCountry: COMPANY.address.countryCode,
   },
   geo: {
     '@type': 'GeoCoordinates',
@@ -271,6 +292,7 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <head>
+        <meta httpEquiv="x-dns-prefetch-control" content="on" />
         {/* DNS Prefetch - Kritik kaynaklar için DNS çözümlemesini önceden yap */}
         <link rel="dns-prefetch" href="//res.cloudinary.com" />
         <link rel="dns-prefetch" href="//www.googletagmanager.com" />

@@ -1,0 +1,20 @@
+export const COMPANY = {
+  brandName: 'Vadiler Çiçek',
+  legalName: 'STR GRUP ANONİM ŞİRKETİ',
+  tradeRegistryNumber: '702202',
+  taxOffice: 'KOCASİNAN',
+  taxId: '7810867621',
+  email: 'bilgi@vadiler.com',
+  phoneDisplay: '0850 307 4876',
+  phoneE164: '+90-850-307-4876',
+  kepEmail: 'strgrup@hs01.kep.tr',
+  hostingProvider: 'Vadiler İnternet Hizmetleri',
+  address: {
+    line1: 'SOĞANLI MAH. GÖLÇE SOKAK NO: 1',
+    line2: 'İÇ KAPI NO: 4',
+    district: 'BAHÇELİEVLER',
+    city: 'İSTANBUL',
+    postalCode: '34000',
+    countryCode: 'TR',
+  },
+} as const;

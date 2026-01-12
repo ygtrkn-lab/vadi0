@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import MobileNavBar from '@/components/MobileNavBar';
+import { COMPANY } from '@/data/company';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
@@ -33,19 +34,22 @@ const aboutPageSchema = {
   mainEntity: {
     '@type': 'Organization',
     '@id': `${BASE_URL}/#organization`,
-    name: 'Vadiler Çiçek',
+    name: COMPANY.brandName,
     url: BASE_URL,
     logo: `${BASE_URL}/logo.png`,
     description: 'İstanbul\'a online çiçek siparişi ve aynı gün teslimat hizmeti sunan e-ticaret platformu.',
     foundingDate: '2024',
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'İstanbul',
-      addressCountry: 'TR',
+      streetAddress: `${COMPANY.address.line1} ${COMPANY.address.line2}`,
+      addressLocality: COMPANY.address.district,
+      addressRegion: COMPANY.address.city,
+      postalCode: COMPANY.address.postalCode,
+      addressCountry: COMPANY.address.countryCode,
     },
     contactPoint: {
       '@type': 'ContactPoint',
-      telephone: '+90-850-307-4876',
+      telephone: COMPANY.phoneE164,
       contactType: 'customer service',
       availableLanguage: 'Turkish',
       areaServed: 'TR',
@@ -140,39 +144,45 @@ export default function HakkimizdaPage() {
             <div className="bg-gray-50 rounded-2xl p-6 space-y-4 text-gray-600 mb-8">
               <div>
                 <p className="font-semibold text-gray-900 mb-1">Ünvan</p>
-                <p>STR GRUP ANONİM ŞİRKETİ</p>
+                <p>{COMPANY.legalName}</p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900 mb-1">Ticaret Sicil Numarası</p>
-                <p>702202</p>
+                <p>{COMPANY.tradeRegistryNumber}</p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900 mb-1">Adres</p>
-                <p>SOĞANLI MAH. GÖLÇE SOKAK NO: 1 İÇ KAPI NO: 4<br />BAHÇELİEVLER / İSTANBUL</p>
+                <p>
+                  {COMPANY.address.line1} {COMPANY.address.line2}
+                  <br />
+                  {COMPANY.address.district} / {COMPANY.address.city}
+                </p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900 mb-1">Vergi Dairesi / Vergi Numarası</p>
-                <p>KOCASİNAN / 7810867621</p>
+                <p>
+                  {COMPANY.taxOffice} / {COMPANY.taxId}
+                </p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900 mb-1">E-posta</p>
-                <a href="mailto:bilgi@vadiler.com" className="text-primary-500 hover:underline">
-                  bilgi@vadiler.com
+                <a href={`mailto:${COMPANY.email}`} className="text-primary-500 hover:underline">
+                  {COMPANY.email}
                 </a>
               </div>
               <div>
                 <p className="font-semibold text-gray-900 mb-1">Çağrı Merkezi</p>
-                <a href="tel:08503074876" className="text-primary-500 hover:underline">
-                  0850 307 4876
+                <a href={`tel:${COMPANY.phoneE164}`} className="text-primary-500 hover:underline">
+                  {COMPANY.phoneDisplay}
                 </a>
               </div>
               <div>
                 <p className="font-semibold text-gray-900 mb-1">KEP Adresi</p>
-                <p>strgrup@hs01.kep.tr</p>
+                <p>{COMPANY.kepEmail}</p>
               </div>
               <div>
                 <p className="font-semibold text-gray-900 mb-1">Yer Sağlayıcı</p>
-                <p>Vadiler İnternet Hizmetleri</p>
+                <p>{COMPANY.hostingProvider}</p>
               </div>
             </div>
 
