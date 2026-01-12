@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useDeferredValue, useCallback, useTransition } from 'react';
+import { FixedSizeList as List, FixedSizeGrid as Grid } from 'react-window';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
@@ -1008,46 +1009,45 @@ export default function SiparislerPage() {
         <FadeContent direction="up" delay={0.2}>
           <div className="space-y-8">
             {groupedOrdersWithStats.map(({ dateKey, orders, dailyTotal, label }, groupIndex) => (
-              <div key={dateKey}>
-                {/* Date Group Header */}
-                <DateGroupHeaderWrapper
-                  {...(enableListAnimations
-                    ? {
-                        initial: { opacity: 0, x: -20 },
-                        animate: { opacity: 1, x: 0 },
-                        transition: { delay: Math.min(groupIndex * 0.05, 0.35), duration: 0.4 },
-                      }
-                    : {})}
-                  className={`mb-5 pb-3 border-b-2 ${
-                    isDark 
-                      ? 'border-white/10' 
-                      : 'border-black/5'
-                  }`}
-                >
-                  <h3 className={`text-xl font-bold tracking-tight flex items-center gap-2 flex-wrap ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${
-                      isDark ? 'bg-purple-400' : 'bg-purple-600'
-                    }`} />
-                    {label}
-                    <span className={`text-sm font-medium ${
-                      isDark ? 'text-neutral-500' : 'text-gray-400'
-                    }`}>
-                      ({orders.length} sipariş)
-                    </span>
-                    {dailyTotal > 0 ? (
-                      <span className={`ml-auto text-base font-bold tabular-nums ${
-                        isDark ? 'text-emerald-400' : 'text-emerald-600'
-                      }`}>
-                        {formatPrice(dailyTotal)}
-                      </span>
-                    ) : null}
-                  </h3>
-                </DateGroupHeaderWrapper>
-
-                {/* Orders - Grid veya List View */}
-                {viewMode === 'grid' ? (
+                {viewMode === 'grid' && orders.length > 20 ? (
+                  <Grid
+                    columnCount={3}
+                    columnWidth={370}
+                    height={900}
+                    rowCount={Math.ceil(orders.length / 3)}
+                    rowHeight={370}
+                    width={1200}
+                  >
+                    {({ columnIndex, rowIndex, style }) => {
+                      const index = rowIndex * 3 + columnIndex;
+                      if (index >= orders.length) return null;
+                      const order = orders[index];
+                      const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
+                      const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
+                      const paymentStatus = order.payment?.status?.toLowerCase();
+                      const paymentLogo = getPaymentLogoInfo(order.payment?.method);
+                      const isSeen = seenOrderIds.has(order.id);
+                      return (
+                        <div style={style} key={order.id}>
+                          <GridCardWrapper
+                            {...(enableListAnimations
+                              ? {
+                                  initial: { opacity: 0, y: 20, scale: 0.96 },
+                                  animate: { opacity: 1, y: 0, scale: 1 },
+                                  transition: { delay: 0, duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                                }
+                              : {})}
+                            onClick={() => handleSelectOrder(order)}
+                            className="cursor-pointer group h-full"
+                            style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 340px' }}
+                          >
+                            {/* ...existing code... */}
+                          </GridCardWrapper>
+                        </div>
+                      );
+                    }}
+                  </Grid>
+                ) : viewMode === 'grid' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5 grid-auto-rows-fr">
                     {orders.map((order, index) => {
                       const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
@@ -1055,42 +1055,108 @@ export default function SiparislerPage() {
                       const paymentStatus = order.payment?.status?.toLowerCase();
                       const paymentLogo = getPaymentLogoInfo(order.payment?.method);
                       const isSeen = seenOrderIds.has(order.id);
+                      return (
+                        <GridCardWrapper
+                          key={order.id}
+                          {...(enableListAnimations
+                            ? {
+                                initial: { opacity: 0, y: 20, scale: 0.96 },
+                                animate: { opacity: 1, y: 0, scale: 1 },
+                                transition: { delay: Math.min(index * 0.025, 0.2), duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+                              }
+                            : {})}
+                          onClick={() => handleSelectOrder(order)}
+                          className="cursor-pointer group h-full"
+                          style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 340px' }}
+                        >
+                          {/* ...existing code... */}
+                        </GridCardWrapper>
+                      );
+                    })}
+                  </div>
+                ) : (
 
-              return (
-                      <GridCardWrapper
-                  key={order.id}
-                  {...(enableListAnimations
-                    ? {
-                        initial: { opacity: 0, y: 20, scale: 0.96 },
-                        animate: { opacity: 1, y: 0, scale: 1 },
-                        transition: { delay: Math.min(index * 0.025, 0.2), duration: 0.5, ease: [0.16, 1, 0.3, 1] },
-                      }
-                    : {})}
-                  onClick={() => handleSelectOrder(order)}
-                  className="cursor-pointer group h-full"
-                  style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 340px' }}
-                >
-                  {/* Premium Card - Modern Design System */}
-                  <div className={`relative overflow-hidden rounded-2xl sm:rounded-[24px] transition-all duration-700 ease-out backdrop-blur-2xl active:scale-[0.98] sm:group-hover:-translate-y-1 h-full flex flex-col ${
-                    isDark 
-                      ? 'bg-gradient-to-br from-white/[0.07] to-white/[0.02] hover:from-white/[0.12] hover:to-white/[0.04] border border-white/[0.12] hover:border-white/[0.2] shadow-[0_4px_24px_rgba(0,0,0,0.25),0_1px_2px_rgba(0,0,0,0.4)] hover:shadow-[0_20px_60px_rgba(0,0,0,0.4),0_4px_12px_rgba(0,0,0,0.3)]' 
-                      : 'bg-gradient-to-br from-white via-white/95 to-white/80 hover:from-white hover:to-white/95 border border-black/[0.06] hover:border-black/[0.12] shadow-[0_2px_16px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-[0_16px_48px_rgba(0,0,0,0.08),0_4px_12px_rgba(0,0,0,0.04)]'
-                  } ${!isSeen ? 'ring-2 ring-purple-400/50' : ''}`}>
-                    
-                    {/* Subtle Gradient Overlay */}
-                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-700 pointer-events-none ${
-                      order.status === 'delivered' ? 'bg-gradient-to-br from-emerald-500/[0.08] via-emerald-400/[0.04] to-transparent' :
-                      order.status === 'shipped' ? 'bg-gradient-to-br from-blue-500/[0.08] via-blue-400/[0.04] to-transparent' :
-                      order.status === 'processing' || order.status === 'confirmed' ? 'bg-gradient-to-br from-purple-500/[0.08] via-purple-400/[0.04] to-transparent' :
-                      order.status === 'pending' ? 'bg-gradient-to-br from-amber-500/[0.08] via-amber-400/[0.04] to-transparent' :
-                      order.status === 'cancelled' ? 'bg-gradient-to-br from-red-500/[0.08] via-red-400/[0.04] to-transparent' :
-                      'bg-gradient-to-br from-gray-500/[0.08] via-gray-400/[0.04] to-transparent'
-                    }`} />
-                    
-                    {/* Ambient Border Glow */}
-                    <div className={`absolute inset-0 rounded-[24px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none ${
-                      order.status === 'delivered' ? 'shadow-[inset_0_0_20px_rgba(16,185,129,0.15)]' :
-                      order.status === 'shipped' ? 'shadow-[inset_0_0_20px_rgba(59,130,246,0.15)]' :
+                  <div className={`overflow-x-auto rounded-xl border ${isDark ? 'bg-neutral-900/50 border-neutral-800' : 'bg-white border-gray-200'}`}>
+                    <table className="w-full min-w-[900px]">
+                      <thead>
+                        <tr className={`text-left text-xs uppercase tracking-wider ${isDark ? 'text-neutral-500 border-b border-neutral-800' : 'text-gray-500 border-b border-gray-200'}`}>
+                          <th className="px-4 py-3 font-medium">Sipariş</th>
+                          <th className="px-4 py-3 font-medium">Tarih</th>
+                          <th className="px-4 py-3 font-medium">Müşteri</th>
+                          <th className="px-4 py-3 font-medium">Ürünler</th>
+                          <th className="px-4 py-3 font-medium">Teslimat</th>
+                          <th className="px-4 py-3 font-medium">Durum</th>
+                          <th className="px-4 py-3 font-medium">Ödeme</th>
+                          <th className="px-4 py-3 font-medium text-right">Tutar</th>
+                        </tr>
+                      </thead>
+                      <tbody className={`divide-y ${isDark ? 'divide-neutral-800' : 'divide-gray-100'}`}> 
+                        {orders.length > 30 ? (
+                          <List
+                            height={900}
+                            itemCount={orders.length}
+                            itemSize={56}
+                            width={1200}
+                          >
+                            {({ index, style }) => {
+                              const order = orders[index];
+                              const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
+                              const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
+                              const paymentStatus = order.payment?.status?.toLowerCase();
+                              const paymentLogo = getPaymentLogoInfo(order.payment?.method);
+                              const orderDate = new Date(order.createdAt);
+                              const firstProduct = order.products[0];
+                              const isSeen = seenOrderIds.has(order.id);
+                              return (
+                                <TableRowWrapper
+                                  key={order.id}
+                                  {...(enableListAnimations
+                                    ? {
+                                        initial: { opacity: 0, y: 10 },
+                                        animate: { opacity: 1, y: 0 },
+                                        transition: { delay: 0 },
+                                      }
+                                    : {})}
+                                  onClick={() => handleSelectOrder(order)}
+                                  style={{ ...style, contentVisibility: 'auto', containIntrinsicSize: '1px 56px' }}
+                                  className={`cursor-pointer transition-colors ${isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-gray-50'} ${!isSeen ? 'outline-2 outline-purple-400/50' : ''}`}
+                                >
+                                  {/* ...existing code... */}
+                                </TableRowWrapper>
+                              );
+                            }}
+                          </List>
+                        ) : (
+                          orders.map((order, index) => {
+                            const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
+                            const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
+                            const paymentStatus = order.payment?.status?.toLowerCase();
+                            const paymentLogo = getPaymentLogoInfo(order.payment?.method);
+                            const orderDate = new Date(order.createdAt);
+                            const firstProduct = order.products[0];
+                            const isSeen = seenOrderIds.has(order.id);
+                            return (
+                              <TableRowWrapper
+                                key={order.id}
+                                {...(enableListAnimations
+                                  ? {
+                                      initial: { opacity: 0, y: 10 },
+                                      animate: { opacity: 1, y: 0 },
+                                      transition: { delay: Math.min(index * 0.02, 0.2) },
+                                    }
+                                  : {})}
+                                onClick={() => handleSelectOrder(order)}
+                                style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 56px' }}
+                                className={`cursor-pointer transition-colors ${isDark ? 'hover:bg-neutral-800/50' : 'hover:bg-gray-50'} ${!isSeen ? 'outline-2 outline-purple-400/50' : ''}`}
+                              >
+                                {/* ...existing code... */}
+                              </TableRowWrapper>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                       order.status === 'processing' || order.status === 'confirmed' ? 'shadow-[inset_0_0_20px_rgba(168,85,247,0.15)]' :
                       order.status === 'pending' ? 'shadow-[inset_0_0_20px_rgba(245,158,11,0.15)]' :
                       order.status === 'cancelled' ? 'shadow-[inset_0_0_20px_rgba(239,68,68,0.15)]' :
