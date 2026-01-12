@@ -57,6 +57,28 @@ const statusConfig: Record<OrderStatus, { label: string; variant: 'warning' | 'i
 const TURKISH_MONTHS = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
 const TURKISH_DAYS = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
 
+function getPaymentLogoInfo(paymentMethod?: string): { src: string; alt: string; containerClass: (isDark: boolean) => string } | null {
+  if (paymentMethod === 'credit_card') {
+    return {
+      src: '/TR/Tr_White/iyzico_ile_ode_white.png',
+      alt: 'iyzico',
+      containerClass: (isDark) =>
+        `h-6 w-[76px] rounded-md flex items-center justify-center px-2 ${isDark ? 'bg-white/10 ring-1 ring-white/10' : 'bg-neutral-900'}`,
+    };
+  }
+
+  if (paymentMethod === 'bank_transfer') {
+    return {
+      src: '/TR/garanti.svg',
+      alt: 'Garanti Bankası',
+      containerClass: (isDark) =>
+        `h-6 w-[76px] rounded-md flex items-center justify-center px-2 ${isDark ? 'bg-white ring-1 ring-white/10' : 'bg-white border border-gray-200'}`,
+    };
+  }
+
+  return null;
+}
+
 // Telefon numarasını formatla: 5XXXXXXXXX -> 5XX XXX XX XX
 function formatPhoneNumber(phone: string): string {
   if (!phone) return '';
@@ -985,6 +1007,7 @@ export default function SiparislerPage() {
                       const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
                       const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
                       const paymentStatus = order.payment?.status?.toLowerCase();
+                      const paymentLogo = getPaymentLogoInfo(order.payment?.method);
                       const isSeen = seenOrderIds.has(order.id);
 
               return (
@@ -1044,7 +1067,7 @@ export default function SiparislerPage() {
                       <div className="flex items-start justify-between mb-3 sm:mb-4">
                         <div className="flex flex-col gap-1.5 sm:gap-2.5">
                           <div className="flex items-center gap-2">
-                            <span className={`text-base sm:text-[22px] font-semibold tracking-[-0.02em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            <span className={`text-lg sm:text-[26px] font-bold tracking-[-0.025em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
                               #{order.orderNumber}
                             </span>
                           </div>
@@ -1081,6 +1104,14 @@ export default function SiparislerPage() {
                           }`}>
                             {formatPrice(order.total)}
                           </span>
+                          {paymentLogo && (
+                            <div
+                              className={paymentLogo.containerClass(isDark)}
+                              title={order.payment?.method === 'credit_card' ? 'Kredi Kartı (iyzico)' : order.payment?.method === 'bank_transfer' ? 'Havale/EFT (Garanti)' : ''}
+                            >
+                              <img src={paymentLogo.src} alt={paymentLogo.alt} className="h-4 w-auto" loading="lazy" />
+                            </div>
+                          )}
                           {paymentStatus === 'paid' && (
                             <div className={`inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-[8px] sm:text-[10px] font-semibold uppercase tracking-wide ${
                               isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
@@ -1235,6 +1266,7 @@ export default function SiparislerPage() {
                   const customer = order.customerId ? getCustomerById(order.customerId) : undefined;
                   const displayCustomerName = (order.customerName || '').trim() || customer?.name || 'Misafir';
                   const paymentStatus = order.payment?.status?.toLowerCase();
+                  const paymentLogo = getPaymentLogoInfo(order.payment?.method);
                   const orderDate = new Date(order.createdAt);
                   const firstProduct = order.products[0];
                   const isSeen = seenOrderIds.has(order.id);
@@ -1347,15 +1379,25 @@ export default function SiparislerPage() {
 
                       {/* Ödeme */}
                       <td className="px-4 py-3">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          paymentStatus === 'paid' 
-                            ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
-                            : paymentStatus === 'pending' || paymentStatus === 'awaiting_payment'
-                              ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
-                              : (isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700')
-                        }`}>
-                          {paymentStatus === 'paid' ? '✓ Ödendi' : paymentStatus === 'pending' ? 'Bekliyor' : paymentStatus === 'awaiting_payment' ? 'Havale' : 'Başarısız'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {paymentLogo && (
+                            <div
+                              className={paymentLogo.containerClass(isDark)}
+                              title={order.payment?.method === 'credit_card' ? 'Kredi Kartı (iyzico)' : order.payment?.method === 'bank_transfer' ? 'Havale/EFT (Garanti)' : ''}
+                            >
+                              <img src={paymentLogo.src} alt={paymentLogo.alt} className="h-4 w-auto" loading="lazy" />
+                            </div>
+                          )}
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            paymentStatus === 'paid' 
+                              ? (isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
+                              : paymentStatus === 'pending' || paymentStatus === 'awaiting_payment'
+                                ? (isDark ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-700')
+                                : (isDark ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-700')
+                          }`}>
+                            {paymentStatus === 'paid' ? '✓ Ödendi' : paymentStatus === 'pending' ? 'Bekliyor' : paymentStatus === 'awaiting_payment' ? 'Havale' : 'Başarısız'}
+                          </span>
+                        </div>
                       </td>
 
                       {/* Tutar */}
@@ -1541,7 +1583,7 @@ export default function SiparislerPage() {
                 boxShadow: isDark ? '0 1px 20px rgba(168, 85, 247, 0.1)' : '0 1px 15px rgba(0, 0, 0, 0.05)'
               }}>
                 <div className="flex items-center gap-2 sm:gap-4">
-                  <div className="min-w-10 sm:min-w-12 h-10 sm:h-12 px-2 sm:px-3 rounded-xl sm:rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#e05a4c] to-[#f5a524] text-white font-bold text-base sm:text-lg whitespace-nowrap relative overflow-hidden group"
+                  <div className="min-w-16 sm:min-w-24 h-14 sm:h-16 px-3 sm:px-4 rounded-2xl sm:rounded-3xl flex items-center justify-center bg-gradient-to-br from-[#e05a4c] to-[#f5a524] text-white font-extrabold text-xl sm:text-2xl whitespace-nowrap relative overflow-hidden group"
                     style={{
                       boxShadow: '0 4px 20px rgba(224, 90, 76, 0.4), 0 0 40px rgba(245, 165, 36, 0.2)'
                     }}>
@@ -1550,14 +1592,16 @@ export default function SiparislerPage() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2 sm:gap-3">
-                      <h3 className={`text-lg sm:text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Sipariş Detayı</h3>
+                      <h3 className={`text-xl sm:text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Sipariş Detayı</h3>
                       <StatusBadge
                         status={statusConfig[selectedOrder.status]?.variant || 'info'}
                         text={statusConfig[selectedOrder.status]?.label || selectedOrder.status || 'Bilinmiyor'}
                         pulse={selectedOrder.status === 'pending'}
+                        size="md"
+                        className="text-sm sm:text-base"
                       />
                     </div>
-                    <p className={`text-xs sm:text-sm ${isDark ? 'text-neutral-400' : 'text-gray-500'}`}>Oluşturulma: {formatDate(selectedOrder.createdAt)}</p>
+                    <p className={`text-sm sm:text-base ${isDark ? 'text-neutral-300' : 'text-gray-600'}`}>Oluşturulma: {formatDate(selectedOrder.createdAt)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
@@ -1712,10 +1756,24 @@ export default function SiparislerPage() {
                             }
                           />
                         </div>
-                        <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
-                          {selectedOrder.payment.method === 'credit_card' ? '💳 Kredi Kartı' : selectedOrder.payment.method === 'bank_transfer' ? '🏦 Havale/EFT' : '💵 Kapıda Ödeme'}
-                          {selectedOrder.payment.cardLast4 && ` (**** ${selectedOrder.payment.cardLast4})`}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          {(() => {
+                            const paymentLogo = getPaymentLogoInfo(selectedOrder.payment?.method);
+                            if (!paymentLogo) return null;
+                            return (
+                              <div
+                                className={paymentLogo.containerClass(isDark)}
+                                title={selectedOrder.payment?.method === 'credit_card' ? 'Kredi Kartı (iyzico)' : selectedOrder.payment?.method === 'bank_transfer' ? 'Havale/EFT (Garanti)' : ''}
+                              >
+                                <img src={paymentLogo.src} alt={paymentLogo.alt} className="h-4 w-auto" loading="lazy" />
+                              </div>
+                            );
+                          })()}
+                          <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-gray-700'}`}>
+                            {selectedOrder.payment.method === 'credit_card' ? '💳 Kredi Kartı' : selectedOrder.payment.method === 'bank_transfer' ? '🏦 Havale/EFT' : '💵 Kapıda Ödeme'}
+                            {selectedOrder.payment.cardLast4 && ` (**** ${selectedOrder.payment.cardLast4})`}
+                          </p>
+                        </div>
                         {selectedOrder.payment.transactionId && (
                           <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>İşlem: {selectedOrder.payment.transactionId}</p>
                         )}
