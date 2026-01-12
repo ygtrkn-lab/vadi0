@@ -56,6 +56,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
+  const ogTitle = content.title;
+  const ogDescription = content.description;
+  const ogImageUrl = `${BASE_URL}/api/og?title=${encodeURIComponent(ogTitle)}&description=${encodeURIComponent(
+    ogDescription
+  )}`;
+
   return {
     title: content.metaTitle,
     description: content.metaDescription,
@@ -64,17 +70,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `${BASE_URL}/sehir/${city}`,
     },
     openGraph: {
-      title: content.title,
-      description: content.description,
+      title: ogTitle,
+      description: ogDescription,
       url: `${BASE_URL}/sehir/${city}`,
       siteName: 'Vadiler Çiçek',
       locale: 'tr_TR',
       type: 'website',
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: ogTitle,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: content.title,
-      description: content.description,
+      title: ogTitle,
+      description: ogDescription,
+      images: [ogImageUrl],
     },
   }
 }

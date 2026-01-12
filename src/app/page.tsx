@@ -209,10 +209,31 @@ const faqs = [
 ];
 
 export default function Home() {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Ana Sayfa',
+        item: `${baseUrl}/`,
+      },
+    ],
+  };
+
   return (
     <>
       {/* FAQ Schema for SEO */}
       <FAQSchema faqs={faqs} />
+
+      {/* BreadcrumbList Schema for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
 
       {/* Hidden SEO Content - Screen readers & crawlers only */}
       <div className="sr-only" aria-hidden="false">

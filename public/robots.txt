@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /arama
+
+Sitemap: https://vadiler.com/sitemap.xml
+Sitemap: https://vadiler.com/sitemap-products.xml
+Sitemap: https://vadiler.com/sitemap-categories.xml
+Sitemap: https://vadiler.com/sitemap-cities.xml
+Sitemap: https://vadiler.com/sitemap-special-days.xml

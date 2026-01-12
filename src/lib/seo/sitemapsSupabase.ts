@@ -5,6 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com';
 
 type CategoryRow = {
   slug: string;
+  created_at?: string | null;
   updated_at: string | null;
   is_active: boolean | null;
 };
@@ -13,13 +14,14 @@ type ProductRow = {
   id: number;
   slug: string;
   category: string;
+  created_at?: string | null;
   updated_at: string | null;
 };
 
 export async function fetchActiveCategorySitemapEntries(): Promise<MetadataRoute.Sitemap> {
   const { data, error } = await supabaseAdmin
     .from('categories')
-    .select('slug, updated_at, is_active')
+    .select('slug, created_at, updated_at, is_active')
     .eq('is_active', true)
     .order('order', { ascending: true });
 
@@ -30,7 +32,7 @@ export async function fetchActiveCategorySitemapEntries(): Promise<MetadataRoute
     return [
       {
         url: `${BASE_URL}/${row.slug}`,
-        lastModified: row.updated_at || undefined,
+        lastModified: row.updated_at || row.created_at || undefined,
         changeFrequency: 'daily',
         priority: 0.8,
       },
@@ -47,7 +49,7 @@ export async function fetchProductSitemapEntries(options: {
 
   const { data, error } = await supabaseAdmin
     .from('products')
-    .select('id, slug, category, updated_at')
+    .select('id, slug, category, created_at, updated_at')
     .order('id', { ascending: true })
     .range(offset, offset + limit - 1);
 
@@ -58,7 +60,7 @@ export async function fetchProductSitemapEntries(options: {
     return [
       {
         url: `${BASE_URL}/${row.category}/${row.slug}`,
-        lastModified: row.updated_at || undefined,
+        lastModified: row.updated_at || row.created_at || undefined,
         changeFrequency: 'weekly',
         priority: 0.7,
       },
@@ -76,7 +78,7 @@ export async function fetchProductSitemapEntriesFromOffset(offset: number): Prom
 
     const { data, error } = await supabaseAdmin
       .from('products')
-      .select('id, slug, category, updated_at')
+      .select('id, slug, category, created_at, updated_at')
       .order('id', { ascending: true })
       .range(from, to);
 
@@ -87,7 +89,7 @@ export async function fetchProductSitemapEntriesFromOffset(offset: number): Prom
       if (!row?.slug || !row?.category) continue;
       entries.push({
         url: `${BASE_URL}/${row.category}/${row.slug}`,
-        lastModified: row.updated_at || undefined,
+        lastModified: row.updated_at || row.created_at || undefined,
         changeFrequency: 'weekly',
         priority: 0.7,
       });

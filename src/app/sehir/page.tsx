@@ -22,6 +22,10 @@ import { createCitySlug } from '@/data/city-content'
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vadiler.com'
 
+const OG_TITLE = 'İstanbul Çiçek Teslimatı | Vadiler Çiçek'
+const OG_DESCRIPTION = "İstanbul'un 39 ilçesine aynı gün çiçek teslimatı! Taze çiçekler, hızlı teslimat."
+const OG_IMAGE_URL = `${BASE_URL}/api/og?title=${encodeURIComponent(OG_TITLE)}&description=${encodeURIComponent(OG_DESCRIPTION)}`
+
 export const metadata: Metadata = {
   title: 'İstanbul Çiçek Teslimatı | Tüm İlçelere Aynı Gün | Vadiler Çiçek',
   description: 'İstanbul\'un 39 ilçesine aynı gün çiçek teslimatı! Kadıköy, Beşiktaş, Şişli, Ataşehir, Bakırköy ve tüm İstanbul\'a taze çiçek gönderin. Vadiler Çiçek ile hızlı teslimat.',
@@ -30,12 +34,26 @@ export const metadata: Metadata = {
     canonical: `${BASE_URL}/sehir`,
   },
   openGraph: {
-    title: 'İstanbul Çiçek Teslimatı | Vadiler Çiçek',
-    description: 'İstanbul\'un 39 ilçesine aynı gün çiçek teslimatı! Taze çiçekler, hızlı teslimat.',
+    title: OG_TITLE,
+    description: OG_DESCRIPTION,
     url: `${BASE_URL}/sehir`,
     siteName: 'Vadiler Çiçek',
     locale: 'tr_TR',
     type: 'website',
+    images: [
+      {
+        url: OG_IMAGE_URL,
+        width: 1200,
+        height: 630,
+        alt: OG_TITLE,
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: OG_TITLE,
+    description: OG_DESCRIPTION,
+    images: [OG_IMAGE_URL],
   },
 }
 

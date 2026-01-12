@@ -55,6 +55,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const categoryName = categoryData.name || category.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
+  const ogTitle = `${categoryName} ✿ Aynı Gün Teslimat | Vadiler`;
+  const ogDescription = `${categoryName} - ${categoryProducts.length}+ çeşit! Aynı gün teslimat, ücretsiz kargo.`;
+  const ogImageCandidate = categoryProducts?.[0]?.image;
+  const ogImageUrl = ogImageCandidate
+    ? `${BASE_URL}/api/og?title=${encodeURIComponent(ogTitle)}&description=${encodeURIComponent(
+        ogDescription
+      )}&image=${encodeURIComponent(ogImageCandidate)}`
+    : `${BASE_URL}/api/og?title=${encodeURIComponent(ogTitle)}&description=${encodeURIComponent(ogDescription)}`;
+
   return {
     title: `${categoryName} ✿ Online Sipariş ➜ Aynı Gün Teslimat | Vadiler`,
     description: `✅ ${categoryName} - ${categoryProducts.length}+ çeşit! Aynı gün teslimat, ücretsiz kargo. Taze çiçek garantisi ile güvenle alışveriş yapın. Hemen sipariş verin!`,
@@ -63,17 +72,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `${BASE_URL}/${category}`,
     },
     openGraph: {
-      title: `${categoryName} ✿ Aynı Gün Teslimat | Vadiler`,
-      description: `${categoryName} - ${categoryProducts.length}+ çeşit! Aynı gün teslimat, ücretsiz kargo.`,
+      title: ogTitle,
+      description: ogDescription,
       url: `${BASE_URL}/${category}`,
       type: 'website',
       locale: 'tr_TR',
       siteName: 'Vadiler Çiçek',
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: ogTitle,
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${categoryName} ✿ Aynı Gün Teslimat | Vadiler`,
+      title: ogTitle,
       description: `${categoryName} - ${categoryProducts.length}+ çeşit! Taze çiçek garantisi.`,
+      images: [ogImageUrl],
     },
   };
 }

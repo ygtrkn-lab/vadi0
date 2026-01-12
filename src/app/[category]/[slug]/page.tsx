@@ -59,19 +59,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const ogTitle = product.metaTitle || product.meta_title || product.name;
+  const ogDescription = product.metaDescription || product.meta_description || product.description;
+  const ogImageUrl = `${BASE_URL}/api/og?title=${encodeURIComponent(ogTitle)}&description=${encodeURIComponent(
+    ogDescription
+  )}&image=${encodeURIComponent(product.image)}`;
+
   return {
     title: product.metaTitle || product.meta_title || `${product.name} | Vadiler Çiçek`,
     description: product.metaDescription || product.meta_description || product.description,
     keywords: product.tags?.join(', '),
     openGraph: {
-      title: product.metaTitle || product.meta_title || product.name,
-      description: product.metaDescription || product.meta_description || product.description,
+      title: ogTitle,
+      description: ogDescription,
       images: [
         {
-          url: product.image,
-          width: 500,
-          height: 500,
-          alt: product.name,
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: ogTitle,
         },
       ],
       type: 'website',
@@ -81,9 +87,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
     twitter: {
       card: 'summary_large_image',
-      title: product.metaTitle || product.meta_title || product.name,
-      description: product.metaDescription || product.meta_description || product.description,
-      images: [product.image],
+      title: ogTitle,
+      description: ogDescription,
+      images: [ogImageUrl],
     },
     alternates: {
       // Canonical her zaman ürünün kendi ana kategorisine işaret etmeli (duplicate önleme)

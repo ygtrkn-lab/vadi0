@@ -282,7 +282,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
           <div className="space-y-6">
             {/* Title and Basic Info */}
             <div className="bg-white p-6 relative z-[1000]">
-              <h1 className="text-2xl lg:text-3xl font-light text-gray-900 mb-3">{product.name}</h1>
+              <h2 className="text-2xl lg:text-3xl font-light text-gray-900 mb-3">{product.name}</h2>
               <p className="text-base text-gray-600 mb-6">{product.description}</p>
 
               {/* Rating and Stock */}

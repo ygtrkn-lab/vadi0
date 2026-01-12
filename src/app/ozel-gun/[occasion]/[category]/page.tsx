@@ -43,6 +43,7 @@ async function fetchCategoryBySlug(slug: string): Promise<CategoryRow | null> {
     .from('categories')
     .select('id, name, slug, description, image, is_active')
     .eq('slug', slug)
+    .eq('is_active', true)
     .limit(1)
     .single();
 
