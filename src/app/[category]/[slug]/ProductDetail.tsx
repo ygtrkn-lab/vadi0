@@ -469,18 +469,20 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
                   <span className="text-neutral-600">Aynı gün teslimat</span>
                 </motion.div>
 
-                {/* Seasonal Note */}
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.37 }}
-                  className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-lg"
-                >
-                  <span className="text-amber-500 text-sm">ℹ</span>
-                  <p className="text-xs text-amber-700 leading-relaxed">
-                    Mevsimlik olarak içerisindeki aksesuarlar değişebilir.
-                  </p>
-                </motion.div>
+                {/* Seasonal Note - Only for beyaz-papatyalar */}
+                {product.slug === 'beyaz-papatyalar' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.37 }}
+                    className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-lg"
+                  >
+                    <span className="text-amber-500 text-sm">ℹ</span>
+                    <p className="text-xs text-amber-700 leading-relaxed">
+                      Mevsimlik olarak içerisindeki aksesuarlar değişebilir.
+                    </p>
+                  </motion.div>
+                )}
 
                 {/* Quantity Selector */}
                 <motion.div
@@ -586,7 +588,58 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
 
         {/* Product Details Accordion */}
         <section className="border-t border-neutral-100">
-          <div className="max-w-3xl mx-auto px-5 lg:px-8">
+          <div className="max-w-5xl mx-auto px-5 lg:px-8 py-8">
+            {/* Desktop: Side by side layout */}
+            <div className="hidden lg:grid lg:grid-cols-3 lg:gap-8">
+              {/* Description */}
+              <div>
+                <h3 className="text-sm font-medium text-neutral-900 mb-3">Ürün Açıklaması</h3>
+                <p className="text-sm text-neutral-600 leading-relaxed">
+                  {product.longDescription || product.description}
+                </p>
+              </div>
+
+              {/* Care Instructions */}
+              <div>
+                <h3 className="text-sm font-medium text-neutral-900 mb-3">Bakım Bilgileri</h3>
+                <div className="text-sm text-neutral-600">
+                  {product.careInstructions && product.careInstructions.length > 0 ? (
+                    <ul className="space-y-2">
+                      {product.careInstructions.map((c, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-neutral-300 mt-0.5">•</span>
+                          <span>{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>Serin ve gölgeli bir ortamda tutun. Günlük su değişimi önerilir.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Delivery */}
+              <div>
+                <h3 className="text-sm font-medium text-neutral-900 mb-3">Teslimat Bilgileri</h3>
+                <ul className="text-sm text-neutral-600 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-neutral-300 mt-0.5">•</span>
+                    <span>İstanbul içi aynı gün teslimat</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-neutral-300 mt-0.5">•</span>
+                    <span>Özenli ve güvenli paketleme</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-neutral-300 mt-0.5">•</span>
+                    <span>Teslimat saatini sepette belirleyebilirsiniz</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Mobile: Accordion layout */}
+            <div className="lg:hidden">
             {/* Description */}
             <div className="border-b border-neutral-100">
               <button
@@ -682,6 +735,7 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
             </div>
           </div>
         </section>
