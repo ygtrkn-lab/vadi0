@@ -165,8 +165,8 @@ export default function ProductGalleryDesktop({
   }, [selectedImage]);
 
   return (
-    <div className="hidden lg:flex flex-col gap-4">
-      {/* Main Gallery - Clean Style - 1:1 aspect ratio for consistency */}
+    <div className="hidden lg:flex flex-col gap-3">
+      {/* Main Gallery - Clean Style */}
       <div
         ref={containerRef}
         onMouseMove={isCurrentVideo ? undefined : handleMouseMove}
@@ -179,7 +179,7 @@ export default function ProductGalleryDesktop({
         }}
         onTouchMove={isCurrentVideo ? undefined : handleTouchMove}
         onTouchEnd={isCurrentVideo ? undefined : handleTouchEnd}
-        className={`relative rounded-xl overflow-hidden bg-[#fafafa] aspect-square select-none group ${!isCurrentVideo ? 'cursor-zoom-in' : ''}`}
+        className={`relative rounded-lg overflow-hidden bg-neutral-100 aspect-square max-h-[500px] select-none group ${!isCurrentVideo ? 'cursor-zoom-in' : ''}`}
       >
         {/* Subtle vignette (placed below media) */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-black/5 z-0 pointer-events-none" />

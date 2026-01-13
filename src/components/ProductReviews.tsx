@@ -224,18 +224,18 @@ export default function ProductReviews({
             <button
               key={rating}
               onClick={() => setFilterRating(filterRating === rating ? null : rating)}
-              className={`flex items-center gap-3 w-full hover:bg-gray-50 p-3 rounded-xl transition-all ${
-                filterRating === rating ? 'bg-gradient-to-r from-yellow-50 to-orange-50 shadow-sm' : ''
+              className={`flex items-center gap-2 w-full py-1 text-xs ${
+                filterRating === rating ? 'text-gray-900' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <span className="text-sm font-semibold min-w-[65px] text-gray-700">{rating} yıldız</span>
-              <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+              <span className="min-w-[40px]">{rating} yıldız</span>
+              <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-500 ease-out"
+                  className="h-full bg-gray-400 transition-all"
                   style={{ width: `${percentage}%` }}
                 />
               </div>
-              <span className="text-sm font-bold text-gray-900 min-w-[45px] text-right">{count}</span>
+              <span className="min-w-[24px] text-right text-gray-400">{count}</span>
             </button>
           );
         })}
@@ -248,65 +248,43 @@ export default function ProductReviews({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Review Summary */}
+    <div className="space-y-4">
+      {/* Review Summary - Minimal */}
       {stats && stats.totalReviews > 0 && (
-        <div className="bg-gradient-to-br from-white to-gray-50 rounded-3xl p-8 shadow-lg border border-gray-100">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Average Rating */}
-            <div className="text-center md:text-left">
-              <div className="flex items-center gap-6 mb-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#e05a4c]/20 to-[#e05a4c]/5 rounded-2xl blur-xl"></div>
-                  <div className="relative text-6xl font-black bg-gradient-to-br from-[#e05a4c] to-[#d04a3c] bg-clip-text text-transparent">
-                    {stats.averageRating.toFixed(1)}
-                  </div>
-                </div>
-                <div>
-                  {renderStars(Math.round(stats.averageRating), 24)}
-                  <p className="text-sm font-medium text-gray-600 mt-2">
-                    <span className="font-bold text-gray-900">{stats.totalReviews}</span> müşteri değerlendirmesi
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-3 text-sm">
-                {stats.verifiedPurchaseCount > 0 && (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-full font-medium">
-                    <CheckCircle size={16} className="text-green-600" />
-                    {stats.verifiedPurchaseCount} doğrulanmış
-                  </span>
-                )}
-                {stats.withPhotosCount > 0 && (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full font-medium">
-                    <Camera size={16} />
-                    {stats.withPhotosCount} fotoğraflı
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Rating Distribution */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 py-4 border-b border-gray-100">
+          {/* Average Rating - Compact */}
+          <div className="flex items-center gap-3">
+            <span className="text-3xl font-semibold text-gray-900">{stats.averageRating.toFixed(1)}</span>
             <div>
-              {renderRatingDistribution()}
+              {renderStars(Math.round(stats.averageRating), 14)}
+              <p className="text-xs text-gray-500 mt-0.5">{stats.totalReviews} değerlendirme</p>
             </div>
+          </div>
+          
+          {/* Badges - Inline */}
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            {stats.verifiedPurchaseCount > 0 && (
+              <span className="flex items-center gap-1">
+                <CheckCircle size={12} className="text-green-600" />
+                {stats.verifiedPurchaseCount} doğrulanmış
+              </span>
+            )}
           </div>
         </div>
       )}
 
-      {/* Write Review Button */}
+      {/* Write Review Button - Minimal */}
       {currentCustomerId ? (
         <button
           onClick={() => setShowReviewForm(!showReviewForm)}
-          className="w-full py-3 px-6 bg-white border-2 border-gray-200 rounded-xl font-medium 
-            hover:border-[#e05a4c] hover:text-[#e05a4c] transition-all"
+          className="text-sm text-gray-600 hover:text-gray-900 underline underline-offset-2"
         >
-          {showReviewForm ? 'İptal' : 'Değerlendirme Yaz'}
+          {showReviewForm ? 'İptal' : 'Değerlendirme yaz'}
         </button>
       ) : (
         <a
           href="/giris"
-          className="block w-full py-3 px-6 bg-gray-50 border-2 border-gray-200 rounded-xl font-medium 
-            text-center text-gray-600 hover:border-[#e05a4c] hover:text-[#e05a4c] transition-all"
+          className="text-sm text-gray-500 hover:text-gray-700"
         >
           Değerlendirme yazmak için giriş yapın
         </a>
@@ -322,22 +300,21 @@ export default function ProductReviews({
             onSubmit={handleSubmitReview}
             className="bg-white rounded-2xl p-6 shadow-sm space-y-4"
           >
-            <h3 className="text-lg font-semibold">Değerlendirmenizi Paylaşın</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Değerlendirme Yaz</h3>
 
             {/* Rating */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Puan</label>
-              <div className="flex gap-2">
+            <div className="mb-3">
+              <div className="flex gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
                     onClick={() => setFormData({ ...formData, rating: star })}
-                    className="p-1"
+                    className="p-0.5"
                   >
                     <Star
-                      size={32}
-                      className={star <= formData.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+                      size={20}
+                      className={star <= formData.rating ? 'fill-gray-900 text-gray-900' : 'text-gray-200'}
                     />
                   </button>
                 ))}
@@ -345,25 +322,23 @@ export default function ProductReviews({
             </div>
 
             {/* Title */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Başlık</label>
+            <div className="mb-3">
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl"
-                placeholder="Örn: Harika bir ürün!"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400"
+                placeholder="Başlık"
                 required
               />
             </div>
 
             {/* Comment */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Yorumunuz</label>
+            <div className="mb-3">
               <textarea
                 value={formData.comment}
                 onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl min-h-[100px]"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg min-h-[80px] focus:outline-none focus:border-gray-400"
                 placeholder="Deneyiminizi paylaşın..."
                 required
               />
@@ -372,8 +347,7 @@ export default function ProductReviews({
             {/* Submit */}
             <button
               type="submit"
-              className="w-full py-3 px-6 bg-[#e05a4c] text-white rounded-xl font-semibold 
-                hover:opacity-90 transition-all"
+              className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-colors"
             >
               Gönder
             </button>
@@ -381,13 +355,12 @@ export default function ProductReviews({
         )}
       </AnimatePresence>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <Filter size={18} className="text-gray-500" />
+      {/* Filters - Minimal */}
+      <div className="flex items-center gap-2 text-xs">
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as any)}
-          className="px-4 py-2 border border-gray-300 rounded-xl text-sm"
+          className="px-2 py-1 border border-gray-200 rounded text-gray-600 bg-transparent focus:outline-none"
         >
           <option value="newest">En Yeni</option>
           <option value="helpful">En Yararlı</option>
@@ -398,77 +371,56 @@ export default function ProductReviews({
         {filterRating && (
           <button
             onClick={() => setFilterRating(null)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full text-sm"
+            className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-gray-600"
           >
-            {filterRating} yıldız <X size={14} />
+            {filterRating}★ <X size={10} />
           </button>
         )}
       </div>
 
       {/* Reviews List */}
-      <div className="space-y-4">
+      <div className="space-y-0 divide-y divide-gray-100">
         {reviews.length === 0 ? (
-          <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-3xl shadow-inner">
-            <div className="relative inline-block mb-4">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#e05a4c]/20 to-[#e05a4c]/5 rounded-full blur-xl"></div>
-              <AlertCircle size={64} className="relative text-gray-300" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Henüz Değerlendirme Yok</h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-6">
-              Bu ürün için henüz müşteri değerlendirmesi bulunmuyor. İlk değerlendirmeyi siz yapın!
-            </p>
+          <div className="py-8 text-center">
+            <p className="text-sm text-gray-400">Henüz değerlendirme yok</p>
             {currentCustomerId && customerOrders.length > 0 && (
               <button
                 onClick={() => setShowReviewForm(true)}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#e05a4c] to-[#d04a3c] text-white rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all"
+                className="mt-2 text-sm text-gray-600 underline underline-offset-2 hover:text-gray-900"
               >
-                <Star size={18} className="fill-current" />
-                İlk Değerlendirmeyi Yap
+                İlk değerlendirmeyi yap
               </button>
             )}
           </div>
         ) : (
           reviews.map((review, index) => (
-            <motion.div
+            <div
               key={review.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-white rounded-2xl p-6 shadow-sm"
+              className="py-4"
             >
               {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold">{review.customerName || 'Anonim'}</span>
-                    {review.isVerifiedPurchase && (
-                      <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
-                        <CheckCircle size={12} />
-                        Doğrulanmış Alım
-                      </span>
-                    )}
-                  </div>
-                  {renderStars(review.rating)}
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-900">{review.customerName || 'Anonim'}</span>
+                  {review.isVerifiedPurchase && (
+                    <span className="text-[10px] text-green-600">✓ Doğrulanmış</span>
+                  )}
+                  {renderStars(review.rating, 12)}
                 </div>
-                <span className="text-sm text-gray-500">
+                <span className="text-xs text-gray-400">
                   {new Date(review.createdAt).toLocaleDateString('tr-TR')}
                 </span>
               </div>
 
               {/* Title */}
-              <h4 className="font-semibold text-lg mb-2">{review.title}</h4>
+              {review.title && <p className="text-sm font-medium text-gray-900 mb-1">{review.title}</p>}
 
               {/* Comment */}
-              <p className="text-gray-700 mb-4">{review.comment}</p>
-
-              {/* Auto Reply */}
-              <div className="mb-4 rounded-xl bg-gray-50 border border-gray-100 p-3 text-sm text-gray-700">
-                {autoReply}
-              </div>
+              <p className="text-sm text-gray-600 mb-3">{review.comment}</p>
 
               {/* Photos */}
               {review.photos && review.photos.length > 0 && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-1.5 mb-3">
                   {review.photos.map((photo, idx) => (
                     <button
                       key={idx}
@@ -477,7 +429,7 @@ export default function ProductReviews({
                         setSelectedImageIndex(idx);
                         setImageModalOpen(true);
                       }}
-                      className="relative w-20 h-20 rounded-lg overflow-hidden"
+                      className="relative w-12 h-12 rounded overflow-hidden"
                     >
                       <Image
                         src={photo}
@@ -490,49 +442,47 @@ export default function ProductReviews({
                 </div>
               )}
 
-              {/* Helpful Votes */}
-              <div className="flex items-center gap-4 pt-4 border-t border-gray-100">
+              {/* Helpful Votes - Minimal */}
+              <div className="flex items-center gap-3 text-xs text-gray-400">
                 <button
                   onClick={() => handleVote(review.id, 'helpful')}
                   disabled={!!votedReviews[review.id]}
-                  className={`flex items-center gap-2 text-sm transition-colors ${
+                  className={`flex items-center gap-1 transition-colors ${
                     votedReviews[review.id] === 'helpful'
-                      ? 'text-green-600 font-semibold'
+                      ? 'text-gray-900'
                       : votedReviews[review.id]
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-green-600 cursor-pointer'
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'hover:text-gray-600 cursor-pointer'
                   }`}
                 >
-                  <ThumbsUp size={16} className={votedReviews[review.id] === 'helpful' ? 'fill-current' : ''} />
+                  <ThumbsUp size={12} className={votedReviews[review.id] === 'helpful' ? 'fill-current' : ''} />
                   <span>Yararlı ({review.helpfulCount || 0})</span>
                 </button>
                 <button
                   onClick={() => handleVote(review.id, 'unhelpful')}
                   disabled={!!votedReviews[review.id]}
-                  className={`flex items-center gap-2 text-sm transition-colors ${
+                  className={`flex items-center gap-1 transition-colors ${
                     votedReviews[review.id] === 'unhelpful'
-                      ? 'text-red-600 font-semibold'
+                      ? 'text-gray-900'
                       : votedReviews[review.id]
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-red-600 cursor-pointer'
+                      ? 'text-gray-300 cursor-not-allowed'
+                      : 'hover:text-gray-600 cursor-pointer'
                   }`}
                 >
-                  <ThumbsDown size={16} className={votedReviews[review.id] === 'unhelpful' ? 'fill-current' : ''} />
-                  <span>Yararlı Değil ({review.unhelpfulCount || 0})</span>
+                  <ThumbsDown size={12} className={votedReviews[review.id] === 'unhelpful' ? 'fill-current' : ''} />
+                  <span>({review.unhelpfulCount || 0})</span>
                 </button>
               </div>
 
-              {/* Seller Response */}
+              {/* Seller Response - Minimal */}
               {review.sellerResponse && (
-                <div className="mt-4 p-4 bg-blue-50 rounded-xl">
-                  <p className="text-sm font-semibold text-blue-900 mb-1">Satıcı Yanıtı</p>
-                  <p className="text-sm text-blue-800">{review.sellerResponse.message}</p>
-                  <p className="text-xs text-blue-600 mt-2">
-                    {new Date(review.sellerResponse.respondedAt).toLocaleDateString('tr-TR')}
+                <div className="mt-3 pl-3 border-l-2 border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    <span className="font-medium text-gray-700">Satıcı:</span> {review.sellerResponse.message}
                   </p>
                 </div>
               )}
-            </motion.div>
+            </div>
           ))
         )}
       </div>

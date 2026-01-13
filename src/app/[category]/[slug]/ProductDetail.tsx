@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, ChevronRight, Heart, Minus, Package, Plus, ShoppingCart, Star, Truck, Share2, AlertCircle, X, Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { AnimatePresence, motion, useScroll, useTransform, useMotionValueEvent } from "framer-motion";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Heart, Minus, Plus, ShoppingBag, Star, Share2, X, Play, Pause, Volume2, VolumeX, ChevronRight } from "lucide-react";
 import type { Product } from "@/data/products";
 import { Header, Footer } from "@/components";
 import ProductReviews from "@/components/ProductReviews";
@@ -41,16 +41,23 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
   const SUPPORT_WHATSAPP_NUMBER = '908503074876';
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [activeSection, setActiveSection] = useState<"desc" | "care" | "delivery">("desc");
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isAddedToCart, setIsAddedToCart] = useState(false);
-  const [showTopBar, setShowTopBar] = useState(false);
+  const [showFloatingBar, setShowFloatingBar] = useState(false);
   const [showShareToast, setShowShareToast] = useState(false);
+  
+  // Refs
+  const heroRef = useRef<HTMLDivElement>(null);
+  const productInfoRef = useRef<HTMLDivElement>(null);
   
   // Video state for mobile
   const mobileVideoRef = useRef<HTMLVideoElement>(null);
   const [isMobileVideoPlaying, setIsMobileVideoPlaying] = useState(false);
   const [isMobileVideoMuted, setIsMobileVideoMuted] = useState(true);
+
+  // Scroll tracking for floating bar
+  const { scrollY } = useScroll();
 
   const { addToCart } = useCart();
   const { state: customerState, addToFavorites, removeFromFavorites, isFavorite } = useCustomer();
@@ -93,23 +100,21 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]); // Only track when product changes
 
+  // Scroll-based floating bar visibility
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const shouldShow = latest > 400;
+    setShowFloatingBar(shouldShow);
+    
+    if (shouldShow) {
+      window.dispatchEvent(new Event('hideHeader'));
+    } else {
+      window.dispatchEvent(new Event('showHeader'));
+    }
+  });
+
+  // Cleanup on unmount
   useEffect(() => {
-    const onScroll = () => {
-      const shouldShow = window.scrollY > 320;
-      setShowTopBar(shouldShow);
-      
-      // Hide/show header based on scroll position
-      if (shouldShow) {
-        window.dispatchEvent(new Event('hideHeader'));
-      } else {
-        window.dispatchEvent(new Event('showHeader'));
-      }
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      // Always show header when leaving this page
       window.dispatchEvent(new Event('showHeader'));
     };
   }, []);
@@ -216,32 +221,10 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const sectionCard = (id: "desc" | "care" | "delivery", title: string, content: React.ReactNode) => (
-    <div className="relative z-[1] rounded-2xl border border-slate-100 bg-white/80 backdrop-blur shadow-[0_14px_40px_rgba(15,23,42,0.06)] p-4 sm:p-5">
-      <button
-        className="w-full flex items-center justify-between text-left"
-        onClick={() => setActiveSection((prev) => (prev === id ? ("desc" as typeof id) : id))}
-      >
-        <span className="text-sm font-semibold text-slate-900">{title}</span>
-        <motion.div animate={{ rotate: activeSection === id ? 90 : 0 }}>
-          <ChevronRight size={18} className="text-slate-400" />
-        </motion.div>
-      </button>
-      <AnimatePresence initial={false}>
-        {activeSection === id && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.2 }}
-            className="pt-3 text-sm text-slate-600 space-y-3"
-          >
-            {content}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
+  // Toggle accordion section
+  const toggleSection = useCallback((section: string) => {
+    setExpandedSection(prev => prev === section ? null : section);
+  }, []);
 
   const WEEKLY_CAMPAIGN_SLUG = 'haftanin-cicek-kampanyalari-vadiler-com';
   const isWeeklyCampaign =
@@ -251,252 +234,40 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
     <>
       <Header />
 
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-white pt-36 lg:pt-56 pb-16 product-detail-page">
-        <div className="container-custom space-y-4 lg:space-y-5">
-          <nav className="flex items-center gap-1.5 text-[11px] text-slate-500">
-            <Link href="/" className="hover:text-primary-500">Ana Sayfa</Link>
-            <ChevronRight size={12} />
-            <Link href={`/${product.category}`} className="hover:text-primary-500">
-              {categoryName}
-            </Link>
-            <ChevronRight size={12} />
-            <span className="text-slate-800 font-medium truncate max-w-[150px]">{product.name}</span>
-          </nav>
-
-        {/* Desktop Layout - Clean 2 Column Grid */}
-        <div className="hidden lg:grid lg:grid-cols-2 gap-6 lg:gap-12 items-start">
-          {/* Left Column: Gallery (Sticky) */}
-          <div className="lg:sticky lg:top-28 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
-            <ProductGalleryDesktop
-              images={images}
-              productName={product.name}
-              selectedImage={selectedImage}
-              onImageSelect={setSelectedImage}
-              onFullscreenOpen={() => setIsImageModalOpen(true)}
-              discount={product.discount}
-              showWeeklyCampaignBadge={isWeeklyCampaign}
-            />
+      <main className="min-h-screen bg-white pt-24 lg:pt-52">
+        {/* Hero Section */}
+        <section ref={heroRef} className="relative">
+          {/* Breadcrumb */}
+          <div className="px-4 lg:px-8 py-3 lg:max-w-6xl lg:mx-auto">
+            <nav className="flex items-center gap-1.5 text-xs text-neutral-500">
+              <Link href="/" className="hover:text-neutral-900 transition-colors whitespace-nowrap">Ana Sayfa</Link>
+              <ChevronRight size={12} className="text-neutral-300 shrink-0" />
+              <Link href={`/${product.category}`} className="hover:text-neutral-900 transition-colors whitespace-nowrap">
+                {categoryName}
+              </Link>
+              <ChevronRight size={12} className="text-neutral-300 shrink-0" />
+              <span className="text-neutral-900 truncate max-w-[150px] lg:truncate-none lg:max-w-none">{product.name}</span>
+            </nav>
           </div>
 
-          {/* Right Column: Product Information */}
-          <div className="space-y-6">
-            {/* Title and Basic Info */}
-            <div className="bg-white p-6 relative z-[1000]">
-              <h2 className="text-2xl lg:text-3xl font-light text-gray-900 mb-3">{product.name}</h2>
-              <p className="text-base text-gray-600 mb-6">{product.description}</p>
-
-              {/* Rating and Stock */}
-              <div className="flex items-center justify-between mb-6">
-                {product.reviewCount > 0 && (
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`w-5 h-5 ${i < Math.round(product.rating) ? "text-amber-400 fill-current" : "text-gray-300"}`} />
-                      ))}
-                    </div>
-                    <span className="text-gray-600 text-sm">({product.reviewCount} değerlendirme)</span>
-                  </div>
-                )}
-
-                {/* Stock Status */}
-                {product.inStock ? (
-                  <div className="flex items-center space-x-2">
-                    <Check className="w-5 h-5 text-green-500" />
-                    <span className="text-green-700 text-sm font-medium">Stokta Mevcut</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full" />
-                    <span className="text-red-700 text-sm font-medium">Stokta Yok</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Price */}
-            <div className="bg-white p-6 relative z-[1000]">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <span className="text-3xl font-light text-gray-900">{formatPrice(product.price)}</span>
-                    {product.oldPrice > product.price && (
-                      <div className="flex items-center space-x-2">
-                        <span className="text-base text-gray-500 line-through">{formatPrice(product.oldPrice)}</span>
-                        <span className="bg-[#e05a4c] text-white text-xs font-medium px-2 py-1 rounded">
-                          %{Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)} İndirim
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-600">Hızlı Teslimat</div>
-                    <div className="text-sm font-medium text-gray-900">2-4 Saat</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Delivery Info (selection moved to cart) */}
-            <div className="bg-white p-6 space-y-3 relative z-[1000]">
-              <p className="text-sm font-medium text-gray-700">Teslimat Bilgileri</p>
-              <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 flex items-start gap-3">
-                <Truck className="w-5 h-5 text-emerald-600 mt-0.5" />
-                <div className="text-sm text-gray-700 space-y-1">
-                  <p className="font-semibold text-gray-900">Teslimatı sepetten seçin</p>
-                  <p className="text-gray-600">Teslimat tarih ve saatini sepet adımında belirleyebilirsiniz.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quantity and Add to Cart */}
-            <div className="bg-white p-6 space-y-6 lg:sticky lg:top-28 lg:z-[1000]">
-              {/* Quantity Selector */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">Adet</label>
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                    disabled={quantity <= 1}
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="w-16 text-center text-lg font-medium">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={!canAddToCart}
-                    className={`relative overflow-hidden group py-3 px-6 rounded-full font-medium text-base transition-all duration-300 flex items-center justify-center space-x-2 ${
-                      canAddToCart
-                        ? isAddedToCart
-                          ? "bg-emerald-500 text-white hover:bg-emerald-600 hover:shadow-lg hover:-translate-y-1"
-                          : "bg-[#e05a4c] text-white hover:bg-[#d43a2a] hover:shadow-lg hover:-translate-y-1"
-                        : "bg-gray-200 text-gray-400 cursor-not-allowed opacity-60"
-                    }`}
-                  >
-                    <div className={`absolute inset-0 transform -skew-x-12 -translate-x-full transition-transform duration-700 ${canAddToCart && !isAddedToCart ? "bg-white/20 group-hover:translate-x-full" : ""}`} />
-                    {isAddedToCart ? <Check className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
-                    <span>{product.inStock ? (isAddedToCart ? "Sepette" : "Sepete Ekle") : "Stokta Yok"}</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={handleWishlist}
-                    className={`py-3 px-4 rounded-full font-medium transition-colors flex items-center justify-center space-x-2 ${
-                      isWishlisted
-                        ? "bg-[#e05a4c]/10 text-[#e05a4c] border border-[#e05a4c]/30"
-                        : "bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100"
-                    }`}
-                  >
-                    <Heart className={`w-4 h-4 ${isWishlisted ? "fill-current" : ""}`} />
-                    <span>Favoriler</span>
-                  </button>
-
-                  <button
-                    onClick={handleShare}
-                    className="py-3 px-4 rounded-full font-medium bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    <span>Paylaş</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-          {/* Mobile Layout */}
-          <div className="lg:hidden mx-auto w-full max-w-lg">
-            <div className="grid gap-4 lg:gap-6 items-start">
-              <div className="relative rounded-3xl overflow-hidden bg-slate-100 shadow-[0_20px_60px_rgba(15,23,42,0.10)] lg:max-h-[60vh]">
-              {/* Desktop rail thumbnails with video support */}
-              <div className="hidden lg:flex flex-col gap-2 absolute left-4 top-4 z-20 max-h-[60vh] overflow-auto pr-1">
-                {images.map((mediaUrl, idx) => {
-                  const isVideo = getMediaType(mediaUrl) === 'video';
-                  return (
-                    <button
-                      key={`rail-${idx}`}
-                      onClick={() => setSelectedImage(idx)}
-                      className={`relative h-16 w-16 rounded-2xl overflow-hidden border backdrop-blur transition-all ${
-                        selectedImage === idx ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/40" : "border-white/40 hover:border-white/80"
-                      } shadow-sm`}
-                    >
-                      {isVideo ? (
-                        <div className="relative w-full h-full bg-gray-900">
-                          <video src={mediaUrl} className="w-full h-full object-cover" muted playsInline />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-6 h-6 rounded-full bg-black/50 flex items-center justify-center">
-                              <Play size={10} className="text-white ml-0.5" />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <Image src={mediaUrl} alt={`${product.name}-rail-${idx}`} fill className="object-cover" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Mobile main media display - 1:1 aspect ratio with video support */}
-              <motion.div layout className="relative aspect-square w-full flex items-center justify-center">
-                {isCurrentVideo ? (
-                  // Video display
-                  <div className="w-full h-full relative flex items-center justify-center">
-                    <video
-                      ref={mobileVideoRef}
-                      src={currentMedia}
-                      className="w-full h-full object-contain"
-                      loop
-                      muted={isMobileVideoMuted}
-                      playsInline
-                      autoPlay
-                      onClick={() => {
-                        if (mobileVideoRef.current) {
-                          if (isMobileVideoPlaying) {
-                            mobileVideoRef.current.pause();
-                          } else {
-                            mobileVideoRef.current.play();
-                          }
-                          setIsMobileVideoPlaying(!isMobileVideoPlaying);
-                        }
-                      }}
-                      onPlay={() => setIsMobileVideoPlaying(true)}
-                      onPause={() => setIsMobileVideoPlaying(false)}
-                    />
-                    
-                    {/* Video play button overlay */}
-                    <AnimatePresence>
-                      {!isMobileVideoPlaying && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                        >
-                          <div className="w-16 h-16 rounded-full bg-black/60 text-white flex items-center justify-center">
-                            <Play size={28} className="ml-1" />
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Video controls */}
-                    <div className="absolute bottom-4 left-4 flex items-center gap-2 z-20">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
+          {/* Main Hero Grid */}
+          <div className="lg:grid lg:grid-cols-[480px_1fr] xl:grid-cols-[520px_1fr] lg:gap-10 lg:max-w-6xl lg:mx-auto lg:px-8">
+            {/* Left: Gallery */}
+            <div className="relative lg:sticky lg:top-20 lg:self-start">
+              {/* Mobile Gallery */}
+              <div className="lg:hidden">
+                <div className="relative aspect-square">
+                  {isCurrentVideo ? (
+                    <div className="w-full h-full relative">
+                      <video
+                        ref={mobileVideoRef}
+                        src={currentMedia}
+                        className="w-full h-full object-cover"
+                        loop
+                        muted={isMobileVideoMuted}
+                        playsInline
+                        autoPlay
+                        onClick={() => {
                           if (mobileVideoRef.current) {
                             if (isMobileVideoPlaying) {
                               mobileVideoRef.current.pause();
@@ -506,369 +277,421 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
                             setIsMobileVideoPlaying(!isMobileVideoPlaying);
                           }
                         }}
-                        className="h-10 w-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg"
-                      >
-                        {isMobileVideoPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (mobileVideoRef.current) {
-                            mobileVideoRef.current.muted = !isMobileVideoMuted;
-                            setIsMobileVideoMuted(!isMobileVideoMuted);
-                          }
-                        }}
-                        className="h-10 w-10 rounded-full bg-white/90 text-gray-700 flex items-center justify-center shadow-lg"
-                      >
-                        {isMobileVideoMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                      </button>
+                        onPlay={() => setIsMobileVideoPlaying(true)}
+                        onPause={() => setIsMobileVideoPlaying(false)}
+                      />
+                      {/* Video Controls */}
+                      <div className="absolute bottom-4 right-4 flex gap-2">
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (mobileVideoRef.current) {
+                              mobileVideoRef.current.muted = !isMobileVideoMuted;
+                              setIsMobileVideoMuted(!isMobileVideoMuted);
+                            }
+                          }}
+                          className="h-10 w-10 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center"
+                        >
+                          {isMobileVideoMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                        </motion.button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  // Image display
-                  <>
-                    <Image
-                      src={currentMedia}
-                      alt={product.name}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 60vw"
-                      className="object-contain"
-                      priority
-                    />
-                    {product.discount > 0 && (
-                      <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full text-white text-xs font-semibold bg-[#e05a4c] shadow-lg">
-                        -%{product.discount}
-                      </div>
-                    )}
-                    {isWeeklyCampaign && (
-                      <div className="absolute left-4 top-14 z-20">
-                        <Image
-                          src="/TR/bugune-ozel.png"
-                          alt="Bugüne Özel"
-                          width={80}
-                          height={80}
-                          className="h-16 w-16 drop-shadow"
-                        />
-                      </div>
-                    )}
-                    <button
-                      onClick={() => setIsImageModalOpen(true)}
-                      className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-white/90 text-slate-800 px-5 py-2 text-xs font-semibold shadow-md"
-                    >
-                      Tam ekran
-                    </button>
-                  </>
-                )}
-              </motion.div>
-
-              {/* Mobile thumbnail strip with video support */}
-              {images.length > 1 && (
-                <div className="flex gap-2 px-4 py-3 overflow-x-auto bg-white/80 backdrop-blur border-t border-slate-100 lg:hidden">
-                  {images.map((mediaUrl, idx) => {
-                    const isVideo = getMediaType(mediaUrl) === 'video';
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedImage(idx)}
-                        className={`relative h-16 w-16 rounded-2xl overflow-hidden border transition-all ${
-                          selectedImage === idx ? "border-[#e05a4c] ring-2 ring-[#e05a4c]/30" : "border-transparent opacity-75"
-                        }`}
-                      >
-                        {isVideo ? (
-                          <div className="relative w-full h-full bg-gray-900">
-                            <video src={mediaUrl} className="w-full h-full object-cover" muted playsInline />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="w-6 h-6 rounded-full bg-black/50 flex items-center justify-center">
-                                <Play size={10} className="text-white ml-0.5" />
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <Image src={mediaUrl} alt={`${product.name}-${idx}`} fill className="object-cover" />
-                        )}
-                      </button>
-                    );
-                  })}
+                  ) : (
+                    <>
+                      <Image
+                        src={currentMedia}
+                        alt={product.name}
+                        fill
+                        sizes="100vw"
+                        className="object-cover"
+                        priority
+                      />
+                      {/* Discount Badge */}
+                      {product.discount > 0 && (
+                        <div className="absolute top-4 left-4 px-2.5 py-1 rounded-full text-xs font-medium bg-black text-white">
+                          -{product.discount}%
+                        </div>
+                      )}
+                      {/* Weekly Campaign Badge */}
+                      {isWeeklyCampaign && (
+                        <div className="absolute top-4 right-4">
+                          <Image src="/TR/bugune-ozel.png" alt="Bugüne Özel" width={60} height={60} className="drop-shadow-lg" />
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-              )}
+                
+                {/* Thumbnail Strip */}
+                {images.length > 1 && (
+                  <div className="flex gap-2 p-3 overflow-x-auto bg-white">
+                    {images.map((url, idx) => {
+                      const isVideo = getMediaType(url) === 'video';
+                      return (
+                        <motion.button
+                          key={idx}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setSelectedImage(idx)}
+                          className={`relative h-14 w-14 rounded-lg overflow-hidden flex-shrink-0 transition-all ${
+                            selectedImage === idx 
+                              ? "ring-2 ring-black ring-offset-1" 
+                              : "opacity-60"
+                          }`}
+                        >
+                          {isVideo ? (
+                            <div className="w-full h-full bg-neutral-900 flex items-center justify-center">
+                              <Play size={14} className="text-white" />
+                            </div>
+                          ) : (
+                            <Image src={url} alt="" fill className="object-cover" />
+                          )}
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Gallery */}
+              <div className="hidden lg:block h-full">
+                <ProductGalleryDesktop
+                  images={images}
+                  productName={product.name}
+                  selectedImage={selectedImage}
+                  onImageSelect={setSelectedImage}
+                  onFullscreenOpen={() => setIsImageModalOpen(true)}
+                  discount={product.discount}
+                  showWeeklyCampaignBadge={isWeeklyCampaign}
+                />
+              </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="rounded-3xl bg-white/90 backdrop-blur border border-slate-100 shadow-[0_18px_50px_rgba(15,23,42,0.08)] p-5 sm:p-6 space-y-4 lg:sticky lg:top-28">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-2">
-                    <p className="text-xs text-slate-500 uppercase tracking-[0.14em] font-semibold">Ürün</p>
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 leading-tight">{product.name}</h1>
-                    {product.sku && <p className="text-xs text-slate-400 font-medium">SKU: {product.sku}</p>}
+            {/* Right: Product Info */}
+            <div ref={productInfoRef} className="relative">
+              <div className="px-5 py-6 lg:px-0 lg:py-8 space-y-5">
+                {/* Category Tag */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <Link 
+                    href={`/${product.category}`}
+                    className="inline-block text-[11px] font-medium tracking-widest text-neutral-400 uppercase hover:text-neutral-600 transition-colors"
+                  >
+                    {categoryName}
+                  </Link>
+                </motion.div>
+
+                {/* Title */}
+                <motion.h1
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="text-xl lg:text-2xl font-medium text-neutral-900 tracking-tight leading-tight"
+                >
+                  {product.name}
+                </motion.h1>
+
+                {/* Rating */}
+                {product.reviewCount > 0 && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex items-center gap-2 group"
+                  >
+                    <div className="flex gap-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          size={12} 
+                          className={i < Math.round(product.rating) 
+                            ? "text-amber-400 fill-current" 
+                            : "text-neutral-200 fill-current"
+                          } 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-neutral-500 group-hover:text-neutral-900 transition-colors">
+                      {product.rating.toFixed(1)} ({product.reviewCount})
+                    </span>
+                  </motion.button>
+                )}
+
+                {/* Price Block */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                  className="flex items-baseline gap-2"
+                >
+                  <span className="text-xl lg:text-2xl font-semibold text-neutral-900">
+                    {formatPrice(product.price)}
+                  </span>
+                  {product.oldPrice > product.price && (
+                    <>
+                      <span className="text-sm text-neutral-400 line-through">
+                        {formatPrice(product.oldPrice)}
+                      </span>
+                      <span className="text-[10px] font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                        %{Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}
+                      </span>
+                    </>
+                  )}
+                </motion.div>
+
+                {/* Short Description */}
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-sm text-neutral-600 leading-relaxed"
+                >
+                  {product.description}
+                </motion.p>
+
+                {/* Divider */}
+                <div className="h-px bg-neutral-100" />
+
+                {/* Stock & Delivery Status */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className="flex items-center gap-4 text-xs"
+                >
+                  <span className={product.inStock ? "text-green-600" : "text-red-500"}>
+                    {product.inStock ? "● Stokta mevcut" : "● Stokta yok"}
+                  </span>
+                  <span className="text-neutral-400">•</span>
+                  <span className="text-neutral-600">Aynı gün teslimat</span>
+                </motion.div>
+
+                {/* Seasonal Note */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.37 }}
+                  className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-lg"
+                >
+                  <span className="text-amber-500 text-sm">ℹ</span>
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    Mevsimlik olarak içerisindeki aksesuarlar değişebilir.
+                  </p>
+                </motion.div>
+
+                {/* Quantity Selector */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="flex items-center gap-3"
+                >
+                  <span className="text-xs text-neutral-500">Adet:</span>
+                  <div className="inline-flex items-center border border-neutral-200 rounded-full">
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      disabled={quantity <= 1}
+                      className="w-9 h-9 flex items-center justify-center text-neutral-400 hover:text-neutral-900 disabled:opacity-30 transition-colors"
+                    >
+                      <Minus size={14} />
+                    </motion.button>
+                    <span className="w-8 text-center text-sm font-medium text-neutral-900">{quantity}</span>
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="w-9 h-9 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-colors"
+                    >
+                      <Plus size={14} />
+                    </motion.button>
                   </div>
-                  <button
+                </motion.div>
+
+                {/* CTA Buttons */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.45 }}
+                  className="flex gap-3"
+                >
+                  <motion.button
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleAddToCart}
+                    disabled={!canAddToCart}
+                    className={`flex-1 h-12 rounded-full text-sm font-medium transition-all duration-300 ${
+                      canAddToCart
+                        ? isAddedToCart
+                          ? "bg-green-600 text-white"
+                          : "bg-neutral-900 text-white hover:bg-neutral-800"
+                        : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                    }`}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      {isAddedToCart ? (
+                        <>
+                          <Check size={16} />
+                          Sepete Eklendi
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingBag size={16} />
+                          {canAddToCart ? "Sepete Ekle" : "Stokta Yok"}
+                        </>
+                      )}
+                    </span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={handleWishlist}
-                    className={`h-11 w-11 rounded-2xl border flex items-center justify-center shadow-sm transition ${
-                      isWishlisted ? "border-[#e05a4c] text-[#e05a4c] bg-[#e05a4c]/10" : "border-slate-200 text-slate-500 hover:border-slate-300"
+                    className={`w-12 h-12 rounded-full border flex items-center justify-center transition-all ${
+                      isWishlisted 
+                        ? "border-red-200 bg-red-50 text-red-500" 
+                        : "border-neutral-200 text-neutral-400 hover:border-neutral-300 hover:text-neutral-600"
                     }`}
                   >
                     <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
-                  </button>
-                </div>
+                  </motion.button>
 
-                {product.reviewCount > 0 && (
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={16} className={i < Math.round(product.rating) ? "fill-amber-400 text-amber-400" : "text-slate-300"} />
-                      ))}
-                    </div>
-                    <span>{product.rating.toFixed(1)} ({product.reviewCount})</span>
-                  </div>
-                )}
-
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600">Hızlı teslimat</span>
-                  <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600">{product.inStock ? "Stokta" : "Stok yok"}</span>
-                  {product.deliveryInfo && (
-                    <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-600 truncate max-w-[220px]">{product.deliveryInfo}</span>
-                  )}
-                </div>
-
-                <div className="flex items-end gap-3">
-                  <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#e05a4c]">{formatPrice(product.price)}</span>
-                  {product.oldPrice > product.price && (
-                    <span className="text-lg sm:text-xl text-slate-400 line-through">{formatPrice(product.oldPrice)}</span>
-                  )}
-                </div>
-
-                <p className="text-sm lg:text-base text-slate-600 leading-relaxed line-clamp-3">{product.description}</p>
-
-                <div className="relative space-y-3">
-                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 flex items-start gap-3">
-                    <Truck className="w-5 h-5 text-emerald-600 mt-0.5" />
-                    <div className="text-sm text-gray-700 space-y-1">
-                      <p className="font-semibold text-gray-900">Teslimatı sepetten seçin</p>
-                      <p className="text-gray-600">Teslimat tarih ve saatini sepet sayfasında belirleyebilirsiniz.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex items-center rounded-full border border-slate-200">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="px-3 py-2 hover:bg-slate-100 rounded-l-full"
-                    >
-                      <Minus size={16} />
-                    </button>
-                    <span className="w-12 text-center font-semibold">{quantity}</span>
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="px-3 py-2 hover:bg-slate-100 rounded-r-full"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={handleAddToCart}
-                    aria-disabled={!canAddToCart}
-                    className={`flex-1 inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg transition-all ${
-                      canAddToCart
-                        ? isAddedToCart
-                          ? "bg-emerald-600"
-                          : "bg-[#e05a4c] hover:-translate-y-0.5 hover:shadow-xl"
-                        : "bg-slate-300 cursor-not-allowed"
-                    }`}
-                  >
-                    {isAddedToCart ? <Check size={18} /> : <ShoppingCart size={18} />}
-                    {product.inStock ? (isAddedToCart ? "Sepete Eklendi" : "Sepete Ekle") : "Stokta Yok"}
-                  </button>
-
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={handleShare}
-                    className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:border-slate-300 transition"
+                    className="w-12 h-12 rounded-full border border-neutral-200 text-neutral-400 hover:border-neutral-300 hover:text-neutral-600 flex items-center justify-center transition-all"
                   >
-                    Paylaş
-                  </button>
-                </div>
+                    <Share2 size={18} />
+                  </motion.button>
+                </motion.div>
 
-                <div className="hidden lg:grid grid-cols-3 gap-3">
-                  {[{
-                    title: "Teslimat Slotu",
-                    value: "Sepette seçilecek",
-                  }, {
-                    title: "İade & Değişim",
-                    value: "Koşulsuz destek",
-                  }, {
-                    title: "Destek",
-                    value: "7/24 WhatsApp",
-                  }].map((item, idx) => (
-                    <div key={idx} className="rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3 flex flex-col gap-1 shadow-[0_10px_30px_rgba(15,23,42,0.04)]">
-                      <p className="text-xs uppercase tracking-[0.12em] text-slate-400">{item.title}</p>
-                      <p className="text-sm font-semibold text-slate-900">{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex gap-2 overflow-x-auto pb-1">
-                  {[{ title: "Güvenli ödeme", icon: Truck, desc: "Hızlı teslim" }, { title: "Özel paket", icon: Package, desc: "Şık sunum" }].map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-100 bg-slate-50 flex-shrink-0 min-w-[160px]">
-                      <item.icon size={16} className="text-slate-500" />
-                      <div>
-                        <p className="text-xs font-semibold text-slate-900">{item.title}</p>
-                        <p className="text-[11px] text-slate-500">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
-                {sectionCard(
-                  "desc",
-                  "Ürün Açıklaması",
-                  <div className="space-y-3 text-sm leading-relaxed">
-                    {product.longDescription ? (
-                      product.longDescription.split("\n\n").map((p, i) => (
-                        <p key={i}>{p}</p>
-                      ))
-                    ) : (
-                      <p>{product.description}</p>
-                    )}
-                  </div>
-                )}
-
-                {sectionCard(
-                  "care",
-                  "Bakım Bilgileri",
-                  <div className="space-y-2 text-sm">
-                    {product.careInstructions && product.careInstructions.length > 0 ? (
-                      <ul className="space-y-2">
-                        {product.careInstructions.map((c, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#e05a4c]" />
-                            <span>{c}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>Serin, gölgeli ortamda tutun ve düzenli su değişimi yapın.</p>
-                    )}
-                  </div>
-                )}
-
-                {sectionCard(
-                  "delivery",
-                  "Teslimat Bilgileri",
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-start gap-3 rounded-xl bg-green-50 px-3 py-2">
-                      <Truck size={18} className="text-green-600 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-slate-900">Hızlı teslimat</p>
-                        <p className="text-slate-600">İlçenize göre gün içinde teslim.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 rounded-xl bg-blue-50 px-3 py-2">
-                      <Package size={18} className="text-blue-600 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-slate-900">Özenli paketleme</p>
-                        <p className="text-slate-600">Sarsıntıya dayanıklı, şık ambalaj.</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Trust Badges */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-neutral-400"
+                >
+                  <span>✓ Ücretsiz kargo</span>
+                  <span>✓ Güvenli ödeme</span>
+                  <span>✓ Taze kesim çiçekler</span>
+                </motion.div>
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Product Details Accordion */}
+        <section className="border-t border-neutral-100">
+          <div className="max-w-3xl mx-auto px-5 lg:px-8">
+            {/* Description */}
+            <div className="border-b border-neutral-100">
+              <button
+                onClick={() => toggleSection('desc')}
+                className="w-full flex items-center justify-between py-5 text-left"
+              >
+                <span className="text-sm font-medium text-neutral-900">Ürün Açıklaması</span>
+                <motion.div animate={{ rotate: expandedSection === 'desc' ? 180 : 0 }}>
+                  <ChevronDown size={16} className="text-neutral-400" />
+                </motion.div>
+              </button>
+              <AnimatePresence>
+                {expandedSection === 'desc' && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pb-5 text-sm text-neutral-600 leading-relaxed">
+                      {product.longDescription || product.description}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Care Instructions */}
+            <div className="border-b border-neutral-100">
+              <button
+                onClick={() => toggleSection('care')}
+                className="w-full flex items-center justify-between py-5 text-left"
+              >
+                <span className="text-sm font-medium text-neutral-900">Bakım Bilgileri</span>
+                <motion.div animate={{ rotate: expandedSection === 'care' ? 180 : 0 }}>
+                  <ChevronDown size={16} className="text-neutral-400" />
+                </motion.div>
+              </button>
+              <AnimatePresence>
+                {expandedSection === 'care' && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pb-5 text-sm text-neutral-600">
+                      {product.careInstructions && product.careInstructions.length > 0 ? (
+                        <ul className="space-y-2">
+                          {product.careInstructions.map((c, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="text-neutral-300 mt-0.5">•</span>
+                              <span>{c}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>Serin ve gölgeli bir ortamda tutun. Günlük su değişimi önerilir.</p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Delivery */}
+            <div className="border-b border-neutral-100">
+              <button
+                onClick={() => toggleSection('delivery')}
+                className="w-full flex items-center justify-between py-5 text-left"
+              >
+                <span className="text-sm font-medium text-neutral-900">Teslimat Bilgileri</span>
+                <motion.div animate={{ rotate: expandedSection === 'delivery' ? 180 : 0 }}>
+                  <ChevronDown size={16} className="text-neutral-400" />
+                </motion.div>
+              </button>
+              <AnimatePresence>
+                {expandedSection === 'delivery' && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pb-5 text-sm text-neutral-600 space-y-2">
+                      <p>• İstanbul içi aynı gün teslimat</p>
+                      <p>• Özenli ve güvenli paketleme</p>
+                      <p>• Teslimat saatini sepette belirleyebilirsiniz</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
+        </section>
 
-          {/* Product Details Tabs - Desktop */}
-          <div className="hidden lg:block mt-12">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => setActiveSection("desc")}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeSection === "desc"
-                      ? "border-[#e05a4c] text-[#e05a4c]"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Açıklama
-                </button>
-                <button
-                  onClick={() => setActiveSection("care")}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeSection === "care"
-                      ? "border-[#e05a4c] text-[#e05a4c]"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Bakım Bilgileri
-                </button>
-                <button
-                  onClick={() => setActiveSection("delivery")}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeSection === "delivery"
-                      ? "border-[#e05a4c] text-[#e05a4c]"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Teslimat
-                </button>
-              </nav>
-            </div>
-
-            <div className="py-8">
-              {activeSection === "desc" && (
-                <div className="prose max-w-none text-gray-700">
-                  <p className="text-base leading-relaxed">{product.longDescription || product.description}</p>
-                </div>
-              )}
-
-              {activeSection === "care" && (
-                <div className="bg-white rounded-lg">
-                  {product.careInstructions && product.careInstructions.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {product.careInstructions.map((instruction, idx) => (
-                        <div key={idx} className="bg-gray-50/50 rounded-lg p-4 hover:bg-[#e05a4c]/5 transition-colors duration-200">
-                          <div className="flex items-center mb-2">
-                            <div className="w-2 h-2 bg-[#e05a4c] rounded-full mr-2" />
-                            <span className="text-sm text-gray-700">{instruction}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-600">Çiçeklerinizi serin ve güneş ışığından uzak tutun. Her gün su değiştirin.</p>
-                  )}
-                </div>
-              )}
-
-              {activeSection === "delivery" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-green-50/50">
-                    <Truck className="w-6 h-6 text-green-600 mt-1" />
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Hızlı Teslimat</h4>
-                      <p className="text-sm text-gray-600 mt-1">Siparişiniz aynı gün veya seçtiğiniz tarihte teslim edilir.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-4 p-4 rounded-xl bg-blue-50/50">
-                    <Package className="w-6 h-6 text-blue-600 mt-1" />
-                    <div>
-                      <h4 className="font-semibold text-gray-900">Özenli Paketleme</h4>
-                      <p className="text-sm text-gray-600 mt-1">Çiçekleriniz özel kutularda, zarar görmeden teslim edilir.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Reviews Section */}
-          <div className="rounded-2xl bg-white border border-gray-200/60 shadow-sm p-6">
-            <div className="flex items-center gap-2 mb-6">
-              <Star className="w-5 h-5 text-amber-500" />
-              <h2 className="text-lg font-semibold text-gray-900">Değerlendirmeler</h2>
-            </div>
+        {/* Reviews Section */}
+        <section className="py-12 lg:py-16 bg-neutral-50">
+          <div className="max-w-4xl mx-auto px-5 lg:px-8">
+            <h2 className="text-lg font-medium text-neutral-900 mb-6">
+              Müşteri Değerlendirmeleri
+            </h2>
             <ProductReviews
               productId={product.id}
               productName={product.name}
@@ -876,214 +699,121 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
               customerOrders={customer?.orders || []}
             />
           </div>
+        </section>
 
-          {/* SEO Content Section - Product Specific */}
-          <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-white border border-gray-200/60 shadow-sm p-6 mt-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              {product.name} - İstanbul Çiçek Siparişi
-            </h3>
-            <div className="prose prose-sm max-w-none text-gray-600 space-y-3">
-              <p>
-                <strong>{product.name}</strong> ile sevdiklerinize unutulmaz bir sürpriz yapın. 
-                İstanbul {product.name.toLowerCase()} siparişi vererek aynı gün teslimat avantajından yararlanın.
-              </p>
-              <p>
-                {product.name} online sipariş, {product.name.toLowerCase()} İstanbul, 
-                İstanbul&apos;a {product.name.toLowerCase()} gönder. {categoryName} kategorisinde 
-                güvenilir çiçek siparişi Vadiler Çiçek&apos;te.
-              </p>
-            </div>
-            
-            {/* SEO Tags */}
-            <div className="mt-5 flex flex-wrap gap-2">
-              {[
-                `${product.name} sipariş`,
-                `İstanbul ${product.name.toLowerCase()}`,
-                `${product.name.toLowerCase()} gönder`,
-                `${categoryName} sipariş`,
-                `Online ${product.name.toLowerCase()}`,
-                `${product.name} fiyat`,
-                `İstanbul çiçek siparişi`,
-                `Aynı gün teslimat`,
-                `Güvenilir çiçekçi`,
-              ].map((tag, idx) => (
-                <span 
-                  key={idx}
-                  className="inline-flex items-center px-3 py-1.5 rounded-full text-xs bg-white text-gray-500 border border-gray-200"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            {/* Hidden SEO Text */}
-            <div className="sr-only" aria-hidden="false">
-              <h4>{product.name} İstanbul Çiçek Siparişi</h4>
-              <p>
-                {product.name} online sipariş, {product.name} satın al, {product.name} fiyatı,
-                {product.name} İstanbul, İstanbul {product.name.toLowerCase()} siparişi,
-                {product.name.toLowerCase()} gönder İstanbul, {product.name} aynı gün teslimat,
-                {product.name} ücretsiz kargo, {product.name} güvenilir sipariş,
-                {product.name} Kadıköy, {product.name} Beşiktaş, {product.name} Şişli,
-                {product.name} Bakırköy, {product.name} Üsküdar, {product.name} Ataşehir,
-                {product.name} Maltepe, {product.name} Kartal, {product.name} Pendik,
-                {product.name} Beylikdüzü, {product.name} Esenyurt, {product.name} Avcılar.
-                {categoryName} kategorisi, {categoryName} çiçek siparişi, {categoryName} online.
-                İstanbul çiçek siparişi, İstanbul içi çiçek siparişi, güvenilir çiçek siparişi.
-                7li gül, 15li gül, 21li gül, 30lu gül, 50li gül, 101 gül, kırmızı gül buketi.
-                Orkide sipariş, lilyum buketi, papatya buketi, gerbera çiçeği, aranjman çiçek.
-                Kutuda çiçek, sepette çiçek, doğum günü çiçeği, sevgililer günü çiçeği.
-              </p>
-            </div>
-          </div>
-
-          {/* Related Products */}
-          {relatedProducts.length > 0 && (
-            <div className="mt-12">
+        {/* Related Products */}
+        {relatedProducts.length > 0 && (
+          <section className="py-12 lg:py-16 border-t border-neutral-100">
+            <div className="max-w-6xl mx-auto px-5 lg:px-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">Benzer Ürünler</h3>
-                <Link href={`/${product.category}`} className="text-sm text-[#e05a4c] font-medium hover:underline flex items-center gap-1">
-                  Tümünü Gör <ArrowRight size={14} />
+                <h2 className="text-lg font-medium text-neutral-900">Benzer Ürünler</h2>
+                <Link 
+                  href={`/${product.category}`} 
+                  className="text-xs text-neutral-500 hover:text-neutral-900 flex items-center gap-1 transition-colors"
+                >
+                  Tümünü Gör <ArrowRight size={12} />
                 </Link>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                {relatedProducts.slice(0, 4).map((rp) => (
-                  <Link
+              
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+                {relatedProducts.slice(0, 4).map((rp, idx) => (
+                  <motion.div
                     key={rp.id}
-                    href={`/${rp.category}/${rp.slug}`}
-                    className="group rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
                   >
-                    <div className="relative aspect-square bg-gray-100 overflow-hidden">
-                      <Image src={rp.image} alt={rp.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" quality={75} />
-                      {rp.discount > 0 && (
-                        <span className="absolute top-3 left-3 px-2 py-1 rounded-full text-white text-xs font-semibold bg-[#e05a4c]">
-                          -%{rp.discount}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <p className="text-sm font-medium text-gray-800 line-clamp-2 group-hover:text-[#e05a4c] transition-colors">{rp.name}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-base font-bold text-[#e05a4c]">{formatPrice(rp.price)}</span>
-                        {rp.oldPrice > rp.price && (
-                          <span className="text-sm text-gray-400 line-through">{formatPrice(rp.oldPrice)}</span>
+                    <Link href={`/${rp.category}/${rp.slug}`} className="group block">
+                      <div className="relative aspect-square bg-neutral-100 rounded-xl overflow-hidden mb-3">
+                        <Image 
+                          src={rp.image} 
+                          alt={rp.name} 
+                          fill 
+                          className="object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        {rp.discount > 0 && (
+                          <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-medium bg-black text-white">
+                            -{rp.discount}%
+                          </span>
                         )}
                       </div>
-                    </div>
-                  </Link>
+                      <p className="text-sm text-neutral-800 line-clamp-2 group-hover:text-neutral-600 transition-colors">
+                        {rp.name}
+                      </p>
+                      <div className="flex items-baseline gap-2 mt-1">
+                        <span className="text-sm font-medium text-neutral-900">{formatPrice(rp.price)}</span>
+                        {rp.oldPrice > rp.price && (
+                          <span className="text-xs text-neutral-400 line-through">{formatPrice(rp.oldPrice)}</span>
+                        )}
+                      </div>
+                    </Link>
+                  </motion.div>
                 ))}
               </div>
             </div>
-          )}
-        </div>
+          </section>
+        )}
       </main>
 
+      {/* Floating Action Bar - iOS Style */}
       <AnimatePresence>
-        {showTopBar && (
+        {showFloatingBar && (
           <motion.div
-            initial={{ y: -100, opacity: 0, scale: 0.95 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: -100, opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
-            className="fixed left-0 right-0 z-[30000]"
-            style={{ top: 'var(--top-info-band-height, 0px)', pointerEvents: 'auto' }}
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 z-[30000] pb-safe"
           >
-            {/* Glassmorphism background */}
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-xl" />
-            <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-            
-            <div className="container-custom py-3 relative" style={{ pointerEvents: 'auto' }}>
-              <div className="flex items-center gap-4">
-                {/* Back Button - Modern pill style */}
-                <motion.button 
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => window.history.back()}
-                  className="p-2.5 bg-gray-100/80 hover:bg-gray-200/80 rounded-2xl transition-all duration-200 flex-shrink-0 backdrop-blur-sm relative z-[9999]"
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  <ArrowLeft size={20} className="text-gray-700" />
-                </motion.button>
-                
-                {/* Product Card - Floating style */}
-                <motion.div 
-                  initial={{ x: -10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="flex items-center gap-3 flex-1 min-w-0"
-                >
-                  {/* Product Image with glow effect */}
-                  <div className="relative group">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-pink-200 via-rose-200 to-orange-200 rounded-2xl blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
-                    <div className="relative h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden bg-white ring-1 ring-gray-100 shadow-sm">
-                      <Image src={images[0]} alt={product.name} fill className="object-cover" />
-                    </div>
+            <div className="bg-white/95 backdrop-blur-xl border-t border-neutral-100">
+              <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+                {/* Product Mini Info */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="relative h-11 w-11 rounded-lg overflow-hidden bg-neutral-100 flex-shrink-0">
+                    <Image src={images[0]} alt={product.name} fill className="object-cover" />
                   </div>
-                  
-                  {/* Product Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] sm:text-xs text-gray-400 truncate font-medium uppercase tracking-wide">{categoryName}</p>
-                    <p className="text-sm sm:text-base font-semibold text-gray-900 truncate leading-tight">{product.name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-neutral-900 truncate">{product.name}</p>
+                    <p className="text-sm font-semibold text-neutral-900">{formatPrice(product.price)}</p>
                   </div>
-                </motion.div>
-                
-                {/* Price Badge - Floating pill */}
-                <motion.div 
-                  initial={{ x: 10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.15 }}
-                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-gray-50/80 backdrop-blur-sm rounded-2xl"
-                >
-                  <span className="text-base font-bold text-gray-900">{formatPrice(product.price)}</span>
-                  {product.oldPrice > product.price && (
-                    <span className="text-xs text-gray-400 line-through">{formatPrice(product.oldPrice)}</span>
-                  )}
-                </motion.div>
-                
-                {/* CTA Button - Apple style */}
-                <motion.button
-                  initial={{ x: 10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleAddToCart}
-                  aria-disabled={!canAddToCart}
-                  style={{ pointerEvents: 'auto' }}
-                  className={`
-                    relative overflow-hidden inline-flex items-center justify-center gap-2 
-                    rounded-2xl px-5 py-3 text-sm font-semibold text-white 
-                    shadow-lg transition-all duration-300 flex-shrink-0 z-[9999]
-                    ${canAddToCart
-                      ? isAddedToCart
-                        ? "bg-emerald-500 shadow-emerald-200/50"
-                        : "bg-gradient-to-r from-[#e05a4c] to-[#d43a2a] shadow-rose-200/50 hover:shadow-xl hover:shadow-rose-300/40"
-                      : "bg-gray-300 shadow-none cursor-not-allowed"
-                    }
-                  `}
-                >
-                  {/* Shine effect */}
-                  {canAddToCart && !isAddedToCart && (
-                    <motion.div 
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12"
-                      initial={{ x: '-100%' }}
-                      animate={{ x: '200%' }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                    />
-                  )}
-                  
-                  <span className="relative flex items-center gap-2">
-                    {isAddedToCart ? <Check size={18} /> : <ShoppingCart size={18} />}
-                    <span className="hidden sm:inline">
-                      {product.inStock ? (isAddedToCart ? "Sepette ✓" : "Sepete Ekle") : "Stokta Yok"}
-                    </span>
-                  </span>
-                </motion.button>
-                
-                {/* Mobile Price + Cart */}
-                <div className="flex sm:hidden items-center gap-2">
-                  <span className="text-sm font-bold text-gray-900">{formatPrice(product.price)}</span>
                 </div>
+
+                {/* Action Buttons */}
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleWishlist}
+                  className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    isWishlisted 
+                      ? "bg-red-50 text-red-500" 
+                      : "bg-neutral-100 text-neutral-600"
+                  }`}
+                >
+                  <Heart size={18} fill={isWishlisted ? "currentColor" : "none"} />
+                </motion.button>
+
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleAddToCart}
+                  disabled={!canAddToCart}
+                  className={`h-11 px-6 rounded-full text-sm font-medium flex-shrink-0 transition-colors ${
+                    canAddToCart
+                      ? isAddedToCart
+                        ? "bg-green-600 text-white"
+                        : "bg-neutral-900 text-white"
+                      : "bg-neutral-200 text-neutral-400"
+                  }`}
+                >
+                  {isAddedToCart ? (
+                    <span className="flex items-center gap-1.5">
+                      <Check size={16} /> Eklendi
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5">
+                      <ShoppingBag size={16} /> Sepete Ekle
+                    </span>
+                  )}
+                </motion.button>
               </div>
             </div>
           </motion.div>
@@ -1092,125 +822,111 @@ export default function ProductDetail({ product, relatedProducts, categoryName, 
 
       <Footer />
 
+      {/* Fullscreen Image Modal */}
       <AnimatePresence>
         {isImageModalOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center"
-            style={{ zIndex: 200000 }}
+            className="fixed inset-0 bg-black z-[200000] flex items-center justify-center"
             onClick={() => setIsImageModalOpen(false)}
           >
-            <button
-              className="absolute top-5 right-5 rounded-full bg-white/10 text-white/80 hover:text-white hover:bg-white/20 p-2"
-              style={{ zIndex: 200010 }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsImageModalOpen(false);
-              }}
-              aria-label="Kapat"
+            {/* Close Button */}
+            <motion.button
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center z-10"
+              onClick={() => setIsImageModalOpen(false)}
             >
-              <X size={24} />
-            </button>
-            <div
-              className="relative w-full h-full max-w-none px-0 sm:px-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {images.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setSelectedImage((selectedImage - 1 + images.length) % images.length)}
-                    className="absolute left-4 md:left-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 text-white hover:bg-white/30 transition shadow-lg"
-                    aria-label="Önceki görsel"
-                  >
-                    <ArrowLeft size={24} />
-                  </button>
-                  <button
-                    onClick={() => setSelectedImage((selectedImage + 1) % images.length)}
-                    className="absolute right-4 md:right-8 top-1/2 -translate-y-1/2 h-12 w-12 rounded-full bg-white/20 text-white hover:bg-white/30 transition shadow-lg"
-                    aria-label="Sonraki görsel"
-                  >
-                    <ArrowRight size={24} />
-                  </button>
-                </>
-              )}
+              <X size={20} />
+            </motion.button>
 
-              <div className="relative w-full h-full min-h-[90vh] flex items-center justify-center">
-                {getMediaType(images[selectedImage]) === 'video' ? (
-                  // Video in fullscreen modal
-                  <div className="relative w-full max-w-4xl aspect-square mx-auto">
-                    <video
-                      src={images[selectedImage]}
-                      className="w-full h-full object-contain"
-                      controls
-                      autoPlay
-                      loop
-                      playsInline
-                    />
-                  </div>
-                ) : (
-                  // Image in fullscreen modal
-                  <>
-                    <Image
-                      src={images[selectedImage]}
-                      alt={product.name}
-                      fill
-                      className="object-contain"
-                      sizes="100vw"
-                      priority
-                    />
-                    {isWeeklyCampaign && (
-                      <div className="absolute left-6 top-10 z-20">
-                        <Image
-                          src="/TR/bugune-ozel.png"
-                          alt="Bugüne Özel"
-                          width={90}
-                          height={90}
-                          className="h-16 w-16 drop-shadow"
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+            {/* Navigation */}
+            {images.length > 1 && (
+              <>
+                <motion.button
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedImage((selectedImage - 1 + images.length) % images.length);
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center"
+                >
+                  <ArrowLeft size={20} />
+                </motion.button>
+                <motion.button
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedImage((selectedImage + 1) % images.length);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 text-white hover:bg-white/20 flex items-center justify-center"
+                >
+                  <ArrowRight size={20} />
+                </motion.button>
+              </>
+            )}
 
-              {images.length > 1 && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-                  {images.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImage(idx)}
-                      className={`h-2.5 w-10 rounded-full transition ${selectedImage === idx ? "bg-white" : "bg-white/40"}`}
-                      aria-label={`Görsel ${idx + 1}`}
-                    />
-                  ))}
-                </div>
+            {/* Image */}
+            <div className="relative w-full h-full" onClick={(e) => e.stopPropagation()}>
+              {getMediaType(images[selectedImage]) === 'video' ? (
+                <video
+                  src={images[selectedImage]}
+                  className="w-full h-full object-contain"
+                  controls
+                  autoPlay
+                  loop
+                  playsInline
+                />
+              ) : (
+                <Image
+                  src={images[selectedImage]}
+                  alt={product.name}
+                  fill
+                  className="object-contain"
+                  sizes="100vw"
+                  priority
+                />
               )}
             </div>
+
+            {/* Dots */}
+            {images.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedImage(idx);
+                    }}
+                    className={`h-1.5 rounded-full transition-all ${
+                      selectedImage === idx ? "w-6 bg-white" : "w-1.5 bg-white/40"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Share Toast */}
       <AnimatePresence>
         {showShareToast && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[140] rounded-full bg-slate-900 text-white px-4 py-2 text-sm shadow-lg"
+            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-[200001] bg-neutral-900 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg"
           >
-            Kopyalandı
+            Link kopyalandı
           </motion.div>
         )}
       </AnimatePresence>
-      {/* Scoped override: ensure all .space-y-4 stacks above on product detail page */}
-      <style jsx>{`
-        :global(.product-detail-page .space-y-4) {
-          position: relative;
-          z-index: 9999 !important;
-        }
-      `}</style>
     </>
   );
 }
