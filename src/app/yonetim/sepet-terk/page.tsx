@@ -101,7 +101,8 @@ function formatDuration(seconds: number): string {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount / 100);
+  // cart_total zaten TL bazında gönderiliyor; kuruş bölme yapma
+  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
 }
 
 function formatDate(dateString: string): string {
