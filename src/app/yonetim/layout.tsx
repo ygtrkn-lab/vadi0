@@ -23,7 +23,8 @@ import {
   HiOutlineUsers,
   HiOutlineChartBar,
   HiOutlineChatAlt2,
-  HiOutlineTrendingUp
+  HiOutlineTrendingUp,
+  HiOutlineShoppingCart
 } from 'react-icons/hi';
 import { ShinyText } from '@/components/ui-kit';
 import DarkVeil from '@/components/DarkVeil';
@@ -121,6 +122,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { href: '/yonetim/musteriler', label: 'Müşteriler', icon: HiOutlineUsers },
     { href: '/yonetim/analizler', label: 'Analizler', icon: HiOutlineChartBar },
     { href: '/yonetim/analizler-v2', label: 'Analytics v2', icon: HiOutlineChartBar },
+    { href: '/yonetim/sepet-terk', label: 'Sepet Terk', icon: HiOutlineShoppingCart },
     { href: '/yonetim/bolge-kapatma', label: 'Bölge Kapatma', icon: HiOutlineTag },
     { href: '/yonetim/ayarlar', label: 'Ayarlar', icon: HiOutlineCog },
   ], [pendingOrdersCount]);

@@ -6,6 +6,7 @@ import { useCart } from '@/context/CartContext';
 import { useCustomer, Address } from '@/context/CustomerContext';
 import { useOrder } from '@/context/OrderContext';
 import { useAnalytics } from '@/context/AnalyticsContext';
+import { useCartAbandonmentTracker } from '@/hooks/useCartAbandonmentTracker';
 import { Header, Footer, MobileNavBar } from '@/components';
 import { getMediaType } from '@/components/admin/MediaUpload';
 import Image from 'next/image';
@@ -211,6 +212,24 @@ export default function SepetClient() {
 
   const isEmpty = state.items.length === 0;
   const isLoggedIn = !!customerState.currentCustomer;
+
+  // Cart abandonment tracking - adres formuna ulaşıp 20sn+ geçiren kullanıcıları takip et
+  const { markAsCompleted: markAbandonmentCompleted } = useCartAbandonmentTracker({
+    items: state.items,
+    currentStep,
+    customerId: customerState.currentCustomer?.id,
+    customerEmail: guestEmail || customerState.currentCustomer?.email,
+    customerPhone: guestPhone || customerState.currentCustomer?.phone,
+    recipientName,
+    recipientPhone,
+    district,
+    neighborhood,
+    deliveryDate,
+    streetName,
+    buildingNo,
+    messageCard,
+    minAbandonTime: 20, // Minimum 20 saniye geçirmeli
+  });
 
   const getTomorrowLocalISODate = (): string => {
     const d = new Date();
@@ -2009,6 +2028,9 @@ export default function SepetClient() {
         const url = `/payment/havale-onay?orderNumber=${String(orderResult.order.orderNumber)}&amount=${String(totalAmount)}`;
         console.log('🚀 Navigating to havale page:', url);
         
+        // Sipariş oluşturuldu, cart abandonment tracking'i kapat
+        markAbandonmentCompleted();
+        
         isRedirecting = true;
         
         // Use setTimeout to allow current execution to complete before navigation
@@ -2061,6 +2083,9 @@ export default function SepetClient() {
             method: 'credit_card'
           }));
         } catch {}
+
+        // Sipariş oluşturuldu, cart abandonment tracking'i kapat
+        markAbandonmentCompleted();
 
         // Redirect to 3DS page (full page, not modal)
         // This is e-commerce standard - callback will return to our site

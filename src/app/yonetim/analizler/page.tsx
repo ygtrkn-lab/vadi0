@@ -2009,6 +2009,22 @@ function CartAbandonmentPanel({ data, isDark }: { data: InsightsData['cartAbando
           <span className={`text-xs ${isDark ? 'text-white/50' : 'text-gray-400'}`}>23:00</span>
         </div>
       </div>
+
+      {/* Detaylı Analiz Linki */}
+      <div className={`mt-4 pt-4 border-t ${isDark ? 'border-white/10' : 'border-gray-200'}`}>
+        <a 
+          href="/yonetim/sepet-terk"
+          className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            isDark 
+              ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30' 
+              : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+          }`}
+        >
+          <HiOutlineChartBar className="w-4 h-4" />
+          Detaylı Sepet Terk Analizi
+          <HiOutlineArrowRight className="w-4 h-4" />
+        </a>
+      </div>
     </SpotlightCard>
   );
 }
