@@ -743,7 +743,7 @@ export default function Header({ hideCategories = false }: HeaderProps) {
       )}
     </div>
     
-    {/* Mobile Full Screen Search Modal - Amazon/Shopify Style */}
+    {/* Mobile Full Screen Search Modal */}
     <AnimatePresence>
       {isSearchOpen && (
         <motion.div
@@ -751,25 +751,28 @@ export default function Header({ hideCategories = false }: HeaderProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[30000] bg-white lg:hidden"
+          className="fixed inset-0 z-[30000] bg-white lg:hidden flex flex-col"
         >
           {/* Search Header */}
-          <div className="flex items-center gap-3 px-4 h-14 border-b border-gray-100 bg-white">
-            <div className="flex-1">
-              <SearchBar 
-                isFullScreen
-                autoFocus 
-                onClose={() => setIsSearchOpen(false)} 
-              />
-            </div>
+          <div className="flex items-center gap-3 px-4 h-14 border-b border-gray-100 bg-white shrink-0">
+            <span className="text-sm font-medium text-neutral-900">Ara</span>
+            <div className="flex-1" />
             <motion.button
               onClick={() => setIsSearchOpen(false)}
               whileTap={{ scale: 0.9 }}
-              className="w-10 h-10 flex items-center justify-center rounded-full
-                bg-gray-100 active:bg-gray-200 transition-colors flex-shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-full
+                bg-neutral-100 active:bg-neutral-200 transition-colors"
             >
-              <X size={20} className="text-gray-600" />
+              <X size={18} className="text-neutral-600" />
             </motion.button>
+          </div>
+          {/* Search Content */}
+          <div className="flex-1 overflow-hidden">
+            <SearchBar 
+              isFullScreen
+              autoFocus 
+              onClose={() => setIsSearchOpen(false)} 
+            />
           </div>
         </motion.div>
       )}

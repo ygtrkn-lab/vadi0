@@ -206,354 +206,203 @@ export default function SearchBar({ isFullScreen = false, onClose, autoFocus = f
   const hasResults = results.length > 0;
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // FULL SCREEN MODE (Bottom Sheet - iOS/Shopify Style)
+  // FULL SCREEN MODE (Apple/iOS Style - Clean & Minimal)
   // ═══════════════════════════════════════════════════════════════════════════
   if (isFullScreen) {
     return (
-      <div className="flex flex-col h-[calc(100vh-56px)] bg-neutral-950">
-        {/* Sheet Container */}
-        <div className="flex-1 flex flex-col bg-neutral-950 rounded-t-[28px] overflow-hidden">
-          {/* Drag Handle */}
-          <div className="pt-3 pb-2">
-            <div className="mx-auto h-1.5 w-12 rounded-full bg-white/20" />
-          </div>
-
-          {/* Search Input - iOS Style */}
-          <div className="px-4 pb-3">
-            <form onSubmit={handleSubmit}>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                  <Search className="h-4 w-4" />
-                </span>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Çiçek, buket veya hediye ara..."
-                  className="w-full h-11 pl-11 pr-11 rounded-2xl bg-white/10 text-sm text-white placeholder:text-neutral-400 border border-white/15
-                    focus:outline-none focus:bg-white/15 focus:border-white/25
-                    transition-all duration-200"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                />
-                <AnimatePresence>
-                  {query && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      type="button"
-                      onClick={() => setQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5 text-white" />
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-              </div>
-            </form>
-          </div>
-
-          {/* Tabs */}
-          <div className="px-4 pb-3">
-            <div className="flex gap-4 text-[11px] uppercase tracking-[0.3em]">
-              <button
-                onClick={() => setActiveTab('suggestions')}
-                className={`font-semibold transition-colors ${
-                  activeTab === 'suggestions' ? 'text-white' : 'text-neutral-500'
-                }`}
-              >
-                Öneriler
-              </button>
-              <button
-                onClick={() => setActiveTab('products')}
-                className={`font-semibold transition-colors ${
-                  activeTab === 'products' ? 'text-white' : 'text-neutral-500'
-                }`}
-              >
-                Ürünler
-              </button>
-              <button
-                onClick={() => setActiveTab('categories')}
-                className={`font-semibold transition-colors ${
-                  activeTab === 'categories' ? 'text-white' : 'text-neutral-500'
-                }`}
-              >
-                Kategoriler
-              </button>
-            </div>
-          </div>
-
-          {/* Content Area */}
-          <div className="flex-1 bg-neutral-900 rounded-t-[28px] overflow-hidden">
-            <div className="h-full overflow-y-auto p-5 space-y-4">
-              <AnimatePresence mode="wait">
-                {/* ════════════ SUGGESTIONS TAB ════════════ */}
-                {activeTab === 'suggestions' && (
-                  <motion.div
-                    key="suggestions"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-4"
+      <div className="flex flex-col h-full bg-white">
+        {/* Search Input - iOS Style */}
+        <div className="px-4 pt-3 pb-2 shrink-0">
+          <form onSubmit={handleSubmit}>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+                <Search className="h-4 w-4" />
+              </span>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Ürün veya kategori ara..."
+                className="w-full h-10 pl-10 pr-10 rounded-xl bg-neutral-100 text-sm text-neutral-900 placeholder:text-neutral-400
+                  focus:outline-none focus:ring-2 focus:ring-neutral-900/10
+                  transition-all duration-200"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+              <AnimatePresence>
+                {query && (
+                  <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    type="button"
+                    onClick={() => setQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 bg-neutral-300 rounded-full flex items-center justify-center"
                   >
-                    {/* Quick Tags */}
-                    {!hasQuery && (
-                      <div>
-                        <p className="text-xs text-neutral-500 mb-2">Hızlı Etiketler</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {QUICK_TAGS.map((tag) => (
-                            <button
-                              key={tag.label}
-                              onClick={() => setQuery(tag.label)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 text-xs border border-white/10 text-white/90 hover:bg-white/10 transition-colors"
-                            >
-                              {tag.icon()}
-                              {tag.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Recent Searches */}
-                    {!hasQuery && recentSearches.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs text-neutral-500">Son Aramalar</p>
-                          <button
-                            onClick={handleClearHistory}
-                            className="text-xs text-primary-400 hover:text-primary-300"
-                          >
-                            Temizle
-                          </button>
-                        </div>
-                        <div className="space-y-2">
-                          {recentSearches.map((search, idx) => (
-                            <motion.button
-                              key={search}
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: idx * 0.03 }}
-                              onClick={() => navigateTo(`/arama?search=${encodeURIComponent(search)}`, search)}
-                              className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-left"
-                            >
-                              <Clock className="w-4 h-4 text-neutral-400 shrink-0" />
-                              <span className="flex-1 text-sm text-white">{search}</span>
-                              <ArrowRight className="w-4 h-4 text-neutral-400" />
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Popular Searches */}
-                    {!hasQuery && (
-                      <div>
-                        <p className="text-xs text-neutral-500 mb-2">Popüler Aramalar</p>
-                        <div className="flex flex-wrap gap-2">
-                          {POPULAR_SEARCHES.map((item, idx) => (
-                            <motion.button
-                              key={item.text}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: idx * 0.04 }}
-                              onClick={() => navigateTo(`/arama?search=${encodeURIComponent(item.text)}`, item.text)}
-                              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-                            >
-                              <span className="text-sm">{item.icon}</span>
-                              <span className="text-sm text-white">{item.text}</span>
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Search Results in Suggestions */}
-                    {hasQuery && hasResults && (
-                      <div className="space-y-3">
-                        {results.slice(0, 8).map((result, idx) => (
-                          <motion.div
-                            key={`${result.type}-${result.id}`}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: idx * 0.03 }}
-                          >
-                            <Link
-                              href={result.slug}
-                              onClick={() => saveSearch(result.name)}
-                              className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3 hover:bg-white/10 transition-colors"
-                            >
-                              <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 shrink-0">
-                                {result.image ? (
-                                  <Image
-                                    src={result.image}
-                                    alt={result.name}
-                                    width={56}
-                                    height={56}
-                                    className="object-cover w-full h-full"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center text-2xl">🌸</div>
-                                )}
-                              </div>
-                              <div className="flex-1 text-sm min-w-0">
-                                <p className="font-semibold text-white line-clamp-1">{result.name}</p>
-                                {result.type === 'product' && result.price && (
-                                  <p className="text-primary-300 font-bold">₺{result.price.toLocaleString('tr-TR')}</p>
-                                )}
-                                {result.type === 'category' && (
-                                  <p className="text-neutral-400 text-xs">{result.productCount} ürün</p>
-                                )}
-                              </div>
-                              {result.type === 'product' && (
-                                <button className="px-3 py-1 rounded-lg bg-primary-500/20 text-primary-200 text-xs font-semibold">
-                                  Sepete
-                                </button>
-                              )}
-                            </Link>
-                          </motion.div>
-                        ))}
-                      </div>
-                    )}
-
-                    {hasQuery && !hasResults && (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/5 flex items-center justify-center">
-                          <Search className="w-8 h-8 text-neutral-500" />
-                        </div>
-                        <p className="text-sm text-neutral-400">Sonuç bulunamadı</p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* ════════════ PRODUCTS TAB ════════════ */}
-                {activeTab === 'products' && (
-                  <motion.div
-                    key="products"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-3"
-                  >
-                    {results.filter(r => r.type === 'product').length > 0 ? (
-                      results.filter(r => r.type === 'product').map((result, idx) => (
-                        <motion.div
-                          key={result.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.03 }}
-                        >
-                          <Link
-                            href={result.slug}
-                            onClick={() => saveSearch(result.name)}
-                            className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-3 hover:bg-white/10 transition-colors"
-                          >
-                            <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 shrink-0">
-                              {result.image ? (
-                                <Image
-                                  src={result.image}
-                                  alt={result.name}
-                                  width={56}
-                                  height={56}
-                                  className="object-cover w-full h-full"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-2xl">🌸</div>
-                              )}
-                            </div>
-                            <div className="flex-1 text-sm min-w-0">
-                              <p className="font-semibold text-white line-clamp-1">{result.name}</p>
-                              {result.price && (
-                                <p className="text-primary-300 font-bold">₺{result.price.toLocaleString('tr-TR')}</p>
-                              )}
-                            </div>
-                            <button className="px-3 py-1 rounded-lg bg-primary-500/20 text-primary-200 text-xs font-semibold">
-                              Sepete
-                            </button>
-                          </Link>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-sm text-neutral-400">
-                          {hasQuery ? 'Ürün bulunamadı' : 'Arama yapmak için yukarıdaki alana yazın'}
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-
-                {/* ════════════ CATEGORIES TAB ════════════ */}
-                {activeTab === 'categories' && (
-                  <motion.div
-                    key="categories"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="space-y-3"
-                  >
-                    {results.filter(r => r.type === 'category').length > 0 ? (
-                      results.filter(r => r.type === 'category').map((result, idx) => (
-                        <motion.div
-                          key={result.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: idx * 0.03 }}
-                        >
-                          <Link
-                            href={result.slug}
-                            onClick={() => saveSearch(result.name)}
-                            className="flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 p-4 hover:bg-white/10 transition-colors"
-                          >
-                            <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10 shrink-0">
-                              {result.image ? (
-                                <Image
-                                  src={result.image}
-                                  alt={result.name}
-                                  width={64}
-                                  height={64}
-                                  className="object-cover w-full h-full"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-3xl">📂</div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-white text-base line-clamp-1">{result.name}</p>
-                              <p className="text-neutral-400 text-sm">{result.productCount} ürün</p>
-                            </div>
-                            <ArrowRight className="w-5 h-5 text-neutral-400" />
-                          </Link>
-                        </motion.div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-sm text-neutral-400">
-                          {hasQuery ? 'Kategori bulunamadı' : 'Arama yapmak için yukarıdaki alana yazın'}
-                        </p>
-                      </div>
-                    )}
-                  </motion.div>
+                    <X className="w-3 h-3 text-white" />
+                  </motion.button>
                 )}
               </AnimatePresence>
-
-              {/* View All Button */}
-              {hasQuery && hasResults && activeTab === 'suggestions' && (
-                <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => navigateTo(`/arama?search=${encodeURIComponent(query)}`, query)}
-                  className="w-full py-3 rounded-2xl bg-white text-neutral-950 font-semibold text-sm hover:bg-white/90 transition-colors"
-                >
-                  Tam Listeyi Gör
-                </motion.button>
-              )}
             </div>
-          </div>
+          </form>
+        </div>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-y-auto">
+          <AnimatePresence mode="wait">
+            {/* No Query - Show suggestions */}
+            {!hasQuery && (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-4 py-3 space-y-5"
+              >
+                {/* Recent Searches */}
+                {recentSearches.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide">Son Aramalar</p>
+                      <button
+                        onClick={handleClearHistory}
+                        className="text-xs text-neutral-500"
+                      >
+                        Temizle
+                      </button>
+                    </div>
+                    <div className="space-y-1">
+                      {recentSearches.map((search, idx) => (
+                        <motion.button
+                          key={search}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.02 }}
+                          onClick={() => navigateTo(`/arama?search=${encodeURIComponent(search)}`, search)}
+                          className="w-full flex items-center gap-3 py-2.5 text-left"
+                        >
+                          <Clock className="w-4 h-4 text-neutral-300" />
+                          <span className="flex-1 text-sm text-neutral-700">{search}</span>
+                          <ArrowRight className="w-4 h-4 text-neutral-300" />
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Popular Searches */}
+                <div>
+                  <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">Popüler Aramalar</p>
+                  <div className="flex flex-wrap gap-2">
+                    {POPULAR_SEARCHES.map((item, idx) => (
+                      <motion.button
+                        key={item.text}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: idx * 0.03 }}
+                        onClick={() => navigateTo(`/arama?search=${encodeURIComponent(item.text)}`, item.text)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-neutral-100 text-sm text-neutral-700"
+                      >
+                        <span>{item.icon}</span>
+                        <span>{item.text}</span>
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quick Tags */}
+                <div>
+                  <p className="text-xs font-medium text-neutral-400 uppercase tracking-wide mb-2">Hızlı Filtreler</p>
+                  <div className="flex flex-wrap gap-2">
+                    {QUICK_TAGS.map((tag) => (
+                      <button
+                        key={tag.label}
+                        onClick={() => setQuery(tag.label)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-neutral-200 text-xs text-neutral-600"
+                      >
+                        {tag.icon()}
+                        {tag.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Has Query - Show Results */}
+            {hasQuery && (
+              <motion.div
+                key="results"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-4 py-3"
+              >
+                {hasResults ? (
+                  <div className="space-y-1">
+                    {results.slice(0, 8).map((result, idx) => (
+                      <motion.div
+                        key={`${result.type}-${result.id}`}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.02 }}
+                      >
+                        <Link
+                          href={result.slug}
+                          onClick={() => saveSearch(result.name)}
+                          className="flex items-center gap-3 py-3 border-b border-neutral-100 last:border-0"
+                        >
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 shrink-0">
+                            {result.image ? (
+                              <Image
+                                src={result.image}
+                                alt={result.name}
+                                width={48}
+                                height={48}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xl">🌸</div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-neutral-900 line-clamp-1">{result.name}</p>
+                            {result.type === 'product' && result.price && (
+                              <p className="text-sm text-neutral-500">₺{result.price.toLocaleString('tr-TR')}</p>
+                            )}
+                            {result.type === 'category' && (
+                              <p className="text-xs text-neutral-400">{result.productCount} ürün</p>
+                            )}
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-neutral-300" />
+                        </Link>
+                      </motion.div>
+                    ))}
+
+                    {/* View All */}
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      onClick={() => navigateTo(`/arama?search=${encodeURIComponent(query)}`, query)}
+                      className="w-full py-3 mt-2 text-sm font-medium text-neutral-900 bg-neutral-100 rounded-xl"
+                    >
+                      Tüm sonuçları gör
+                    </motion.button>
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-neutral-100 flex items-center justify-center">
+                      <Search className="w-5 h-5 text-neutral-400" />
+                    </div>
+                    <p className="text-sm text-neutral-500">"{query}" için sonuç bulunamadı</p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     );
