@@ -117,6 +117,9 @@ export interface Order {
   customerEmail: string;
   customerPhone: string;
   isGuest?: boolean;
+  clientIp?: string;
+  fromCartAbandonment?: boolean;
+  cartAbandonmentId?: string;
   products: OrderProduct[];
   delivery: OrderDelivery;
   payment: OrderPayment;
@@ -643,6 +646,17 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     // Traffic source bilgisini al
     const trafficSource = getTrafficSource();
 
+    const analytics = (() => {
+      try {
+        if (typeof window === 'undefined') return {};
+        const visitorId = localStorage.getItem('vadiler_visitor_id') || undefined;
+        const sessionId = localStorage.getItem('vadiler_session_id') || undefined;
+        return { visitorId, sessionId };
+      } catch {
+        return {};
+      }
+    })();
+
     const orderData = {
       customer_id: data.customerId,
       customer_name: data.customerName,
@@ -667,6 +681,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       traffic_medium: trafficSource?.medium || null,
       traffic_campaign: trafficSource?.campaign || null,
       traffic_referrer: trafficSource?.referrer || null,
+      analytics,
     };
 
     try {

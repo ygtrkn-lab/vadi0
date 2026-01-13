@@ -33,6 +33,54 @@ function hasStatusEmailNotification(timeline: unknown, status: string): boolean 
   });
 }
 
+function getClientIp(request: NextRequest): string {
+  const raw = request.headers.get('cf-connecting-ip')
+    || request.headers.get('x-real-ip')
+    || request.headers.get('x-client-ip')
+    || request.headers.get('x-forwarded-for')
+    || request.headers.get('x-vercel-forwarded-for')
+    || '';
+
+  if (!raw) return '';
+  // x-forwarded-for can be: "client, proxy1, proxy2"
+  return raw.split(',')[0]?.trim() || '';
+}
+
+async function findRecentCartAbandonmentMatch(params: {
+  visitorId?: string;
+  sessionId?: string;
+  ipAddress?: string;
+}): Promise<{ id: string } | null> {
+  const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const base = () =>
+    supabase
+      .from('cart_abandonment')
+      .select('id')
+      .eq('reached_address_form', true)
+      .is('converted_order_id', null)
+      .gte('abandoned_at', sinceIso)
+      .order('abandoned_at', { ascending: false })
+      .limit(1);
+
+  if (params.visitorId) {
+    const { data } = await base().eq('visitor_id', params.visitorId);
+    if (data && data[0]?.id) return { id: data[0].id as string };
+  }
+
+  if (params.sessionId) {
+    const { data } = await base().eq('session_id', params.sessionId);
+    if (data && data[0]?.id) return { id: data[0].id as string };
+  }
+
+  if (params.ipAddress) {
+    const { data } = await base().eq('ip_address', params.ipAddress);
+    if (data && data[0]?.id) return { id: data[0].id as string };
+  }
+
+  return null;
+}
+
 // Normalize Turkish phone numbers to 10 digits (5XXXXXXXXX)
 function normalizePhone(phone: string): string {
   let digits = phone.replace(/\D/g, '');
@@ -413,6 +461,11 @@ export async function POST(request: NextRequest) {
       },
     };
 
+    const analytics = isRecord(newOrder.analytics) ? newOrder.analytics : {};
+    const visitorId = getString(analytics['visitorId'] ?? analytics['visitor_id'] ?? newOrder.visitorId ?? newOrder.visitor_id) || undefined;
+    const sessionId = getString(analytics['sessionId'] ?? analytics['session_id'] ?? newOrder.sessionId ?? newOrder.session_id) || undefined;
+    const clientIp = getClientIp(request) || undefined;
+
     const orderData = {
       customer_id: customerId,
       customer_name: customerName,
@@ -436,6 +489,7 @@ export async function POST(request: NextRequest) {
       timeline,
       notes: newOrder.notes || '',
       tracking_url: newOrder.tracking_url || '',
+      client_ip: clientIp || null,
     };
     
     console.log('📦 Inserting order:', JSON.stringify(orderData, null, 2));
@@ -450,6 +504,30 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('❌ Error creating order:', error);
       return NextResponse.json({ error: 'Failed to create order', details: error.message }, { status: 500 });
+    }
+
+    // Best-effort: if this order matches a recent cart abandonment, mark it as converted.
+    try {
+      const match = await findRecentCartAbandonmentMatch({ visitorId, sessionId, ipAddress: clientIp });
+      if (match?.id && data?.id) {
+        const nowIso2 = new Date().toISOString();
+        await supabase
+          .from('orders')
+          .update({ from_cart_abandonment: true, cart_abandonment_id: match.id })
+          .eq('id', data.id);
+
+        await supabase
+          .from('cart_abandonment')
+          .update({
+            status: 'converted',
+            converted_order_id: data.id,
+            converted_at: nowIso2,
+            updated_at: nowIso2,
+          })
+          .eq('id', match.id);
+      }
+    } catch (matchErr) {
+      console.warn('Warning: cart abandonment attribution failed:', matchErr);
     }
 
     const orderRow = data as unknown as OrderRow;
@@ -536,7 +614,13 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    return NextResponse.json(toCamelCase(data), { status: 201 });
+    const { data: refreshed } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', data.id)
+      .single();
+
+    return NextResponse.json(toCamelCase(refreshed || data), { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/orders:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

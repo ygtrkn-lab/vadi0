@@ -63,6 +63,9 @@ type OrderExtraFields = {
   trafficReferrer?: string;
   refund?: { amount?: number };
   payment?: { clientInfo?: { deviceModel?: string } };
+  clientIp?: string;
+  fromCartAbandonment?: boolean;
+  cartAbandonmentId?: string;
 };
 
 function getPaymentLogoInfo(paymentMethod?: string): { src: string; alt: string; containerClass: (isDark: boolean) => string } | null {
@@ -1144,6 +1147,18 @@ export default function SiparislerPage() {
                             <span className={`text-lg sm:text-[26px] font-bold tracking-[-0.025em] ${isDark ? 'text-white' : 'text-gray-900'}`}>
                               #{order.orderNumber}
                             </span>
+                            {(order as unknown as OrderExtraFields)?.fromCartAbandonment ? (
+                              <span
+                                className={`px-2 py-1 rounded-full text-[9px] sm:text-[10px] font-semibold uppercase tracking-wide ${
+                                  isDark
+                                    ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/20'
+                                    : 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200'
+                                }`}
+                                title="Sepet terk kaydından dönüş"
+                              >
+                                Sepet terkten geldi
+                              </span>
+                            ) : null}
                           </div>
                           <div className="flex flex-col gap-1 sm:gap-1.5">
                             <div className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[10.5px] font-semibold uppercase tracking-[0.08em] backdrop-blur-xl transition-all duration-300 ${
@@ -1327,12 +1342,13 @@ export default function SiparislerPage() {
         ) : (
           /* List View - Tablo */
           <div className={`overflow-x-auto rounded-xl border ${isDark ? 'bg-neutral-900/50 border-neutral-800' : 'bg-white border-gray-200'}`}>
-            <table className="w-full min-w-[900px]">
+            <table className="w-full min-w-[1020px]">
               <thead>
                 <tr className={`text-left text-xs uppercase tracking-wider ${isDark ? 'text-neutral-500 border-b border-neutral-800' : 'text-gray-500 border-b border-gray-200'}`}>
                   <th className="px-4 py-3 font-medium">Sipariş</th>
                   <th className="px-4 py-3 font-medium">Tarih</th>
                   <th className="px-4 py-3 font-medium">Müşteri</th>
+                  <th className="px-4 py-3 font-medium">IP / Kaynak</th>
                   <th className="px-4 py-3 font-medium">Ürünler</th>
                   <th className="px-4 py-3 font-medium">Teslimat</th>
                   <th className="px-4 py-3 font-medium">Durum</th>
@@ -1406,6 +1422,43 @@ export default function SiparislerPage() {
                             <p className={`text-xs truncate max-w-[140px] ${isDark ? 'text-neutral-500' : 'text-gray-500'}`}>{order.customerPhone ? formatPhoneNumber(order.customerPhone) : '-'}</p>
                           </div>
                         </div>
+                      </td>
+
+                      {/* IP / Kaynak */}
+                      <td className="px-4 py-3">
+                        {(() => {
+                          const extra = order as unknown as OrderExtraFields;
+                          const ip = extra?.clientIp || '';
+                          const fromCab = !!extra?.fromCartAbandonment;
+                          return (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-mono text-xs ${isDark ? 'text-neutral-200' : 'text-gray-800'}`}>{ip || '-'}</span>
+                                {ip ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard.writeText(ip);
+                                    }}
+                                    className={`px-2 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
+                                      isDark
+                                        ? 'bg-neutral-800/60 text-neutral-200 hover:bg-neutral-700'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                    title="IP kopyala"
+                                  >
+                                    Kopyala
+                                  </button>
+                                ) : null}
+                              </div>
+                              {fromCab ? (
+                                <span className={`text-[10px] font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                                  Sepet terkten geldi
+                                </span>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       {/* Ürünler */}
@@ -1773,6 +1826,11 @@ export default function SiparislerPage() {
                           <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${selectedOrder.isGuest ? (isDark ? 'bg-amber-500/15 text-amber-300' : 'bg-amber-100 text-amber-700') : (isDark ? 'bg-emerald-500/15 text-emerald-300' : 'bg-emerald-100 text-emerald-700')}`}>
                             {selectedOrder.isGuest ? 'Misafir' : 'Üye'}
                           </span>
+                          {(selectedOrder as unknown as OrderExtraFields)?.fromCartAbandonment ? (
+                            <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${isDark ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/25' : 'bg-emerald-100 text-emerald-700 border border-emerald-200'}`}>
+                              Sepet terkten geldi
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       {(() => {
@@ -1790,6 +1848,15 @@ export default function SiparislerPage() {
                           <HiOutlinePhone className="w-4 h-4" /> {formatPhoneNumber(selectedOrder.customerPhone)}
                         </a>
                       )}
+                      {(() => {
+                        const extra = selectedOrder as unknown as OrderExtraFields;
+                        if (!extra?.clientIp) return null;
+                        return (
+                          <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-gray-600'}`}>
+                            IP: <span className={`font-mono ${isDark ? 'text-neutral-200' : 'text-gray-800'}`}>{extra.clientIp}</span>
+                          </p>
+                        );
+                      })()}
                       {selectedOrder.customerId && (
                         <p className={`text-xs mt-2 ${isDark ? 'text-neutral-500' : 'text-gray-400'}`}>Müşteri ID: {selectedOrder.customerId}</p>
                       )}
@@ -2368,6 +2435,17 @@ export default function SiparislerPage() {
                       <div className="grid grid-cols-2 gap-2 text-xs font-semibold">
                         <button onClick={() => navigator.clipboard.writeText(selectedOrder.customerPhone || '')} className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-neutral-800/60 text-neutral-200 hover:bg-neutral-700 hover:shadow-lg' : 'bg-gray-100/60 text-gray-800 hover:bg-gray-200 hover:shadow-lg'}`}>Tel Kopyala</button>
                         <button onClick={() => navigator.clipboard.writeText(String(selectedOrder.orderNumber))} className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-neutral-800/60 text-neutral-200 hover:bg-neutral-700 hover:shadow-lg' : 'bg-gray-100/60 text-gray-800 hover:bg-gray-200 hover:shadow-lg'}`}>No Kopyala</button>
+                        <button
+                          onClick={() => {
+                            const ip = (selectedOrder as unknown as OrderExtraFields)?.clientIp || '';
+                            if (ip) navigator.clipboard.writeText(ip);
+                          }}
+                          className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-neutral-800/60 text-neutral-200 hover:bg-neutral-700 hover:shadow-lg' : 'bg-gray-100/60 text-gray-800 hover:bg-gray-200 hover:shadow-lg'}`}
+                          disabled={!(selectedOrder as unknown as OrderExtraFields)?.clientIp}
+                          title={(selectedOrder as unknown as OrderExtraFields)?.clientIp ? 'IP kopyala' : 'IP yok'}
+                        >
+                          IP Kopyala
+                        </button>
                         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-neutral-800/60 text-neutral-200 hover:bg-neutral-700 hover:shadow-lg' : 'bg-gray-100/60 text-gray-800 hover:bg-gray-200 hover:shadow-lg'}`}>Başa Git</button>
                         <button onClick={() => setSelectedOrder(null)} className={`px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 ${isDark ? 'bg-red-500/15 text-red-200 hover:bg-red-500/25 hover:shadow-lg hover:shadow-red-500/20' : 'bg-red-50 text-red-700 hover:bg-red-100 hover:shadow-lg hover:shadow-red-500/10'}`}>Kapat</button>
                       </div>

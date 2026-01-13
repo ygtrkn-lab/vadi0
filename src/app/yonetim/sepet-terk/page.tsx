@@ -514,7 +514,7 @@ export default function SepetTerkPage() {
     } finally {
       setLoading(false);
     }
-  }, [period, page, stepFilter, statusFilter]);
+  }, [period, page, stepFilter, statusFilter, fromDate, toDate]);
 
   useEffect(() => {
     fetchData();
