@@ -18,6 +18,7 @@ interface CartAbandonmentData {
   customerId?: string;
   customerEmail?: string;
   customerPhone?: string;
+  interactions?: InteractionsSummary;
   cartItems: Array<{ id: number; name: string; price: number; quantity: number }>;
   cartTotal: number;
   cartItemCount: number;
@@ -44,6 +45,36 @@ interface CartAbandonmentData {
   utmCampaign?: string;
   landingPage?: string;
   startedAt: string;
+}
+
+interface FieldInteractionMetrics {
+  focus: number;
+  blur: number;
+  input: number;
+  totalInputMs: number;
+  errors: number;
+}
+
+interface ScrollMetrics {
+  maxDepthPercent: number;
+  timeTo50PercentMs?: number;
+  timeTo90PercentMs?: number;
+  firstScrollAtMs?: number;
+}
+
+interface CartChangeMetrics {
+  quantityChanges: number;
+  removals: number;
+  valueChange: number;
+}
+
+interface InteractionsSummary {
+  fields: Record<string, FieldInteractionMetrics>;
+  scroll: ScrollMetrics;
+  clicks: Record<string, number>;
+  cart: CartChangeMetrics;
+  timeToFirstInputMs?: number;
+  timeToFirstErrorMs?: number;
 }
 
 interface UseCartAbandonmentTrackerOptions {
@@ -107,6 +138,20 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
   const hasSentAbandonmentRef = useRef<boolean>(false);
   const isCompletedRef = useRef<boolean>(false);
   const isInitializedRef = useRef<boolean>(false);
+  const interactionsRef = useRef<InteractionsSummary>({
+    fields: {},
+    scroll: { maxDepthPercent: 0 },
+    clicks: {},
+    cart: { quantityChanges: 0, removals: 0, valueChange: 0 },
+  });
+  const fieldActiveSinceRef = useRef<Record<string, number>>({});
+  const firstInputTimeRef = useRef<number | null>(null);
+  const firstErrorTimeRef = useRef<number | null>(null);
+  const baseCartTotalRef = useRef<number>(items.reduce((sum, item) => sum + item.product.price * item.quantity, 0));
+  const lastCartItemsRef = useRef<CartItem[]>(items);
+  const hasCartChangeInitializedRef = useRef<boolean>(false);
+  const scrollTickingRef = useRef<boolean>(false);
+  const lastClickTsRef = useRef<number>(0);
 
   // Initialize timing refs on mount
   useEffect(() => {
@@ -116,7 +161,7 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
       stepStartTimeRef.current = now;
       isInitializedRef.current = true;
     }
-  }, []);
+  }, [items]);
 
   // Device detection
   const getDeviceInfo = useCallback(() => {
@@ -184,6 +229,14 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
     return {};
   }, []);
 
+  const getFieldKey = useCallback((target: HTMLElement) => {
+    const datasetKey = target.getAttribute('data-field') || target.getAttribute('data-interaction-key');
+    const name = target.getAttribute('name');
+    const id = target.getAttribute('id');
+    const aria = target.getAttribute('aria-label');
+    return datasetKey || name || id || aria || target.tagName.toLowerCase();
+  }, []);
+
   // Doldurulmuş alanları kontrol et
   const getFilledFields = useCallback(() => {
     return {
@@ -198,6 +251,166 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
     };
   }, [recipientName, recipientPhone, district, neighborhood, deliveryDate, streetName, buildingNo, messageCard]);
 
+  // Form etkileşimlerini, scroll ve tıklamaları takip et
+  useEffect(() => {
+    const ensureField = (key: string) => {
+      if (!interactionsRef.current.fields[key]) {
+        interactionsRef.current.fields[key] = {
+          focus: 0,
+          blur: 0,
+          input: 0,
+          totalInputMs: 0,
+          errors: 0,
+        };
+      }
+    };
+
+    const handleFocus = (event: FocusEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const key = getFieldKey(target);
+      ensureField(key);
+      interactionsRef.current.fields[key].focus += 1;
+      fieldActiveSinceRef.current[key] = Date.now();
+    };
+
+    const handleBlur = (event: FocusEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const key = getFieldKey(target);
+      ensureField(key);
+      interactionsRef.current.fields[key].blur += 1;
+      const startedAt = fieldActiveSinceRef.current[key];
+      if (startedAt) {
+        interactionsRef.current.fields[key].totalInputMs += Date.now() - startedAt;
+        delete fieldActiveSinceRef.current[key];
+      }
+    };
+
+    const handleInput = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const key = getFieldKey(target);
+      ensureField(key);
+      interactionsRef.current.fields[key].input += 1;
+
+      if (firstInputTimeRef.current === null) {
+        firstInputTimeRef.current = Date.now();
+        interactionsRef.current.timeToFirstInputMs = firstInputTimeRef.current - startTimeRef.current;
+      }
+    };
+
+    const handleInvalid = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const key = getFieldKey(target);
+      ensureField(key);
+      interactionsRef.current.fields[key].errors += 1;
+      if (firstErrorTimeRef.current === null) {
+        firstErrorTimeRef.current = Date.now();
+        interactionsRef.current.timeToFirstErrorMs = firstErrorTimeRef.current - startTimeRef.current;
+      }
+    };
+
+    const handleScroll = () => {
+      if (scrollTickingRef.current) return;
+      scrollTickingRef.current = true;
+      requestAnimationFrame(() => {
+        const doc = document.documentElement;
+        const total = doc.scrollHeight - doc.clientHeight;
+        if (total <= 0) {
+          scrollTickingRef.current = false;
+          return;
+        }
+        const depth = Math.min(100, Math.round(((window.scrollY + doc.clientHeight) / doc.scrollHeight) * 100));
+        const scrollMetrics = interactionsRef.current.scroll;
+        if (!scrollMetrics.firstScrollAtMs) {
+          scrollMetrics.firstScrollAtMs = Date.now() - startTimeRef.current;
+        }
+        if (depth > scrollMetrics.maxDepthPercent) {
+          scrollMetrics.maxDepthPercent = depth;
+        }
+        const elapsed = Date.now() - startTimeRef.current;
+        if (depth >= 50 && !scrollMetrics.timeTo50PercentMs) {
+          scrollMetrics.timeTo50PercentMs = elapsed;
+        }
+        if (depth >= 90 && !scrollMetrics.timeTo90PercentMs) {
+          scrollMetrics.timeTo90PercentMs = elapsed;
+        }
+        scrollTickingRef.current = false;
+      });
+    };
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      const now = Date.now();
+      if (now - lastClickTsRef.current < 120) return; // throttle bursts
+      lastClickTsRef.current = now;
+
+      const key = target.getAttribute('data-interaction-key')
+        || getFieldKey(target)
+        || (target.textContent ? target.textContent.slice(0, 40).trim() : target.tagName.toLowerCase());
+      interactionsRef.current.clicks[key] = (interactionsRef.current.clicks[key] || 0) + 1;
+    };
+
+    document.addEventListener('focusin', handleFocus, true);
+    document.addEventListener('focusout', handleBlur, true);
+    document.addEventListener('input', handleInput, true);
+    document.addEventListener('invalid', handleInvalid, true);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('click', handleClick, true);
+
+    return () => {
+      document.removeEventListener('focusin', handleFocus, true);
+      document.removeEventListener('focusout', handleBlur, true);
+      document.removeEventListener('input', handleInput, true);
+      document.removeEventListener('invalid', handleInvalid, true);
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('click', handleClick, true);
+    };
+  }, [getFieldKey]);
+
+  // Sepet değişimlerini takip et (adet değişimi / silme / değer değişimi)
+  useEffect(() => {
+    if (!hasCartChangeInitializedRef.current) {
+      hasCartChangeInitializedRef.current = true;
+      lastCartItemsRef.current = items;
+      return;
+    }
+
+    const prevMap = new Map<number, number>();
+    lastCartItemsRef.current.forEach(item => prevMap.set(item.product.id, item.quantity));
+
+    let quantityChanges = 0;
+    let removals = 0;
+
+    items.forEach(item => {
+      const prevQty = prevMap.get(item.product.id);
+      if (prevQty === undefined) {
+        quantityChanges += 1;
+      } else if (prevQty !== item.quantity) {
+        quantityChanges += 1;
+      }
+      prevMap.delete(item.product.id);
+    });
+
+    removals = prevMap.size;
+
+    if (quantityChanges > 0) {
+      interactionsRef.current.cart.quantityChanges += quantityChanges;
+    }
+
+    if (removals > 0) {
+      interactionsRef.current.cart.removals += removals;
+    }
+
+    const newTotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    interactionsRef.current.cart.valueChange = newTotal - baseCartTotalRef.current;
+
+    lastCartItemsRef.current = items;
+  }, [items]);
+
   // Abandonment verisini hazırla
   const prepareAbandonmentData = useCallback((): CartAbandonmentData | null => {
     if (items.length === 0) return null;
@@ -210,6 +423,15 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
     if (currentStep !== 'success') {
       stepTimesRef.current[currentStep] += currentStepTime;
     }
+
+    // Aktif alan sürelerini flush et
+    Object.entries(fieldActiveSinceRef.current).forEach(([key, startedAt]) => {
+      const metrics = interactionsRef.current.fields[key];
+      if (metrics && startedAt) {
+        metrics.totalInputMs += now - startedAt;
+      }
+      delete fieldActiveSinceRef.current[key];
+    });
     
     // Minimum süre kontrolü
     if (totalSeconds < minAbandonTime) return null;
@@ -254,6 +476,7 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
       utmCampaign: utmParams.utm_campaign,
       landingPage: typeof window !== 'undefined' ? sessionStorage.getItem('vadiler_landing_page') || undefined : undefined,
       startedAt: new Date(startTimeRef.current).toISOString(),
+      interactions: interactionsRef.current,
     };
   }, [items, currentStep, customerId, customerEmail, customerPhone, district, neighborhood, deliveryDate, minAbandonTime, getSessionInfo, getDeviceInfo, getUTMParams, getFilledFields]);
 
@@ -360,6 +583,18 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
     hasReachedAddressFormRef.current = false;
     hasSentAbandonmentRef.current = false;
     isCompletedRef.current = false;
+    interactionsRef.current = {
+      fields: {},
+      scroll: { maxDepthPercent: 0 },
+      clicks: {},
+      cart: { quantityChanges: 0, removals: 0, valueChange: 0 },
+    };
+    fieldActiveSinceRef.current = {};
+    firstInputTimeRef.current = null;
+    firstErrorTimeRef.current = null;
+    baseCartTotalRef.current = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    lastCartItemsRef.current = items;
+    hasCartChangeInitializedRef.current = true;
   }, []);
 
   return {

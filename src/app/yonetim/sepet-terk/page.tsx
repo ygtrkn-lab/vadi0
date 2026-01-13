@@ -30,8 +30,8 @@ import {
 
 interface CartAbandonmentRecord {
   id: string;
-  ip_address: string;
-  ip_hash: string;
+  ip_address?: string;
+  ip_hash?: string;
   visitor_id?: string;
   session_id?: string;
   customer_id?: string;
@@ -62,6 +62,32 @@ interface CartAbandonmentRecord {
   status: 'abandoned' | 'recovered' | 'converted';
   started_at: string;
   abandoned_at: string;
+  interactions?: InteractionDetails;
+}
+
+interface InteractionField {
+  focus: number;
+  blur: number;
+  input: number;
+  totalInputMs: number;
+  errors: number;
+}
+
+interface InteractionDetails {
+  fields?: Record<string, InteractionField>;
+  scroll?: {
+    maxDepthPercent?: number;
+    timeTo50PercentMs?: number;
+    timeTo90PercentMs?: number;
+  };
+  clicks?: Record<string, number>;
+  cart?: {
+    quantityChanges?: number;
+    removals?: number;
+    valueChange?: number;
+  };
+  timeToFirstInputMs?: number;
+  timeToFirstErrorMs?: number;
 }
 
 interface Summary {
@@ -85,6 +111,15 @@ interface Summary {
     recovered: number;
     converted: number;
   };
+  interactions?: {
+    topErrorFields: Array<{ field: string; errors: number }>;
+    topSlowFields: Array<{ field: string; ms: number }>;
+    avgMaxScrollPercent: number;
+    avgTimeToFirstInputSeconds?: number;
+    avgTimeToFirstErrorSeconds?: number;
+    avgTimeTo50ScrollSeconds?: number;
+    avgTimeTo90ScrollSeconds?: number;
+  };
 }
 
 // ============================================
@@ -98,6 +133,12 @@ function formatDuration(seconds: number): string {
   if (mins < 60) return `${mins}dk ${secs}sn`;
   const hours = Math.floor(mins / 60);
   return `${hours}sa ${mins % 60}dk`;
+}
+
+function formatMsToSeconds(ms?: number): string {
+  if (!ms) return '-';
+  const seconds = Math.round(ms / 1000);
+  return formatDuration(seconds);
 }
 
 function formatCurrency(amount: number): string {
@@ -229,9 +270,9 @@ function RecordDetailModal({
             </h4>
             <div className="grid grid-cols-2 gap-4">
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <p className="text-xs text-gray-500">IP Hash</p>
+                <p className="text-xs text-gray-500">IP</p>
                 <p className={`text-sm font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {record.ip_hash?.substring(0, 16)}...
+                  {(record.ip_address || record.ip_hash || 'N/A').toString().substring(0, 16)}...
                 </p>
               </div>
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
@@ -641,6 +682,56 @@ export default function SepetTerkPage() {
                     <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{device.label}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Form Sorunları & Scroll */}
+          {summary?.interactions && (
+            <div className={`${cardBg} rounded-2xl p-4 mb-6 border ${borderClass}`}>
+              <h3 className={`text-sm font-medium mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                Form Sorunları & Scroll Davranışı
+              </h3>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>En Çok Hata Veren Alanlar</p>
+                  <div className="mt-2 space-y-2">
+                    {(summary.interactions.topErrorFields.length ? summary.interactions.topErrorFields : [{ field: 'Veri yok', errors: 0 }]).map((item, idx) => (
+                      <div key={idx} className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                        <span className={`text-sm ${textClass}`}>{item.field}</span>
+                        <span className="text-xs text-red-500 font-semibold">{item.errors} hata</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>En Uzun Oyalanılan Alanlar</p>
+                  <div className="mt-2 space-y-2">
+                    {(summary.interactions.topSlowFields.length ? summary.interactions.topSlowFields : [{ field: 'Veri yok', ms: 0 }]).map((item, idx) => (
+                      <div key={idx} className={`flex items-center justify-between p-2 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                        <span className={`text-sm ${textClass}`}>{item.field}</span>
+                        <span className="text-xs text-blue-500 font-semibold">{formatMsToSeconds(item.ms)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Scroll & İlk Aksiyon</p>
+                  <div className={`mt-2 p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-50'} space-y-2`}>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={textClass}>Ort. Maks Scroll</span>
+                      <span className="font-semibold">%{summary.interactions.avgMaxScrollPercent}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={textClass}>İlk Input</span>
+                      <span className="font-semibold">{summary.interactions.avgTimeToFirstInputSeconds ? formatDuration(summary.interactions.avgTimeToFirstInputSeconds) : '-'}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className={textClass}>İlk Hata</span>
+                      <span className="font-semibold">{summary.interactions.avgTimeToFirstErrorSeconds ? formatDuration(summary.interactions.avgTimeToFirstErrorSeconds) : '-'}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyticsDb, getAnalyticsStatus } from '@/lib/supabase/analytics-client';
-import crypto from 'crypto';
-
-/**
- * IP adresini hashle (KVKK uyumlu)
- */
-function hashIP(ip: string): string {
-  return crypto.createHash('sha256').update(ip + process.env.IP_HASH_SALT || 'vadiler-salt').digest('hex').substring(0, 32);
-}
+// IP hash kullanılmıyor; doğrudan IP tutulacak
 
 /**
  * Gerçek IP adresini al (proxy arkasında bile)
@@ -77,6 +70,7 @@ export async function POST(request: NextRequest) {
       utmCampaign,
       landingPage,
       startedAt,
+      interactions,
     } = body;
 
     // Minimum 20 saniye geçirmemiş veya adres formuna ulaşmamışsa kaydetme
@@ -88,14 +82,13 @@ export async function POST(request: NextRequest) {
     }
 
     const clientIP = getClientIP(request);
-    const ipHash = hashIP(clientIP);
 
     // Son 30 dakikada aynı IP'den kayıt var mı kontrol et (spam önleme)
     const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const { data: recentRecord } = await analyticsDb
       .from('cart_abandonment')
       .select('id, total_checkout_seconds')
-      .eq('ip_hash', ipHash)
+      .eq('ip_address', clientIP)
       .gte('abandoned_at', thirtyMinutesAgo)
       .order('abandoned_at', { ascending: false })
       .limit(1)
@@ -121,6 +114,7 @@ export async function POST(request: NextRequest) {
             selected_district: selectedDistrict,
             selected_neighborhood: selectedNeighborhood,
             selected_delivery_date: selectedDeliveryDate,
+            interactions: interactions || {},
             abandoned_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
@@ -149,7 +143,6 @@ export async function POST(request: NextRequest) {
       .from('cart_abandonment')
       .insert({
         ip_address: clientIP,
-        ip_hash: ipHash,
         visitor_id: visitorId,
         session_id: sessionId,
         customer_id: customerId,
@@ -182,6 +175,7 @@ export async function POST(request: NextRequest) {
         landing_page: landingPage,
         started_at: startedAt || new Date().toISOString(),
         abandoned_at: new Date().toISOString(),
+        interactions: interactions || {},
       })
       .select('id')
       .single();
@@ -272,13 +266,74 @@ export async function GET(request: NextRequest) {
     // Özet istatistikler
     const { data: summaryData } = await analyticsDb
       .from('cart_abandonment')
-      .select('cart_total, total_checkout_seconds, reached_step, device_type, status, ip_hash')
+      .select('cart_total, total_checkout_seconds, reached_step, device_type, status, ip_address, interactions')
       .gte('abandoned_at', fromDate.toISOString())
       .gte('total_checkout_seconds', minTime);
 
+    const fieldAggregates: Record<string, { errors: number; totalInputMs: number; input: number }> = {};
+    let scrollCount = 0;
+    let scrollMaxSum = 0;
+    let timeTo50Sum = 0;
+    let timeTo50Count = 0;
+    let timeTo90Sum = 0;
+    let timeTo90Count = 0;
+    let timeToFirstInputSum = 0;
+    let timeToFirstInputCount = 0;
+    let timeToFirstErrorSum = 0;
+    let timeToFirstErrorCount = 0;
+
+    summaryData?.forEach((record) => {
+      const interactions = (record as any).interactions || {};
+      const fields = interactions.fields || {};
+      Object.entries(fields).forEach(([field, metrics]: [string, any]) => {
+        if (!fieldAggregates[field]) {
+          fieldAggregates[field] = { errors: 0, totalInputMs: 0, input: 0 };
+        }
+        fieldAggregates[field].errors += metrics?.errors || 0;
+        fieldAggregates[field].totalInputMs += metrics?.totalInputMs || 0;
+        fieldAggregates[field].input += metrics?.input || 0;
+      });
+
+      const scroll = interactions.scroll;
+      if (scroll && typeof scroll.maxDepthPercent === 'number') {
+        scrollCount += 1;
+        scrollMaxSum += scroll.maxDepthPercent || 0;
+        if (scroll.timeTo50PercentMs) {
+          timeTo50Sum += scroll.timeTo50PercentMs;
+          timeTo50Count += 1;
+        }
+        if (scroll.timeTo90PercentMs) {
+          timeTo90Sum += scroll.timeTo90PercentMs;
+          timeTo90Count += 1;
+        }
+      }
+
+      if (typeof interactions.timeToFirstInputMs === 'number') {
+        timeToFirstInputSum += interactions.timeToFirstInputMs;
+        timeToFirstInputCount += 1;
+      }
+
+      if (typeof interactions.timeToFirstErrorMs === 'number') {
+        timeToFirstErrorSum += interactions.timeToFirstErrorMs;
+        timeToFirstErrorCount += 1;
+      }
+    });
+
+    const topErrorFields = Object.entries(fieldAggregates)
+      .filter(([, m]) => (m.errors || 0) > 0)
+      .sort((a, b) => b[1].errors - a[1].errors)
+      .slice(0, 5)
+      .map(([field, m]) => ({ field, errors: m.errors }));
+
+    const topSlowFields = Object.entries(fieldAggregates)
+      .filter(([, m]) => (m.totalInputMs || 0) > 0)
+      .sort((a, b) => b[1].totalInputMs - a[1].totalInputMs)
+      .slice(0, 5)
+      .map(([field, m]) => ({ field, ms: Math.round(m.totalInputMs) }));
+
     const summary = {
       totalRecords: count || 0,
-      uniqueIPs: new Set(summaryData?.map(r => r.ip_hash) || []).size,
+      uniqueIPs: new Set(summaryData?.map(r => r.ip_address) || []).size,
       totalAbandonedValue: summaryData?.reduce((sum, r) => sum + (r.cart_total || 0), 0) || 0,
       avgTimeSeconds: summaryData?.length 
         ? Math.round(summaryData.reduce((sum, r) => sum + (r.total_checkout_seconds || 0), 0) / summaryData.length)
@@ -298,6 +353,15 @@ export async function GET(request: NextRequest) {
         abandoned: summaryData?.filter(r => r.status === 'abandoned').length || 0,
         recovered: summaryData?.filter(r => r.status === 'recovered').length || 0,
         converted: summaryData?.filter(r => r.status === 'converted').length || 0,
+      },
+      interactions: {
+        topErrorFields,
+        topSlowFields,
+        avgMaxScrollPercent: scrollCount ? Math.round(scrollMaxSum / scrollCount) : 0,
+        avgTimeToFirstInputSeconds: timeToFirstInputCount ? Math.round((timeToFirstInputSum / timeToFirstInputCount) / 1000) : undefined,
+        avgTimeToFirstErrorSeconds: timeToFirstErrorCount ? Math.round((timeToFirstErrorSum / timeToFirstErrorCount) / 1000) : undefined,
+        avgTimeTo50ScrollSeconds: timeTo50Count ? Math.round((timeTo50Sum / timeTo50Count) / 1000) : undefined,
+        avgTimeTo90ScrollSeconds: timeTo90Count ? Math.round((timeTo90Sum / timeTo90Count) / 1000) : undefined,
       },
     };
 
