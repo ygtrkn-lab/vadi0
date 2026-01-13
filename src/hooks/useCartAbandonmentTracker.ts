@@ -439,6 +439,26 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
     // Adres formuna ulaşmış olmalı (recipient adımına geçmiş olmalı)
     if (!hasReachedAddressFormRef.current) return null;
     
+    // Step sürelerini normalize et (toplamı toplam süreyi aşmasın)
+    const normalizedStepTimes = (() => {
+      const times = { ...stepTimesRef.current };
+      Object.keys(times).forEach((key) => {
+        const val = times[key as keyof typeof times];
+        times[key as keyof typeof times] = Number.isFinite(val) && val > 0 ? val : 0;
+        if (times[key as keyof typeof times] > totalSeconds) {
+          times[key as keyof typeof times] = totalSeconds;
+        }
+      });
+      const sum = Object.values(times).reduce((acc, v) => acc + v, 0);
+      if (sum > totalSeconds && sum > 0) {
+        const ratio = totalSeconds / sum;
+        Object.keys(times).forEach((key) => {
+          times[key as keyof typeof times] = Math.max(0, Math.round(times[key as keyof typeof times] * ratio));
+        });
+      }
+      return times;
+    })();
+
     const { visitorId, sessionId } = getSessionInfo();
     const deviceInfo = getDeviceInfo();
     const utmParams = getUTMParams();
@@ -461,10 +481,10 @@ export function useCartAbandonmentTracker(options: UseCartAbandonmentTrackerOpti
       reachedStep: currentStep === 'success' ? 'payment' : currentStep,
       reachedAddressForm: hasReachedAddressFormRef.current,
       filledFields,
-      timeOnCartSeconds: stepTimesRef.current.cart,
-      timeOnRecipientSeconds: stepTimesRef.current.recipient,
-      timeOnMessageSeconds: stepTimesRef.current.message,
-      timeOnPaymentSeconds: stepTimesRef.current.payment,
+      timeOnCartSeconds: normalizedStepTimes.cart,
+      timeOnRecipientSeconds: normalizedStepTimes.recipient,
+      timeOnMessageSeconds: normalizedStepTimes.message,
+      timeOnPaymentSeconds: normalizedStepTimes.payment,
       totalCheckoutSeconds: totalSeconds,
       selectedDistrict: district,
       selectedNeighborhood: neighborhood,

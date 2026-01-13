@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpotlightCard, AnimatedCounter, FadeContent, GradientText } from '@/components/admin';
 import { useTheme } from '../ThemeContext';
@@ -31,7 +31,6 @@ import {
 interface CartAbandonmentRecord {
   id: string;
   ip_address?: string;
-  ip_hash?: string;
   visitor_id?: string;
   session_id?: string;
   customer_id?: string;
@@ -139,6 +138,47 @@ function formatMsToSeconds(ms?: number): string {
   if (!ms) return '-';
   const seconds = Math.round(ms / 1000);
   return formatDuration(seconds);
+}
+
+function buildRecommendations(summary: Summary | null): string[] {
+  if (!summary) return [];
+
+  const recs: string[] = [];
+  const inter = summary.interactions;
+
+  if (summary.avgTimeSeconds > 120) {
+    recs.push('Checkout adımlarında ortalama süre yüksek; adres alanlarını sadeleştirip otomatik doldurma/ilçe-telefon maskesi ekleyin.');
+  }
+
+  if ((summary.byStep.payment || 0) < (summary.byStep.recipient || 0) / 2) {
+    recs.push('Ödeme adımına geçiş düşük; ödeme hatalarını loglayıp taksit/iyzico hata mesajlarını görünür kılın, “tekrar dene” CTA ekleyin.');
+  }
+
+  if (summary.totalAbandonedValue > 5000) {
+    recs.push('Yüksek kayıp sepet değeri var; yüksek değerli sepetlere küçük indirim / kargo hediyesi A/B test edin.');
+  }
+
+  if (inter?.topErrorFields?.length) {
+    recs.push(`Hata alan alanlar: ${inter.topErrorFields.map(f => f.field).join(', ')}. Bu alanlarda satır içi hata mesajlarını netleştirin.`);
+  }
+
+  if (inter?.topSlowFields?.length) {
+    recs.push(`En çok vakit harcanan alanlar: ${inter.topSlowFields.map(f => f.field).join(', ')}. İpucu/metin kısaltma veya otomatik tamamlama deneyin.`);
+  }
+
+  if ((inter?.avgMaxScrollPercent || 0) < 60) {
+    recs.push('Scroll derinliği düşük; kritik güven/teslimat mesajlarını ilk ekrana alın, öne çıkan CTA ekleyin.');
+  }
+
+  if ((inter?.avgTimeToFirstInputSeconds || 0) > 8) {
+    recs.push('İlk input gecikiyor; form girişini hızlandırmak için varsayılan odak ve klavye açılışı ekleyin.');
+  }
+
+  if (!recs.length) {
+    recs.push('Metrikler dengeli; küçük kopya/güven rozetleri ve teslimat mesajları için hızlı A/B testleri deneyin.');
+  }
+
+  return recs;
 }
 
 function formatCurrency(amount: number): string {
@@ -271,8 +311,8 @@ function RecordDetailModal({
             <div className="grid grid-cols-2 gap-4">
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
                 <p className="text-xs text-gray-500">IP</p>
-                <p className={`text-sm font-mono ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {(record.ip_address || record.ip_hash || 'N/A').toString().substring(0, 16)}...
+                <p className={`text-sm font-mono break-all ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {record.ip_address || 'N/A'}
                 </p>
               </div>
               <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
@@ -443,6 +483,9 @@ export default function SepetTerkPage() {
   const [stepFilter, setStepFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const recommendations = useMemo(() => buildRecommendations(summary), [summary]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -452,9 +495,11 @@ export default function SepetTerkPage() {
         page: page.toString(),
         limit: '25',
       });
-      
+
       if (stepFilter) params.set('step', stepFilter);
       if (statusFilter) params.set('status', statusFilter);
+      if (fromDate) params.set('from', fromDate);
+      if (toDate) params.set('to', toDate);
 
       const response = await fetch(`/api/analytics/cart-abandonment?${params}`);
       const result = await response.json();
@@ -480,6 +525,7 @@ export default function SepetTerkPage() {
     { value: '7d', label: 'Son 7 Gün' },
     { value: '30d', label: 'Son 30 Gün' },
     { value: '90d', label: 'Son 90 Gün' },
+    { value: 'custom', label: 'Özel Tarih' },
   ];
 
   const bgClass = isDark ? 'bg-gray-950' : 'bg-gray-50';
@@ -515,7 +561,19 @@ export default function SepetTerkPage() {
                 {/* Period Selector */}
                 <select
                   value={period}
-                  onChange={(e) => { setPeriod(e.target.value); setPage(1); }}
+                  onChange={(e) => { 
+                    const val = e.target.value;
+                    setPeriod(val); 
+                    if (val !== 'custom') {
+                      setFromDate('');
+                      setToDate('');
+                    } else {
+                      const today = new Date().toISOString().slice(0, 10);
+                      setFromDate(prev => prev || today);
+                      setToDate(prev => prev || today);
+                    }
+                    setPage(1); 
+                  }}
                   className={`px-3 py-2 text-sm rounded-lg border ${
                     isDark 
                       ? 'bg-gray-800 border-gray-700 text-white' 
@@ -590,9 +648,118 @@ export default function SepetTerkPage() {
                       <option value="converted">Dönüştürülmüş</option>
                     </select>
 
-                    {(stepFilter || statusFilter) && (
+                    {period === 'custom' && (
+                      <>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => {
+                              const today = new Date().toISOString().slice(0, 10);
+                              setFromDate(today);
+                              setToDate(today);
+                              setPage(1);
+                            }}
+                            className={`px-3 py-1.5 text-xs rounded-lg border ${
+                              isDark 
+                                ? 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700' 
+                                : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                            }`}
+                          >
+                            Bugün
+                          </button>
+                          <button
+                            onClick={() => {
+                              const yesterday = new Date();
+                              yesterday.setDate(yesterday.getDate() - 1);
+                              const dateStr = yesterday.toISOString().slice(0, 10);
+                              setFromDate(dateStr);
+                              setToDate(dateStr);
+                              setPage(1);
+                            }}
+                            className={`px-3 py-1.5 text-xs rounded-lg border ${
+                              isDark 
+                                ? 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700' 
+                                : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                            }`}
+                          >
+                            Dün
+                          </button>
+                          <button
+                            onClick={() => {
+                              const today = new Date();
+                              const sevenDaysAgo = new Date();
+                              sevenDaysAgo.setDate(today.getDate() - 7);
+                              setFromDate(sevenDaysAgo.toISOString().slice(0, 10));
+                              setToDate(today.toISOString().slice(0, 10));
+                              setPage(1);
+                            }}
+                            className={`px-3 py-1.5 text-xs rounded-lg border ${
+                              isDark 
+                                ? 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700' 
+                                : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                            }`}
+                          >
+                            Son 7 Gün
+                          </button>
+                          <button
+                            onClick={() => {
+                              const today = new Date();
+                              const thirtyDaysAgo = new Date();
+                              thirtyDaysAgo.setDate(today.getDate() - 30);
+                              setFromDate(thirtyDaysAgo.toISOString().slice(0, 10));
+                              setToDate(today.toISOString().slice(0, 10));
+                              setPage(1);
+                            }}
+                            className={`px-3 py-1.5 text-xs rounded-lg border ${
+                              isDark 
+                                ? 'bg-gray-800 border-gray-700 text-white hover:bg-gray-700' 
+                                : 'bg-white border-gray-200 text-gray-900 hover:bg-gray-50'
+                            }`}
+                          >
+                            Son 30 Gün
+                          </button>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 w-full">
+                          <input
+                            type="date"
+                            value={fromDate}
+                            onChange={(e) => { 
+                              const val = e.target.value;
+                              setFromDate(val); 
+                              if (!toDate) setToDate(val);
+                              setPage(1); 
+                            }}
+                            className={`px-3 py-2 text-sm rounded-lg border ${
+                              isDark 
+                                ? 'bg-gray-800 border-gray-700 text-white' 
+                                : 'bg-white border-gray-200 text-gray-900'
+                            }`}
+                          />
+                          <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>-</span>
+                          <input
+                            type="date"
+                            value={toDate}
+                            onChange={(e) => { setToDate(e.target.value); setPage(1); }}
+                            className={`px-3 py-2 text-sm rounded-lg border ${
+                              isDark 
+                                ? 'bg-gray-800 border-gray-700 text-white' 
+                                : 'bg-white border-gray-200 text-gray-900'
+                            }`}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {(stepFilter || statusFilter || fromDate || toDate) && (
                       <button
-                        onClick={() => { setStepFilter(''); setStatusFilter(''); setPage(1); }}
+                        onClick={() => { 
+                          setStepFilter(''); 
+                          setStatusFilter(''); 
+                          setFromDate(''); 
+                          setToDate(''); 
+                          if (period === 'custom') setPeriod('7d');
+                          setPage(1); 
+                        }}
                         className="px-3 py-2 text-sm text-red-500 hover:text-red-400"
                       >
                         Filtreleri Temizle
@@ -683,6 +850,88 @@ export default function SepetTerkPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {summary?.interactions && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              <SpotlightCard className={`p-4 h-full border ${borderClass}`}>
+                <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Form Sorunları
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Hata Alan Alanlar</p>
+                    {summary.interactions.topErrorFields?.length ? (
+                      <ul className="mt-1 space-y-1">
+                        {summary.interactions.topErrorFields.map((f, idx) => (
+                          <li key={idx} className="flex justify-between">
+                            <span className={textClass}>{f.field}</span>
+                            <span className="text-red-500 font-semibold">{f.errors}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Kritik hata alanı yok.</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <p className={`text-xs uppercase tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>En Yavaş Alanlar</p>
+                    {summary.interactions.topSlowFields?.length ? (
+                      <ul className="mt-1 space-y-1">
+                        {summary.interactions.topSlowFields.map((f, idx) => (
+                          <li key={idx} className="flex justify-between">
+                            <span className={textClass}>{f.field}</span>
+                            <span className="text-amber-500 font-semibold">{formatDuration(Math.round((f.ms || 0) / 1000))}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Belirgin yavaş alan yok.</p>
+                    )}
+                  </div>
+                </div>
+              </SpotlightCard>
+
+              <SpotlightCard className={`p-4 h-full border ${borderClass}`}>
+                <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Scroll & İlk Etkileşim
+                </h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded-lg p-3`}>
+                    <p className="text-xs text-gray-500">Ort. Maks Scroll</p>
+                    <p className={`text-lg font-semibold ${textClass}`}>{summary.interactions.avgMaxScrollPercent}%</p>
+                  </div>
+                  <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded-lg p-3`}>
+                    <p className="text-xs text-gray-500">İlk Input</p>
+                    <p className={`text-lg font-semibold ${textClass}`}>{formatMsToSeconds(summary.interactions.avgTimeToFirstInputSeconds ? summary.interactions.avgTimeToFirstInputSeconds * 1000 : undefined)}</p>
+                  </div>
+                  <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded-lg p-3`}>
+                    <p className="text-xs text-gray-500">İlk Hata</p>
+                    <p className={`text-lg font-semibold ${textClass}`}>{formatMsToSeconds(summary.interactions.avgTimeToFirstErrorSeconds ? summary.interactions.avgTimeToFirstErrorSeconds * 1000 : undefined)}</p>
+                  </div>
+                  <div className={`${isDark ? 'bg-gray-900' : 'bg-gray-50'} rounded-lg p-3`}>
+                    <p className="text-xs text-gray-500">Scroll %50 / %90</p>
+                    <p className={`text-sm font-semibold ${textClass}`}>
+                      {formatMsToSeconds(summary.interactions.avgTimeTo50ScrollSeconds ? summary.interactions.avgTimeTo50ScrollSeconds * 1000 : undefined)} / {formatMsToSeconds(summary.interactions.avgTimeTo90ScrollSeconds ? summary.interactions.avgTimeTo90ScrollSeconds * 1000 : undefined)}
+                    </p>
+                  </div>
+                </div>
+              </SpotlightCard>
+            </div>
+          )}
+
+          {recommendations.length > 0 && (
+            <div className={`${cardBg} rounded-2xl p-4 mb-6 border ${borderClass}`}>
+              <h3 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                Analize Göre AR-GE Önerileri
+              </h3>
+              <ul className="list-disc list-inside space-y-2 text-sm">
+                {recommendations.map((rec, idx) => (
+                  <li key={idx} className={textClass}>{rec}</li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -789,6 +1038,13 @@ export default function SepetTerkPage() {
                               {formatDuration(record.total_checkout_seconds)}
                             </span>
                           </div>
+
+                          {record.ip_address && (
+                            <div className={`flex items-center gap-1 mt-1 text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                              <HiOutlineUser className="w-3 h-3" />
+                              <span className="font-mono">{record.ip_address}</span>
+                            </div>
+                          )}
 
                           {record.selected_district && (
                             <div className={`flex items-center gap-1 mt-1 text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>

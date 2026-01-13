@@ -214,26 +214,66 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status'); // 'abandoned', 'recovered', 'converted'
     const minTime = parseInt(searchParams.get('minTime') || '20');
     const step = searchParams.get('step'); // 'recipient', 'message', 'payment'
+    const fromParam = searchParams.get('from');
+    const toParam = searchParams.get('to');
 
     // Tarih aralığını hesapla
     const now = new Date();
-    let fromDate: Date;
+    let fromDate: Date | undefined;
+    let toDate: Date = now;
 
-    switch (period) {
-      case '1d':
-        fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        break;
-      case '7d':
-        fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case '30d':
-        fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        break;
-      case '90d':
-        fromDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-        break;
-      default:
-        fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const parseDateStart = (value: string) => {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return undefined;
+      const start = new Date(d);
+      start.setHours(0, 0, 0, 0);
+      return start;
+    };
+
+    const parseDateEnd = (value: string) => {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return undefined;
+      const end = new Date(d);
+      end.setHours(23, 59, 59, 999);
+      return end;
+    };
+
+    if (fromParam) {
+      const parsedFrom = parseDateStart(fromParam);
+      if (parsedFrom) {
+        fromDate = parsedFrom;
+      }
+    }
+
+    if (toParam) {
+      const parsedTo = parseDateEnd(toParam);
+      if (parsedTo) {
+        toDate = parsedTo;
+      }
+    }
+
+    if (!fromDate) {
+      switch (period) {
+        case '1d':
+          fromDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          break;
+        case '7d':
+          fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case '30d':
+          fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          break;
+        case '90d':
+          fromDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+          break;
+        default:
+          fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      }
+    }
+
+    if (fromDate && toDate < fromDate) {
+      toDate = new Date(fromDate);
+      toDate.setHours(23, 59, 59, 999);
     }
 
     // Sorgu oluştur
@@ -241,6 +281,7 @@ export async function GET(request: NextRequest) {
       .from('cart_abandonment')
       .select('*', { count: 'exact' })
       .gte('abandoned_at', fromDate.toISOString())
+      .lte('abandoned_at', toDate.toISOString())
       .gte('total_checkout_seconds', minTime)
       .order('abandoned_at', { ascending: false });
 
@@ -268,6 +309,7 @@ export async function GET(request: NextRequest) {
       .from('cart_abandonment')
       .select('cart_total, total_checkout_seconds, reached_step, device_type, status, ip_address, interactions')
       .gte('abandoned_at', fromDate.toISOString())
+      .lte('abandoned_at', toDate.toISOString())
       .gte('total_checkout_seconds', minTime);
 
     const fieldAggregates: Record<string, { errors: number; totalInputMs: number; input: number }> = {};
@@ -370,7 +412,7 @@ export async function GET(request: NextRequest) {
       period,
       dateRange: {
         from: fromDate.toISOString(),
-        to: now.toISOString(),
+        to: toDate.toISOString(),
       },
       summary,
       data: data || [],
